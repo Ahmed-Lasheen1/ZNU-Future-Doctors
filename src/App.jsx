@@ -1,28 +1,38 @@
 import { useState } from 'react'
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
+import Navbar from './components/Navbar'
 import Home from './pages/Home'
 import FilesPage from './pages/FilesPage'
-import Chatbot from './pages/Chatbot'
+import Summaries from './pages/Summaries'
+import MCQ from './pages/MCQ'
+import Schedule from './pages/Schedule'
 import Admin from './pages/Admin'
-import Navbar from './components/Navbar'
+import Footer from './components/Footer'
 
 function App() {
   const [lang, setLang] = useState('ar')
-
   return (
     <Router>
-      <div className="app" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
+      <div style={{
+        minHeight: '100vh',
+        background: 'linear-gradient(135deg, #0a0f1e 0%, #0d1a2e 50%, #0a1628 100%)',
+        fontFamily: "'Cairo', 'Segoe UI', sans-serif",
+        direction: lang === 'ar' ? 'rtl' : 'ltr',
+        display: 'flex',
+        flexDirection: 'column'
+      }}>
         <Navbar lang={lang} setLang={setLang} />
-        <Routes>
-          <Route path="/" element={<Home lang={lang} />} />
-          <Route path="/sharah" element={<FilesPage type="sharah" lang={lang} />} />
-          <Route path="/questions" element={<FilesPage type="questions" lang={lang} />} />
-          <Route path="/lectures" element={<FilesPage type="lectures" lang={lang} />} />
-          <Route path="/courses" element={<FilesPage type="courses" lang={lang} />} />
-          <Route path="/summaries" element={<FilesPage type="summaries" lang={lang} />} />
-          <Route path="/chatbot" element={<Chatbot lang={lang} />} />
-          <Route path="/admin" element={<Admin lang={lang} />} />
-        </Routes>
+        <div style={{ flex: 1 }}>
+          <Routes>
+            <Route path="/" element={<Home lang={lang} />} />
+            <Route path="/files/:type" element={<FilesPage lang={lang} />} />
+            <Route path="/summaries" element={<Summaries lang={lang} />} />
+            <Route path="/mcq" element={<MCQ lang={lang} />} />
+            <Route path="/schedule" element={<Schedule lang={lang} />} />
+            <Route path="/admin" element={<Admin lang={lang} />} />
+          </Routes>
+        </div>
+        <Footer />
       </div>
     </Router>
   )
