@@ -10,7 +10,6 @@ const labels = {
     welcome: 'اسأل أي سؤال في الطب أو الدراسة!',
     loading: 'جاري الرد...',
     error: 'حصل خطأ، حاول تاني!',
-    prompt: 'أنت مساعد طبي لطلاب كلية الطب في ZNU. أجب باللغة العربية بشكل مختصر ومفيد.'
   },
   en: {
     title: 'AI Assistant',
@@ -19,7 +18,6 @@ const labels = {
     welcome: 'Ask any medical or study question!',
     loading: 'Thinking...',
     error: 'An error occurred, try again!',
-    prompt: 'You are a medical assistant for ZNU medical students. Answer concisely and helpfully in English.'
   }
 }
 
@@ -38,21 +36,25 @@ function Chatbot({ lang }) {
 
     try {
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             contents: [{
-              parts: [{ text: `${t.prompt} السؤال: ${input}` }]
+              parts: [{ 
+                text: `أنت مساعد طبي لطلاب كلية الطب في ZNU. أجب بشكل مختصر ومفيد. السؤال: ${input}` 
+              }]
             }]
           })
         }
       )
       const data = await response.json()
+      console.log(data)
       const botText = data.candidates[0].content.parts[0].text
       setMessages(prev => [...prev, { role: 'bot', text: botText }])
-    } catch {
+    } catch (err) {
+      console.log(err)
       setMessages(prev => [...prev, { role: 'bot', text: t.error }])
     }
     setLoading(false)
