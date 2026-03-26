@@ -1,6 +1,6 @@
 import { useState } from 'react'
 
-const GEMINI_API_KEY = 'AIzaSyDEX3yWdDTmxpo52vJ0TGqG3bSCCWgYGms'
+const GEMINI_API_KEY = 'AIzaSyDGi5UQi1cCD8Y88gnJo7SkTojKpPJV1N8'
 
 const labels = {
   ar: {
