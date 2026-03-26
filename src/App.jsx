@@ -6,8 +6,6 @@ import Chatbot from './pages/Chatbot'
 import Admin from './pages/Admin'
 import Navbar from './components/Navbar'
 
-export const MODULES = ['current', 'professional_practice']
-
 function App() {
   const [lang, setLang] = useState('ar')
 
