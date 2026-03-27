@@ -7,7 +7,9 @@ export default function Home() {
     { emoji: '🎥', title: 'تسجيلات المحاضرات', to: '/files?type=lectures' },
     { emoji: '🎓', title: 'تسجيلات الكورسات', to: '/files?type=courses' },
     { emoji: '📝', title: 'الملخصات الذكية', to: '/summaries' },
+    { emoji: '🧪', title: 'بنك MCQ تفاعلي', to: '/mcq' }, // التفاعلي قصاد الملخصات
     { emoji: '📅', title: 'الجداول الدراسية', to: '/schedule' },
+    { emoji: '🎯', title: 'Checklist', to: '/checklist' }, // التشيك ليست قصاد الجداول
   ]
 
   return (
@@ -28,7 +30,6 @@ export default function Home() {
           </Link>
         ))}
       </div>
-      <Link to="/admin" style={{ display: 'block', textAlign: 'center', marginTop: 40, color: '#1e293b' }}>.</Link>
     </div>
   )
 }

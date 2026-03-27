@@ -5,13 +5,12 @@ import Schedule from './pages/Schedule';
 import FilesPage from './pages/FilesPage';
 import Admin from './pages/Admin';
 import MCQ from './pages/MCQ';
-import Summaries from './pages/Summaries'; // تأكد من وجود الملف ده في فولدر pages
+import Summaries from './pages/Summaries';
 
 function SmartHeader() {
   const navigate = useNavigate();
   const location = useLocation();
   if (location.pathname === '/') return null;
-
   return (
     <div style={{
       display: 'flex', justifyContent: 'space-between', alignItems: 'center',
@@ -25,12 +24,9 @@ function SmartHeader() {
   );
 }
 
-const navBtnStyle = {
-  background: '#1e293b', color: '#38bdf8', border: '1px solid #334155',
-  padding: '8px 16px', borderRadius: '12px', fontSize: '14px', fontWeight: '800', cursor: 'pointer'
-};
+const navBtnStyle = { background: '#1e293b', color: '#38bdf8', border: '1px solid #334155', padding: '8px 16px', borderRadius: '12px', fontSize: '14px', fontWeight: '800', cursor: 'pointer' };
 
-function App() {
+export default function App() {
   return (
     <Router>
       <div style={{ background: '#0f172a', minHeight: '100vh', color: '#fff' }}>
@@ -49,5 +45,3 @@ function App() {
     </Router>
   );
 }
-
-export default App;
