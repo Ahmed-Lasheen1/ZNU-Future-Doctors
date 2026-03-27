@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { supabase } from '../supabase'
+import { useState, useEffect } from 'react';
+import { supabase } from '../supabase';
 
 const labels = {
   ar: {
@@ -28,51 +28,65 @@ const labels = {
     time: 'Time',
     location: 'Location',
   }
-}
+};
 
 function Schedule({ lang }) {
-  const [tab, setTab] = useState('study')
-  const [module, setModule] = useState('current')
-  const [items, setItems] = useState([])
-  const [loading, setLoading] = useState(true)
-  const t = labels[lang]
+  const [tab, setTab] = useState('study');
+  const [module, setModule] = useState('current');
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const t = labels[lang] || labels.ar; // الاحتياط واجب لو الـ lang مجاش صح
 
-  useEffect(() => { fetchData() }, [tab, module])
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from('schedules')
+          .select('*')
+          .eq('module', module)
+          .eq('schedule_type', tab)
+          .order('date', { ascending: true });
+        
+        if (!error) {
+          setItems(data || []);
+        } else {
+          console.error("Supabase Error:", error);
+        }
+      } catch (err) {
+        console.error("Fetch Error:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  async function fetchData() {
-    setLoading(true)
-    const { data, error } = await supabase
-      .from('schedules')
-      .select('*')
-      .eq('module', module)
-      .eq('schedule_type', tab)
-      .order('date', { ascending: true })
-    if (!error) setItems(data)
-    setLoading(false)
-  }
+    fetchData();
+  }, [tab, module]); // كدة الـ Loop اللانهائي اتحل
 
   return (
-    <div style={{ padding: 20, maxWidth: 700, margin: '0 auto' }}>
+    <div style={{ padding: '10px 20px', maxWidth: 700, margin: '0 auto', fontFamily: 'sans-serif' }}>
       <h1 style={{ color: '#38bdf8', textAlign: 'center', marginBottom: 20 }}>
         📅 {t.title}
       </h1>
 
+      {/* أزرار نوع الجدول */}
       <div style={{ display: 'flex', gap: 10, justifyContent: 'center', marginBottom: 16 }}>
         {['study', 'exams'].map(tp => (
           <button key={tp} onClick={() => setTab(tp)} style={{
-            padding: '8px 20px', borderRadius: 10,
+            padding: '8px 20px', borderRadius: 12,
             border: '2px solid #a78bfa',
             background: tab === tp ? '#a78bfa' : 'transparent',
             color: tab === tp ? '#0f172a' : '#a78bfa',
             cursor: 'pointer', fontWeight: 700,
-            fontSize: 13, fontFamily: 'inherit'
+            fontSize: 13, transition: '0.3s'
           }}>
             {tp === 'study' ? t.study : t.exams}
           </button>
         ))}
       </div>
 
-      <div style={{ display: 'flex', gap: 10, justifyContent: 'center', marginBottom: 24 }}>
+      {/* أزرار الموديول */}
+      <div style={{ display: 'flex', gap: 10, justifyContent: 'center', marginBottom: 24, flexWrap: 'wrap' }}>
         {['current', 'professional_practice'].map(m => (
           <button key={m} onClick={() => setModule(m)} style={{
             padding: '6px 14px', borderRadius: 10,
@@ -80,7 +94,7 @@ function Schedule({ lang }) {
             background: module === m ? '#38bdf8' : 'transparent',
             color: module === m ? '#0f172a' : '#38bdf8',
             cursor: 'pointer', fontWeight: 700,
-            fontSize: 12, fontFamily: 'inherit'
+            fontSize: 12
           }}>
             {t[m]}
           </button>
@@ -99,14 +113,20 @@ function Schedule({ lang }) {
         </div>
       )}
 
-      {items.map(item => (
+      {!loading && items.map(item => (
         <div key={item.id} style={{
           background: 'linear-gradient(135deg, #1e293b, #0f2540)',
           border: '2px solid #1e3a5f',
           borderRadius: 16, padding: 20, marginBottom: 12,
         }}>
-          <h3 style={{ color: '#e2e8f0', marginBottom: 10 }}>{item.subject}</h3>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+          <h3 style={{ color: '#e2e8f0', marginBottom: 10, fontSize: 16 }}>{item.subject}</h3>
+          
+          {/* الـ Grid هنا مرن أكتر للموبايل */}
+          <div style={{ 
+            display: 'grid', 
+            gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', 
+            gap: 8 
+          }}>
             {[
               { label: t.date, value: item.date, color: '#38bdf8' },
               { label: t.time, value: item.time, color: '#a78bfa' },
@@ -117,15 +137,15 @@ function Schedule({ lang }) {
                 border: `1px solid ${f.color}30`,
                 borderRadius: 10, padding: '8px 12px'
               }}>
-                <div style={{ color: f.color, fontSize: 11, fontWeight: 700 }}>{f.label}</div>
-                <div style={{ color: '#e2e8f0', fontSize: 13 }}>{f.value}</div>
+                <div style={{ color: f.color, fontSize: 10, fontWeight: 700, textTransform: 'uppercase' }}>{f.label}</div>
+                <div style={{ color: '#e2e8f0', fontSize: 13, marginTop: 2 }}>{f.value}</div>
               </div>
             ))}
           </div>
         </div>
       ))}
     </div>
-  )
+  );
 }
 
-export default Schedule
+export default Schedule;
