@@ -5,32 +5,25 @@ const labels = {
     title: 'ZNU Future Doctors',
     subtitle: 'منصتك الطبية للدراسة والتميز',
     cards: [
-      { emoji: '🎯', title: 'تحديدات الامتحان', to: '/checklist' }, // أضفتها عشان مكنتش موجودة
-      { emoji: '📖', title: 'ملفات الشرح', to: '/files' },
-      { emoji: '❓', title: 'ملفات الأسئلة', to: '/files' },
-      { emoji: '📝', title: 'الملخصات', to: '/files' },
+      { emoji: '📖', title: 'ملفات الشرح', to: '/files?type=sharah' },
+      { emoji: '❓', title: 'ملفات الأسئلة', to: '/files?type=questions' },
+      { emoji: '🎥', title: 'تسجيلات المحاضرات', to: '/files?type=lectures' },
+      { emoji: '🎓', title: 'تسجيلات الكورسات', to: '/files?type=courses' },
+      { emoji: '📝', title: 'الملخصات', to: '/files?type=summaries' },
       { emoji: '🧪', title: 'MCQ', to: '/mcq' },
       { emoji: '📅', title: 'الجداول', to: '/schedule' },
-    ]
-  },
-  en: {
-    title: 'ZNU Future Doctors',
-    subtitle: 'Your Medical Study Platform',
-    cards: [
       { emoji: '🎯', title: 'Checklist', to: '/checklist' },
-      { emoji: '📖', title: 'Explanation Files', to: '/files' },
-      { emoji: '❓', title: 'Question Files', to: '/files' },
-      { emoji: '📝', title: 'Summaries', to: '/files' },
-      { emoji: '🧪', title: 'MCQ', to: '/mcq' },
-      { emoji: '📅', title: 'Schedules', to: '/schedule' },
     ]
   }
 }
 
 function Home({ lang }) {
-  const t = labels[lang || 'ar'] // تأكدت إن لو مفيش لغة يختار عربي
+  // شغالين على العربي حالياً
+  const t = labels.ar
+
   return (
-    <div style={{ padding: 24 }}>
+    <div style={{ padding: '24px 16px 120px', minHeight: '100vh' }}>
+      {/* الهيدر واللوجو */}
       <div style={{ textAlign: 'center', padding: '40px 20px 30px' }}>
         <div style={{ fontSize: 48, marginBottom: 12 }}>🏥</div>
         <h1 style={{
@@ -40,6 +33,7 @@ function Home({ lang }) {
         <p style={{ color: '#94a3b8', fontSize: 16 }}>{t.subtitle}</p>
       </div>
 
+      {/* شبكة الكروت الترتيب (2x2) */}
       <div style={{
         display: 'grid',
         gridTemplateColumns: '1fr 1fr',
@@ -57,6 +51,7 @@ function Home({ lang }) {
               textAlign: 'center',
               cursor: 'pointer',
               transition: 'all 0.2s',
+              height: '100%'
             }}
               onMouseEnter={e => {
                 e.currentTarget.style.transform = 'translateY(-4px)'
@@ -76,11 +71,28 @@ function Home({ lang }) {
           </Link>
         ))}
       </div>
-      
-      {/* زرار مخفي للأدمن تحت خالص */}
+
+      {/* زرار أدمن مخفي (نقطة غير مرئية تقريباً) */}
       <div style={{ textAlign: 'center', marginTop: 40 }}>
-         <Link to="/admin" style={{ color: '#1e3a5f', textDecoration: 'none', fontSize: 12 }}>Admin Area</Link>
+         <Link to="/admin" style={{ color: '#0f172a', textDecoration: 'none', fontSize: 10 }}>.</Link>
       </div>
+
+      {/* الفوتر بتاعك ثابت تحت */}
+      <footer style={{
+        position: 'fixed',
+        bottom: 0,
+        left: 0,
+        width: '100%',
+        padding: '15px',
+        background: '#0f172a',
+        borderTop: '1px solid #1e3a5f',
+        textAlign: 'center',
+        color: '#94a3b8',
+        fontSize: '12px',
+        zIndex: 1000
+      }}>
+        Made with ❤️ by Dr. Ahmed | ZNU 2026
+      </footer>
     </div>
   )
 }
