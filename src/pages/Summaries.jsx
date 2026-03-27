@@ -1,3 +1,14 @@
+import { useState } from 'react'
+
+const modules = [
+  {
+    id: 'git',
+    label: 'GIT Module',
+    icon: '🫁',
+    color: '#38bdf8',
+    desc: 'Biochemistry · Anatomy · Physiology · Histology',
+  }
+]
 import { useState } from "react"
 
 // ===================== SHARED COMPONENTS =====================
@@ -1236,4 +1247,69 @@ export default function Summaries() {
       )}
     </div>
   );
+function SummariesHome({ onSelect }) {
+  return (
+    <div style={{ padding: 24, maxWidth: 700, margin: '0 auto' }}>
+      <h1 style={{ color: '#38bdf8', textAlign: 'center', marginBottom: 30 }}>
+        📝 الملخصات
+      </h1>
+      {modules.map(mod => (
+        <div key={mod.id} onClick={() => onSelect(mod.id)}
+          style={{
+            background: 'linear-gradient(135deg, #1e293b, #0f2540)',
+            border: `2px solid ${mod.color}40`,
+            borderRadius: 20, padding: 24,
+            cursor: 'pointer', marginBottom: 16,
+            transition: 'all 0.2s'
+          }}
+          onMouseEnter={e => {
+            e.currentTarget.style.borderColor = mod.color
+            e.currentTarget.style.transform = 'translateY(-2px)'
+          }}
+          onMouseLeave={e => {
+            e.currentTarget.style.borderColor = `${mod.color}40`
+            e.currentTarget.style.transform = 'translateY(0)'
+          }}>
+          <div style={{ fontSize: 36, marginBottom: 8 }}>{mod.icon}</div>
+          <h2 style={{ color: mod.color, marginBottom: 6 }}>{mod.label}</h2>
+          <p style={{ color: '#94a3b8', fontSize: 13 }}>{mod.desc}</p>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+export default function Summaries() {
+  const [selected, setSelected] = useState(null)
+
+  if (!selected) return <SummariesHome onSelect={setSelected} />
+
+  return (
+    <div>
+      <div style={{
+        background: 'linear-gradient(135deg, #1a2a4a, #0f1e35)',
+        borderBottom: '2px solid #2a4a7a',
+        padding: '14px 24px',
+        position: 'sticky', top: 0, zIndex: 100,
+        display: 'flex', alignItems: 'center', gap: 12
+      }}>
+        <button onClick={() => setSelected(null)} style={{
+          background: 'rgba(255,255,255,0.08)',
+          border: '2px solid rgba(255,255,255,0.15)',
+          borderRadius: 10, padding: '6px 14px',
+          color: '#94a3b8', cursor: 'pointer',
+          fontSize: 12, fontWeight: 700, fontFamily: 'inherit'
+        }}>
+          ← الملخصات
+        </button>
+        <h2 style={{ color: '#38bdf8', flex: 1, textAlign: 'center' }}>
+          {modules.find(m => m.id === selected)?.label}
+        </h2>
+        <div style={{ width: 80 }} />
+      </div>
+      <div style={{ maxWidth: 900, margin: '0 auto', padding: '20px 16px' }}>
+        <GITSummary />
+      </div>
+    </div>
+  )
 }
