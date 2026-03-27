@@ -1,111 +1,86 @@
-import { useState, useEffect } from 'react'
-import { useParams } from 'react-router-dom'
-import { supabase } from '../supabase'
+import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
+// استيراد الصفحات - تأكد إن الأسماء دي مطابقة لملفاتك في فولدر pages
+import Home from './pages/Home';
+import Checklist from './pages/Checklist';
+import Schedule from './pages/Schedule';
+import FilesPage from './pages/FilesPage';
+import Admin from './pages/Admin';
+import MCQ from './pages/MCQ';
 
-const labels = {
-  ar: {
-    sharah: 'ملفات الشرح',
-    questions: 'ملفات الأسئلة',
-    lectures: 'تسجيلات المحاضرات',
-    courses: 'تسجيلات الكورسات',
-    current: 'الموديول الحالي',
-    professional_practice: 'Professional Practice',
-    download: 'تحميل',
-    empty: 'مفيش ملفات لحد دلوقتي',
-    loading: 'جاري التحميل...',
-  },
-  en: {
-    sharah: 'Explanation Files',
-    questions: 'Question Files',
-    lectures: 'Lecture Recordings',
-    courses: 'Course Recordings',
-    current: 'Current Module',
-    professional_practice: 'Professional Practice',
-    download: 'Download',
-    empty: 'No files yet',
-    loading: 'Loading...',
-  }
-}
+// مكون الشريط العلوي الذكي (بيظهر بره الصفحة الرئيسية بس)
+function SmartHeader() {
+  const navigate = useNavigate();
+  const location = useLocation();
 
-function FilesPage({ lang }) {
-  const { type } = useParams()
-  const [module, setModule] = useState('current')
-  const [files, setFiles] = useState([])
-  const [loading, setLoading] = useState(true)
-  const t = labels[lang]
-
-  useEffect(() => {
-    fetchFiles()
-  }, [type, module])
-
-  async function fetchFiles() {
-    setLoading(true)
-    const { data, error } = await supabase
-      .from('files')
-      .select('*')
-      .eq('type', type)
-      .eq('module', module)
-      .order('created_at', { ascending: false })
-    if (!error) setFiles(data)
-    setLoading(false)
-  }
+  // لو إحنا في الصفحة الرئيسية (/) مش هنظهر الشريط
+  if (location.pathname === '/') return null;
 
   return (
-    <div style={{ padding: 20, maxWidth: 700, margin: '0 auto' }}>
-      <h1 style={{ color: '#38bdf8', textAlign: 'center', marginBottom: 20 }}>
-        {t[type]}
-      </h1>
+    <div style={{
+      display: 'flex', 
+      justifyContent: 'space-between', 
+      alignItems: 'center',
+      padding: '12px 18px', 
+      background: 'rgba(15, 23, 42, 0.9)', // شفافية شيك
+      backdropFilter: 'blur(8px)', 
+      position: 'sticky', 
+      top: 0, 
+      zIndex: 1000,
+      borderBottom: '1px solid #1e3a5f'
+    }}>
+      {/* زرار الرجوع */}
+      <button onClick={() => navigate(-1)} style={navBtnStyle}>
+        <span style={{ marginLeft: '5px' }}>🔙</span> رجوع
+      </button>
 
-      <div style={{ display: 'flex', gap: 10, justifyContent: 'center', marginBottom: 24 }}>
-        {['current', 'professional_practice'].map(m => (
-          <button key={m} onClick={() => setModule(m)} style={{
-            padding: '8px 16px', borderRadius: 10,
-            border: '1px solid #38bdf8',
-            background: module === m ? '#38bdf8' : 'transparent',
-            color: module === m ? '#0f172a' : '#38bdf8',
-            cursor: 'pointer', fontWeight: 700,
-            fontSize: 13, fontFamily: 'inherit'
-          }}>
-            {t[m]}
-          </button>
-        ))}
-      </div>
-
-      {loading && <p style={{ color: '#94a3b8', textAlign: 'center' }}>{t.loading}</p>}
-
-      {!loading && files.length === 0 && (
-        <div style={{
-          background: 'linear-gradient(135deg, #1e293b, #0f2540)',
-          border: '2px solid #1e3a5f',
-          borderRadius: 16, padding: 40, textAlign: 'center'
-        }}>
-          <p style={{ color: '#94a3b8' }}>{t.empty}</p>
-        </div>
-      )}
-
-      {files.map(file => (
-        <div key={file.id} style={{
-          background: 'linear-gradient(135deg, #1e293b, #0f2540)',
-          border: '2px solid #1e3a5f',
-          borderRadius: 16, padding: 20, marginBottom: 12,
-        }}>
-          <h3 style={{ color: '#e2e8f0', marginBottom: 8 }}>{file.name}</h3>
-          <p style={{ color: '#94a3b8', marginBottom: 12 }}>{file.description}</p>
-          <a href={file.url} target="_blank" rel="noreferrer">
-            <button style={{
-              background: '#38bdf8', color: '#0f172a',
-              border: 'none', padding: '10px 20px',
-              borderRadius: 10, cursor: 'pointer',
-              fontWeight: 700, width: '100%',
-              fontFamily: 'inherit', fontSize: 14
-            }}>
-              ⬇️ {t.download}
-            </button>
-          </a>
-        </div>
-      ))}
+      {/* زرار الرئيسية */}
+      <button onClick={() => navigate('/')} style={navBtnStyle}>
+        <span style={{ marginLeft: '5px' }}>🏠</span> الرئيسية
+      </button>
     </div>
-  )
+  );
 }
 
-export default FilesPage
+// ستايل الأزرار عشان تبان كأنها في أبلكيشن
+const navBtnStyle = {
+  background: '#1e293b',
+  color: '#38bdf8',
+  border: '1px solid #334155',
+  padding: '8px 16px',
+  borderRadius: '12px',
+  fontSize: '14px',
+  fontWeight: '800',
+  cursor: 'pointer',
+  display: 'flex',
+  alignItems: 'center',
+  fontFamily: 'inherit'
+};
+
+function App() {
+  return (
+    <Router>
+      {/* الحاوية الرئيسية للموقع */}
+      <div style={{ 
+        background: '#0f172a', 
+        minHeight: '100vh', 
+        direction: 'rtl', // عشان الموقع عربي
+        fontFamily: 'sans-serif' 
+      }}>
+        
+        <SmartHeader />
+
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/checklist" element={<Checklist />} />
+          <Route path="/schedule" element={<Schedule />} />
+          <Route path="/files" element={<FilesPage />} />
+          <Route path="/admin" element={<Admin />} />
+          <Route path="/mcq" element={<MCQ />} />
+        </Routes>
+        
+      </div>
+    </Router>
+  );
+}
+
+export default App;

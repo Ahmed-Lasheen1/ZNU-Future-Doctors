@@ -1,49 +1,86 @@
-import { useState } from 'react'
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
-import Navbar from './components/Navbar'
-import Home from './pages/Home'
-import FilesPage from './pages/FilesPage'
-import Summaries from './pages/Summaries'
-import MCQ from './pages/MCQ'
-import Schedule from './pages/Schedule'
-import Admin from './pages/Admin'
-import Checklist from './pages/Checklist' // 1. استيراد الصفحة الجديدة
-import Footer from './components/Footer'
+import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
+// استيراد الصفحات - تأكد إن الأسماء دي مطابقة لملفاتك في فولدر pages
+import Home from './pages/Home';
+import Checklist from './pages/Checklist';
+import Schedule from './pages/Schedule';
+import FilesPage from './pages/FilesPage';
+import Admin from './pages/Admin';
+import MCQ from './pages/MCQ';
 
-function App() {
-  const [lang, setLang] = useState('ar')
-  
+// مكون الشريط العلوي الذكي (بيظهر بره الصفحة الرئيسية بس)
+function SmartHeader() {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  // لو إحنا في الصفحة الرئيسية (/) مش هنظهر الشريط
+  if (location.pathname === '/') return null;
+
   return (
-    <Router>
-      <div style={{
-        minHeight: '100vh',
-        background: 'linear-gradient(135deg, #0a0f1e 0%, #0d1a2e 50%, #0a1628 100%)',
-        fontFamily: "'Cairo', 'Segoe UI', sans-serif",
-        direction: lang === 'ar' ? 'rtl' : 'ltr',
-        display: 'flex',
-        flexDirection: 'column',
-        color: '#fff' // لضمان وضوح الخط في كل الصفحات
-      }}>
-        <Navbar lang={lang} setLang={setLang} />
-        
-        <div style={{ flex: 1 }}>
-          <Routes>
-            <Route path="/" element={<Home lang={lang} />} />
-            <Route path="/files/:type" element={<FilesPage lang={lang} />} />
-            <Route path="/summaries" element={<Summaries lang={lang} />} />
-            <Route path="/mcq" element={<MCQ lang={lang} />} />
-            <Route path="/schedule" element={<Schedule lang={lang} />} />
-            <Route path="/admin" element={<Admin lang={lang} />} />
-            
-            {/* 2. تسجيل عنوان صفحة التحديدات */}
-            <Route path="/checklist" element={<Checklist lang={lang} />} />
-          </Routes>
-        </div>
-        
-        <Footer />
-      </div>
-    </Router>
-  )
+    <div style={{
+      display: 'flex', 
+      justifyContent: 'space-between', 
+      alignItems: 'center',
+      padding: '12px 18px', 
+      background: 'rgba(15, 23, 42, 0.9)', // شفافية شيك
+      backdropFilter: 'blur(8px)', 
+      position: 'sticky', 
+      top: 0, 
+      zIndex: 1000,
+      borderBottom: '1px solid #1e3a5f'
+    }}>
+      {/* زرار الرجوع */}
+      <button onClick={() => navigate(-1)} style={navBtnStyle}>
+        <span style={{ marginLeft: '5px' }}>🔙</span> رجوع
+      </button>
+
+      {/* زرار الرئيسية */}
+      <button onClick={() => navigate('/')} style={navBtnStyle}>
+        <span style={{ marginLeft: '5px' }}>🏠</span> الرئيسية
+      </button>
+    </div>
+  );
 }
 
-export default App
+// ستايل الأزرار عشان تبان كأنها في أبلكيشن
+const navBtnStyle = {
+  background: '#1e293b',
+  color: '#38bdf8',
+  border: '1px solid #334155',
+  padding: '8px 16px',
+  borderRadius: '12px',
+  fontSize: '14px',
+  fontWeight: '800',
+  cursor: 'pointer',
+  display: 'flex',
+  alignItems: 'center',
+  fontFamily: 'inherit'
+};
+
+function App() {
+  return (
+    <Router>
+      {/* الحاوية الرئيسية للموقع */}
+      <div style={{ 
+        background: '#0f172a', 
+        minHeight: '100vh', 
+        direction: 'rtl', // عشان الموقع عربي
+        fontFamily: 'sans-serif' 
+      }}>
+        
+        <SmartHeader />
+
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/checklist" element={<Checklist />} />
+          <Route path="/schedule" element={<Schedule />} />
+          <Route path="/files" element={<FilesPage />} />
+          <Route path="/admin" element={<Admin />} />
+          <Route path="/mcq" element={<MCQ />} />
+        </Routes>
+        
+      </div>
+    </Router>
+  );
+}
+
+export default App;
