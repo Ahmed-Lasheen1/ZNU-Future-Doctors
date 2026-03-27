@@ -58,7 +58,7 @@ const Table = ({ headers, rows, colors }) => (
 const Badge = ({ text, color }) => (
 <span style={{
 background: `${color}25`, color, border: `1px solid ${color}50`,
-borderRadius: 20, padding: "2px 10px", fontSize: 11,
+borderRadius: 20, padding: '2px 10px', fontSize: 11,
 fontWeight: 700, marginLeft: 6, display: “inline-block”
 }}>{text}</span>
 );
