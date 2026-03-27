@@ -1,84 +1,113 @@
 import { useState } from "react";
 
-// ===================== مكون كارت المادة =====================
-const SubjectCard = ({ title, icon, questionsCount, onClick, color }) => (
+// ===================== مكونات الواجهة =====================
+const MainCard = ({ title, subtitle, icon, color, onClick }) => (
   <div 
     onClick={onClick}
     style={{
       background: 'linear-gradient(135deg, #1e293b, #0f172a)',
-      border: `1px solid ${color}30`,
-      borderRadius: 18,
-      padding: '20px 15px',
-      display: 'flex',
-      alignItems: 'center',
-      gap: 15,
-      cursor: 'pointer',
-      marginBottom: 12,
-      transition: '0.2s'
+      border: `2px solid ${color}40`,
+      borderRadius: 20, padding: 25, textAlign: 'center',
+      cursor: 'pointer', marginBottom: 20, transition: '0.3s'
     }}
   >
-    <div style={{ fontSize: 30, background: `${color}15`, padding: 10, borderRadius: 12 }}>{icon}</div>
-    <div style={{ flex: 1 }}>
-      <div style={{ color: '#fff', fontSize: 16, fontWeight: 700 }}>{title}</div>
-      <div style={{ color: '#94a3b8', fontSize: 12 }}>{questionsCount} سؤال متاح</div>
-    </div>
-    <div style={{ color: color, fontSize: 20 }}>➔</div>
+    <div style={{ fontSize: 45, marginBottom: 10 }}>{icon}</div>
+    <div style={{ color: '#fff', fontSize: 18, fontWeight: 800 }}>{title}</div>
+    <div style={{ color: '#94a3b8', fontSize: 13, marginTop: 5 }}>{subtitle}</div>
+  </div>
+);
+
+const SubOption = ({ title, icon, color, onClick }) => (
+  <div 
+    onClick={onClick}
+    style={{
+      background: '#1e293b', border: `1px solid ${color}30`,
+      borderRadius: 15, padding: 15, display: 'flex',
+      alignItems: 'center', gap: 15, cursor: 'pointer', marginBottom: 10
+    }}
+  >
+    <div style={{ fontSize: 24 }}>{icon}</div>
+    <div style={{ color: '#f8fafc', fontWeight: 600, flex: 1 }}>{title}</div>
+    <div style={{ color: color }}>➔</div>
   </div>
 );
 
 export default function Mcq() {
-  const [selectedSubject, setSelectedSubject] = useState(null);
+  const [view, setView] = useState("home"); // home, current_module, professional
 
-  // قائمة المواد - تقدر تعدل الأسامي والعدد هنا بسهولة
-  const subjects = [
-    { id: 'ant', title: 'Anatomy', icon: '💀', color: '#f87171', count: 50 },
-    { id: 'bio', title: 'Biochemistry', icon: '🧪', color: '#38bdf8', count: 40 },
-    { id: 'phy', title: 'Physiology', icon: '🫀', color: '#4ade80', count: 60 },
-    { id: 'his', title: 'Histology', icon: '🔬', color: '#fbbf24', count: 35 },
-  ];
-
-  // 1. واجهة اختيار المادة (القائمة الرئيسية)
-  if (!selectedSubject) {
+  // 1. القائمة الرئيسية (الموديول الحالي & Professional Practice)
+  if (view === "home") {
     return (
-      <div style={{ padding: '20px', maxWidth: 600, margin: '0 auto' }}>
-        <h1 style={{ color: '#fff', textAlign: 'center', marginBottom: 10, fontSize: 24 }}>📝 بنك الأسئلة</h1>
-        <p style={{ color: '#94a3b8', textAlign: 'center', marginBottom: 25, fontSize: 14 }}>اختر المادة لبدء التدريب</p>
+      <div style={{ padding: 20, maxWidth: 600, margin: '0 auto' }}>
+        <h1 style={{ color: '#38bdf8', textAlign: 'center', marginBottom: 30 }}>📝 بنك الأسئلة</h1>
         
-        {subjects.map(sub => (
-          <SubjectCard 
-            key={sub.id}
-            title={sub.title}
-            icon={sub.icon}
-            questionsCount={sub.count}
-            color={sub.color}
-            onClick={() => setSelectedSubject(sub)}
+        <MainCard 
+          title="الموديول الحالي" 
+          subtitle="أسئلة وتدريبات الموديول الأكاديمي"
+          icon="📚" color="#38bdf8" 
+          onClick={() => setView("current_module")} 
+        />
+
+        <MainCard 
+          title="Professional Practice" 
+          subtitle="أسئلة الأخلاقيات والممارسة المهنية"
+          icon="🩺" color="#a78bfa" 
+          onClick={() => setView("professional")} 
+        />
+      </div>
+    );
+  }
+
+  // 2. خيارات الموديول الحالي (امتحان شامل + تدريب مواد)
+  if (view === "current_module") {
+    return (
+      <div style={{ padding: 20, maxWidth: 600, margin: '0 auto' }}>
+        <button onClick={() => setView("home")} style={backBtnStyle}>⬅ رجوع</button>
+        <h2 style={{ color: '#38bdf8', marginBottom: 20 }}>🧬 الموديول الحالي</h2>
+        
+        <SubOption 
+          title="امتحان محاكي (36 سؤال شامل)" 
+          icon="⏱️" color="#f87171" 
+          onClick={() => alert("بدء الامتحان الشامل...")} 
+        />
+
+        <div style={{ margin: '25px 0 15px', color: '#94a3b8', fontSize: 14, fontWeight: 700 }}>تدريب حسب المادة:</div>
+        
+        {['Anatomy', 'Biochemistry', 'Physiology', 'Histology'].map(sub => (
+          <SubOption 
+            key={sub} title={sub} 
+            icon="📖" color="#38bdf8" 
+            onClick={() => alert(`بدء تدريب ${sub}...`)} 
           />
         ))}
       </div>
     );
   }
 
-  // 2. واجهة عرض الأسئلة (لما تختار مادة)
-  return (
-    <div style={{ padding: '20px', maxWidth: 600, margin: '0 auto' }}>
-      <button 
-        onClick={() => setSelectedSubject(null)} 
-        style={{ background: 'transparent', color: '#94a3b8', border: 'none', cursor: 'pointer', marginBottom: 15, fontSize: 14 }}
-      >
-        ⬅ العودة للمواد
-      </button>
-
-      <div style={{ background: '#1e293b', padding: 20, borderRadius: 20, border: `1px solid ${selectedSubject.color}50` }}>
-        <h2 style={{ color: selectedSubject.color, marginTop: 0 }}>{selectedSubject.icon} {selectedSubject.title}</h2>
-        <p style={{ color: '#e2e8f0', lineHeight: 1.6 }}>
-          قريباً هضيف لك هنا نظام الـ Quiz كامل.. 
-          بحيث يظهر السؤال واختيارات، ولما تختار يصحح لك فوراً.
-        </p>
+  // 3. خيارات Professional Practice (امتحان شامل + تدريب)
+  if (view === "professional") {
+    return (
+      <div style={{ padding: 20, maxWidth: 600, margin: '0 auto' }}>
+        <button onClick={() => setView("home")} style={backBtnStyle}>⬅ رجوع</button>
+        <h2 style={{ color: '#a78bfa', marginBottom: 20 }}>🏥 Professional Practice</h2>
         
-        <div style={{ textAlign: 'center', marginTop: 30, padding: 20, border: '1px dashed #475569', borderRadius: 15 }}>
-          <span style={{ color: '#94a3b8' }}>Under Construction 🚧</span>
-        </div>
+        <SubOption 
+          title="امتحان محاكي شامل" 
+          icon="📝" color="#f87171" 
+          onClick={() => alert("بدء الامتحان...")} 
+        />
+        
+        <SubOption 
+          title="تدريب مكثف" 
+          icon="💡" color="#a78bfa" 
+          onClick={() => alert("بدء التدريب...")} 
+        />
       </div>
-    </div>
-  );
+    );
+  }
 }
+
+const backBtnStyle = {
+  background: 'transparent', color: '#94a3b8', 
+  border: 'none', cursor: 'pointer', marginBottom: 15, fontSize: 14
+};
