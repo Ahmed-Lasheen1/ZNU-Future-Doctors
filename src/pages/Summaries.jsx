@@ -19,7 +19,7 @@ const Box = ({ color, title, children, icon }) => (
   </div>
 );
 
-const SectionTitle = ({ children, color = “#7eb8ff” }) => (
+const SectionTitle = ({ children, color = '#7eb8ff' }) => (
 
   <div style={{
     fontSize: 16, fontWeight: 800, color,
