@@ -1,66 +1,89 @@
 import { useState } from 'react'
 
 export default function MCQ() {
-  // مثال لأسئلة الـ Biochemistry (ممكن نربطها بسوبابيس لاحقاً)
-  const questions = [
-    {
-      id: 1,
-      q: "Where does Glycolysis take place?",
-      options: ["Mitochondria", "Cytosol", "Nucleus", "Ribosomes"],
-      answer: "Cytosol"
-    },
-    {
-      id: 2,
-      q: "Which enzyme is the key regulator of Glycolysis?",
-      options: ["Hexokinase", "PFK-1", "Pyruvate Kinase", "Aldolase"],
-      answer: "PFK-1"
-    }
-  ]
+  const [mainCat, setMainCat] = useState('module') // module أو professional
+  const [quizMode, setQuizMode] = useState(null) // null, 'mock', 'practice'
+  const [selectedSubject, setSelectedSubject] = useState(null)
 
-  const [selected, setSelected] = useState({})
-  const [showResult, setShowResult] = useState({})
+  // أقسام التدريب بناءً على القسم الرئيسي
+  const practiceSubjects = mainCat === 'module' 
+    ? ['Anatomy', 'Histology', 'Physiology', 'Biochemistry']
+    : ['Ethics', 'Professionalism', 'Research']
 
-  const handleSelect = (qId, option) => {
-    setSelected({ ...selected, [qId]: option })
-    setShowResult({ ...showResult, [qId]: true })
+  // دالة لبدء الاختبار (هنا هنربطها لاحقاً بالأسئلة من قاعدة البيانات)
+  const startQuiz = (type, subject = 'All') => {
+    setQuizMode(type)
+    setSelectedSubject(subject)
+    alert(`سيتم بدء ${type === 'mock' ? 'الامتحان المحاكي' : 'تدريب مادة ' + subject}`);
+  }
+
+  // لو المستخدم اختار امتحان، نعرض واجهة الأسئلة (مثال مبسط)
+  if (quizMode) {
+    return (
+      <div style={{ padding: 20, textAlign: 'center' }}>
+        <h2 style={{ color: '#38bdf8' }}>
+          {quizMode === 'mock' ? 'الامتحان المحاكي 📝' : `تدريب: ${selectedSubject} 🧪`}
+        </h2>
+        <div style={{ margin: '40px 0', padding: 20, background: '#1e293b', borderRadius: 15 }}>
+          <p>شاشة الأسئلة التفاعلية ستظهر هنا (جاري تجهيز بنك الأسئلة...)</p>
+        </div>
+        <button onClick={() => setQuizMode(null)} style={backBtn}>إنهاء والعودة</button>
+      </div>
+    )
   }
 
   return (
-    <div style={{ padding: 20, direction: 'ltr' }}> {/* الأسئلة غالباً طب بالانجليزي */}
-      <h2 style={{ textAlign: 'center', color: '#38bdf8', marginBottom: 30 }}>🧪 Interactive MCQ Bank</h2>
-      
-      {questions.map((item, index) => (
-        <div key={item.id} style={{ background: '#1e293b', padding: 20, borderRadius: 15, marginBottom: 20, border: '1px solid #334155' }}>
-          <p style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 15 }}>{index + 1}. {item.q}</p>
-          <div style={{ display: 'grid', gap: 10 }}>
-            {item.options.map(opt => {
-              const isCorrect = opt === item.answer;
-              const isSelected = selected[item.id] === opt;
-              let bgColor = '#0f172a';
-              if (showResult[item.id]) {
-                if (isCorrect) bgColor = '#059669'; // أخضر لو صح
-                else if (isSelected) bgColor = '#dc2626'; // أحمر لو غلط
-              }
+    <div style={{ padding: 20, direction: 'rtl' }}>
+      <h2 style={{ textAlign: 'center', color: '#fff', marginBottom: 25 }}>🎯 بنك الأسئلة التفاعلي</h2>
 
-              return (
-                <button 
-                  key={opt}
-                  onClick={() => !showResult[item.id] && handleSelect(item.id, opt)}
-                  style={{ 
-                    padding: 12, borderRadius: 10, border: '1px solid #334155', 
-                    background: bgColor, color: '#fff', textAlign: 'left', cursor: 'pointer'
-                  }}
-                >
-                  {opt}
-                </button>
-              )
-            })}
+      {/* اختيار القسم الرئيسي */}
+      <div style={{ display: 'flex', gap: 10, marginBottom: 30 }}>
+        <button onClick={() => setMainCat('module')} style={{...tab, background: mainCat === 'module' ? '#38bdf8' : '#1e293b'}}>
+          Current Module
+        </button>
+        <button onClick={() => setMainCat('professional')} style={{...tab, background: mainCat === 'professional' ? '#38bdf8' : '#1e293b'}}>
+          Professional Practice
+        </button>
+      </div>
+
+      {/* خيارات القسم المختار */}
+      <div style={{ display: 'grid', gap: 20 }}>
+        
+        {/* الكارت الخاص بالامتحان المحاكي */}
+        <div style={sectionCard}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              <h3 style={{ margin: 0, color: '#fff' }}>الامتحان المحاكي (Mock Exam)</h3>
+              <p style={{ color: '#94a3b8', fontSize: 13, marginTop: 5 }}>
+                {mainCat === 'module' ? '36 سؤال مجمع شامل للموديول' : '45 درجة شاملة لجميع الأقسام'}
+              </p>
+            </div>
+            <button onClick={() => startQuiz('mock')} style={startBtn}>ابدأ الآن</button>
           </div>
-          {showResult[item.id] && (
-            <p style={{ marginTop: 10, color: '#94a3b8' }}>Result: {selected[item.id] === item.answer ? "✅ Correct!" : "❌ Wrong Answer"}</p>
-          )}
         </div>
-      ))}
+
+        {/* الكارت الخاص بالتدريب لكل مادة */}
+        <div style={{ marginTop: 10 }}>
+          <h4 style={{ color: '#38bdf8', marginBottom: 15 }}>تدريب حسب المادة (50 سؤال):</h4>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            {practiceSubjects.map(sub => (
+              <div key={sub} style={subCard}>
+                <span style={{ fontWeight: 'bold' }}>{sub}</span>
+                <button onClick={() => startQuiz('practice', sub)} style={miniStartBtn}>بدء</button>
+              </div>
+            ))}
+          </div>
+        </div>
+
+      </div>
     </div>
   )
 }
+
+// الستايلات
+const tab = { flex: 1, padding: '15px', borderRadius: '12px', border: 'none', color: '#fff', fontWeight: 'bold', cursor: 'pointer' }
+const sectionCard = { background: '#1e293b', padding: '20px', borderRadius: '15px', border: '1px solid #38bdf8' }
+const subCard = { background: '#1e293b', padding: '15px', borderRadius: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid #334155' }
+const startBtn = { background: '#38bdf8', color: '#0f172a', border: 'none', padding: '10px 20px', borderRadius: '10px', fontWeight: 'bold', cursor: 'pointer' }
+const miniStartBtn = { background: 'transparent', color: '#38bdf8', border: '1px solid #38bdf8', padding: '5px 12px', borderRadius: '8px', fontSize: '12px', cursor: 'pointer' }
+const backBtn = { background: '#dc2626', color: '#fff', border: 'none', padding: '10px 20px', borderRadius: '10px', cursor: 'pointer' }
