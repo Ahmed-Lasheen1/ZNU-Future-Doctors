@@ -6,66 +6,105 @@ export default function Admin() {
   const [isAuth, setIsAuth] = useState(false);
   const [activeTab, setActiveTab] = useState('files');
 
-  // بيانات التحديدات (Checklist)
-  const [taskText, setTaskText] = useState('');
-  const [taskSubject, setTaskSubject] = useState('Anatomy');
-
-  // بيانات الملفات والجداول (كما هي عندك)
+  // 1. بيانات الملفات
   const [fileName, setFileName] = useState('');
   const [fileUrl, setFileUrl] = useState('');
+  const [fileType, setFileType] = useState('sharah');
+  const [category, setCategory] = useState('module');
+  const [subject, setSubject] = useState('Anatomy');
+
+  // 2. بيانات الجداول
+  const [moduleName, setModuleName] = useState('');
+  const [week, setWeek] = useState('');
+  const [schUrl, setSchUrl] = useState('');
+
+  // 3. بيانات الـ Checklist (تحديدات الامتحان)
+  const [taskText, setTaskText] = useState('');
+  const [taskSubject, setTaskSubject] = useState('Anatomy');
 
   if (!isAuth) return (
     <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0f172a' }}>
       <div style={{ background: '#1e293b', padding: 30, borderRadius: 20, width: '90%', maxWidth: 400 }}>
-        <input type="password" placeholder="كلمة السر" onChange={e => setPass(e.target.value)} style={inStyle} />
+        <h3 style={{ color: '#fff', textAlign: 'center', marginBottom: 20 }}>ZNU Admin Panel</h3>
+        <input 
+          type="password" 
+          placeholder="Enter Password" 
+          onChange={e => setPass(e.target.value)} 
+          style={inStyle} 
+        />
         <button onClick={() => pass === 'znu2026' && setIsAuth(true)} style={btnStyle}>دخول اللوحة</button>
       </div>
     </div>
   )
 
   return (
-    <div style={{ padding: 20, maxWidth: 500, margin: '0 auto', direction: 'rtl' }}>
-      {/* أزرار التنقل العلوية بنفس ستايل الصورة */}
-      <div style={{ display: 'flex', gap: 10, marginBottom: 20, justifyContent: 'center' }}>
-        <button onClick={() => setActiveTab('files')} style={{...tabBtn, background: activeTab === 'files' ? '#38bdf8' : '#1e293b'}}>📁 ملفات/صوت</button>
-        <button onClick={() => setActiveTab('schedules')} style={{...tabBtn, background: activeTab === 'schedules' ? '#38bdf8' : '#1e293b'}}>📅 جداول</button>
-        <button onClick={() => setActiveTab('checklist')} style={{...tabBtn, background: activeTab === 'checklist' ? '#38bdf8' : '#1e293b'}}>🎯 مهام</button>
+    <div style={{ padding: 20, maxWidth: 600, margin: '0 auto', direction: 'rtl' }}>
+      <div style={{ display: 'flex', gap: 5, marginBottom: 20, overflowX: 'auto', paddingBottom: 10 }}>
+        <button onClick={() => setActiveTab('files')} style={{...tabStyle, background: activeTab === 'files' ? '#38bdf8' : '#1e293b'}}>📁 الملفات</button>
+        <button onClick={() => setActiveTab('schedules')} style={{...tabStyle, background: activeTab === 'schedules' ? '#38bdf8' : '#1e293b'}}>📅 الجداول</button>
+        <button onClick={() => setActiveTab('checklist')} style={{...tabStyle, background: activeTab === 'checklist' ? '#38bdf8' : '#1e293b'}}>🎯 التحديدات</button>
       </div>
 
-      <div style={{ background: '#1e293b', padding: 25, borderRadius: 20 }}>
-        {activeTab === 'checklist' ? (
-          <>
-            <h3 style={{ textAlign: 'center', color: '#38bdf8', marginBottom: 20 }}>إضافة مهمة للـ Checklist</h3>
-            
-            <label style={{ display: 'block', marginBottom: 8, color: '#94a3b8' }}>اختر المادة:</label>
-            <select value={taskSubject} onChange={e => setTaskSubject(e.target.value)} style={inStyle}>
-              <option value="Anatomy">Anatomy 🦴</option>
-              <option value="Biochemistry">Biochemistry 🧪</option>
-              <option value="Physiology">Physiology ⚡</option>
-              <option value="Histology">Histology 🔬</option>
-            </select>
+      {activeTab === 'files' && (
+        <div style={cardStyle}>
+          <h3 style={{color: '#38bdf8', marginBottom: 15}}>رفع ملف أو تسجيل</h3>
+          <input placeholder="اسم الملف" value={fileName} onChange={e => setFileName(e.target.value)} style={inStyle} />
+          <input placeholder="الرابط" value={fileUrl} onChange={e => setFileUrl(e.target.value)} style={inStyle} />
+          <select value={fileType} onChange={e => setFileType(e.target.value)} style={inStyle}>
+            <option value="sharah">📖 شرح</option>
+            <option value="questions">❓ أسئلة</option>
+            <option value="audio">🎙️ تسجيل صوتي</option>
+            <option value="lectures">🎥 فيديو محاضرة</option>
+          </select>
+          <select value={category} onChange={e => setCategory(e.target.value)} style={inStyle}>
+            <option value="module">Current Module</option>
+            <option value="professional">Professional Practice</option>
+          </select>
+          <button onClick={async () => {
+             await supabase.from('files').insert([{ name: fileName, url: fileUrl, type: fileType, category, subject }])
+             alert('تم الرفع! ✅'); setFileName(''); setFileUrl('');
+          }} style={btnStyle}>تأكيد الرفع</button>
+        </div>
+      )}
 
-            <input 
-              placeholder="اكتب المهمة هنا (مثلاً: Stomach)..." 
-              value={taskText} 
-              onChange={e => setTaskText(e.target.value)} 
-              style={inStyle} 
-            />
-            
-            <button onClick={async () => {
-              const { error } = await supabase.from('checklist').insert([{ text: taskText, subject: taskSubject, done: false }]);
-              if (!error) { alert('تمت إضافة المهمة بنجاح! ✅'); setTaskText(''); }
-            }} style={btnStyle}>إضافة المهمة</button>
-          </>
-        ) : (
-          /* هنا كود الملفات والجداول القديم بتاعك يفضل زي ما هو */
-          <p style={{textAlign: 'center', color: '#94a3b8'}}>قسم ( {activeTab === 'files' ? 'الملفات' : 'الجداول'} ) جاهز للعمل</p>
-        )}
-      </div>
+      {activeTab === 'schedules' && (
+        <div style={cardStyle}>
+          <h3 style={{color: '#38bdf8', marginBottom: 15}}>إضافة جدول</h3>
+          <input placeholder="الموديول (GIT)" value={moduleName} onChange={e => setModuleName(e.target.value)} style={inStyle} />
+          <input placeholder="الأسبوع" value={week} onChange={e => setWeek(e.target.value)} style={inStyle} />
+          <input placeholder="رابط الصورة" value={schUrl} onChange={e => setSchUrl(e.target.value)} style={inStyle} />
+          <button onClick={async () => {
+             await supabase.from('schedules').insert([{ title: moduleName, week, url: schUrl }])
+             alert('تم إضافة الجدول! ✅'); setModuleName(''); setSchUrl('');
+          }} style={btnStyle}>إضافة الجدول</button>
+        </div>
+      )}
+
+      {activeTab === 'checklist' && (
+        <div style={cardStyle}>
+          <h3 style={{color: '#38bdf8', marginBottom: 15}}>إضافة (تحديدات الامتحان)</h3>
+          <select value={taskSubject} onChange={e => setTaskSubject(e.target.value)} style={inStyle}>
+            <option value="Anatomy">Anatomy</option>
+            <option value="Biochemistry">Biochemistry</option>
+            <option value="Physiology">Physiology</option>
+            <option value="Histology">Histology</option>
+          </select>
+          <input placeholder="اسم الدرس (مثلاً: Stomach)" value={taskText} onChange={e => setTaskText(e.target.value)} style={inStyle} />
+          <button onClick={async () => {
+             const { error } = await supabase.from('checklist').insert([{ 
+               text: taskText, 
+               subject: taskSubject, 
+               done: false 
+             }])
+             if (!error) { alert('تمت إضافة التحديد! 🎯'); setTaskText(''); }
+          }} style={btnStyle}>إضافة التحديد</button>
+        </div>
+      )}
     </div>
   )
 }
 
-const inStyle = { width: '100%', padding: 15, marginBottom: 15, borderRadius: 12, border: '1px solid #334155', background: '#0f172a', color: '#fff', fontSize: '16px' }
-const btnStyle = { width: '100%', padding: 15, background: '#38bdf8', border: 'none', borderRadius: 12, fontWeight: 'bold', cursor: 'pointer', color: '#0f172a', fontSize: '16px' }
-const tabBtn = { padding: '10px 15px', borderRadius: '10px', border: 'none', color: '#fff', cursor: 'pointer', fontSize: '14px', fontWeight: 'bold' }
+const inStyle = { width: '100%', padding: 12, marginBottom: 12, borderRadius: 10, border: '1px solid #334155', background: '#0f172a', color: '#fff', outline: 'none' }
+const btnStyle = { width: '100%', padding: 12, background: '#38bdf8', border: 'none', borderRadius: 10, fontWeight: 'bold', cursor: 'pointer', color: '#0f172a' }
+const tabStyle = { padding: '10px 20px', borderRadius: 12, border: 'none', color: '#fff', cursor: 'pointer', whiteSpace: 'nowrap', fontWeight: 'bold' }
+const cardStyle = { background: '#1e293b', padding: 25, borderRadius: 20, border: '1px solid #1e3a5f' }
