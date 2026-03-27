@@ -1,210 +1,119 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { supabase } from '../supabase'
 
-const ADMIN_PASSWORD = 'znu2024admin'
-
-function Admin() {
-  const [password, setPassword] = useState('')
-  const [loggedIn, setLoggedIn] = useState(false)
+export default function Admin() {
+  const [pass, setPass] = useState('')
+  const [isAuth, setIsAuth] = useState(false)
   const [tab, setTab] = useState('file')
-  const [msg, setMsg] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [dataList, setDataList] = useState([]) // لعرض العناصر المرفوعة ومسحها
 
-  // File states
+  // الخانات (Form States)
   const [fileName, setFileName] = useState('')
-  const [fileDesc, setFileDesc] = useState('')
   const [fileUrl, setFileUrl] = useState('')
   const [fileType, setFileType] = useState('sharah')
-  const [fileModule, setFileModule] = useState('current')
+  const [checkSub, setCheckSub] = useState('Anatomy')
+  const [checkTopic, setCheckTopic] = useState('')
 
-  // Schedule states
-  const [subject, setSubject] = useState('')
-  const [date, setDate] = useState('')
-  const [time, setTime] = useState('')
-  const [location, setLocation] = useState('')
-  const [scheduleModule, setScheduleModule] = useState('current')
-  const [scheduleType, setScheduleType] = useState('study')
+  useEffect(() => {
+    if (isAuth) fetchCurrentData()
+  }, [isAuth, tab])
 
-  // Checklist states (الجديد)
-  const [checkSubject, setCheckSubject] = useState('Biochemistry')
-  const [topicName, setTopicName] = useState('')
-
-  function checkPassword() {
-    if (password === ADMIN_PASSWORD) setLoggedIn(true)
-    else alert('كلمة السر غلط!')
+  // جلب البيانات الحالية بناءً على التبويب للمسح
+  async function fetchCurrentData() {
+    const table = tab === 'file' ? 'files' : tab === 'checklist' ? 'checklist' : 'schedules'
+    const { data } = await supabase.from(table).select('*').order('created_at', { ascending: false })
+    setDataList(data || [])
   }
 
-  async function addFile() {
-    const { error } = await supabase.from('files').insert([{
-      name: fileName, description: fileDesc,
-      url: fileUrl, type: fileType, module: fileModule
-    }])
+  // وظيفة الحذف
+  async function deleteItem(id) {
+    if (!window.confirm('متأكد إنك عاوز تمسح العنصر ده؟')) return
+    const table = tab === 'file' ? 'files' : tab === 'checklist' ? 'checklist' : 'schedules'
+    const { error } = await supabase.from(table).delete().eq('id', id)
     if (!error) {
-      setMsg('✅ تم إضافة الملف!')
-      setFileName(''); setFileDesc(''); setFileUrl('')
+      alert('تم الحذف بنجاح! 🗑️')
+      fetchCurrentData()
     }
   }
 
-  async function addSchedule() {
-    const { error } = await supabase.from('schedules').insert([{
-      subject, date, time, location,
-      module: scheduleModule, schedule_type: scheduleType
-    }])
+  // ريست كامل للتحديدات (Reset Checklist)
+  async function resetChecklist() {
+    if (!window.confirm('⚠️ تحذير: ده هيمسح كل التحديدات الحالية ويبدأ من جديد. موافق؟')) return
+    const { error } = await supabase.from('checklist').delete().neq('id', '00000000-0000-0000-0000-000000000000') 
     if (!error) {
-      setMsg('✅ تم إضافة الجدول!')
-      setSubject(''); setDate(''); setTime(''); setLocation('')
+      alert('تم تصفير التحديدات بنجاح! 🧹')
+      fetchCurrentData()
     }
   }
 
-  // دالة إضافة التحديدات الجديدة
-  async function addChecklist() {
-    const { error } = await supabase.from('checklist').insert([{
-      subject: checkSubject,
-      topic: topicName
-    }])
-    if (!error) {
-      setMsg('✅ تم إضافة التحديد بنجاح!')
-      setTopicName('')
-    } else {
-      setMsg('❌ خطأ في الإضافة، تأكد من جدول checklist في Supabase')
-    }
-  }
+  const handleLogin = () => { if (pass === 'znu2024admin') setIsAuth(true) }
 
-  const inputStyle = {
-    width: '100%', padding: '10px 14px',
-    borderRadius: 10, border: '1px solid #1e3a5f',
-    background: '#0f172a', color: '#e2e8f0',
-    fontSize: 14, marginBottom: 10,
-    fontFamily: 'inherit'
-  }
-
-  const selectStyle = { ...inputStyle }
-
-  const btnStyle = {
-    background: '#38bdf8', color: '#0f172a',
-    border: 'none', padding: 12, borderRadius: 10,
-    cursor: 'pointer', fontWeight: 700,
-    fontSize: 14, width: '100%',
-    fontFamily: 'inherit', marginTop: 4
-  }
-
-  const cardStyle = {
-    background: 'linear-gradient(135deg, #1e293b, #0f2540)',
-    border: '2px solid #1e3a5f',
-    borderRadius: 16, padding: 20, marginBottom: 16
-  }
-
-  if (!loggedIn) return (
-    <div style={{
-      minHeight: '80vh', display: 'flex',
-      alignItems: 'center', justifyContent: 'center', padding: 20
-    }}>
-      <div style={{ ...cardStyle, width: '100%', maxWidth: 400 }}>
-        <h2 style={{ color: '#38bdf8', textAlign: 'center', marginBottom: 20 }}>
-          🔐 دخول الأدمن
-        </h2>
-        <input
-          type="password" placeholder="كلمة السر"
-          value={password} onChange={e => setPassword(e.target.value)}
-          style={inputStyle}
-        />
-        <button style={btnStyle} onClick={checkPassword}>دخول</button>
+  if (!isAuth) {
+    return (
+      <div style={{ background: '#0f172a', height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <input type="password" placeholder="كلمة السر" onChange={e => setPass(e.target.value)} style={{ padding: 12, borderRadius: 8 }} />
+        <button onClick={handleLogin} style={{ marginLeft: 10, padding: 12, background: '#38bdf8', border: 'none', borderRadius: 8 }}>دخول</button>
       </div>
-    </div>
-  )
+    )
+  }
 
   return (
-    <div style={{ padding: 20, maxWidth: 600, margin: '0 auto' }}>
-      <h1 style={{ color: '#38bdf8', textAlign: 'center', marginBottom: 20 }}>
-        ⚙️ لوحة التحكم
-      </h1>
-
-      {msg && (
-        <div style={{ ...cardStyle, color: '#22c55e', textAlign: 'center', marginBottom: 16 }}>
-          {msg}
-        </div>
-      )}
-
-      {/* أزرار التبديل */}
-      <div style={{ display: 'flex', gap: 5, marginBottom: 20, flexWrap: 'wrap' }}>
-        {[
-          {id: 'file', label: '📁 ملف'},
-          {id: 'schedule', label: '📅 جدول'},
-          {id: 'checklist', label: '🎯 تحديد'}
-        ].map(tp => (
-          <button key={tp.id} onClick={() => setTab(tp.id)} style={{
-            flex: 1, padding: '10px 5px',
-            borderRadius: 10, border: '2px solid #38bdf8',
-            background: tab === tp.id ? '#38bdf8' : 'transparent',
-            color: tab === tp.id ? '#0f172a' : '#38bdf8',
-            cursor: 'pointer', fontWeight: 700,
-            fontSize: 12, fontFamily: 'inherit'
-          }}>
-            {tp.label}
+    <div style={{ padding: 20, maxWidth: 600, margin: '0 auto', color: '#fff' }}>
+      <h2 style={{ textAlign: 'center', color: '#38bdf8' }}>⚙️ لوحة التحكم المتقدمة</h2>
+      
+      {/* التبويبات */}
+      <div style={{ display: 'flex', gap: 5, marginBottom: 20 }}>
+        {['file', 'checklist'].map(t => (
+          <button key={t} onClick={() => setTab(t)} style={{ flex: 1, padding: 10, background: tab === t ? '#38bdf8' : '#1e293b', border: 'none', borderRadius: 8 }}>
+            {t === 'file' ? '📁 ملفات' : '🎯 تحديدات'}
           </button>
         ))}
       </div>
 
-      {tab === 'file' && (
-        <div style={cardStyle}>
-          <h2 style={{ color: '#38bdf8', marginBottom: 16 }}>📁 إضافة ملف جديد</h2>
-          <input placeholder="اسم الملف" value={fileName} onChange={e => setFileName(e.target.value)} style={inputStyle} />
-          <input placeholder="وصف الملف" value={fileDesc} onChange={e => setFileDesc(e.target.value)} style={inputStyle} />
-          <input placeholder="رابط الملف" value={fileUrl} onChange={e => setFileUrl(e.target.value)} style={inputStyle} />
-          <select value={fileType} onChange={e => setFileType(e.target.value)} style={selectStyle}>
-            <option value="sharah">ملفات الشرح</option>
-            <option value="questions">ملفات الأسئلة</option>
-            <option value="lectures">تسجيلات المحاضرات</option>
-            <option value="courses">تسجيلات الكورسات</option>
-          </select>
-          <select value={fileModule} onChange={e => setFileModule(e.target.value)} style={selectStyle}>
-            <option value="current">الموديول الحالي</option>
-            <option value="professional_practice">Professional Practice</option>
-          </select>
-          <button style={btnStyle} onClick={addFile}>إضافة الملف ✅</button>
-        </div>
-      )}
+      {/* نموذج الإضافة */}
+      <div style={{ background: '#1e293b', padding: 20, borderRadius: 15, marginBottom: 30 }}>
+        {tab === 'file' ? (
+          <>
+            <input placeholder="اسم الملف" value={fileName} onChange={e => setFileName(e.target.value)} style={inputStyle} />
+            <input placeholder="رابط الملف" value={fileUrl} onChange={e => setFileUrl(e.target.value)} style={inputStyle} />
+            <select value={fileType} onChange={e => setFileType(e.target.value)} style={inputStyle}>
+              <option value="sharah">ملف شرح</option>
+              <option value="questions">ملف أسئلة</option>
+            </select>
+            <button onClick={async () => {
+              const { error } = await supabase.from('files').insert([{ name: fileName, url: fileUrl, type: fileType }])
+              if (!error) { alert('تم الرفع! ✅'); fetchCurrentData(); }
+            }} style={btnStyle}>إضافة الملف ✅</button>
+          </>
+        ) : (
+          <>
+            <select value={checkSub} onChange={e => setCheckSub(e.target.value)} style={inputStyle}>
+              <option>Anatomy</option><option>Biochemistry</option><option>Physiology</option><option>Histology</option>
+            </select>
+            <input placeholder="اسم الموضوع" value={checkTopic} onChange={e => setCheckTopic(e.target.value)} style={inputStyle} />
+            <button onClick={async () => {
+              const { error } = await supabase.from('checklist').insert([{ subject: checkSub, topic: checkTopic }])
+              if (!error) { alert('تم التحديد! 🎯'); fetchCurrentData(); }
+            }} style={btnStyle}>إضافة للتحديدات 🎯</button>
+            <button onClick={resetChecklist} style={{ ...btnStyle, background: '#ef4444', marginTop: 10 }}>تصفير كل التحديدات 🧹</button>
+          </>
+        )}
+      </div>
 
-      {tab === 'schedule' && (
-        <div style={cardStyle}>
-          <h2 style={{ color: '#38bdf8', marginBottom: 16 }}>📅 إضافة جدول</h2>
-          <input placeholder="المادة" value={subject} onChange={e => setSubject(e.target.value)} style={inputStyle} />
-          <input placeholder="التاريخ" value={date} onChange={e => setDate(e.target.value)} style={inputStyle} />
-          <input placeholder="الوقت" value={time} onChange={e => setTime(e.target.value)} style={inputStyle} />
-          <input placeholder="المكان" value={location} onChange={e => setLocation(e.target.value)} style={inputStyle} />
-          <select value={scheduleType} onChange={e => setScheduleType(e.target.value)} style={selectStyle}>
-            <option value="study">الجدول الدراسي</option>
-            <option value="exams">جدول الامتحانات</option>
-          </select>
-          <select value={scheduleModule} onChange={e => setScheduleModule(e.target.value)} style={selectStyle}>
-            <option value="current">الموديول الحالي</option>
-            <option value="professional_practice">Professional Practice</option>
-          </select>
-          <button style={btnStyle} onClick={addSchedule}>إضافة الجدول ✅</button>
-        </div>
-      )}
-
-      {/* الجزء الجديد لإضافة التحديدات */}
-      {tab === 'checklist' && (
-        <div style={cardStyle}>
-          <h2 style={{ color: '#38bdf8', marginBottom: 16 }}>🎯 إضافة تحديد جديد</h2>
-          <select value={checkSubject} onChange={e => setCheckSubject(e.target.value)} style={selectStyle}>
-            <option value="Anatomy">Anatomy</option>
-            <option value="Biochemistry">Biochemistry</option>
-            <option value="Physiology">Physiology</option>
-            <option value="Histology">Histology</option>
-            <option value="Professional Practice">Professional Practice</option>
-          </select>
-          <input 
-            placeholder="اسم الموضوع (مثلاً: Glycolysis)" 
-            value={topicName} 
-            onChange={e => setTopicName(e.target.value)} 
-            style={inputStyle} 
-          />
-          <button style={btnStyle} onClick={addChecklist}>إضافة للمهام ✅</button>
-        </div>
-      )}
+      {/* قائمة العناصر الحالية للمسح */}
+      <div style={{ background: '#0f172a', padding: 15, borderRadius: 15 }}>
+        <h4 style={{ marginBottom: 15 }}>المحتوى الحالي (للحذف):</h4>
+        {dataList.map(item => (
+          <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid #1e293b' }}>
+            <span style={{ fontSize: 13 }}>{item.name || item.topic} ({item.subject || item.type})</span>
+            <button onClick={() => deleteItem(item.id)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontWeight: 'bold' }}>مسح 🗑️</button>
+          </div>
+        ))}
+      </div>
     </div>
   )
 }
 
-export default Admin
+const inputStyle = { width: '100%', padding: 12, marginBottom: 10, borderRadius: 8, border: '1px solid #334155', background: '#0f172a', color: '#fff' }
+const btnStyle = { width: '100%', padding: 12, background: '#38bdf8', border: 'none', borderRadius: 8, fontWeight: 'bold', cursor: 'pointer' }
