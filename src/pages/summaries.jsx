@@ -1229,8 +1229,6 @@ display:“flex”, alignItems:“center”, gap:6, flexShrink:0
 <div style={{ width:80 }} />
 </div>
 )}
-
-```
   {!selected ? (
     <HomeScreen onSelect={setSelected} />
   ) : (
@@ -1239,7 +1237,5 @@ display:“flex”, alignItems:“center”, gap:6, flexShrink:0
     </div>
   )}
 </div>
-```
-
 );
-}export default function Summaries() {
+}
