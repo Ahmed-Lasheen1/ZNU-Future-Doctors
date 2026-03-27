@@ -1198,8 +1198,6 @@ const subjectApps = {
   physiology: { comp: PhysiologyApp, label:"Physiology", icon:"⚡", color:"#8b5cf6" },
   histology: { comp: HistologyApp, label:"Histology", icon:"🔬", color:"#f87171" },
 };
-
-export default function Summaries() {
   const [selected, setSelected] = useState(null);
 
   const subj = selected ? subjectApps[selected] : null;
