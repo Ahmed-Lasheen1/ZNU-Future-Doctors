@@ -4,53 +4,56 @@ import { useLocation } from 'react-router-dom'
 
 export default function FilesPage() {
   const [files, setFiles] = useState([])
+  const [mainCat, setMainCat] = useState('module') 
+  const [activeSub, setActiveSub] = useState('All')
   const [loading, setLoading] = useState(true)
   const location = useLocation()
-  
-  const queryParams = new URLSearchParams(location.search)
-  const fileType = queryParams.get('type')
+  const fileType = new URLSearchParams(location.search).get('type')
 
   useEffect(() => {
-    async function fetchFiles() {
+    async function fetch() {
       setLoading(true)
-      const { data, error } = await supabase
-        .from('files')
-        .select('*')
-        .eq('type', fileType)
-        .order('created_at', { ascending: false })
-      
-      if (!error) setFiles(data)
+      const { data } = await supabase.from('files').select('*').eq('type', fileType)
+      if (data) setFiles(data)
       setLoading(false)
     }
-    fetchFiles()
+    fetch()
   }, [fileType])
 
-  const titles = {
-    sharah: '📖 ملفات الشرح',
-    questions: '❓ ملفات الأسئلة',
-    lectures: '🎥 تسجيلات المحاضرات',
-    courses: '🎓 تسجيلات الكورسات',
-    summaries: '📝 الملخصات'
-  }
+  const subjects = mainCat === 'module' 
+    ? ['Anatomy', 'Histology', 'Physiology', 'Biochemistry'] 
+    : ['Ethics', 'Professionalism', 'Research']
 
-  if (loading) return <div style={{ color: '#38bdf8', textAlign: 'center', padding: 50 }}>جاري التحميل... ⏳</div>
+  const filtered = files.filter(f => f.category === mainCat && (activeSub === 'All' || f.subject === activeSub))
 
   return (
-    <div style={{ padding: '20px 16px', maxWidth: 800, margin: '0 auto', direction: 'rtl' }}>
-      <h1 style={{ color: '#fff', textAlign: 'center', marginBottom: 25 }}>{titles[fileType] || '📁 المكتبة'}</h1>
+    <div style={{ padding: 20, direction: 'rtl' }}>
+      {/* زراير الاختيار الكبير */}
+      <div style={{ display: 'flex', gap: 10, marginBottom: 20 }}>
+        <button onClick={() => {setMainCat('module'); setActiveSub('All')}} style={{...btn, background: mainCat === 'module' ? '#38bdf8' : '#1e293b'}}>Current Module</button>
+        <button onClick={() => {setMainCat('professional'); setActiveSub('All')}} style={{...btn, background: mainCat === 'professional' ? '#38bdf8' : '#1e293b'}}>Professional Practice</button>
+      </div>
 
-      <div style={{ display: 'grid', gap: 15 }}>
-        {files.length === 0 ? (
-          <p style={{ color: '#64748b', textAlign: 'center', marginTop: 50 }}>مفيش ملفات هنا لسه.. 🚧</p>
-        ) : (
-          files.map(file => (
-            <div key={file.id} style={{ background: '#1e293b', padding: 20, borderRadius: 16, border: '1px solid #334155', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h3 style={{ color: '#f1f5f9', fontSize: 16, margin: 0 }}>{file.name}</h3>
-              <a href={file.url} target="_blank" rel="noreferrer" style={{ background: '#38bdf8', color: '#0f172a', padding: '10px 18px', borderRadius: 10, textDecoration: 'none', fontWeight: 'bold' }}>تحميل</a>
-            </div>
-          ))
-        )}
+      {/* شريط المواد */}
+      <div style={{ display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 10 }}>
+        <button onClick={() => setActiveSub('All')} style={{...sBtn, borderColor: activeSub === 'All' ? '#38bdf8' : '#334155'}}>الكل</button>
+        {subjects.map(s => (
+          <button key={s} onClick={() => setActiveSub(s)} style={{...sBtn, borderColor: activeSub === s ? '#38bdf8' : '#334155'}}>{s}</button>
+        ))}
+      </div>
+
+      <div style={{ marginTop: 20 }}>
+        {loading ? <p>جاري التحميل...</p> : filtered.map(f => (
+          <div key={f.id} style={card}>
+            <span style={{color: '#fff'}}>{f.name}</span>
+            <a href={f.url} target="_blank" rel="noreferrer" style={dl}>تحميل</a>
+          </div>
+        ))}
       </div>
     </div>
   )
 }
+const btn = { flex: 1, padding: 12, borderRadius: 12, border: 'none', color: '#fff', fontWeight: 'bold' }
+const sBtn = { padding: '5px 15px', borderRadius: 20, background: 'transparent', color: '#fff', border: '1px solid', whiteSpace: 'nowrap' }
+const card = { background: '#1e293b', padding: 15, borderRadius: 12, marginBottom: 10, display: 'flex', justifyContent: 'space-between' }
+const dl = { color: '#38bdf8', textDecoration: 'none', fontWeight: 'bold' }
