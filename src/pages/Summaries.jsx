@@ -1276,9 +1276,6 @@ function SummariesHome({ onSelect }) {
         </div>
       ))}
     </div>
-  )
-}
-
 export default function Summaries() {
   const [selected, setSelected] = useState(null)
 
