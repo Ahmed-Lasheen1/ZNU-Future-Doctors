@@ -6,8 +6,6 @@ const labels = {
     title: 'الجداول',
     study: 'الجدول الدراسي',
     exams: 'جدول الامتحانات',
-    current: 'الموديول الحالي',
-    professional_practice: 'Professional Practice',
     empty: 'مفيش جدول لحد دلوقتي',
     loading: 'جاري التحميل...',
     subject: 'المادة',
@@ -19,8 +17,6 @@ const labels = {
     title: 'Schedules',
     study: 'Study Schedule',
     exams: 'Exam Schedule',
-    current: 'Current Module',
-    professional_practice: 'Professional Practice',
     empty: 'No schedule yet',
     loading: 'Loading...',
     subject: 'Subject',
@@ -32,10 +28,11 @@ const labels = {
 
 function Schedule({ lang }) {
   const [tab, setTab] = useState('study');
-  const [module, setModule] = useState('current');
+  // خلينا الـ module ثابت على 'current' وشلنا الزراير بتاعته
+  const module = 'current'; 
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
-  const t = labels[lang] || labels.ar; // الاحتياط واجب لو الـ lang مجاش صح
+  const t = labels[lang] || labels.ar;
 
   useEffect(() => {
     const fetchData = async () => {
@@ -50,53 +47,37 @@ function Schedule({ lang }) {
         
         if (!error) {
           setItems(data || []);
-        } else {
-          console.error("Supabase Error:", error);
         }
       } catch (err) {
-        console.error("Fetch Error:", err);
+        console.error(err);
       } finally {
         setLoading(false);
       }
     };
 
     fetchData();
-  }, [tab, module]); // كدة الـ Loop اللانهائي اتحل
+  }, [tab]); // التحديث بيحصل بس لما نغير بين جدول دراسي وامتحانات
 
   return (
     <div style={{ padding: '10px 20px', maxWidth: 700, margin: '0 auto', fontFamily: 'sans-serif' }}>
-      <h1 style={{ color: '#38bdf8', textAlign: 'center', marginBottom: 20 }}>
+      <h1 style={{ color: '#38bdf8', textAlign: 'center', marginBottom: 25, fontSize: 28 }}>
         📅 {t.title}
       </h1>
 
-      {/* أزرار نوع الجدول */}
-      <div style={{ display: 'flex', gap: 10, justifyContent: 'center', marginBottom: 16 }}>
+      {/* أزرار نوع الجدول فقط - شكل أنضف وأوسع */}
+      <div style={{ display: 'flex', gap: 12, justifyContent: 'center', marginBottom: 30 }}>
         {['study', 'exams'].map(tp => (
           <button key={tp} onClick={() => setTab(tp)} style={{
-            padding: '8px 20px', borderRadius: 12,
+            flex: 1, // عشان الزراير تاخد مساحة متساوية وشكلها يبقى أحلى
+            maxWidth: 160,
+            padding: '12px 10px', borderRadius: 14,
             border: '2px solid #a78bfa',
             background: tab === tp ? '#a78bfa' : 'transparent',
             color: tab === tp ? '#0f172a' : '#a78bfa',
-            cursor: 'pointer', fontWeight: 700,
-            fontSize: 13, transition: '0.3s'
+            cursor: 'pointer', fontWeight: 800,
+            fontSize: 14, transition: '0.3s'
           }}>
             {tp === 'study' ? t.study : t.exams}
-          </button>
-        ))}
-      </div>
-
-      {/* أزرار الموديول */}
-      <div style={{ display: 'flex', gap: 10, justifyContent: 'center', marginBottom: 24, flexWrap: 'wrap' }}>
-        {['current', 'professional_practice'].map(m => (
-          <button key={m} onClick={() => setModule(m)} style={{
-            padding: '6px 14px', borderRadius: 10,
-            border: '1px solid #38bdf8',
-            background: module === m ? '#38bdf8' : 'transparent',
-            color: module === m ? '#0f172a' : '#38bdf8',
-            cursor: 'pointer', fontWeight: 700,
-            fontSize: 12
-          }}>
-            {t[m]}
           </button>
         ))}
       </div>
@@ -107,25 +88,24 @@ function Schedule({ lang }) {
         <div style={{
           background: 'linear-gradient(135deg, #1e293b, #0f2540)',
           border: '2px solid #1e3a5f',
-          borderRadius: 16, padding: 40, textAlign: 'center'
+          borderRadius: 20, padding: 50, textAlign: 'center'
         }}>
-          <p style={{ color: '#94a3b8' }}>{t.empty}</p>
+          <p style={{ color: '#94a3b8', fontSize: 16 }}>{t.empty}</p>
         </div>
       )}
 
       {!loading && items.map(item => (
         <div key={item.id} style={{
           background: 'linear-gradient(135deg, #1e293b, #0f2540)',
-          border: '2px solid #1e3a5f',
-          borderRadius: 16, padding: 20, marginBottom: 12,
+          border: '1px solid #334155',
+          borderRadius: 18, padding: 20, marginBottom: 15,
         }}>
-          <h3 style={{ color: '#e2e8f0', marginBottom: 10, fontSize: 16 }}>{item.subject}</h3>
+          <h3 style={{ color: '#f8fafc', marginBottom: 12, fontSize: 17, fontWeight: 700 }}>{item.subject}</h3>
           
-          {/* الـ Grid هنا مرن أكتر للموبايل */}
           <div style={{ 
             display: 'grid', 
-            gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', 
-            gap: 8 
+            gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', 
+            gap: 10 
           }}>
             {[
               { label: t.date, value: item.date, color: '#38bdf8' },
@@ -133,12 +113,12 @@ function Schedule({ lang }) {
               { label: t.location, value: item.location, color: '#4ade80' },
             ].map((f, i) => (
               <div key={i} style={{
-                background: `${f.color}10`,
-                border: `1px solid ${f.color}30`,
-                borderRadius: 10, padding: '8px 12px'
+                background: `${f.color}08`,
+                border: `1px solid ${f.color}25`,
+                borderRadius: 12, padding: '10px'
               }}>
-                <div style={{ color: f.color, fontSize: 10, fontWeight: 700, textTransform: 'uppercase' }}>{f.label}</div>
-                <div style={{ color: '#e2e8f0', fontSize: 13, marginTop: 2 }}>{f.value}</div>
+                <div style={{ color: f.color, fontSize: 10, fontWeight: 700, letterSpacing: 0.5 }}>{f.label}</div>
+                <div style={{ color: '#cbd5e1', fontSize: 13, marginTop: 4 }}>{f.value}</div>
               </div>
             ))}
           </div>
