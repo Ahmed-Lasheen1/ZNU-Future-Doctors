@@ -24,6 +24,10 @@ function Admin() {
   const [scheduleModule, setScheduleModule] = useState('current')
   const [scheduleType, setScheduleType] = useState('study')
 
+  // Checklist states (الجديد)
+  const [checkSubject, setCheckSubject] = useState('Biochemistry')
+  const [topicName, setTopicName] = useState('')
+
   function checkPassword() {
     if (password === ADMIN_PASSWORD) setLoggedIn(true)
     else alert('كلمة السر غلط!')
@@ -48,6 +52,20 @@ function Admin() {
     if (!error) {
       setMsg('✅ تم إضافة الجدول!')
       setSubject(''); setDate(''); setTime(''); setLocation('')
+    }
+  }
+
+  // دالة إضافة التحديدات الجديدة
+  async function addChecklist() {
+    const { error } = await supabase.from('checklist').insert([{
+      subject: checkSubject,
+      topic: topicName
+    }])
+    if (!error) {
+      setMsg('✅ تم إضافة التحديد بنجاح!')
+      setTopicName('')
+    } else {
+      setMsg('❌ خطأ في الإضافة، تأكد من جدول checklist في Supabase')
     }
   }
 
@@ -106,17 +124,22 @@ function Admin() {
         </div>
       )}
 
-      <div style={{ display: 'flex', gap: 10, marginBottom: 20 }}>
-        {['file', 'schedule'].map(tp => (
-          <button key={tp} onClick={() => setTab(tp)} style={{
-            flex: 1, padding: '10px',
+      {/* أزرار التبديل */}
+      <div style={{ display: 'flex', gap: 5, marginBottom: 20, flexWrap: 'wrap' }}>
+        {[
+          {id: 'file', label: '📁 ملف'},
+          {id: 'schedule', label: '📅 جدول'},
+          {id: 'checklist', label: '🎯 تحديد'}
+        ].map(tp => (
+          <button key={tp.id} onClick={() => setTab(tp.id)} style={{
+            flex: 1, padding: '10px 5px',
             borderRadius: 10, border: '2px solid #38bdf8',
-            background: tab === tp ? '#38bdf8' : 'transparent',
-            color: tab === tp ? '#0f172a' : '#38bdf8',
+            background: tab === tp.id ? '#38bdf8' : 'transparent',
+            color: tab === tp.id ? '#0f172a' : '#38bdf8',
             cursor: 'pointer', fontWeight: 700,
-            fontSize: 13, fontFamily: 'inherit'
+            fontSize: 12, fontFamily: 'inherit'
           }}>
-            {tp === 'file' ? '📁 إضافة ملف' : '📅 إضافة جدول'}
+            {tp.label}
           </button>
         ))}
       </div>
@@ -157,6 +180,27 @@ function Admin() {
             <option value="professional_practice">Professional Practice</option>
           </select>
           <button style={btnStyle} onClick={addSchedule}>إضافة الجدول ✅</button>
+        </div>
+      )}
+
+      {/* الجزء الجديد لإضافة التحديدات */}
+      {tab === 'checklist' && (
+        <div style={cardStyle}>
+          <h2 style={{ color: '#38bdf8', marginBottom: 16 }}>🎯 إضافة تحديد جديد</h2>
+          <select value={checkSubject} onChange={e => setCheckSubject(e.target.value)} style={selectStyle}>
+            <option value="Anatomy">Anatomy</option>
+            <option value="Biochemistry">Biochemistry</option>
+            <option value="Physiology">Physiology</option>
+            <option value="Histology">Histology</option>
+            <option value="Professional Practice">Professional Practice</option>
+          </select>
+          <input 
+            placeholder="اسم الموضوع (مثلاً: Glycolysis)" 
+            value={topicName} 
+            onChange={e => setTopicName(e.target.value)} 
+            style={inputStyle} 
+          />
+          <button style={btnStyle} onClick={addChecklist}>إضافة للمهام ✅</button>
         </div>
       )}
     </div>

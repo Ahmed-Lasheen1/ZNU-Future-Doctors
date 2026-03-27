@@ -7,10 +7,12 @@ import Summaries from './pages/Summaries'
 import MCQ from './pages/MCQ'
 import Schedule from './pages/Schedule'
 import Admin from './pages/Admin'
+import Checklist from './pages/Checklist' // 1. استيراد الصفحة الجديدة
 import Footer from './components/Footer'
 
 function App() {
   const [lang, setLang] = useState('ar')
+  
   return (
     <Router>
       <div style={{
@@ -19,9 +21,11 @@ function App() {
         fontFamily: "'Cairo', 'Segoe UI', sans-serif",
         direction: lang === 'ar' ? 'rtl' : 'ltr',
         display: 'flex',
-        flexDirection: 'column'
+        flexDirection: 'column',
+        color: '#fff' // لضمان وضوح الخط في كل الصفحات
       }}>
         <Navbar lang={lang} setLang={setLang} />
+        
         <div style={{ flex: 1 }}>
           <Routes>
             <Route path="/" element={<Home lang={lang} />} />
@@ -30,8 +34,12 @@ function App() {
             <Route path="/mcq" element={<MCQ lang={lang} />} />
             <Route path="/schedule" element={<Schedule lang={lang} />} />
             <Route path="/admin" element={<Admin lang={lang} />} />
+            
+            {/* 2. تسجيل عنوان صفحة التحديدات */}
+            <Route path="/checklist" element={<Checklist lang={lang} />} />
           </Routes>
         </div>
+        
         <Footer />
       </div>
     </Router>

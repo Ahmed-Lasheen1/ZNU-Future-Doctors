@@ -12,6 +12,7 @@ const labels = {
     modules: 'الموديولات',
     summaries: 'الملخصات',
     mcq: 'MCQ',
+    checklist: 'تحديدات الامتحان', // أضفنا الترجمة هنا
     schedules: 'الجداول',
     schedule: 'الجدول الدراسي',
   },
@@ -25,6 +26,7 @@ const labels = {
     modules: 'Modules',
     summaries: 'Summaries',
     mcq: 'MCQ',
+    checklist: 'Exam Topics', // أضفنا الترجمة هنا
     schedules: 'Schedules',
     schedule: 'Study Schedule',
   }
@@ -71,7 +73,8 @@ function Dropdown({ label, items, color }) {
 }
 
 function Navbar({ lang, setLang }) {
-  const t = labels[lang]
+  const t = labels[lang] || labels.ar // تأمين لو اللغة مش موجودة
+  
   return (
     <nav style={{
       background: 'linear-gradient(135deg, #1a2a4a, #0f1e35)',
@@ -111,6 +114,7 @@ function Navbar({ lang, setLang }) {
         <Dropdown label={t.modules} color="#a78bfa" items={[
           { to: '/summaries', label: t.summaries },
           { to: '/mcq', label: t.mcq },
+          { to: '/checklist', label: t.checklist }, // إضافة التحديدات هنا
         ]} />
         <Link to="/schedule" style={{ color: '#94a3b8', textDecoration: 'none', fontSize: 13, fontWeight: 700, padding: '6px 10px' }}>
           {t.schedules}
