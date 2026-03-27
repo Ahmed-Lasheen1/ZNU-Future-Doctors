@@ -6,80 +6,73 @@ export default function Admin() {
   const [isAuth, setIsAuth] = useState(false)
   const [activeTab, setActiveTab] = useState('files')
   
-  // رفع الملفات
-  const [fileName, setFileName] = useState('')
-  const [fileUrl, setFileUrl] = useState('')
-  const [fileType, setFileType] = useState('sharah')
+  // States للملفات
+  const [fileName, setFileName] = useState(''); const [fileUrl, setFileUrl] = useState('')
+  const [fileType, setFileType] = useState('sharah'); const [category, setCategory] = useState('module')
+  const [subject, setSubject] = useState('Anatomy')
 
-  // رفع الجداول
-  const [moduleName, setModuleName] = useState('')
-  const [weekNumber, setWeekNumber] = useState('')
-  const [schType, setSchType] = useState('study')
-  const [schUrl, setSchUrl] = useState('')
+  // States للجداول
+  const [moduleName, setModuleName] = useState(''); const [week, setWeek] = useState('')
+  const [schType, setSchType] = useState('study'); const [schUrl, setSchUrl] = useState('')
 
-  const handleLogin = () => { if (pass === 'znu2026admin') setIsAuth(true) }
-
-  if (!isAuth) {
-    return (
-      <div style={{ background: '#0f172a', height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', direction: 'rtl' }}>
-        <div style={{ background: '#1e293b', padding: 30, borderRadius: 20, textAlign: 'center' }}>
-          <h2 style={{ color: '#fff', marginBottom: 20 }}>قفل الإدارة 🔐</h2>
-          <input type="password" placeholder="كلمة السر" onChange={e => setPass(e.target.value)} style={inputStyle} />
-          <button onClick={handleLogin} style={btnStyle}>دخول</button>
-        </div>
+  if (!isAuth) return (
+    <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0f172a' }}>
+      <div style={{ background: '#1e293b', padding: 30, borderRadius: 20, textAlign: 'center' }}>
+        <input type="password" placeholder="Password" onChange={e => setPass(e.target.value)} style={inStyle} />
+        <button onClick={() => pass === 'znu2026' && setIsAuth(true)} style={btnStyle}>Login</button>
       </div>
-    )
-  }
+    </div>
+  )
 
   return (
-    <div style={{ padding: '20px', maxWidth: '600px', margin: '0 auto', color: '#fff', direction: 'rtl' }}>
-      <h2 style={{ textAlign: 'center', color: '#38bdf8', marginBottom: 30 }}>⚙️ لوحة التحكم</h2>
-
-      <div style={{ display: 'flex', gap: 10, marginBottom: 25 }}>
-        <button onClick={() => setActiveTab('files')} style={{ ...tabStyle, background: activeTab === 'files' ? '#38bdf8' : '#1e293b' }}>📁 الملفات</button>
-        <button onClick={() => setActiveTab('schedules')} style={{ ...tabStyle, background: activeTab === 'schedules' ? '#38bdf8' : '#1e293b' }}>📅 الجداول</button>
+    <div style={{ padding: 20, maxWidth: 600, margin: '0 auto', direction: 'rtl' }}>
+      <div style={{ display: 'flex', gap: 10, marginBottom: 20 }}>
+        <button onClick={() => setActiveTab('files')} style={{...tabStyle, background: activeTab === 'files' ? '#38bdf8' : '#1e293b'}}>📁 ملفات</button>
+        <button onClick={() => setActiveTab('sch')} style={{...tabStyle, background: activeTab === 'sch' ? '#38bdf8' : '#1e293b'}}>📅 جداول</button>
       </div>
 
-      {activeTab === 'files' && (
+      {activeTab === 'files' ? (
         <div style={cardStyle}>
-          <h3>رفع (شرح/أسئلة/كورسات/ملخصات)</h3>
-          <input placeholder="اسم الملف" value={fileName} onChange={e => setFileName(e.target.value)} style={inputStyle} />
-          <input placeholder="رابط الملف" value={fileUrl} onChange={e => setFileUrl(e.target.value)} style={inputStyle} />
-          <select value={fileType} onChange={e => setFileType(e.target.value)} style={inputStyle}>
-            <option value="sharah">📖 ملفات الشرح</option>
-            <option value="questions">❓ ملفات الأسئلة</option>
-            <option value="lectures">🎥 تسجيلات المحاضرات</option>
-            <option value="courses">🎓 تسجيلات الكورسات</option>
-            <option value="summaries">📝 الملخصات</option>
+          <input placeholder="اسم الملف" value={fileName} onChange={e => setFileName(e.target.value)} style={inStyle} />
+          <input placeholder="رابط الملف" value={fileUrl} onChange={e => setFileUrl(e.target.value)} style={inStyle} />
+          <select value={category} onChange={e => setCategory(e.target.value)} style={inStyle}>
+            <option value="module">Current Module 🏥</option>
+            <option value="professional">Professional Practice ⚖️</option>
+          </select>
+          <select value={subject} onChange={e => setSubject(e.target.value)} style={inStyle}>
+            {category === 'module' ? (
+              <> <option>Anatomy</option><option>Histology</option><option>Physiology</option><option>Biochemistry</option> </>
+            ) : (
+              <> <option>Ethics</option><option>Research</option><option>Communication</option> </>
+            )}
+          </select>
+          <select value={fileType} onChange={e => setFileType(e.target.value)} style={inStyle}>
+            <option value="sharah">شرح</option><option value="questions">أسئلة</option><option value="lectures">محاضرات</option><option value="courses">كورسات</option>
           </select>
           <button onClick={async () => {
-             const { error } = await supabase.from('files').insert([{ name: fileName, url: fileUrl, type: fileType }])
-             if (!error) { alert('تم الرفع بنجاح! ✅'); setFileName(''); setFileUrl(''); }
-          }} style={btnStyle}>تأكيد الرفع 🚀</button>
+            const { error } = await supabase.from('files').insert([{ name: fileName, url: fileUrl, type: fileType, category, subject }])
+            if (!error) alert('تم الرفع ✅')
+          }} style={btnStyle}>تأكيد الرفع</button>
         </div>
-      )}
-
-      {activeTab === 'schedules' && (
+      ) : (
         <div style={cardStyle}>
-          <h3>رفع جدول جديد</h3>
-          <input placeholder="اسم الموديول (GIT)" value={moduleName} onChange={e => setModuleName(e.target.value)} style={inputStyle} />
-          <input placeholder="الأسبوع (مثلاً: الأول)" value={weekNumber} onChange={e => setWeekNumber(e.target.value)} style={inputStyle} />
-          <input placeholder="رابط الصورة" value={schUrl} onChange={e => setSchUrl(e.target.value)} style={inputStyle} />
-          <select value={schType} onChange={e => setSchType(e.target.value)} style={inputStyle}>
-            <option value="study">📅 جدول دراسي</option>
-            <option value="exam">📝 جدول امتحانات</option>
+          <input placeholder="الموديول" value={moduleName} onChange={e => setModuleName(e.target.value)} style={inStyle} />
+          <input placeholder="الأسبوع" value={week} onChange={e => setWeek(e.target.value)} style={inStyle} />
+          <input placeholder="الرابط" value={schUrl} onChange={e => setSchUrl(e.target.value)} style={inStyle} />
+          <select value={schType} onChange={e => setSchType(e.target.value)} style={inStyle}>
+            <option value="study">دراسي</option><option value="exam">امتحانات</option>
           </select>
           <button onClick={async () => {
-             const { error } = await supabase.from('schedules').insert([{ title: moduleName, week: weekNumber, type: schType, url: schUrl }])
-             if (!error) { alert('تم رفع الجدول! ✅'); setModuleName(''); setWeekNumber(''); setSchUrl(''); }
-          }} style={btnStyle}>تأكيد الرفع 🚀</button>
+            const { error } = await supabase.from('schedules').insert([{ title: moduleName, week, type: schType, url: schUrl }])
+            if (!error) alert('تم رفع الجدول ✅')
+          }} style={btnStyle}>رفع الجدول</button>
         </div>
       )}
     </div>
   )
 }
 
-const inputStyle = { width: '100%', padding: '12px', marginBottom: '15px', borderRadius: '10px', border: '1px solid #334155', background: '#0f172a', color: '#fff' }
-const btnStyle = { width: '100%', padding: '12px', background: '#38bdf8', color: '#0f172a', border: 'none', borderRadius: '10px', fontWeight: 'bold', cursor: 'pointer' }
-const tabStyle = { flex: 1, padding: '10px', borderRadius: '10px', border: 'none', color: '#fff', cursor: 'pointer', fontWeight: 'bold' }
-const cardStyle = { background: '#1e293b', padding: '20px', borderRadius: '15px', border: '1px solid #334155' }
+const inStyle = { width: '100%', padding: 12, marginBottom: 10, borderRadius: 10, border: '1px solid #334155', background: '#0f172a', color: '#fff' }
+const btnStyle = { width: '100%', padding: 12, background: '#38bdf8', border: 'none', borderRadius: 10, fontWeight: 'bold' }
+const tabStyle = { flex: 1, padding: 10, borderRadius: 10, border: 'none', color: '#fff', fontWeight: 'bold' }
+const cardStyle = { background: '#1e293b', padding: 20, borderRadius: 15 }
