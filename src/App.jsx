@@ -1,18 +1,15 @@
 import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
-import { Suspense, lazy } from 'react';
-
-// استيراد الصفحات - تأكد إن الأسماء دي هي اللي عندك في فولدر pages بالظبط
 import Home from './pages/Home';
 import Checklist from './pages/Checklist';
 import Schedule from './pages/Schedule';
 import FilesPage from './pages/FilesPage';
 import Admin from './pages/Admin';
 import MCQ from './pages/MCQ';
+import Summaries from './pages/Summaries'; // تأكد من وجود الملف ده في فولدر pages
 
 function SmartHeader() {
   const navigate = useNavigate();
   const location = useLocation();
-
   if (location.pathname === '/') return null;
 
   return (
@@ -20,7 +17,7 @@ function SmartHeader() {
       display: 'flex', justifyContent: 'space-between', alignItems: 'center',
       padding: '12px 18px', background: 'rgba(15, 23, 42, 0.9)',
       backdropFilter: 'blur(8px)', position: 'sticky', top: 0, zIndex: 1000,
-      borderBottom: '1px solid #1e3a5f'
+      borderBottom: '1px solid #1e3a5f', direction: 'rtl'
     }}>
       <button onClick={() => navigate(-1)} style={navBtnStyle}>🔙 رجوع</button>
       <button onClick={() => navigate('/')} style={navBtnStyle}>🏠 الرئيسية</button>
@@ -36,20 +33,18 @@ const navBtnStyle = {
 function App() {
   return (
     <Router>
-      <div style={{ background: '#0f172a', minHeight: '100vh', direction: 'rtl' }}>
+      <div style={{ background: '#0f172a', minHeight: '100vh', color: '#fff' }}>
         <SmartHeader />
-        <div style={{ paddingBottom: '50px' }}> {/* مساحة أمان تحت الهيدر */}
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/checklist" element={<Checklist />} />
-            <Route path="/schedule" element={<Schedule />} />
-            <Route path="/files" element={<FilesPage />} />
-            <Route path="/admin" element={<Admin />} />
-            <Route path="/mcq" element={<MCQ />} />
-            {/* لو كتب أي مسار غلط يرجعه للرئيسية بدل ما الشاشة تبقى فاضية */}
-            <Route path="*" element={<Home />} />
-          </Routes>
-        </div>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/checklist" element={<Checklist />} />
+          <Route path="/schedule" element={<Schedule />} />
+          <Route path="/files" element={<FilesPage />} />
+          <Route path="/summaries" element={<Summaries />} />
+          <Route path="/admin" element={<Admin />} />
+          <Route path="/mcq" element={<MCQ />} />
+          <Route path="*" element={<Home />} />
+        </Routes>
       </div>
     </Router>
   );
