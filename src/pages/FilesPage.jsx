@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useParams } from 'react-router-dom'
 import { supabase } from '../supabase'
 
 const labels = {
@@ -7,7 +8,6 @@ const labels = {
     questions: 'ملفات الأسئلة',
     lectures: 'تسجيلات المحاضرات',
     courses: 'تسجيلات الكورسات',
-    summaries: 'ملخصات',
     current: 'الموديول الحالي',
     professional_practice: 'Professional Practice',
     download: 'تحميل',
@@ -19,7 +19,6 @@ const labels = {
     questions: 'Question Files',
     lectures: 'Lecture Recordings',
     courses: 'Course Recordings',
-    summaries: 'Summaries',
     current: 'Current Module',
     professional_practice: 'Professional Practice',
     download: 'Download',
@@ -28,7 +27,8 @@ const labels = {
   }
 }
 
-function FilesPage({ type, lang }) {
+function FilesPage({ lang }) {
+  const { type } = useParams()
   const [module, setModule] = useState('current')
   const [files, setFiles] = useState([])
   const [loading, setLoading] = useState(true)
@@ -46,57 +46,38 @@ function FilesPage({ type, lang }) {
       .eq('type', type)
       .eq('module', module)
       .order('created_at', { ascending: false })
-
     if (!error) setFiles(data)
     setLoading(false)
   }
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      background: 'linear-gradient(135deg, #0f172a 0%, #0c2340 100%)',
-      padding: '20px'
-    }}>
-      <h1 style={{ color: '#38bdf8', marginBottom: '20px', textAlign: 'center' }}>
+    <div style={{ padding: 20, maxWidth: 700, margin: '0 auto' }}>
+      <h1 style={{ color: '#38bdf8', textAlign: 'center', marginBottom: 20 }}>
         {t[type]}
       </h1>
 
-      <div style={{
-        display: 'flex',
-        gap: '10px',
-        justifyContent: 'center',
-        marginBottom: '24px'
-      }}>
+      <div style={{ display: 'flex', gap: 10, justifyContent: 'center', marginBottom: 24 }}>
         {['current', 'professional_practice'].map(m => (
-          <button
-            key={m}
-            onClick={() => setModule(m)}
-            style={{
-              padding: '8px 16px',
-              borderRadius: '10px',
-              border: '1px solid #38bdf8',
-              background: module === m ? '#38bdf8' : 'transparent',
-              color: module === m ? '#0f172a' : '#38bdf8',
-              cursor: 'pointer',
-              fontWeight: '600',
-              fontSize: '13px'
-            }}>
+          <button key={m} onClick={() => setModule(m)} style={{
+            padding: '8px 16px', borderRadius: 10,
+            border: '1px solid #38bdf8',
+            background: module === m ? '#38bdf8' : 'transparent',
+            color: module === m ? '#0f172a' : '#38bdf8',
+            cursor: 'pointer', fontWeight: 700,
+            fontSize: 13, fontFamily: 'inherit'
+          }}>
             {t[m]}
           </button>
         ))}
       </div>
 
-      {loading && (
-        <p style={{ color: '#94a3b8', textAlign: 'center' }}>{t.loading}</p>
-      )}
+      {loading && <p style={{ color: '#94a3b8', textAlign: 'center' }}>{t.loading}</p>}
 
       {!loading && files.length === 0 && (
         <div style={{
-          background: '#1e293b',
-          borderRadius: '16px',
-          padding: '40px',
-          textAlign: 'center',
-          border: '1px solid #1e3a5f'
+          background: 'linear-gradient(135deg, #1e293b, #0f2540)',
+          border: '2px solid #1e3a5f',
+          borderRadius: 16, padding: 40, textAlign: 'center'
         }}>
           <p style={{ color: '#94a3b8' }}>{t.empty}</p>
         </div>
@@ -105,23 +86,18 @@ function FilesPage({ type, lang }) {
       {files.map(file => (
         <div key={file.id} style={{
           background: 'linear-gradient(135deg, #1e293b, #0f2540)',
-          border: '1px solid #1e3a5f',
-          borderRadius: '16px',
-          padding: '20px',
-          marginBottom: '12px',
+          border: '2px solid #1e3a5f',
+          borderRadius: 16, padding: 20, marginBottom: 12,
         }}>
-          <h3 style={{ color: '#e2e8f0', marginBottom: '8px' }}>{file.name}</h3>
-          <p style={{ color: '#94a3b8', marginBottom: '12px' }}>{file.description}</p>
+          <h3 style={{ color: '#e2e8f0', marginBottom: 8 }}>{file.name}</h3>
+          <p style={{ color: '#94a3b8', marginBottom: 12 }}>{file.description}</p>
           <a href={file.url} target="_blank" rel="noreferrer">
             <button style={{
-              background: '#38bdf8',
-              color: '#0f172a',
-              border: 'none',
-              padding: '10px 20px',
-              borderRadius: '10px',
-              cursor: 'pointer',
-              fontWeight: '600',
-              width: '100%'
+              background: '#38bdf8', color: '#0f172a',
+              border: 'none', padding: '10px 20px',
+              borderRadius: 10, cursor: 'pointer',
+              fontWeight: 700, width: '100%',
+              fontFamily: 'inherit', fontSize: 14
             }}>
               ⬇️ {t.download}
             </button>
