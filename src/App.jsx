@@ -55,7 +55,8 @@ export default function App() {
         color: '#fff',
         display: 'flex',
         flexDirection: 'column',
-        fontFamily: "'Segoe UI', sans-serif"
+        fontFamily: "'Segoe UI', sans-serif",
+        direction: 'ltr'
       }}>
         <ScrollToTop />
         <SmartHeader />

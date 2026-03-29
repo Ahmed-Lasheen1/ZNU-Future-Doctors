@@ -11,18 +11,15 @@ export default function Admin() {
   const [subjects, setSubjects] = useState([])
   const [msg, setMsg] = useState('')
 
-  // Module states
   const [modName, setModName] = useState('')
   const [modColor, setModColor] = useState('#38bdf8')
   const [modIcon, setModIcon] = useState('📚')
   const [modStatus, setModStatus] = useState('active')
 
-  // Subject states
   const [subName, setSubName] = useState('')
   const [subModuleId, setSubModuleId] = useState('')
   const [subType, setSubType] = useState('both')
 
-  // File states
   const [fileName, setFileName] = useState('')
   const [fileUrl, setFileUrl] = useState('')
   const [fileType, setFileType] = useState('sharah')
@@ -30,18 +27,15 @@ export default function Admin() {
   const [fileModuleId, setFileModuleId] = useState('')
   const [fileSubjectId, setFileSubjectId] = useState('')
 
-  // Schedule states
   const [schTitle, setSchTitle] = useState('')
   const [schUrl, setSchUrl] = useState('')
   const [schType, setSchType] = useState('study')
   const [schModuleId, setSchModuleId] = useState('')
 
-  // Checklist states
   const [taskText, setTaskText] = useState('')
   const [taskModuleId, setTaskModuleId] = useState('')
   const [taskSubjectId, setTaskSubjectId] = useState('')
 
-  // Question states
   const [qText, setQText] = useState('')
   const [qA, setQA] = useState('')
   const [qB, setQB] = useState('')
@@ -53,10 +47,7 @@ export default function Admin() {
   const [qSubjectId, setQSubjectId] = useState('')
 
   useEffect(() => {
-    if (isAuth) {
-      fetchModules()
-      fetchSubjects()
-    }
+    if (isAuth) { fetchModules(); fetchSubjects() }
   }, [isAuth])
 
   async function fetchModules() {
@@ -69,16 +60,11 @@ export default function Admin() {
     if (data) setSubjects(data)
   }
 
-  function showMsg(m) {
-    setMsg(m)
-    setTimeout(() => setMsg(''), 3000)
-  }
+  function showMsg(m) { setMsg(m); setTimeout(() => setMsg(''), 3000) }
 
   async function addModule() {
     if (!modName) return
-    const { error } = await supabase.from('modules').insert([{
-      name: modName, color: modColor, icon: modIcon, status: modStatus
-    }])
+    const { error } = await supabase.from('modules').insert([{ name: modName, color: modColor, icon: modIcon, status: modStatus }])
     if (!error) { showMsg('✅ Module added!'); setModName(''); fetchModules() }
     else showMsg('❌ ' + error.message)
   }
@@ -97,9 +83,7 @@ export default function Admin() {
 
   async function addSubject() {
     if (!subName || !subModuleId) return
-    const { error } = await supabase.from('subjects').insert([{
-      name: subName, module_id: subModuleId, type: subType
-    }])
+    const { error } = await supabase.from('subjects').insert([{ name: subName, module_id: subModuleId, type: subType }])
     if (!error) { showMsg('✅ Subject added!'); setSubName(''); fetchSubjects() }
     else showMsg('❌ ' + error.message)
   }
@@ -113,8 +97,7 @@ export default function Admin() {
     if (!fileName || !fileUrl || !fileModuleId) return
     const { error } = await supabase.from('files').insert([{
       name: fileName, url: fileUrl, type: fileType,
-      file_type: fileFileType,
-      module_id: fileModuleId,
+      file_type: fileFileType, module_id: fileModuleId,
       subject_id: fileSubjectId || null
     }])
     if (!error) { showMsg('✅ File added!'); setFileName(''); setFileUrl('') }
@@ -144,16 +127,11 @@ export default function Admin() {
   async function addQuestion() {
     if (!qText || !qA || !qB || !qC || !qD || !qModuleId) return
     const { error } = await supabase.from('questions').insert([{
-      question: qText,
-      option_a: qA, option_b: qB, option_c: qC, option_d: qD,
+      question: qText, option_a: qA, option_b: qB, option_c: qC, option_d: qD,
       correct: qCorrect, explanation: qExplanation,
-      module_id: qModuleId,
-      subject_id: qSubjectId || null
+      module_id: qModuleId, subject_id: qSubjectId || null
     }])
-    if (!error) {
-      showMsg('✅ Question added!')
-      setQText(''); setQA(''); setQB(''); setQC(''); setQD(''); setQExplanation('')
-    }
+    if (!error) { showMsg('✅ Question added!'); setQText(''); setQA(''); setQB(''); setQC(''); setQD(''); setQExplanation('') }
     else showMsg('❌ ' + error.message)
   }
 
@@ -163,8 +141,7 @@ export default function Admin() {
     <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <div style={{ background: '#1e293b', padding: 30, borderRadius: 20, width: '90%', maxWidth: 400, border: '1px solid #1e3a5f' }}>
         <h3 style={{ color: '#38bdf8', textAlign: 'center', marginBottom: 20 }}>🔐 Admin Panel</h3>
-        <input type="password" placeholder="Password" onChange={e => setPass(e.target.value)}
-          style={inStyle} />
+        <input type="password" placeholder="Password" onChange={e => setPass(e.target.value)} style={inStyle} />
         <button onClick={() => pass === PASS && setIsAuth(true)} style={btnStyle}>Enter</button>
       </div>
     </div>
@@ -189,7 +166,6 @@ export default function Admin() {
         ))}
       </div>
 
-      {/* MODULES */}
       {activeTab === 'modules' && (
         <div>
           <div style={cardStyle}>
@@ -198,7 +174,7 @@ export default function Admin() {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
               <div>
                 <label style={labelStyle}>Icon</label>
-                <input placeholder="Icon emoji" value={modIcon} onChange={e => setModIcon(e.target.value)} style={inStyle} />
+                <input placeholder="Emoji" value={modIcon} onChange={e => setModIcon(e.target.value)} style={inStyle} />
               </div>
               <div>
                 <label style={labelStyle}>Color</label>
@@ -214,7 +190,6 @@ export default function Admin() {
             </div>
             <button onClick={addModule} style={btnStyle}>Add Module</button>
           </div>
-
           <h3 style={{ color: '#94a3b8', marginBottom: 12 }}>All Modules</h3>
           {modules.map(mod => (
             <div key={mod.id} style={{ ...cardStyle, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -236,7 +211,6 @@ export default function Admin() {
         </div>
       )}
 
-      {/* SUBJECTS */}
       {activeTab === 'subjects' && (
         <div>
           <div style={cardStyle}>
@@ -253,7 +227,6 @@ export default function Admin() {
             </select>
             <button onClick={addSubject} style={btnStyle}>Add Subject</button>
           </div>
-
           {modules.map(mod => {
             const subs = filteredSubjects(mod.id)
             if (subs.length === 0) return null
@@ -264,7 +237,7 @@ export default function Admin() {
                   <div key={sub.id} style={{ ...cardStyle, display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px' }}>
                     <div>
                       <span style={{ color: '#e2e8f0', fontWeight: 600 }}>{sub.name}</span>
-                      <span style={{ color: '#64748b', fontSize: 12, marginRight: 8 }}> · {sub.type}</span>
+                      <span style={{ color: '#64748b', fontSize: 12, marginLeft: 8 }}> · {sub.type}</span>
                     </div>
                     <button onClick={() => deleteSubject(sub.id)} style={{ ...miniBtn, borderColor: '#ef4444', color: '#ef4444' }}>🗑</button>
                   </div>
@@ -275,7 +248,6 @@ export default function Admin() {
         </div>
       )}
 
-      {/* FILES */}
       {activeTab === 'files' && (
         <div style={cardStyle}>
           <h3 style={sectionTitle}>➕ Add File / Recording</h3>
@@ -312,7 +284,6 @@ export default function Admin() {
         </div>
       )}
 
-      {/* SCHEDULES */}
       {activeTab === 'schedules' && (
         <div style={cardStyle}>
           <h3 style={sectionTitle}>➕ Add Schedule</h3>
@@ -332,7 +303,6 @@ export default function Admin() {
         </div>
       )}
 
-      {/* CHECKLIST */}
       {activeTab === 'checklist' && (
         <div style={cardStyle}>
           <h3 style={sectionTitle}>➕ Add Checklist Item</h3>
@@ -351,7 +321,6 @@ export default function Admin() {
         </div>
       )}
 
-      {/* QUESTIONS */}
       {activeTab === 'questions' && (
         <div style={cardStyle}>
           <h3 style={sectionTitle}>➕ Add MCQ Question</h3>
@@ -365,8 +334,7 @@ export default function Admin() {
               {filteredSubjects(qModuleId).map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
             </select>
           )}
-          <textarea placeholder="Question" value={qText} onChange={e => setQText(e.target.value)}
-            style={{ ...inStyle, minHeight: 80, resize: 'vertical' }} />
+          <textarea placeholder="Question" value={qText} onChange={e => setQText(e.target.value)} style={{ ...inStyle, minHeight: 80, resize: 'vertical' }} />
           {['A', 'B', 'C', 'D'].map((opt, i) => (
             <input key={opt} placeholder={`Option ${opt}`}
               value={[qA, qB, qC, qD][i]}
@@ -380,8 +348,7 @@ export default function Admin() {
             <option value="c">C</option>
             <option value="d">D</option>
           </select>
-          <textarea placeholder="Explanation (optional)" value={qExplanation} onChange={e => setQExplanation(e.target.value)}
-            style={{ ...inStyle, minHeight: 60, resize: 'vertical' }} />
+          <textarea placeholder="Explanation (optional)" value={qExplanation} onChange={e => setQExplanation(e.target.value)} style={{ ...inStyle, minHeight: 60, resize: 'vertical' }} />
           <button onClick={addQuestion} style={btnStyle}>Add Question</button>
         </div>
       )}
