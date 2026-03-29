@@ -7,6 +7,7 @@ import FilesPage from './pages/FilesPage'
 import Admin from './pages/Admin'
 import MCQ from './pages/MCQ'
 import Summaries from './pages/Summaries'
+import ModulePage from './pages/ModulePage'
 import Footer from './components/Footer'
 
 function ScrollToTop() {
@@ -63,6 +64,7 @@ export default function App() {
         <div style={{ flex: 1 }}>
           <Routes>
             <Route path="/" element={<Home />} />
+            <Route path="/module/:moduleId" element={<ModulePage />} />
             <Route path="/checklist" element={<Checklist />} />
             <Route path="/schedule" element={<Schedule />} />
             <Route path="/files" element={<FilesPage />} />
