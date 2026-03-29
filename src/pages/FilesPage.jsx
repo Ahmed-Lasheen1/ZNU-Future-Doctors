@@ -1,60 +1,236 @@
 import { useState, useEffect } from 'react'
-import { supabase } from '../supabase'
 import { useLocation } from 'react-router-dom'
+import { supabase } from '../supabase'
 
-export default function FilesPage() {
-  const [files, setFiles] = useState([])
-  const [mainCat, setMainCat] = useState('module') 
-  const [activeSub, setActiveSub] = useState('All')
-  const [loading, setLoading] = useState(true)
-  const location = useLocation()
-  const fileType = new URLSearchParams(location.search).get('type')
+function PDFViewer({ url, onClose }) {
+  return (
+    <div style={{
+      position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+      background: 'rgba(0,0,0,0.95)', zIndex: 2000,
+      display: 'flex', flexDirection: 'column'
+    }}>
+      <div style={{
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        padding: '12px 16px', background: '#1e293b', borderBottom: '1px solid #1e3a5f'
+      }}>
+        <span style={{ color: '#38bdf8', fontWeight: 700 }}>📄 PDF Viewer</span>
+        <button onClick={onClose} style={{
+          background: '#ef4444', color: '#fff', border: 'none',
+          borderRadius: 8, padding: '6px 14px', cursor: 'pointer', fontWeight: 700
+        }}>✕ Close</button>
+      </div>
+      <iframe src={`https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`}
+        style={{ flex: 1, border: 'none' }} title="PDF Viewer" />
+    </div>
+  )
+}
 
-  useEffect(() => {
-    async function fetchFiles() {
-      setLoading(true)
-      const { data } = await supabase.from('files').select('*').eq('type', fileType)
-      if (data) setFiles(data)
-      setLoading(false)
+function VideoViewer({ url, onClose }) {
+  const getEmbedUrl = (url) => {
+    if (url.includes('youtube.com/watch')) {
+      const id = new URL(url).searchParams.get('v')
+      return `https://www.youtube.com/embed/${id}`
     }
-    fetchFiles()
-  }, [fileType])
-
-  const subjects = mainCat === 'module' 
-    ? ['Anatomy', 'Histology', 'Physiology', 'Biochemistry'] 
-    : ['Ethics', 'Professionalism', 'Research']
-
-  const filtered = files.filter(f => f.category === mainCat && (activeSub === 'All' || f.subject === activeSub))
+    if (url.includes('youtu.be/')) {
+      const id = url.split('youtu.be/')[1]
+      return `https://www.youtube.com/embed/${id}`
+    }
+    return url
+  }
 
   return (
-    <div style={{ padding: '20px', direction: 'rtl' }}>
-      <div style={{ display: 'flex', gap: 10, marginBottom: 20 }}>
-        <button onClick={() => {setMainCat('module'); setActiveSub('All')}} style={{...tab, background: mainCat === 'module' ? '#38bdf8' : '#1e293b'}}>Current Module</button>
-        <button onClick={() => {setMainCat('professional'); setActiveSub('All')}} style={{...tab, background: mainCat === 'professional' ? '#38bdf8' : '#1e293b'}}>Professional Practice</button>
+    <div style={{
+      position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+      background: 'rgba(0,0,0,0.95)', zIndex: 2000,
+      display: 'flex', flexDirection: 'column'
+    }}>
+      <div style={{
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        padding: '12px 16px', background: '#1e293b', borderBottom: '1px solid #1e3a5f'
+      }}>
+        <span style={{ color: '#38bdf8', fontWeight: 700 }}>🎥 Video Player</span>
+        <button onClick={onClose} style={{
+          background: '#ef4444', color: '#fff', border: 'none',
+          borderRadius: 8, padding: '6px 14px', cursor: 'pointer', fontWeight: 700
+        }}>✕ Close</button>
       </div>
+      <iframe src={getEmbedUrl(url)} style={{ flex: 1, border: 'none' }}
+        allowFullScreen title="Video Player" />
+    </div>
+  )
+}
 
-      <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 12 }}>
-        <button onClick={() => setActiveSub('All')} style={{...subTab, borderColor: activeSub === 'All' ? '#38bdf8' : '#334155'}}>الكل</button>
-        {subjects.map(s => (
-          <button key={s} onClick={() => setActiveSub(s)} style={{...subTab, borderColor: activeSub === s ? '#38bdf8' : '#334155'}}>{s}</button>
-        ))}
-      </div>
-
-      <div style={{ marginTop: 20 }}>
-        {loading ? <p style={{textAlign:'center'}}>جاري التحميل...</p> : 
-         filtered.length === 0 ? <p style={{textAlign:'center', color:'#64748b'}}>مفيش ملفات هنا حالياً 🚧</p> :
-         filtered.map(f => (
-          <div key={f.id} style={fileCard}>
-            <span style={{fontWeight:'bold'}}>{f.name}</span>
-            <a href={f.url} target="_blank" rel="noreferrer" style={dlBtn}>تحميل 📥</a>
-          </div>
-        ))}
+function AudioViewer({ url, name, onClose }) {
+  return (
+    <div style={{
+      position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+      background: 'rgba(0,0,0,0.95)', zIndex: 2000,
+      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center'
+    }}>
+      <div style={{
+        background: '#1e293b', borderRadius: 20, padding: 32,
+        border: '1px solid #1e3a5f', width: '90%', maxWidth: 400, textAlign: 'center'
+      }}>
+        <div style={{ fontSize: 48, marginBottom: 16 }}>🎵</div>
+        <h3 style={{ color: '#38bdf8', marginBottom: 20 }}>{name}</h3>
+        <audio controls src={url} style={{ width: '100%', marginBottom: 20 }} />
+        <button onClick={onClose} style={{
+          background: '#ef4444', color: '#fff', border: 'none',
+          borderRadius: 8, padding: '10px 24px', cursor: 'pointer', fontWeight: 700
+        }}>✕ Close</button>
       </div>
     </div>
   )
 }
 
-const tab = { flex: 1, padding: '14px', borderRadius: '12px', border: 'none', color: '#fff', fontWeight: 'bold', cursor: 'pointer' }
-const subTab = { padding: '6px 15px', borderRadius: '20px', background: 'transparent', color: '#fff', border: '1px solid', whiteSpace: 'nowrap', fontSize: '13px' }
-const fileCard = { background: '#1e293b', padding: '18px', borderRadius: '15px', marginBottom: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid #334155' }
-const dlBtn = { color: '#38bdf8', textDecoration: 'none', fontWeight: 'bold', fontSize: '14px' }
+export default function FilesPage() {
+  const [files, setFiles] = useState([])
+  const [modules, setModules] = useState([])
+  const [subjects, setSubjects] = useState([])
+  const [activeModule, setActiveModule] = useState(null)
+  const [activeSubject, setActiveSubject] = useState('all')
+  const [activeFileType, setActiveFileType] = useState('all')
+  const [loading, setLoading] = useState(true)
+  const [viewer, setViewer] = useState(null)
+  const location = useLocation()
+  const fileType = new URLSearchParams(location.search).get('type')
+
+  const titles = {
+    sharah: '📖 Explanation Files',
+    questions: '❓ Question Files',
+    lectures: '🎥 Lecture Recordings',
+    courses: '🎓 Course Recordings',
+  }
+
+  useEffect(() => {
+    async function fetchData() {
+      setLoading(true)
+      const [modRes, subRes, fileRes] = await Promise.all([
+        supabase.from('modules').select('*').order('created_at'),
+        supabase.from('subjects').select('*').order('name'),
+        supabase.from('files').select('*').eq('type', fileType).order('created_at', { ascending: false })
+      ])
+      if (modRes.data) {
+        setModules(modRes.data)
+        const active = modRes.data.find(m => m.status === 'active')
+        if (active) setActiveModule(active.id)
+      }
+      if (subRes.data) setSubjects(subRes.data)
+      if (fileRes.data) setFiles(fileRes.data)
+      setLoading(false)
+    }
+    fetchData()
+  }, [fileType])
+
+  const moduleSubjects = subjects.filter(s => s.module_id === activeModule)
+
+  const filtered = files.filter(f => {
+    const moduleMatch = f.module_id === activeModule
+    const subjectMatch = activeSubject === 'all' || f.subject_id === activeSubject
+    const typeMatch = activeFileType === 'all' || f.file_type === activeFileType
+    return moduleMatch && subjectMatch && typeMatch
+  })
+
+  function openFile(file) {
+    setViewer(file)
+  }
+
+  const getFileIcon = (type) => {
+    if (type === 'video') return '🎥'
+    if (type === 'audio') return '🎵'
+    return '📄'
+  }
+
+  return (
+    <div style={{ padding: '20px', maxWidth: 700, margin: '0 auto' }}>
+      {viewer && viewer.file_type === 'pdf' && <PDFViewer url={viewer.url} onClose={() => setViewer(null)} />}
+      {viewer && viewer.file_type === 'video' && <VideoViewer url={viewer.url} onClose={() => setViewer(null)} />}
+      {viewer && viewer.file_type === 'audio' && <AudioViewer url={viewer.url} name={viewer.name} onClose={() => setViewer(null)} />}
+
+      <h1 style={{ color: '#38bdf8', textAlign: 'center', marginBottom: 20 }}>
+        {titles[fileType]}
+      </h1>
+
+      {/* Module Tabs */}
+      <div style={{ display: 'flex', gap: 8, overflowX: 'auto', marginBottom: 16, paddingBottom: 4 }}>
+        {modules.map(mod => (
+          <button key={mod.id} onClick={() => { setActiveModule(mod.id); setActiveSubject('all') }}
+            style={{
+              padding: '8px 16px', borderRadius: 10, whiteSpace: 'nowrap',
+              border: `2px solid ${activeModule === mod.id ? mod.color : '#1e3a5f'}`,
+              background: activeModule === mod.id ? `${mod.color}20` : 'transparent',
+              color: activeModule === mod.id ? mod.color : '#64748b',
+              cursor: 'pointer', fontWeight: 700, fontSize: 13, fontFamily: 'inherit'
+            }}>
+            {mod.icon} {mod.name}
+            {mod.status === 'completed' && <span style={{ fontSize: 10, marginRight: 4, color: '#64748b' }}> ✓</span>}
+          </button>
+        ))}
+      </div>
+
+      {/* Subject Filter */}
+      {moduleSubjects.length > 0 && (
+        <div style={{ display: 'flex', gap: 8, overflowX: 'auto', marginBottom: 12, paddingBottom: 4 }}>
+          <button onClick={() => setActiveSubject('all')} style={{
+            ...subBtn, borderColor: activeSubject === 'all' ? '#38bdf8' : '#1e3a5f',
+            color: activeSubject === 'all' ? '#38bdf8' : '#64748b'
+          }}>All</button>
+          {moduleSubjects.map(sub => (
+            <button key={sub.id} onClick={() => setActiveSubject(sub.id)} style={{
+              ...subBtn, borderColor: activeSubject === sub.id ? '#38bdf8' : '#1e3a5f',
+              color: activeSubject === sub.id ? '#38bdf8' : '#64748b'
+            }}>{sub.name}</button>
+          ))}
+        </div>
+      )}
+
+      {/* File Type Filter */}
+      <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
+        {['all', 'pdf', 'video', 'audio'].map(t => (
+          <button key={t} onClick={() => setActiveFileType(t)} style={{
+            ...subBtn,
+            borderColor: activeFileType === t ? '#a78bfa' : '#1e3a5f',
+            color: activeFileType === t ? '#a78bfa' : '#64748b'
+          }}>{t === 'all' ? 'All' : t === 'pdf' ? '📄 PDF' : t === 'video' ? '🎥 Video' : '🎵 Audio'}</button>
+        ))}
+      </div>
+
+      {loading && <p style={{ color: '#94a3b8', textAlign: 'center' }}>Loading...</p>}
+
+      {!loading && filtered.length === 0 && (
+        <div style={{
+          background: '#1e293b', border: '1px solid #1e3a5f',
+          borderRadius: 16, padding: 40, textAlign: 'center'
+        }}>
+          <p style={{ color: '#64748b' }}>No files yet 🚧</p>
+        </div>
+      )}
+
+      {filtered.map(file => (
+        <div key={file.id} style={{
+          background: 'linear-gradient(135deg, #1e293b, #0f2540)',
+          border: '1px solid #1e3a5f', borderRadius: 16,
+          padding: '16px 20px', marginBottom: 12,
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          transition: 'all 0.2s'
+        }}
+          onMouseEnter={e => e.currentTarget.style.borderColor = '#38bdf8'}
+          onMouseLeave={e => e.currentTarget.style.borderColor = '#1e3a5f'}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <span style={{ fontSize: 24 }}>{getFileIcon(file.file_type)}</span>
+            <span style={{ color: '#e2e8f0', fontWeight: 600, fontSize: 14 }}>{file.name}</span>
+          </div>
+          <button onClick={() => openFile(file)} style={{
+            background: '#38bdf8', color: '#0f172a', border: 'none',
+            padding: '8px 16px', borderRadius: 10, cursor: 'pointer',
+            fontWeight: 700, fontSize: 13, fontFamily: 'inherit'
+          }}>
+            {file.file_type === 'pdf' ? '📄 Open' : file.file_type === 'video' ? '▶ Play' : '🎵 Listen'}
+          </button>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+const subBtn = { padding: '6px 14px', borderRadius: 20, background: 'transparent', border: '1px solid', whiteSpace: 'nowrap', fontSize: 12, cursor: 'pointer', fontWeight: 600, fontFamily: 'inherit' }

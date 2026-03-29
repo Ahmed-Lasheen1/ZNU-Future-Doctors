@@ -2,61 +2,134 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../supabase'
 
 export default function Schedule() {
+  const [modules, setModules] = useState([])
   const [schedules, setSchedules] = useState([])
-  const [activeTab, setActiveTab] = useState('study') // 'study' أو 'exam'
+  const [activeModule, setActiveModule] = useState(null)
+  const [activeType, setActiveType] = useState('study')
   const [loading, setLoading] = useState(true)
+  const [viewer, setViewer] = useState(null)
 
   useEffect(() => {
-    async function fetchSchedules() {
-      const { data, error } = await supabase.from('schedules').select('*')
-      if (!error) setSchedules(data)
+    async function fetchData() {
+      setLoading(true)
+      const [modRes, schRes] = await Promise.all([
+        supabase.from('modules').select('*').order('created_at'),
+        supabase.from('schedules').select('*').order('created_at')
+      ])
+      if (modRes.data) {
+        setModules(modRes.data)
+        const active = modRes.data.find(m => m.status === 'active')
+        if (active) setActiveModule(active.id)
+      }
+      if (schRes.data) setSchedules(schRes.data)
       setLoading(false)
     }
-    fetchSchedules()
+    fetchData()
   }, [])
 
-  // فلترة الجداول بناءً على الاختيار (دراسي أو امتحانات)
-  const filtered = schedules.filter(s => s.type === activeTab)
+  const filtered = schedules.filter(s =>
+    s.module_id === activeModule && s.type === activeType
+  )
 
   return (
-    <div style={{ padding: '20px 16px', maxWidth: 600, margin: '0 auto' }}>
-      <h2 style={{ color: '#fff', textAlign: 'center', marginBottom: 25 }}>📅 الجداول</h2>
+    <div style={{ padding: '20px', maxWidth: 700, margin: '0 auto' }}>
 
-      {/* خانات الاختيار (Tabs) */}
-      <div style={{ display: 'flex', gap: 10, marginBottom: 30 }}>
-        <button 
-          onClick={() => setActiveTab('study')}
-          style={{ ...tabStyle, background: activeTab === 'study' ? '#38bdf8' : '#1e293b', color: activeTab === 'study' ? '#0f172a' : '#fff' }}
-        >
-          جدول دراسي
-        </button>
-        <button 
-          onClick={() => setActiveTab('exam')}
-          style={{ ...tabStyle, background: activeTab === 'exam' ? '#f43f5e' : '#1e293b', color: activeTab === 'exam' ? '#fff' : '#fff' }}
-        >
-          امتحانات
-        </button>
+      {viewer && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0,0,0,0.95)', zIndex: 2000,
+          display: 'flex', flexDirection: 'column'
+        }}>
+          <div style={{
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+            padding: '12px 16px', background: '#1e293b', borderBottom: '1px solid #1e3a5f'
+          }}>
+            <span style={{ color: '#a78bfa', fontWeight: 700 }}>📅 {viewer.title}</span>
+            <button onClick={() => setViewer(null)} style={{
+              background: '#ef4444', color: '#fff', border: 'none',
+              borderRadius: 8, padding: '6px 14px', cursor: 'pointer', fontWeight: 700
+            }}>✕ Close</button>
+          </div>
+          <div style={{ flex: 1, overflow: 'auto', padding: 16, display: 'flex', alignItems: 'flex-start', justifyContent: 'center' }}>
+            <img src={viewer.url} alt={viewer.title}
+              style={{ maxWidth: '100%', borderRadius: 12 }} />
+          </div>
+        </div>
+      )}
+
+      <h1 style={{ color: '#a78bfa', textAlign: 'center', marginBottom: 20 }}>
+        📅 Schedules
+      </h1>
+
+      {/* Module Tabs */}
+      <div style={{ display: 'flex', gap: 8, overflowX: 'auto', marginBottom: 16, paddingBottom: 4 }}>
+        {modules.map(mod => (
+          <button key={mod.id} onClick={() => setActiveModule(mod.id)} style={{
+            padding: '8px 16px', borderRadius: 10, whiteSpace: 'nowrap',
+            border: `2px solid ${activeModule === mod.id ? mod.color : '#1e3a5f'}`,
+            background: activeModule === mod.id ? `${mod.color}20` : 'transparent',
+            color: activeModule === mod.id ? mod.color : '#64748b',
+            cursor: 'pointer', fontWeight: 700, fontSize: 13, fontFamily: 'inherit'
+          }}>
+            {mod.icon} {mod.name}
+          </button>
+        ))}
       </div>
 
-      <div style={{ display: 'grid', gap: 15 }}>
-        {filtered.length === 0 ? (
-          <p style={{ color: '#64748b', textAlign: 'center' }}>مفيش جداول مرفوعة هنا.. 🚧</p>
-        ) : (
-          filtered.map(s => (
-            <div key={s.id} style={cardStyle}>
+      {/* Type Tabs */}
+      <div style={{ display: 'flex', gap: 10, marginBottom: 24 }}>
+        {['study', 'exam'].map(type => (
+          <button key={type} onClick={() => setActiveType(type)} style={{
+            flex: 1, padding: '10px', borderRadius: 10, fontFamily: 'inherit',
+            border: `2px solid ${activeType === type ? '#a78bfa' : '#1e3a5f'}`,
+            background: activeType === type ? '#a78bfa20' : 'transparent',
+            color: activeType === type ? '#a78bfa' : '#64748b',
+            cursor: 'pointer', fontWeight: 700, fontSize: 13
+          }}>
+            {type === 'study' ? '📅 Study Schedule' : '📝 Exam Schedule'}
+          </button>
+        ))}
+      </div>
+
+      {loading && <p style={{ color: '#94a3b8', textAlign: 'center' }}>Loading...</p>}
+
+      {!loading && filtered.length === 0 && (
+        <div style={{
+          background: '#1e293b', border: '1px solid #1e3a5f',
+          borderRadius: 16, padding: 40, textAlign: 'center'
+        }}>
+          <p style={{ color: '#64748b' }}>No schedules yet 🚧</p>
+        </div>
+      )}
+
+      <div style={{ display: 'grid', gap: 16 }}>
+        {filtered.map(sch => (
+          <div key={sch.id} style={{
+            background: 'linear-gradient(135deg, #1e293b, #0f2540)',
+            border: '1px solid #1e3a5f', borderRadius: 16,
+            overflow: 'hidden', transition: 'all 0.2s'
+          }}
+            onMouseEnter={e => e.currentTarget.style.borderColor = '#a78bfa'}
+            onMouseLeave={e => e.currentTarget.style.borderColor = '#1e3a5f'}>
+            <img src={sch.url} alt={sch.title}
+              style={{ width: '100%', maxHeight: 200, objectFit: 'cover', cursor: 'pointer' }}
+              onClick={() => setViewer(sch)} />
+            <div style={{ padding: '14px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
-                <h3 style={{ color: '#fff', margin: 0 }}>موديول {s.title}</h3>
-                <p style={{ color: '#38bdf8', fontSize: 14, marginTop: 5 }}>الأسبوع {s.week}</p>
+                <h3 style={{ color: '#e2e8f0', marginBottom: 4 }}>{sch.title}</h3>
+                {sch.week && <p style={{ color: '#64748b', fontSize: 13 }}>{sch.week}</p>}
               </div>
-              <a href={s.url} target="_blank" rel="noreferrer" style={btnStyle}>عرض 🔍</a>
+              <button onClick={() => setViewer(sch)} style={{
+                background: '#a78bfa', color: '#0f172a', border: 'none',
+                padding: '8px 16px', borderRadius: 10, cursor: 'pointer',
+                fontWeight: 700, fontSize: 13, fontFamily: 'inherit'
+              }}>
+                🔍 View
+              </button>
             </div>
-          ))
-        )}
+          </div>
+        ))}
       </div>
     </div>
   )
 }
-
-const tabStyle = { flex: 1, padding: '12px', borderRadius: '12px', border: 'none', fontWeight: 'bold', cursor: 'pointer', transition: '0.3s' }
-const cardStyle = { background: '#1e293b', padding: 20, borderRadius: 15, border: '1px solid #334155', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }
-const btnStyle = { background: '#38bdf8', color: '#0f172a', padding: '8px 15px', borderRadius: '8px', textDecoration: 'none', fontWeight: 'bold' }
