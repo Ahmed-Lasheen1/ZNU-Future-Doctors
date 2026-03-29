@@ -3,6 +3,14 @@ import { useLocation } from 'react-router-dom'
 import { supabase } from '../supabase'
 
 function PDFViewer({ url, onClose }) {
+  const getPreviewUrl = (url) => {
+    if (url.includes('drive.google.com')) {
+      const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/)
+      if (match) return `https://drive.google.com/file/d/${match[1]}/preview`
+    }
+    return url
+  }
+
   return (
     <div style={{
       position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
@@ -19,8 +27,9 @@ function PDFViewer({ url, onClose }) {
           borderRadius: 8, padding: '6px 14px', cursor: 'pointer', fontWeight: 700
         }}>✕ Close</button>
       </div>
-      <iframe src={`https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`}
-        style={{ flex: 1, border: 'none' }} title="PDF Viewer" />
+      <iframe src={getPreviewUrl(url)}
+        style={{ flex: 1, border: 'none' }} title="PDF Viewer"
+        allow="autoplay" />
     </div>
   )
 }
@@ -32,8 +41,12 @@ function VideoViewer({ url, onClose }) {
       return `https://www.youtube.com/embed/${id}`
     }
     if (url.includes('youtu.be/')) {
-      const id = url.split('youtu.be/')[1]
+      const id = url.split('youtu.be/')[1].split('?')[0]
       return `https://www.youtube.com/embed/${id}`
+    }
+    if (url.includes('drive.google.com')) {
+      const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/)
+      if (match) return `https://drive.google.com/file/d/${match[1]}/preview`
     }
     return url
   }
@@ -89,17 +102,30 @@ export default function FilesPage() {
   const [subjects, setSubjects] = useState([])
   const [activeModule, setActiveModule] = useState(null)
   const [activeSubject, setActiveSubject] = useState('all')
-  const [activeFileType, setActiveFileType] = useState('all')
   const [loading, setLoading] = useState(true)
   const [viewer, setViewer] = useState(null)
   const location = useLocation()
-  const fileType = new URLSearchParams(location.search).get('type')
+  const params = new URLSearchParams(location.search)
+  const fileType = params.get('type')
+  const moduleParam = params.get('module')
 
   const titles = {
     sharah: '📖 Explanation Files',
     questions: '❓ Question Files',
     lectures: '🎥 Lecture Recordings',
     courses: '🎓 Course Recordings',
+  }
+
+  const getFileIcon = (type) => {
+    if (type === 'video') return '🎥'
+    if (type === 'audio') return '🎵'
+    return '📄'
+  }
+
+  const getOpenLabel = (type) => {
+    if (type === 'video') return '▶ Play'
+    if (type === 'audio') return '🎵 Listen'
+    return '📄 Open'
   }
 
   useEffect(() => {
@@ -112,34 +138,28 @@ export default function FilesPage() {
       ])
       if (modRes.data) {
         setModules(modRes.data)
-        const active = modRes.data.find(m => m.status === 'active')
-        if (active) setActiveModule(active.id)
+        if (moduleParam) {
+          setActiveModule(moduleParam)
+        } else {
+          const active = modRes.data.find(m => m.status === 'active')
+          if (active) setActiveModule(active.id)
+        }
       }
       if (subRes.data) setSubjects(subRes.data)
       if (fileRes.data) setFiles(fileRes.data)
       setLoading(false)
     }
     fetchData()
-  }, [fileType])
+  }, [fileType, moduleParam])
 
   const moduleSubjects = subjects.filter(s => s.module_id === activeModule)
-
   const filtered = files.filter(f => {
     const moduleMatch = f.module_id === activeModule
     const subjectMatch = activeSubject === 'all' || f.subject_id === activeSubject
-    const typeMatch = activeFileType === 'all' || f.file_type === activeFileType
-    return moduleMatch && subjectMatch && typeMatch
+    return moduleMatch && subjectMatch
   })
 
-  function openFile(file) {
-    setViewer(file)
-  }
-
-  const getFileIcon = (type) => {
-    if (type === 'video') return '🎥'
-    if (type === 'audio') return '🎵'
-    return '📄'
-  }
+  const activeModuleData = modules.find(m => m.id === activeModule)
 
   return (
     <div style={{ padding: '20px', maxWidth: 700, margin: '0 auto' }}>
@@ -163,37 +183,28 @@ export default function FilesPage() {
               cursor: 'pointer', fontWeight: 700, fontSize: 13, fontFamily: 'inherit'
             }}>
             {mod.icon} {mod.name}
-            {mod.status === 'completed' && <span style={{ fontSize: 10, marginRight: 4, color: '#64748b' }}> ✓</span>}
+            {mod.status === 'completed' && <span style={{ fontSize: 10, marginLeft: 4, color: '#64748b' }}> ✓</span>}
           </button>
         ))}
       </div>
 
       {/* Subject Filter */}
       {moduleSubjects.length > 0 && (
-        <div style={{ display: 'flex', gap: 8, overflowX: 'auto', marginBottom: 12, paddingBottom: 4 }}>
+        <div style={{ display: 'flex', gap: 8, overflowX: 'auto', marginBottom: 20, paddingBottom: 4 }}>
           <button onClick={() => setActiveSubject('all')} style={{
-            ...subBtn, borderColor: activeSubject === 'all' ? '#38bdf8' : '#1e3a5f',
+            ...subBtn,
+            borderColor: activeSubject === 'all' ? '#38bdf8' : '#1e3a5f',
             color: activeSubject === 'all' ? '#38bdf8' : '#64748b'
           }}>All</button>
           {moduleSubjects.map(sub => (
             <button key={sub.id} onClick={() => setActiveSubject(sub.id)} style={{
-              ...subBtn, borderColor: activeSubject === sub.id ? '#38bdf8' : '#1e3a5f',
+              ...subBtn,
+              borderColor: activeSubject === sub.id ? '#38bdf8' : '#1e3a5f',
               color: activeSubject === sub.id ? '#38bdf8' : '#64748b'
             }}>{sub.name}</button>
           ))}
         </div>
       )}
-
-      {/* File Type Filter */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
-        {['all', 'pdf', 'video', 'audio'].map(t => (
-          <button key={t} onClick={() => setActiveFileType(t)} style={{
-            ...subBtn,
-            borderColor: activeFileType === t ? '#a78bfa' : '#1e3a5f',
-            color: activeFileType === t ? '#a78bfa' : '#64748b'
-          }}>{t === 'all' ? 'All' : t === 'pdf' ? '📄 PDF' : t === 'video' ? '🎥 Video' : '🎵 Audio'}</button>
-        ))}
-      </div>
 
       {loading && <p style={{ color: '#94a3b8', textAlign: 'center' }}>Loading...</p>}
 
@@ -220,12 +231,12 @@ export default function FilesPage() {
             <span style={{ fontSize: 24 }}>{getFileIcon(file.file_type)}</span>
             <span style={{ color: '#e2e8f0', fontWeight: 600, fontSize: 14 }}>{file.name}</span>
           </div>
-          <button onClick={() => openFile(file)} style={{
+          <button onClick={() => setViewer(file)} style={{
             background: '#38bdf8', color: '#0f172a', border: 'none',
             padding: '8px 16px', borderRadius: 10, cursor: 'pointer',
-            fontWeight: 700, fontSize: 13, fontFamily: 'inherit'
+            fontWeight: 700, fontSize: 13, fontFamily: 'inherit', whiteSpace: 'nowrap'
           }}>
-            {file.file_type === 'pdf' ? '📄 Open' : file.file_type === 'video' ? '▶ Play' : '🎵 Listen'}
+            {getOpenLabel(file.file_type)}
           </button>
         </div>
       ))}
@@ -233,4 +244,8 @@ export default function FilesPage() {
   )
 }
 
-const subBtn = { padding: '6px 14px', borderRadius: 20, background: 'transparent', border: '1px solid', whiteSpace: 'nowrap', fontSize: 12, cursor: 'pointer', fontWeight: 600, fontFamily: 'inherit' }
+const subBtn = {
+  padding: '6px 14px', borderRadius: 20, background: 'transparent',
+  border: '1px solid', whiteSpace: 'nowrap', fontSize: 12,
+  cursor: 'pointer', fontWeight: 600, fontFamily: 'inherit'
+}
