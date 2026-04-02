@@ -46,6 +46,10 @@ export default function Admin() {
   const [qModuleId, setQModuleId] = useState('')
   const [qSubjectId, setQSubjectId] = useState('')
 
+  const [sumTitle, setSumTitle] = useState('')
+  const [sumUrl, setSumUrl] = useState('')
+  const [sumModuleId, setSumModuleId] = useState('')
+
   useEffect(() => {
     if (isAuth) { fetchModules(); fetchSubjects() }
   }, [isAuth])
@@ -135,6 +139,15 @@ export default function Admin() {
     else showMsg('❌ ' + error.message)
   }
 
+  async function addSummary() {
+    if (!sumTitle || !sumUrl || !sumModuleId) return
+    const { error } = await supabase.from('summaries').insert([{
+      title: sumTitle, url: sumUrl, module_id: sumModuleId
+    }])
+    if (!error) { showMsg('✅ Summary added!'); setSumTitle(''); setSumUrl('') }
+    else showMsg('❌ ' + error.message)
+  }
+
   const filteredSubjects = (moduleId) => subjects.filter(s => s.module_id === moduleId)
 
   if (!isAuth) return (
@@ -147,7 +160,7 @@ export default function Admin() {
     </div>
   )
 
-  const tabs = ['modules', 'subjects', 'files', 'schedules', 'checklist', 'questions']
+  const tabs = ['modules', 'subjects', 'files', 'schedules', 'checklist', 'questions', 'summaries']
 
   return (
     <div style={{ padding: '20px', maxWidth: '650px', margin: '0 auto' }}>
@@ -350,6 +363,19 @@ export default function Admin() {
           </select>
           <textarea placeholder="Explanation (optional)" value={qExplanation} onChange={e => setQExplanation(e.target.value)} style={{ ...inStyle, minHeight: 60, resize: 'vertical' }} />
           <button onClick={addQuestion} style={btnStyle}>Add Question</button>
+        </div>
+      )}
+
+      {activeTab === 'summaries' && (
+        <div style={cardStyle}>
+          <h3 style={sectionTitle}>➕ Add Summary</h3>
+          <select value={sumModuleId} onChange={e => setSumModuleId(e.target.value)} style={inStyle}>
+            <option value="">Select Module</option>
+            {modules.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+          </select>
+          <input placeholder="Title (e.g. End Module Exam)" value={sumTitle} onChange={e => setSumTitle(e.target.value)} style={inStyle} />
+          <input placeholder="Summary URL (e.g. https://git-end-summary.vercel.app)" value={sumUrl} onChange={e => setSumUrl(e.target.value)} style={inStyle} />
+          <button onClick={addSummary} style={btnStyle}>Add Summary</button>
         </div>
       )}
     </div>
