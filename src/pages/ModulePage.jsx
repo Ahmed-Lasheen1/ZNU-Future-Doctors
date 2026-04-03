@@ -20,13 +20,9 @@ function AnimatedCard({ children, delay = 0, onClick, color }) {
         transform: visible ? hovered ? 'translateY(-6px) scale(1.02)' : 'translateY(0)' : 'translateY(20px)',
         transition: 'all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1)',
         cursor: 'pointer',
-        background: hovered
-          ? `linear-gradient(135deg, ${color}25, ${color}10)`
-          : 'linear-gradient(135deg, #1e293b, #0f2540)',
+        background: hovered ? `linear-gradient(135deg, ${color}25, ${color}10)` : 'linear-gradient(135deg, #1e293b, #0f2540)',
         border: `2px solid ${hovered ? color : color + '40'}`,
-        borderRadius: 20,
-        padding: '28px 16px',
-        textAlign: 'center',
+        borderRadius: 20, padding: '28px 16px', textAlign: 'center',
         boxShadow: hovered ? `0 12px 40px ${color}30` : 'none',
       }}>
       {children}
@@ -34,7 +30,7 @@ function AnimatedCard({ children, delay = 0, onClick, color }) {
   )
 }
 
-const sectionCards = [
+const fileCards = [
   { emoji: '📖', title: 'Explanation Files', type: 'sharah', color: '#38bdf8' },
   { emoji: '❓', title: 'Question Files', type: 'questions', color: '#60a5fa' },
   { emoji: '🎥', title: 'Lecture Recordings', type: 'lectures', color: '#818cf8' },
@@ -46,23 +42,46 @@ export default function ModulePage() {
   const navigate = useNavigate()
   const [module, setModule] = useState(null)
   const [subjects, setSubjects] = useState([])
+  const [summaries, setSummaries] = useState([])
   const [visible, setVisible] = useState(false)
+  const [selectedSummary, setSelectedSummary] = useState(null)
 
   useEffect(() => {
     setTimeout(() => setVisible(true), 100)
     async function fetchData() {
-      const [modRes, subRes] = await Promise.all([
+      const [modRes, subRes, sumRes] = await Promise.all([
         supabase.from('modules').select('*').eq('id', moduleId).single(),
-        supabase.from('subjects').select('*').eq('module_id', moduleId).order('name')
+        supabase.from('subjects').select('*').eq('module_id', moduleId).order('name'),
+        supabase.from('summaries').select('*').eq('module_id', moduleId).order('created_at')
       ])
       if (modRes.data) setModule(modRes.data)
       if (subRes.data) setSubjects(subRes.data)
+      if (sumRes.data) setSummaries(sumRes.data)
     }
     fetchData()
   }, [moduleId])
 
   if (!module) return (
     <div style={{ padding: 24, textAlign: 'center', color: '#94a3b8' }}>Loading...</div>
+  )
+
+  if (selectedSummary) return (
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
+      <div style={{
+        background: 'linear-gradient(135deg, #1a2a4a, #0f1e35)',
+        borderBottom: '2px solid #2a4a7a',
+        padding: '12px 20px',
+        display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0
+      }}>
+        <button onClick={() => setSelectedSummary(null)} style={backBtn}>← Back</button>
+        <div style={{ flex: 1, textAlign: 'center' }}>
+          <div style={{ fontSize: 11, color: '#7eb8ff', letterSpacing: 2, textTransform: 'uppercase' }}>{module.name}</div>
+          <div style={{ fontSize: 16, fontWeight: 900, color: module.color }}>{selectedSummary.title}</div>
+        </div>
+        <div style={{ width: 80 }} />
+      </div>
+      <iframe src={selectedSummary.url} style={{ flex: 1, border: 'none', width: '100%' }} title={selectedSummary.title} />
+    </div>
   )
 
   return (
@@ -76,10 +95,7 @@ export default function ModulePage() {
         transition: 'all 0.5s ease'
       }}>
         <div style={{ fontSize: 52, marginBottom: 10 }}>{module.icon}</div>
-        <h1 style={{
-          fontSize: 26, fontWeight: 900,
-          color: module.color, marginBottom: 6
-        }}>{module.name}</h1>
+        <h1 style={{ fontSize: 26, fontWeight: 900, color: module.color, marginBottom: 6 }}>{module.name}</h1>
         <div style={{
           display: 'inline-block',
           background: module.status === 'active' ? '#22c55e20' : '#47556920',
@@ -100,17 +116,12 @@ export default function ModulePage() {
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             {subjects.map(sub => (
               <div key={sub.id} style={{
-                background: `${module.color}15`,
-                border: `1px solid ${module.color}40`,
+                background: `${module.color}15`, border: `1px solid ${module.color}40`,
                 borderRadius: 20, padding: '6px 16px',
                 color: module.color, fontSize: 13, fontWeight: 700
               }}>
                 {sub.name}
-                {sub.type !== 'both' && (
-                  <span style={{ color: '#64748b', fontSize: 11, marginLeft: 6 }}>
-                    · {sub.type}
-                  </span>
-                )}
+                {sub.type !== 'both' && <span style={{ color: '#64748b', fontSize: 11, marginLeft: 6 }}>· {sub.type}</span>}
               </div>
             ))}
           </div>
@@ -123,7 +134,7 @@ export default function ModulePage() {
           📁 Study Materials
         </h2>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-          {sectionCards.map((card, i) => (
+          {fileCards.map((card, i) => (
             <AnimatedCard key={i} delay={i * 80} color={card.color}
               onClick={() => navigate(`/files?type=${card.type}&module=${moduleId}`)}>
               <div style={{ fontSize: 30, marginBottom: 8 }}>{card.emoji}</div>
@@ -146,6 +157,26 @@ export default function ModulePage() {
         </AnimatedCard>
       </div>
 
+      {/* Smart Summaries */}
+      {summaries.length > 0 && (
+        <div style={{ marginBottom: 32 }}>
+          <h2 style={{ color: '#94a3b8', fontSize: 13, fontWeight: 700, letterSpacing: 2, marginBottom: 16, textTransform: 'uppercase' }}>
+            📝 Smart Summaries
+          </h2>
+          <div style={{ display: 'grid', gap: 12 }}>
+            {summaries.map((sum, i) => (
+              <AnimatedCard key={sum.id} delay={500 + i * 80} color='#34d399'
+                onClick={() => setSelectedSummary(sum)}>
+                <div style={{ fontSize: 30, marginBottom: 8 }}>📝</div>
+                <div style={{ color: '#e2e8f0', fontSize: 13, fontWeight: 700 }}>{sum.title}</div>
+                <div style={{ color: '#64748b', fontSize: 12, marginTop: 4 }}>Interactive Summary</div>
+              </AnimatedCard>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
+
+const backBtn = { background: 'rgba(255,255,255,0.08)', border: '2px solid rgba(255,255,255,0.15)', borderRadius: 10, padding: '6px 14px', color: '#94a3b8', cursor: 'pointer', fontSize: 12, fontWeight: 700, fontFamily: 'inherit' }
