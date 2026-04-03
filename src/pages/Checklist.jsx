@@ -60,13 +60,19 @@ export default function Checklist() {
     const done = progress[task.id]
     return (
       <div onClick={() => toggleTask(task.id)} style={{
-        background: done ? 'linear-gradient(135deg, #064e3b20, #022c2220)' : 'linear-gradient(135deg, #1e293b, #0f2540)',
+        background: done
+          ? 'linear-gradient(135deg, #064e3b20, #022c2220)'
+          : 'linear-gradient(135deg, #1e293b, #0f2540)',
         border: `1px solid ${done ? '#22c55e40' : '#1e3a5f'}`,
         borderRadius: 12, padding: '14px 16px', marginBottom: 8,
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
         cursor: 'pointer', transition: 'all 0.2s'
       }}>
-        <span style={{ color: done ? '#64748b' : '#e2e8f0', textDecoration: done ? 'line-through' : 'none', fontSize: 14, fontWeight: 500 }}>
+        <span style={{
+          color: done ? '#64748b' : '#e2e8f0',
+          textDecoration: done ? 'line-through' : 'none',
+          fontSize: 14, fontWeight: 500
+        }}>
           {task.text}
         </span>
         <div style={{
@@ -88,7 +94,10 @@ export default function Checklist() {
     const sp = getSubjectProgress(tasks)
     return (
       <div style={{ marginBottom: 24 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+        <div style={{
+          display: 'flex', justifyContent: 'space-between',
+          alignItems: 'center', marginBottom: 12
+        }}>
           <h3 style={{ color, fontSize: 14, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1 }}>
             📚 {title}
           </h3>
@@ -128,7 +137,8 @@ export default function Checklist() {
       {totalTasks > 0 && (
         <div style={{
           background: 'linear-gradient(135deg, #1e293b, #0f2540)',
-          border: '1px solid #1e3a5f', borderRadius: 16, padding: '20px', marginBottom: 24
+          border: '1px solid #1e3a5f', borderRadius: 16,
+          padding: '20px', marginBottom: 24
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10 }}>
             <span style={{ color: '#e2e8f0', fontWeight: 700 }}>Overall Progress</span>
@@ -137,11 +147,16 @@ export default function Checklist() {
           <div style={{ background: '#0f172a', borderRadius: 20, height: 12, overflow: 'hidden' }}>
             <div style={{
               height: '100%', borderRadius: 20,
-              background: percent === 100 ? 'linear-gradient(90deg, #22c55e, #16a34a)' : 'linear-gradient(90deg, #f59e0b, #f97316)',
+              background: percent === 100
+                ? 'linear-gradient(90deg, #22c55e, #16a34a)'
+                : 'linear-gradient(90deg, #f59e0b, #f97316)',
               width: `${percent}%`, transition: 'width 0.5s ease'
             }} />
           </div>
-          <div style={{ textAlign: 'center', marginTop: 8, color: percent === 100 ? '#22c55e' : '#f59e0b', fontWeight: 700 }}>
+          <div style={{
+            textAlign: 'center', marginTop: 8,
+            color: percent === 100 ? '#22c55e' : '#f59e0b', fontWeight: 700
+          }}>
             {percent}% {percent === 100 ? '🎉 Ready for exam!' : 'completed'}
           </div>
         </div>
@@ -150,17 +165,32 @@ export default function Checklist() {
       {loading && <p style={{ color: '#94a3b8', textAlign: 'center' }}>Loading...</p>}
 
       {!loading && moduleTasks.length === 0 && (
-        <div style={{ background: '#1e293b', border: '1px solid #1e3a5f', borderRadius: 16, padding: 40, textAlign: 'center' }}>
+        <div style={{
+          background: '#1e293b', border: '1px solid #1e3a5f',
+          borderRadius: 16, padding: 40, textAlign: 'center'
+        }}>
           <p style={{ color: '#64748b' }}>No checklist items yet 🚧</p>
         </div>
       )}
 
-      {moduleSubjects.map(sub => (
-        <SubjectSection key={sub.id} title={sub.name} tasks={getSubjectTasks(sub.id)} color='#94a3b8' />
-      ))}
-
-      {unassignedTasks.length > 0 && (
-        <SubjectSection title="General" tasks={unassignedTasks} color='#64748b' />
+      {moduleSubjects.length > 0 ? (
+        <>
+          {moduleSubjects.map(sub => (
+            <SubjectSection
+              key={sub.id}
+              title={sub.name}
+              tasks={getSubjectTasks(sub.id)}
+              color='#94a3b8'
+            />
+          ))}
+          {unassignedTasks.length > 0 && (
+            <SubjectSection title="General" tasks={unassignedTasks} color='#64748b' />
+          )}
+        </>
+      ) : (
+        <>
+          {moduleTasks.map(task => <TaskCard key={task.id} task={task} />)}
+        </>
       )}
     </div>
   )
