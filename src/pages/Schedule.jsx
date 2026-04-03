@@ -13,12 +13,16 @@ export default function Schedule() {
     async function fetchData() {
       setLoading(true)
       const [modRes, schRes] = await Promise.all([
-        supabase.from('modules').select('*').order('created_at'),
+        supabase.from('modules').select('*').order('status').order('created_at'),
         supabase.from('schedules').select('*').order('created_at')
       ])
       if (modRes.data) {
-        setModules(modRes.data)
-        const active = modRes.data.find(m => m.status === 'active')
+        const sorted = [
+          ...modRes.data.filter(m => m.status === 'active'),
+          ...modRes.data.filter(m => m.status !== 'active')
+        ]
+        setModules(sorted)
+        const active = sorted.find(m => m.status === 'active')
         if (active) setActiveModule(active.id)
       }
       if (schRes.data) setSchedules(schRes.data)
@@ -26,6 +30,15 @@ export default function Schedule() {
     }
     fetchData()
   }, [])
+
+  const getPreviewUrl = (url) => {
+    if (!url) return ''
+    if (url.includes('drive.google.com')) {
+      const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/)
+      if (match) return `https://drive.google.com/file/d/${match[1]}/preview`
+    }
+    return url
+  }
 
   const filtered = schedules.filter(s =>
     s.module_id === activeModule && s.type === activeType
@@ -50,10 +63,12 @@ export default function Schedule() {
               borderRadius: 8, padding: '6px 14px', cursor: 'pointer', fontWeight: 700
             }}>✕ Close</button>
           </div>
-          <div style={{ flex: 1, overflow: 'auto', padding: 16, display: 'flex', alignItems: 'flex-start', justifyContent: 'center' }}>
-            <img src={viewer.url} alt={viewer.title}
-              style={{ maxWidth: '100%', borderRadius: 12 }} />
-          </div>
+          <iframe
+            src={getPreviewUrl(viewer.url)}
+            style={{ flex: 1, border: 'none', width: '100%' }}
+            title={viewer.title}
+            allow="autoplay"
+          />
         </div>
       )}
 
@@ -61,7 +76,6 @@ export default function Schedule() {
         📅 Schedules
       </h1>
 
-      {/* Module Tabs */}
       <div style={{ display: 'flex', gap: 8, overflowX: 'auto', marginBottom: 16, paddingBottom: 4 }}>
         {modules.map(mod => (
           <button key={mod.id} onClick={() => setActiveModule(mod.id)} style={{
@@ -72,11 +86,11 @@ export default function Schedule() {
             cursor: 'pointer', fontWeight: 700, fontSize: 13, fontFamily: 'inherit'
           }}>
             {mod.icon} {mod.name}
+            {mod.status === 'completed' && <span style={{ fontSize: 10, marginLeft: 4, color: '#64748b' }}>✓</span>}
           </button>
         ))}
       </div>
 
-      {/* Type Tabs */}
       <div style={{ display: 'flex', gap: 10, marginBottom: 24 }}>
         {['study', 'exam'].map(type => (
           <button key={type} onClick={() => setActiveType(type)} style={{
@@ -111,9 +125,6 @@ export default function Schedule() {
           }}
             onMouseEnter={e => e.currentTarget.style.borderColor = '#a78bfa'}
             onMouseLeave={e => e.currentTarget.style.borderColor = '#1e3a5f'}>
-            <img src={sch.url} alt={sch.title}
-              style={{ width: '100%', maxHeight: 200, objectFit: 'cover', cursor: 'pointer' }}
-              onClick={() => setViewer(sch)} />
             <div style={{ padding: '14px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
                 <h3 style={{ color: '#e2e8f0', marginBottom: 4 }}>{sch.title}</h3>

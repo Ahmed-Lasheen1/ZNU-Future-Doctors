@@ -22,8 +22,12 @@ export default function MCQ() {
         supabase.from('questions').select('*').order('created_at')
       ])
       if (modRes.data) {
-        setModules(modRes.data)
-        const active = modRes.data.find(m => m.status === 'active')
+        const sorted = [
+          ...modRes.data.filter(m => m.status === 'active'),
+          ...modRes.data.filter(m => m.status !== 'active')
+        ]
+        setModules(sorted)
+        const active = sorted.find(m => m.status === 'active')
         if (active) setActiveModule(active.id)
       }
       if (subRes.data) setSubjects(subRes.data)
@@ -41,19 +45,12 @@ export default function MCQ() {
     return modMatch && subMatch
   })
 
-  function shuffle(arr) {
-    return [...arr].sort(() => Math.random() - 0.5)
-  }
+  function shuffle(arr) { return [...arr].sort(() => Math.random() - 0.5) }
 
-  function startQuiz(type) {
-    let qs = []
-    if (type === 'mock') {
-      qs = shuffle(filteredQuestions).slice(0, 36)
-    } else {
-      qs = shuffle(filteredQuestions.filter(q =>
-        activeSubject === 'all' || q.subject_id === activeSubject
-      )).slice(0, 50)
-    }
+  function startQuiz(type, subjectId = null) {
+    let qs = filteredQuestions
+    if (subjectId) qs = questions.filter(q => q.subject_id === subjectId)
+    qs = shuffle(qs).slice(0, type === 'mock' ? 36 : 50)
     setQuizQuestions(qs)
     setAnswers({})
     setSubmitted(false)
@@ -72,7 +69,6 @@ export default function MCQ() {
   const optionLabels = ['a', 'b', 'c', 'd']
   const optionTexts = (q) => [q.option_a, q.option_b, q.option_c, q.option_d]
 
-  // Quiz Screen
   if (quizMode) {
     const score = submitted ? getScore() : 0
     const total = quizQuestions.length
@@ -90,31 +86,20 @@ export default function MCQ() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
           <button onClick={() => setQuizMode(null)} style={backBtn}>← Back</button>
           <h2 style={{ color: '#f472b6', flex: 1 }}>
-            {quizMode === 'mock' ? '📝 Mock Exam' : `🧪 Practice`}
+            {quizMode === 'mock' ? '📝 Mock Exam' : '🧪 Practice'}
           </h2>
-          <span style={{ color: '#64748b', fontSize: 13 }}>
-            {Object.keys(answers).length}/{total}
-          </span>
+          <span style={{ color: '#64748b', fontSize: 13 }}>{Object.keys(answers).length}/{total}</span>
         </div>
 
         {submitted && (
           <div style={{
-            background: percent >= 60
-              ? 'linear-gradient(135deg, #064e3b, #059669)'
-              : 'linear-gradient(135deg, #7f1d1d, #dc2626)',
+            background: percent >= 60 ? 'linear-gradient(135deg, #064e3b, #059669)' : 'linear-gradient(135deg, #7f1d1d, #dc2626)',
             border: `2px solid ${percent >= 60 ? '#4ade80' : '#f87171'}`,
-            borderRadius: 20, padding: 24,
-            textAlign: 'center', marginBottom: 24
+            borderRadius: 20, padding: 24, textAlign: 'center', marginBottom: 24
           }}>
-            <div style={{ fontSize: 48, marginBottom: 8 }}>
-              {percent >= 80 ? '🏆' : percent >= 60 ? '✅' : '📚'}
-            </div>
-            <div style={{ fontSize: 36, fontWeight: 900, color: '#fff', marginBottom: 4 }}>
-              {score}/{total}
-            </div>
-            <div style={{ fontSize: 22, color: percent >= 60 ? '#4ade80' : '#f87171', fontWeight: 700 }}>
-              {percent}%
-            </div>
+            <div style={{ fontSize: 48, marginBottom: 8 }}>{percent >= 80 ? '🏆' : percent >= 60 ? '✅' : '📚'}</div>
+            <div style={{ fontSize: 36, fontWeight: 900, color: '#fff', marginBottom: 4 }}>{score}/{total}</div>
+            <div style={{ fontSize: 22, color: percent >= 60 ? '#4ade80' : '#f87171', fontWeight: 700 }}>{percent}%</div>
             <button onClick={() => startQuiz(quizMode)} style={{
               background: '#38bdf8', color: '#0f172a', border: 'none',
               padding: '10px 24px', borderRadius: 10, cursor: 'pointer',
@@ -124,14 +109,11 @@ export default function MCQ() {
         )}
 
         {quizQuestions.map((q, qi) => {
-          const answered = answers[qi] !== undefined
           const isCorrect = answers[qi] === q.correct
           return (
             <div key={qi} style={{
               background: 'linear-gradient(135deg, #1e293b, #0f2540)',
-              border: submitted
-                ? `2px solid ${isCorrect ? '#4ade80' : answered ? '#f87171' : '#1e3a5f'}`
-                : '1px solid #1e3a5f',
+              border: submitted ? `2px solid ${isCorrect ? '#4ade80' : answers[qi] ? '#f87171' : '#1e3a5f'}` : '1px solid #1e3a5f',
               borderRadius: 16, padding: 20, marginBottom: 16
             }}>
               <p style={{ color: '#e2e8f0', fontWeight: 700, marginBottom: 14, fontSize: 14 }}>
@@ -139,9 +121,7 @@ export default function MCQ() {
               </p>
               {optionTexts(q).map((opt, ai) => {
                 const label = optionLabels[ai]
-                let bg = '#0f172a'
-                let border = '#1e3a5f'
-                let color = '#94a3b8'
+                let bg = '#0f172a', border = '#1e3a5f', color = '#94a3b8'
                 if (answers[qi] === label && !submitted) { bg = '#1e3a5f'; border = '#38bdf8'; color = '#38bdf8' }
                 if (submitted && label === q.correct) { bg = '#064e3b'; border = '#4ade80'; color = '#4ade80' }
                 if (submitted && answers[qi] === label && label !== q.correct) { bg = '#7f1d1d'; border = '#f87171'; color = '#f87171' }
@@ -157,11 +137,7 @@ export default function MCQ() {
                 )
               })}
               {submitted && q.explanation && (
-                <div style={{
-                  background: '#1e3a5f', borderRadius: 10,
-                  padding: '10px 14px', marginTop: 10,
-                  color: '#94a3b8', fontSize: 12
-                }}>
+                <div style={{ background: '#1e3a5f', borderRadius: 10, padding: '10px 14px', marginTop: 10, color: '#94a3b8', fontSize: 12 }}>
                   💡 {q.explanation}
                 </div>
               )}
@@ -170,8 +146,7 @@ export default function MCQ() {
         })}
 
         {!submitted && (
-          <button
-            onClick={() => setSubmitted(true)}
+          <button onClick={() => setSubmitted(true)}
             disabled={Object.keys(answers).length < total}
             style={{
               background: Object.keys(answers).length < total ? '#1e293b' : '#38bdf8',
@@ -190,14 +165,10 @@ export default function MCQ() {
     )
   }
 
-  // Home Screen
   return (
     <div style={{ padding: '20px', maxWidth: 700, margin: '0 auto' }}>
-      <h1 style={{ color: '#f472b6', textAlign: 'center', marginBottom: 20 }}>
-        🧪 MCQ Bank
-      </h1>
+      <h1 style={{ color: '#f472b6', textAlign: 'center', marginBottom: 20 }}>🧪 MCQ Bank</h1>
 
-      {/* Module Tabs */}
       <div style={{ display: 'flex', gap: 8, overflowX: 'auto', marginBottom: 16, paddingBottom: 4 }}>
         {modules.map(mod => (
           <button key={mod.id} onClick={() => { setActiveModule(mod.id); setActiveSubject('all') }} style={{
@@ -208,47 +179,35 @@ export default function MCQ() {
             cursor: 'pointer', fontWeight: 700, fontSize: 13, fontFamily: 'inherit'
           }}>
             {mod.icon} {mod.name}
+            {mod.status === 'completed' && <span style={{ fontSize: 10, marginLeft: 4, color: '#64748b' }}>✓</span>}
           </button>
         ))}
       </div>
 
-      {/* Subject Filter */}
       <div style={{ display: 'flex', gap: 8, overflowX: 'auto', marginBottom: 24, paddingBottom: 4 }}>
-        <button onClick={() => setActiveSubject('all')} style={{
-          ...subBtn, borderColor: activeSubject === 'all' ? '#f472b6' : '#1e3a5f',
-          color: activeSubject === 'all' ? '#f472b6' : '#64748b'
-        }}>All</button>
+        <button onClick={() => setActiveSubject('all')} style={{ ...subBtn, borderColor: activeSubject === 'all' ? '#f472b6' : '#1e3a5f', color: activeSubject === 'all' ? '#f472b6' : '#64748b' }}>All</button>
         {moduleSubjects.map(sub => (
-          <button key={sub.id} onClick={() => setActiveSubject(sub.id)} style={{
-            ...subBtn, borderColor: activeSubject === sub.id ? '#f472b6' : '#1e3a5f',
-            color: activeSubject === sub.id ? '#f472b6' : '#64748b'
-          }}>{sub.name}</button>
+          <button key={sub.id} onClick={() => setActiveSubject(sub.id)} style={{ ...subBtn, borderColor: activeSubject === sub.id ? '#f472b6' : '#1e3a5f', color: activeSubject === sub.id ? '#f472b6' : '#64748b' }}>{sub.name}</button>
         ))}
       </div>
 
       {loading && <p style={{ color: '#94a3b8', textAlign: 'center' }}>Loading...</p>}
 
-      {/* Mock Exam Card */}
       <div style={{
         background: 'linear-gradient(135deg, #1e293b, #0f2540)',
-        border: '2px solid #f472b640', borderRadius: 20,
-        padding: 24, marginBottom: 16,
-        transition: 'all 0.2s'
+        border: '2px solid #f472b640', borderRadius: 20, padding: 24, marginBottom: 16, transition: 'all 0.2s'
       }}
         onMouseEnter={e => e.currentTarget.style.borderColor = '#f472b6'}
         onMouseLeave={e => e.currentTarget.style.borderColor = '#f472b640'}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
             <h3 style={{ color: '#f472b6', marginBottom: 6 }}>📝 Mock Exam</h3>
-            <p style={{ color: '#64748b', fontSize: 13 }}>
-              {Math.min(36, filteredQuestions.length)} questions · Timed practice
-            </p>
+            <p style={{ color: '#64748b', fontSize: 13 }}>{Math.min(36, filteredQuestions.length)} questions · Full practice</p>
           </div>
           <button onClick={() => startQuiz('mock')} style={startBtn}>Start</button>
         </div>
       </div>
 
-      {/* Practice by Subject */}
       <h3 style={{ color: '#94a3b8', fontSize: 13, fontWeight: 700, letterSpacing: 2, marginBottom: 16, textTransform: 'uppercase' }}>
         Practice by Subject
       </h3>
@@ -258,17 +217,15 @@ export default function MCQ() {
           return (
             <div key={sub.id} style={{
               background: 'linear-gradient(135deg, #1e293b, #0f2540)',
-              border: '1px solid #1e3a5f', borderRadius: 16,
-              padding: 16, cursor: 'pointer', transition: 'all 0.2s'
+              border: '1px solid #1e3a5f', borderRadius: 16, padding: 16,
+              cursor: 'pointer', transition: 'all 0.2s'
             }}
               onMouseEnter={e => e.currentTarget.style.borderColor = '#f472b6'}
               onMouseLeave={e => e.currentTarget.style.borderColor = '#1e3a5f'}
-              onClick={() => { setActiveSubject(sub.id); startQuiz('practice') }}>
+              onClick={() => startQuiz('practice', sub.id)}>
               <div style={{ color: '#e2e8f0', fontWeight: 700, marginBottom: 6 }}>{sub.name}</div>
-              <div style={{ color: '#64748b', fontSize: 12 }}>{subQs.length} questions</div>
-              <button style={{ ...startBtn, marginTop: 10, width: '100%', fontSize: 12, padding: '6px 12px' }}>
-                Practice
-              </button>
+              <div style={{ color: '#64748b', fontSize: 12, marginBottom: 10 }}>{subQs.length} questions</div>
+              <button style={{ ...startBtn, width: '100%', fontSize: 12, padding: '6px 12px' }}>Practice</button>
             </div>
           )
         })}
