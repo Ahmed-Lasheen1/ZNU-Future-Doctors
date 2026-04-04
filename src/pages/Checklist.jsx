@@ -48,7 +48,9 @@ export default function Checklist() {
   const totalTasks = moduleTasks.length
   const percent = totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) : 0
 
-  const getSubjectTasks = (subjectId) => moduleTasks.filter(t => t.subject_id === subjectId)
+  const getSubjectTasks = (subjectId) =>
+    moduleTasks.filter(t => t.subject_id === subjectId)
+
   const unassignedTasks = moduleTasks.filter(t => !t.subject_id)
 
   const getSubjectProgress = (tasks) => {
@@ -98,7 +100,10 @@ export default function Checklist() {
           display: 'flex', justifyContent: 'space-between',
           alignItems: 'center', marginBottom: 12
         }}>
-          <h3 style={{ color, fontSize: 14, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1 }}>
+          <h3 style={{
+            color, fontSize: 14, fontWeight: 700,
+            textTransform: 'uppercase', letterSpacing: 1
+          }}>
             📚 {title}
           </h3>
           <span style={{
@@ -173,24 +178,20 @@ export default function Checklist() {
         </div>
       )}
 
-      {moduleSubjects.length > 0 ? (
-        <>
-          {moduleSubjects.map(sub => (
+      {moduleSubjects.length > 0
+        ? moduleSubjects.map(sub => (
             <SubjectSection
               key={sub.id}
               title={sub.name}
               tasks={getSubjectTasks(sub.id)}
               color='#94a3b8'
             />
-          ))}
-          {unassignedTasks.length > 0 && (
-            <SubjectSection title="General" tasks={unassignedTasks} color='#64748b' />
-          )}
-        </>
-      ) : (
-        <>
-          {moduleTasks.map(task => <TaskCard key={task.id} task={task} />)}
-        </>
+          ))
+        : moduleTasks.map(task => <TaskCard key={task.id} task={task} />)
+      }
+
+      {moduleSubjects.length > 0 && unassignedTasks.length > 0 && (
+        <SubjectSection title="General" tasks={unassignedTasks} color='#64748b' />
       )}
     </div>
   )
