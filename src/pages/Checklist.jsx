@@ -17,9 +17,8 @@ export default function Checklist() {
 
   async function fetchData() {
     setLoading(true)
-    const [modRes, subRes, taskRes] = await Promise.all([
+    const [modRes, taskRes] = await Promise.all([
       supabase.from('modules').select('*').order('created_at'),
-      supabase.from('subjects').select('*').order('name'),
       supabase.from('checklist').select('*').order('created_at')
     ])
     if (modRes.data) {
@@ -29,11 +28,20 @@ export default function Checklist() {
       ]
       setModules(sorted)
       const active = sorted.find(m => m.status === 'active')
-      if (active) setActiveModule(active.id)
+      if (active) {
+        setActiveModule(active.id)
+        const subRes = await supabase.from('subjects').select('*').eq('module_id', active.id).order('name')
+        if (subRes.data) setSubjects(subRes.data)
+      }
     }
-    if (subRes.data) setSubjects(subRes.data)
     if (taskRes.data) setTasks(taskRes.data)
     setLoading(false)
+  }
+
+  async function changeModule(moduleId) {
+    setActiveModule(moduleId)
+    const { data } = await supabase.from('subjects').select('*').eq('module_id', moduleId).order('name')
+    if (data) setSubjects(data)
   }
 
   function toggleTask(id) {
@@ -43,14 +51,11 @@ export default function Checklist() {
   }
 
   const moduleTasks = tasks.filter(t => t.module_id === activeModule)
-  const moduleSubjects = subjects.filter(s => s.module_id === activeModule)
   const doneTasks = moduleTasks.filter(t => progress[t.id]).length
   const totalTasks = moduleTasks.length
   const percent = totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) : 0
 
-  const getSubjectTasks = (subjectId) =>
-    moduleTasks.filter(t => t.subject_id === subjectId)
-
+  const getSubjectTasks = (subjectId) => moduleTasks.filter(t => t.subject_id === subjectId)
   const unassignedTasks = moduleTasks.filter(t => !t.subject_id)
 
   const getSubjectProgress = (tasks) => {
@@ -126,7 +131,7 @@ export default function Checklist() {
 
       <div style={{ display: 'flex', gap: 8, overflowX: 'auto', marginBottom: 20, paddingBottom: 4 }}>
         {modules.map(mod => (
-          <button key={mod.id} onClick={() => setActiveModule(mod.id)} style={{
+          <button key={mod.id} onClick={() => changeModule(mod.id)} style={{
             padding: '8px 16px', borderRadius: 10, whiteSpace: 'nowrap',
             border: `2px solid ${activeModule === mod.id ? mod.color : '#1e3a5f'}`,
             background: activeModule === mod.id ? `${mod.color}20` : 'transparent',
@@ -178,8 +183,8 @@ export default function Checklist() {
         </div>
       )}
 
-      {moduleSubjects.length > 0
-        ? moduleSubjects.map(sub => (
+      {subjects.length > 0
+        ? subjects.map(sub => (
             <SubjectSection
               key={sub.id}
               title={sub.name}
@@ -190,7 +195,7 @@ export default function Checklist() {
         : moduleTasks.map(task => <TaskCard key={task.id} task={task} />)
       }
 
-      {moduleSubjects.length > 0 && unassignedTasks.length > 0 && (
+      {subjects.length > 0 && unassignedTasks.length > 0 && (
         <SubjectSection title="General" tasks={unassignedTasks} color='#64748b' />
       )}
     </div>
