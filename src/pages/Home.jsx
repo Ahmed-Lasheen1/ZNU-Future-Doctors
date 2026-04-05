@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../supabase'
 
-function AnimatedCard({ children, delay = 0, onClick, color }) {
+function AnimatedCard({ children, delay = 0, onClick, color, dark }) {
   const [visible, setVisible] = useState(false)
   const [hovered, setHovered] = useState(false)
 
@@ -22,12 +22,10 @@ function AnimatedCard({ children, delay = 0, onClick, color }) {
         cursor: 'pointer',
         background: hovered
           ? `linear-gradient(135deg, ${color}25, ${color}10)`
-          : 'linear-gradient(135deg, #1e293b, #0f2540)',
+          : dark ? 'linear-gradient(135deg, #1e293b, #0f2540)' : '#fff',
         border: `2px solid ${hovered ? color : color + '40'}`,
-        borderRadius: 20,
-        padding: '28px 16px',
-        textAlign: 'center',
-        boxShadow: hovered ? `0 12px 40px ${color}30` : 'none',
+        borderRadius: 20, padding: '28px 16px', textAlign: 'center',
+        boxShadow: hovered ? `0 12px 40px ${color}30` : dark ? 'none' : '0 2px 8px rgba(0,0,0,0.06)',
       }}>
       {children}
     </div>
@@ -41,7 +39,7 @@ const toolCards = [
   { emoji: '🧪', title: 'MCQ Bank', to: '/mcq', color: '#f472b6' },
 ]
 
-export default function Home() {
+export default function Home({ dark, toggleTheme }) {
   const navigate = useNavigate()
   const [modules, setModules] = useState([])
   const [titleVisible, setTitleVisible] = useState(false)
@@ -56,16 +54,33 @@ export default function Home() {
   const activeModules = modules.filter(m => m.status === 'active')
   const completedModules = modules.filter(m => m.status === 'completed')
 
+  const sectionTitle = (text) => (
+    <h2 style={{
+      color: dark ? '#94a3b8' : '#64748b',
+      fontSize: 13, fontWeight: 700, letterSpacing: 2,
+      marginBottom: 16, textTransform: 'uppercase'
+    }}>{text}</h2>
+  )
+
   return (
     <div style={{ padding: '24px 16px 100px' }}>
 
       {/* Header */}
       <div style={{
-        textAlign: 'center', padding: '40px 0 30px',
+        textAlign: 'center', padding: '30px 0 24px',
         opacity: titleVisible ? 1 : 0,
         transform: titleVisible ? 'translateY(0)' : 'translateY(-20px)',
         transition: 'all 0.6s ease'
       }}>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
+          <button onClick={toggleTheme} style={{
+            background: dark ? 'rgba(56,189,248,0.1)' : '#f1f5f9',
+            color: dark ? '#38bdf8' : '#475569',
+            border: `1px solid ${dark ? 'rgba(56,189,248,0.3)' : '#e2e8f0'}`,
+            padding: '6px 14px', borderRadius: 10,
+            cursor: 'pointer', fontSize: 16, fontWeight: 700
+          }}>{dark ? '☀️' : '🌙'}</button>
+        </div>
         <div style={{ fontSize: 56, marginBottom: 12, filter: 'drop-shadow(0 0 20px rgba(56,189,248,0.5))' }}>🏥</div>
         <h1 style={{
           fontSize: 28, fontWeight: 900,
@@ -73,21 +88,21 @@ export default function Home() {
           WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
           marginBottom: 8
         }}>ZNU Future Doctors</h1>
-        <p style={{ color: '#94a3b8', fontSize: 15 }}>Your Integrated Medical Study Platform</p>
+        <p style={{ color: dark ? '#94a3b8' : '#64748b', fontSize: 15 }}>
+          Your Integrated Medical Study Platform
+        </p>
       </div>
 
       {/* Active Modules */}
       {activeModules.length > 0 && (
         <div style={{ maxWidth: 600, margin: '0 auto 32px' }}>
-          <h2 style={{ color: '#94a3b8', fontSize: 13, fontWeight: 700, letterSpacing: 2, marginBottom: 16, textTransform: 'uppercase' }}>
-            🟢 Active Modules
-          </h2>
+          {sectionTitle('🟢 Active Modules')}
           <div style={{ display: 'grid', gridTemplateColumns: activeModules.length === 1 ? '1fr' : '1fr 1fr', gap: 12 }}>
             {activeModules.map((mod, i) => (
-              <AnimatedCard key={mod.id} delay={200 + i * 80} color={mod.color}
+              <AnimatedCard key={mod.id} delay={200 + i * 80} color={mod.color} dark={dark}
                 onClick={() => navigate(`/module/${mod.id}`)}>
                 <div style={{ fontSize: 36, marginBottom: 8 }}>{mod.icon}</div>
-                <div style={{ color: '#e2e8f0', fontSize: 14, fontWeight: 700, marginBottom: 8 }}>{mod.name}</div>
+                <div style={{ color: dark ? '#e2e8f0' : '#1e293b', fontSize: 14, fontWeight: 700, marginBottom: 8 }}>{mod.name}</div>
                 <div style={{
                   display: 'inline-block',
                   background: '#22c55e20', color: '#22c55e',
@@ -102,15 +117,13 @@ export default function Home() {
 
       {/* Tools */}
       <div style={{ maxWidth: 600, margin: '0 auto 32px' }}>
-        <h2 style={{ color: '#94a3b8', fontSize: 13, fontWeight: 700, letterSpacing: 2, marginBottom: 16, textTransform: 'uppercase' }}>
-          🛠 Tools
-        </h2>
+        {sectionTitle('🛠 Tools')}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
           {toolCards.map((card, i) => (
-            <AnimatedCard key={i} delay={400 + i * 80} color={card.color}
+            <AnimatedCard key={i} delay={400 + i * 80} color={card.color} dark={dark}
               onClick={() => navigate(card.to)}>
               <div style={{ fontSize: 30, marginBottom: 8 }}>{card.emoji}</div>
-              <div style={{ color: '#e2e8f0', fontSize: 13, fontWeight: 700 }}>{card.title}</div>
+              <div style={{ color: dark ? '#e2e8f0' : '#1e293b', fontSize: 13, fontWeight: 700 }}>{card.title}</div>
             </AnimatedCard>
           ))}
         </div>
@@ -119,15 +132,13 @@ export default function Home() {
       {/* Completed Modules */}
       {completedModules.length > 0 && (
         <div style={{ maxWidth: 600, margin: '0 auto' }}>
-          <h2 style={{ color: '#94a3b8', fontSize: 13, fontWeight: 700, letterSpacing: 2, marginBottom: 16, textTransform: 'uppercase' }}>
-            ✅ Completed Modules
-          </h2>
+          {sectionTitle('✅ Completed Modules')}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             {completedModules.map((mod, i) => (
-              <AnimatedCard key={mod.id} delay={i * 80} color='#475569'
+              <AnimatedCard key={mod.id} delay={i * 80} color='#475569' dark={dark}
                 onClick={() => navigate(`/module/${mod.id}`)}>
                 <div style={{ fontSize: 30, marginBottom: 8, filter: 'grayscale(0.5)' }}>{mod.icon}</div>
-                <div style={{ color: '#94a3b8', fontSize: 13, fontWeight: 700, marginBottom: 8 }}>{mod.name}</div>
+                <div style={{ color: dark ? '#94a3b8' : '#64748b', fontSize: 13, fontWeight: 700, marginBottom: 8 }}>{mod.name}</div>
                 <div style={{
                   display: 'inline-block',
                   background: '#47556920', color: '#64748b',
