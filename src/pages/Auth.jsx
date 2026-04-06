@@ -70,9 +70,9 @@ export default function Auth({ dark }) {
         borderRadius: 20, padding: 32, width: '90%', maxWidth: 400
       }}>
         <div style={{ textAlign: 'center', marginBottom: 24 }}>
-          <div style={{ fontSize: 40, marginBottom: 8 }}>🧠</div>
+          <div style={{ fontSize: 40, marginBottom: 8 }}>🏥</div>
           <h2 style={{ color: '#38bdf8', fontSize: 22, fontWeight: 900, marginBottom: 4 }}>
-            ZNU Synapse
+            ZNU Future Doctors
           </h2>
           <p style={{ color: c.sub, fontSize: 13 }}>
             {isSignUp ? 'Create your account' : 'Sign in to your account'}
