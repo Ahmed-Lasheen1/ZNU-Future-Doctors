@@ -123,13 +123,13 @@ export default function Home({ dark, toggleTheme }) {
           )}
         </div>
 
-        <div style={{ fontSize: 56, marginBottom: 12, filter: 'drop-shadow(0 0 20px rgba(56,189,248,0.5))' }}>🧠</div>
+        <div style={{ fontSize: 56, marginBottom: 12, filter: 'drop-shadow(0 0 20px rgba(56,189,248,0.5))' }}>🏥</div>
         <h1 style={{
           fontSize: 28, fontWeight: 900,
           background: 'linear-gradient(135deg, #38bdf8, #818cf8)',
           WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
           marginBottom: 8
-        }}>ZNU Synapse</h1>
+        }}>ZNU Future Doctors</h1>
         <p style={{ color: dark ? '#94a3b8' : '#64748b', fontSize: 15 }}>
           Your Integrated Medical Study Platform
         </p>
