@@ -102,7 +102,7 @@ export default function AnonQuestions({ dark }) {
             <input type="password" placeholder="Admin password"
               value={adminPass} onChange={e => setAdminPass(e.target.value)}
               style={{ ...inStyle, marginBottom: 0, flex: 1 }} />
-            <button onClick={() => adminPass === '@SyNapse74' && setIsAdmin(true)} style={{
+            <button onClick={() => adminPass === 'Ail@10_11_2006#' && setIsAdmin(true)} style={{
               background: '#38bdf8', color: '#0f172a', border: 'none',
               padding: '10px 16px', borderRadius: 10, cursor: 'pointer',
               fontWeight: 700, fontFamily: 'inherit', whiteSpace: 'nowrap'

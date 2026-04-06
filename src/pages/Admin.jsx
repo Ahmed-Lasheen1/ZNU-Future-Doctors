@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../supabase'
 
-const PASS = '@SyNapse74'
+const PASS = 'Ail@10_11_2006#'
 
 export default function Admin({ dark }) {
   const [pass, setPass] = useState('')
