@@ -48,7 +48,7 @@ function SmartHeader({ dark, toggleTheme }) {
         border: `1px solid ${dark ? 'rgba(56,189,248,0.3)' : '#e2e8f0'}`
       }}>← Back</button>
 
-      <span style={{ color: dark ? '#38bdf8' : '#0ea5e9', fontWeight: 900, fontSize: 16 }}>🧠 ZNU</span>
+      <span style={{ color: dark ? '#38bdf8' : '#0ea5e9', fontWeight: 900, fontSize: 16 }}>ZNU Future Doctors</span>
 
       <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
         <button onClick={toggleTheme} style={{
