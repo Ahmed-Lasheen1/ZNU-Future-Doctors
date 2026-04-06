@@ -10,10 +10,10 @@ export default function Checklist({ dark }) {
   const [activeModule, setActiveModule] = useState(null)
   const [tasks, setTasks] = useState([])
   const [newTask, setNewTask] = useState('')
+  const [newDeadline, setNewDeadline] = useState('')
   const [loading, setLoading] = useState(true)
 
   const c = {
-    bg: dark ? 'linear-gradient(135deg, #0a0f1e, #0d1a2e)' : '#f0f9ff',
     card: dark ? 'linear-gradient(135deg, #1e293b, #0f2540)' : '#fff',
     border: dark ? '#1e3a5f' : '#e2e8f0',
     text: dark ? '#e2e8f0' : '#1e293b',
@@ -21,13 +21,15 @@ export default function Checklist({ dark }) {
     input: dark ? '#0f172a' : '#f8fafc',
   }
 
-  useEffect(() => {
-    fetchModules()
-  }, [])
+  const inStyle = {
+    padding: '10px 14px', borderRadius: 10,
+    border: `1px solid ${c.border}`,
+    background: c.input, color: c.text,
+    fontSize: 14, fontFamily: 'inherit', outline: 'none'
+  }
 
-  useEffect(() => {
-    if (activeModule) fetchTasks()
-  }, [activeModule, user])
+  useEffect(() => { fetchModules() }, [])
+  useEffect(() => { if (activeModule) fetchTasks() }, [activeModule, user])
 
   async function fetchModules() {
     const { data } = await supabase.from('modules').select('*').order('created_at')
@@ -45,10 +47,7 @@ export default function Checklist({ dark }) {
   async function fetchTasks() {
     if (user) {
       const { data } = await supabase.from('user_checklist')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('module_id', activeModule)
-        .order('created_at')
+        .select('*').eq('user_id', user.id).eq('module_id', activeModule).order('created_at')
       if (data) setTasks(data)
     } else {
       const saved = JSON.parse(localStorage.getItem(`checklist_${activeModule}`) || '[]')
@@ -58,47 +57,48 @@ export default function Checklist({ dark }) {
 
   async function addTask() {
     if (!newTask.trim()) return
-    const task = {
-      id: Date.now().toString(),
-      text: newTask.trim(),
-      done: false,
-      module_id: activeModule
-    }
-
     if (user) {
       const { data } = await supabase.from('user_checklist').insert([{
-        user_id: user.id,
-        module_id: activeModule,
-        text: newTask.trim(),
-        done: false
+        user_id: user.id, module_id: activeModule,
+        text: newTask.trim(), done: false,
+        deadline: newDeadline || null
       }]).select().single()
       if (data) setTasks(prev => [...prev, data])
     } else {
+      const task = { id: Date.now().toString(), text: newTask.trim(), done: false, module_id: activeModule, deadline: newDeadline || null }
       const updated = [...tasks, task]
       setTasks(updated)
       localStorage.setItem(`checklist_${activeModule}`, JSON.stringify(updated))
     }
     setNewTask('')
+    setNewDeadline('')
   }
 
   async function toggleTask(task) {
     if (user) {
       await supabase.from('user_checklist').update({ done: !task.done }).eq('id', task.id)
-      setTasks(prev => prev.map(t => t.id === task.id ? { ...t, done: !t.done } : t))
-    } else {
-      const updated = tasks.map(t => t.id === task.id ? { ...t, done: !t.done } : t)
-      setTasks(updated)
-      localStorage.setItem(`checklist_${activeModule}`, JSON.stringify(updated))
     }
+    const updated = tasks.map(t => t.id === task.id ? { ...t, done: !t.done } : t)
+    setTasks(updated)
+    if (!user) localStorage.setItem(`checklist_${activeModule}`, JSON.stringify(updated))
   }
 
   async function deleteTask(task) {
-    if (user) {
-      await supabase.from('user_checklist').delete().eq('id', task.id)
-    }
+    if (user) await supabase.from('user_checklist').delete().eq('id', task.id)
     const updated = tasks.filter(t => t.id !== task.id)
     setTasks(updated)
     if (!user) localStorage.setItem(`checklist_${activeModule}`, JSON.stringify(updated))
+  }
+
+  function isOverdue(deadline) {
+    if (!deadline) return false
+    return new Date(deadline) < new Date(new Date().toDateString())
+  }
+
+  function isDueSoon(deadline) {
+    if (!deadline) return false
+    const diff = new Date(deadline) - new Date(new Date().toDateString())
+    return diff >= 0 && diff <= 2 * 24 * 60 * 60 * 1000
   }
 
   const doneTasks = tasks.filter(t => t.done).length
@@ -108,7 +108,7 @@ export default function Checklist({ dark }) {
   return (
     <div style={{ padding: '20px', maxWidth: 700, margin: '0 auto' }}>
       <h1 style={{ color: '#f59e0b', textAlign: 'center', marginBottom: 8 }}>
-        🎯 Exam Checklist
+        🎯 Checklist
       </h1>
 
       {!user && (
@@ -128,7 +128,7 @@ export default function Checklist({ dark }) {
           borderRadius: 12, padding: '10px 16px', marginBottom: 16,
           textAlign: 'center', fontSize: 13, color: '#22c55e'
         }}>
-          ✅ Signed in as {user.email}
+          ✅ Signed in — checklist synced to your account
         </div>
       )}
 
@@ -143,17 +143,14 @@ export default function Checklist({ dark }) {
             cursor: 'pointer', fontWeight: 700, fontSize: 13, fontFamily: 'inherit'
           }}>
             {mod.icon} {mod.name}
-            {mod.status === 'completed' && <span style={{ fontSize: 10, marginLeft: 4, color: c.sub }}>✓</span>}
+            {mod.status === 'completed' && <span style={{ fontSize: 10, marginLeft: 4 }}>✓</span>}
           </button>
         ))}
       </div>
 
       {/* Progress */}
       {totalTasks > 0 && (
-        <div style={{
-          background: c.card, border: `1px solid ${c.border}`,
-          borderRadius: 16, padding: '20px', marginBottom: 20
-        }}>
+        <div style={{ background: c.card, border: `1px solid ${c.border}`, borderRadius: 16, padding: '20px', marginBottom: 20 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10 }}>
             <span style={{ color: c.text, fontWeight: 700 }}>Overall Progress</span>
             <span style={{ color: '#f59e0b', fontWeight: 900 }}>{doneTasks}/{totalTasks}</span>
@@ -161,9 +158,7 @@ export default function Checklist({ dark }) {
           <div style={{ background: dark ? '#0f172a' : '#e2e8f0', borderRadius: 20, height: 12, overflow: 'hidden' }}>
             <div style={{
               height: '100%', borderRadius: 20,
-              background: percent === 100
-                ? 'linear-gradient(90deg, #22c55e, #16a34a)'
-                : 'linear-gradient(90deg, #f59e0b, #f97316)',
+              background: percent === 100 ? 'linear-gradient(90deg, #22c55e, #16a34a)' : 'linear-gradient(90deg, #f59e0b, #f97316)',
               width: `${percent}%`, transition: 'width 0.5s ease'
             }} />
           </div>
@@ -174,77 +169,89 @@ export default function Checklist({ dark }) {
       )}
 
       {/* Add Task */}
-      <div style={{
-        background: c.card, border: `1px solid ${c.border}`,
-        borderRadius: 16, padding: '16px', marginBottom: 20,
-        display: 'flex', gap: 10
-      }}>
-        <input
-          placeholder="Add a topic to study..."
-          value={newTask}
-          onChange={e => setNewTask(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && addTask()}
-          style={{
-            flex: 1, padding: '10px 14px', borderRadius: 10,
-            border: `1px solid ${c.border}`,
-            background: c.input, color: c.text,
-            fontSize: 14, fontFamily: 'inherit', outline: 'none'
-          }}
-        />
-        <button onClick={addTask} style={{
-          background: '#f59e0b', color: '#0f172a', border: 'none',
-          padding: '10px 16px', borderRadius: 10, cursor: 'pointer',
-          fontWeight: 700, fontFamily: 'inherit', fontSize: 14, whiteSpace: 'nowrap'
-        }}>+ Add</button>
+      <div style={{ background: c.card, border: `1px solid ${c.border}`, borderRadius: 16, padding: '16px', marginBottom: 20 }}>
+        <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+          <input
+            placeholder="Add a topic to study..."
+            value={newTask} onChange={e => setNewTask(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && addTask()}
+            style={{ ...inStyle, flex: 1 }} />
+          <button onClick={addTask} style={{
+            background: '#f59e0b', color: '#0f172a', border: 'none',
+            padding: '10px 16px', borderRadius: 10, cursor: 'pointer',
+            fontWeight: 700, fontFamily: 'inherit', fontSize: 14, whiteSpace: 'nowrap'
+          }}>+ Add</button>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ color: c.sub, fontSize: 12, whiteSpace: 'nowrap' }}>📅 Deadline:</span>
+          <input type="date" value={newDeadline} onChange={e => setNewDeadline(e.target.value)}
+            style={{ ...inStyle, flex: 1 }} />
+        </div>
       </div>
 
       {loading && <p style={{ color: c.sub, textAlign: 'center' }}>Loading...</p>}
 
       {!loading && tasks.length === 0 && (
-        <div style={{
-          background: c.card, border: `1px solid ${c.border}`,
-          borderRadius: 16, padding: 40, textAlign: 'center'
-        }}>
+        <div style={{ background: c.card, border: `1px solid ${c.border}`, borderRadius: 16, padding: 40, textAlign: 'center' }}>
           <p style={{ color: c.sub }}>No tasks yet — add topics you need to study! 📚</p>
         </div>
       )}
 
-      {tasks.map(task => (
-        <div key={task.id} style={{
-          background: task.done
-            ? dark ? 'linear-gradient(135deg, #064e3b20, #022c2220)' : '#f0fdf4'
-            : c.card,
-          border: `1px solid ${task.done ? '#22c55e40' : c.border}`,
-          borderRadius: 12, padding: '14px 16px', marginBottom: 8,
-          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-          transition: 'all 0.2s'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1 }}
-            onClick={() => toggleTask(task)}>
-            <div style={{
-              width: 24, height: 24, borderRadius: 8, flexShrink: 0,
-              border: `2px solid ${task.done ? '#22c55e' : '#38bdf8'}`,
-              background: task.done ? '#22c55e' : 'transparent',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: '#fff', fontWeight: 900, fontSize: 14, cursor: 'pointer'
-            }}>
-              {task.done && '✓'}
+      {tasks.map(task => {
+        const overdue = isOverdue(task.deadline) && !task.done
+        const dueSoon = isDueSoon(task.deadline) && !task.done && !overdue
+
+        return (
+          <div key={task.id} style={{
+            background: overdue
+              ? dark ? '#7f1d1d20' : '#fef2f2'
+              : task.done
+                ? dark ? 'linear-gradient(135deg, #064e3b20, #022c2220)' : '#f0fdf4'
+                : c.card,
+            border: `1px solid ${overdue ? '#ef444440' : dueSoon ? '#f59e0b40' : task.done ? '#22c55e40' : c.border}`,
+            borderRadius: 12, padding: '14px 16px', marginBottom: 8,
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+            transition: 'all 0.2s'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1 }}
+              onClick={() => toggleTask(task)}>
+              <div style={{
+                width: 24, height: 24, borderRadius: 8, flexShrink: 0,
+                border: `2px solid ${task.done ? '#22c55e' : overdue ? '#ef4444' : '#38bdf8'}`,
+                background: task.done ? '#22c55e' : 'transparent',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                color: '#fff', fontWeight: 900, fontSize: 14, cursor: 'pointer'
+              }}>
+                {task.done && '✓'}
+              </div>
+              <div>
+                <span style={{
+                  color: task.done ? c.sub : overdue ? '#ef4444' : c.text,
+                  textDecoration: task.done ? 'line-through' : 'none',
+                  fontSize: 14, fontWeight: 500
+                }}>
+                  {task.text}
+                </span>
+                {task.deadline && (
+                  <div style={{
+                    fontSize: 11, marginTop: 2,
+                    color: overdue ? '#ef4444' : dueSoon ? '#f59e0b' : c.sub,
+                    fontWeight: overdue || dueSoon ? 700 : 400
+                  }}>
+                    {overdue ? '⚠️ Overdue: ' : dueSoon ? '⏰ Due soon: ' : '📅 '}
+                    {task.deadline}
+                  </div>
+                )}
+              </div>
             </div>
-            <span style={{
-              color: task.done ? c.sub : c.text,
-              textDecoration: task.done ? 'line-through' : 'none',
-              fontSize: 14, fontWeight: 500, cursor: 'pointer'
-            }}>
-              {task.text}
-            </span>
+            <button onClick={() => deleteTask(task)} style={{
+              background: 'transparent', border: 'none',
+              color: '#ef4444', cursor: 'pointer', fontSize: 16,
+              padding: '4px 8px', borderRadius: 8
+            }}>🗑</button>
           </div>
-          <button onClick={() => deleteTask(task)} style={{
-            background: 'transparent', border: 'none',
-            color: '#ef4444', cursor: 'pointer', fontSize: 16,
-            padding: '4px 8px', borderRadius: 8
-          }}>🗑</button>
-        </div>
-      ))}
+        )
+      })}
     </div>
   )
 }

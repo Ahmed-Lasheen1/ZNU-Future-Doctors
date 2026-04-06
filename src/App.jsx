@@ -10,6 +10,8 @@ import MCQ from './pages/MCQ'
 import Summaries from './pages/Summaries'
 import ModulePage from './pages/ModulePage'
 import Auth from './pages/Auth'
+import Profile from './pages/Profile'
+import AnonQuestions from './pages/AnonQuestions'
 import Footer from './components/Footer'
 
 export const ThemeContext = createContext()
@@ -27,7 +29,7 @@ function ScrollToTop() {
 function SmartHeader({ dark, toggleTheme }) {
   const navigate = useNavigate()
   const location = useLocation()
-  const { user, signOut } = useAuth()
+  const { user, signOut, profile } = useAuth()
   if (location.pathname === '/') return null
 
   return (
@@ -46,7 +48,7 @@ function SmartHeader({ dark, toggleTheme }) {
         border: `1px solid ${dark ? 'rgba(56,189,248,0.3)' : '#e2e8f0'}`
       }}>← Back</button>
 
-      <span style={{ color: dark ? '#38bdf8' : '#0ea5e9', fontWeight: 900, fontSize: 16 }}>🏥 ZNU</span>
+      <span style={{ color: dark ? '#38bdf8' : '#0ea5e9', fontWeight: 900, fontSize: 16 }}>🧠 ZNU</span>
 
       <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
         <button onClick={toggleTheme} style={{
@@ -57,12 +59,12 @@ function SmartHeader({ dark, toggleTheme }) {
         }}>{dark ? '☀️' : '🌙'}</button>
 
         {user ? (
-          <button onClick={signOut} style={{
+          <button onClick={() => navigate('/profile')} style={{
             ...navBtn,
-            background: '#ef444420',
-            color: '#ef4444',
-            border: '1px solid #ef444440'
-          }}>Sign Out</button>
+            background: '#f59e0b20',
+            color: '#f59e0b',
+            border: '1px solid #f59e0b40'
+          }}>⭐ {profile?.points || 0}</button>
         ) : (
           <button onClick={() => navigate('/auth')} style={{
             ...navBtn,
@@ -84,20 +86,30 @@ const navBtn = {
 export default function App() {
   const [dark, setDark] = useState(true)
   const [user, setUser] = useState(null)
+  const [profile, setProfile] = useState(null)
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null)
+      if (session?.user) fetchProfile(session.user.id)
     })
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null)
+      if (session?.user) fetchProfile(session.user.id)
+      else setProfile(null)
     })
     return () => subscription.unsubscribe()
   }, [])
 
+  async function fetchProfile(userId) {
+    const { data } = await supabase.from('profiles').select('*').eq('id', userId).single()
+    if (data) setProfile(data)
+  }
+
   async function signOut() {
     await supabase.auth.signOut()
     setUser(null)
+    setProfile(null)
   }
 
   const bg = dark
@@ -106,7 +118,7 @@ export default function App() {
 
   return (
     <ThemeContext.Provider value={{ dark }}>
-      <AuthContext.Provider value={{ user, signOut }}>
+      <AuthContext.Provider value={{ user, signOut, profile, fetchProfile }}>
         <Router>
           <div style={{
             background: bg,
@@ -127,6 +139,8 @@ export default function App() {
                 <Route path="/admin" element={<Admin dark={dark} />} />
                 <Route path="/mcq" element={<MCQ dark={dark} />} />
                 <Route path="/auth" element={<Auth dark={dark} />} />
+                <Route path="/profile" element={<Profile dark={dark} />} />
+                <Route path="/anon-questions" element={<AnonQuestions dark={dark} />} />
                 <Route path="*" element={<Home dark={dark} />} />
               </Routes>
             </div>
