@@ -8,9 +8,7 @@ export default function Footer({ dark }) {
       fontSize: 13,
       fontWeight: 600
     }}>
-      Powered by ZNU Synapse team
-      <br />
-      Developed by Ahmed Lasheen
+      Made with ❤️ by Ahmed Lasheen · ZNU Future Doctors
     </div>
   )
 }
