@@ -3,6 +3,7 @@ import { useLocation } from 'react-router-dom'
 import { supabase } from '../supabase'
 import { getTheme } from '../theme'
 import ErrorBanner from '../components/ErrorBanner'
+import { useModules } from '../App'
 
 function PDFViewer({ url, onClose }) {
   const getPreviewUrl = (url) => {
@@ -68,7 +69,7 @@ function AudioViewer({ url, name, onClose }) {
 export default function FilesPage({ dark }) {
   const c = getTheme(dark)
   const [files, setFiles] = useState([])
-  const [modules, setModules] = useState([])
+  const { modules, modulesLoaded, modulesError } = useModules()
   const [subjects, setSubjects] = useState([])
   const [activeModule, setActiveModule] = useState(null)
   const [activeSubject, setActiveSubject] = useState('all')
@@ -100,33 +101,28 @@ export default function FilesPage({ dark }) {
   }
 
   useEffect(() => {
+    if (moduleParam) {
+      setActiveModule(moduleParam)
+    } else if (modulesLoaded && modules.length > 0 && !activeModule) {
+      const active = modules.find(m => m.status === 'active')
+      setActiveModule(active ? active.id : modules[0].id)
+    }
+  }, [modulesLoaded, modules, moduleParam])
+
+  useEffect(() => {
     async function fetchData() {
       setLoading(true)
-      const [modRes, subRes, fileRes] = await Promise.all([
-        supabase.from('modules').select('*').order('created_at'),
+      const [subRes, fileRes] = await Promise.all([
         supabase.from('subjects').select('*').order('name'),
         supabase.from('files').select('*').eq('type', fileType).order('created_at', { ascending: false })
       ])
-      if (modRes.data) {
-        const sorted = [
-          ...modRes.data.filter(m => m.status === 'active'),
-          ...modRes.data.filter(m => m.status !== 'active')
-        ]
-        setModules(sorted)
-        if (moduleParam) {
-          setActiveModule(moduleParam)
-        } else {
-          const active = sorted.find(m => m.status === 'active')
-          if (active) setActiveModule(active.id)
-        }
-      }
       if (subRes.data) setSubjects(subRes.data)
       if (fileRes.data) setFiles(fileRes.data)
-      if (modRes.error || subRes.error || fileRes.error) setLoadError(true)
+      if (subRes.error || fileRes.error) setLoadError(true)
       setLoading(false)
     }
     fetchData()
-  }, [fileType, moduleParam])
+  }, [fileType])
 
   const moduleSubjects = subjects.filter(s => s.module_id === activeModule)
   const filtered = files.filter(f => {
@@ -137,7 +133,7 @@ export default function FilesPage({ dark }) {
 
   return (
     <div className="page-container" style={{ padding: '20px' }}>
-      {loadError && <ErrorBanner />}
+      {(loadError || modulesError) && <ErrorBanner />}
       {viewer && viewer.file_type === 'pdf' && <PDFViewer url={viewer.url} onClose={() => setViewer(null)} />}
       {viewer && viewer.file_type === 'video' && <VideoViewer url={viewer.url} onClose={() => setViewer(null)} />}
       {viewer && viewer.file_type === 'audio' && <AudioViewer url={viewer.url} name={viewer.name} onClose={() => setViewer(null)} />}

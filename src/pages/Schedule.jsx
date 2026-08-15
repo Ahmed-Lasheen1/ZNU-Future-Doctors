@@ -2,10 +2,11 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../supabase'
 import { getTheme } from '../theme'
 import ErrorBanner from '../components/ErrorBanner'
+import { useModules } from '../App'
 
 export default function Schedule({ dark }) {
   const c = getTheme(dark)
-  const [modules, setModules] = useState([])
+  const { modules, modulesLoaded, modulesError } = useModules()
   const [schedules, setSchedules] = useState([])
   const [activeModule, setActiveModule] = useState(null)
   const [activeType, setActiveType] = useState('study')
@@ -14,23 +15,18 @@ export default function Schedule({ dark }) {
   const [loadError, setLoadError] = useState(false)
 
   useEffect(() => {
+    if (modulesLoaded && modules.length > 0 && !activeModule) {
+      const active = modules.find(m => m.status === 'active')
+      setActiveModule(active ? active.id : modules[0].id)
+    }
+  }, [modulesLoaded, modules])
+
+  useEffect(() => {
     async function fetchData() {
       setLoading(true)
-      const [modRes, schRes] = await Promise.all([
-        supabase.from('modules').select('*').order('status').order('created_at'),
-        supabase.from('schedules').select('*').order('created_at')
-      ])
-      if (modRes.data) {
-        const sorted = [
-          ...modRes.data.filter(m => m.status === 'active'),
-          ...modRes.data.filter(m => m.status !== 'active')
-        ]
-        setModules(sorted)
-        const active = sorted.find(m => m.status === 'active')
-        if (active) setActiveModule(active.id)
-      }
-      if (schRes.data) setSchedules(schRes.data)
-      if (modRes.error || schRes.error) setLoadError(true)
+      const { data, error } = await supabase.from('schedules').select('*').order('created_at')
+      if (data) setSchedules(data)
+      if (error) setLoadError(true)
       setLoading(false)
     }
     fetchData()
@@ -51,7 +47,7 @@ export default function Schedule({ dark }) {
 
   return (
     <div className="page-container" style={{ padding: '20px' }}>
-      {loadError && <ErrorBanner />}
+      {(loadError || modulesError) && <ErrorBanner />}
 
       {viewer && (
         <div style={{

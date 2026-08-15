@@ -1,12 +1,12 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../supabase'
-import { useAuth } from '../App'
+import { useAuth, useModules } from '../App'
 import { getTheme } from '../theme'
 import ErrorBanner from '../components/ErrorBanner'
 
 export default function MCQ({ dark }) {
   const { user } = useAuth()
-  const [modules, setModules] = useState([])
+  const { modules, modulesLoaded, modulesError } = useModules()
   const [subjects, setSubjects] = useState([])
   const [questions, setQuestions] = useState([])
   const [answeredIds, setAnsweredIds] = useState(new Set())
@@ -32,25 +32,22 @@ export default function MCQ({ dark }) {
     if (user) fetchAnsweredIds()
   }, [user])
 
+  useEffect(() => {
+    if (modulesLoaded && modules.length > 0 && !activeModule) {
+      const active = modules.find(m => m.status === 'active')
+      setActiveModule(active ? active.id : modules[0].id)
+    }
+  }, [modulesLoaded, modules])
+
   async function fetchData() {
     setLoading(true)
-    const [modRes, subRes, qRes] = await Promise.all([
-      supabase.from('modules').select('*').order('created_at'),
+    const [subRes, qRes] = await Promise.all([
       supabase.from('subjects').select('*').order('name'),
       supabase.from('questions').select('*').order('created_at')
     ])
-    if (modRes.data) {
-      const sorted = [
-        ...modRes.data.filter(m => m.status === 'active'),
-        ...modRes.data.filter(m => m.status !== 'active')
-      ]
-      setModules(sorted)
-      const active = sorted.find(m => m.status === 'active')
-      if (active) setActiveModule(active.id)
-    }
     if (subRes.data) setSubjects(subRes.data)
     if (qRes.data) setQuestions(qRes.data)
-    if (modRes.error || subRes.error || qRes.error) setLoadError(true)
+    if (subRes.error || qRes.error) setLoadError(true)
     setLoading(false)
   }
 
@@ -281,7 +278,7 @@ export default function MCQ({ dark }) {
 
   return (
     <div className="page-container" style={{ padding: '20px' }}>
-      {loadError && <ErrorBanner />}
+      {(loadError || modulesError) && <ErrorBanner />}
       <h1 style={{ color: '#f472b6', textAlign: 'center', marginBottom: 20 }}>🧪 MCQ Bank</h1>
 
       <div style={{ display: 'flex', gap: 8, overflowX: 'auto', marginBottom: 16, paddingBottom: 4 }}>

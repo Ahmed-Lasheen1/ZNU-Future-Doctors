@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../supabase'
-import { useAuth } from '../App'
+import { useAuth, useModules } from '../App'
 import { useNavigate } from 'react-router-dom'
 import { getTheme } from '../theme'
 import ErrorBanner from '../components/ErrorBanner'
@@ -8,13 +8,11 @@ import ErrorBanner from '../components/ErrorBanner'
 export default function Checklist({ dark }) {
   const { user } = useAuth()
   const navigate = useNavigate()
-  const [modules, setModules] = useState([])
+  const { modules, modulesLoaded, modulesError } = useModules()
   const [activeModule, setActiveModule] = useState(null)
   const [tasks, setTasks] = useState([])
   const [newTask, setNewTask] = useState('')
   const [newDeadline, setNewDeadline] = useState('')
-  const [loading, setLoading] = useState(true)
-  const [loadError, setLoadError] = useState(false)
 
   const c = getTheme(dark)
 
@@ -25,22 +23,12 @@ export default function Checklist({ dark }) {
     fontSize: 14, fontFamily: 'inherit', outline: 'none'
   }
 
-  useEffect(() => { fetchModules() }, [])
-  useEffect(() => { if (activeModule) fetchTasks() }, [activeModule, user])
-
-  async function fetchModules() {
-    const { data, error } = await supabase.from('modules').select('*').order('created_at')
-    if (error) setLoadError(true)
-    if (data) {
-      const sorted = [
-        ...data.filter(m => m.status === 'active'),
-        ...data.filter(m => m.status !== 'active')
-      ]
-      setModules(sorted)
-      if (sorted.length > 0) setActiveModule(sorted[0].id)
+  useEffect(() => {
+    if (modulesLoaded && modules.length > 0 && !activeModule) {
+      setActiveModule(modules[0].id)
     }
-    setLoading(false)
-  }
+  }, [modulesLoaded, modules])
+  useEffect(() => { if (activeModule) fetchTasks() }, [activeModule, user])
 
   async function fetchTasks() {
     if (user) {
@@ -105,7 +93,7 @@ export default function Checklist({ dark }) {
 
   return (
     <div className="page-container" style={{ padding: '20px' }}>
-      {loadError && <ErrorBanner />}
+      {modulesError && <ErrorBanner />}
       <h1 style={{ color: '#f59e0b', textAlign: 'center', marginBottom: 8 }}>
         🎯 Checklist
       </h1>
@@ -188,9 +176,9 @@ export default function Checklist({ dark }) {
         </div>
       </div>
 
-      {loading && <p style={{ color: c.sub, textAlign: 'center' }}>Loading...</p>}
+      {!modulesLoaded && <p style={{ color: c.sub, textAlign: 'center' }}>Loading...</p>}
 
-      {!loading && tasks.length === 0 && (
+      {modulesLoaded && tasks.length === 0 && (
         <div style={{ background: c.card, border: `1px solid ${c.border}`, borderRadius: 16, padding: 40, textAlign: 'center' }}>
           <p style={{ color: c.sub }}>No tasks yet — add topics you need to study! 📚</p>
         </div>
@@ -212,8 +200,13 @@ export default function Checklist({ dark }) {
             display: 'flex', justifyContent: 'space-between', alignItems: 'center',
             transition: 'all 0.2s'
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1 }}
-              onClick={() => toggleTask(task)}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, outline: 'none' }}
+              role="checkbox"
+              aria-checked={task.done}
+              aria-label={task.text}
+              tabIndex={0}
+              onClick={() => toggleTask(task)}
+              onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleTask(task) } }}>
               <div style={{
                 width: 24, height: 24, borderRadius: 8, flexShrink: 0,
                 border: `2px solid ${task.done ? '#22c55e' : overdue ? '#ef4444' : '#38bdf8'}`,
@@ -247,7 +240,7 @@ export default function Checklist({ dark }) {
               background: 'transparent', border: 'none',
               color: '#ef4444', cursor: 'pointer', fontSize: 16,
               padding: '4px 8px', borderRadius: 8
-            }}>🗑</button>
+            }} aria-label={`Delete task: ${task.text}`}>🗑</button>
           </div>
         )
       })}

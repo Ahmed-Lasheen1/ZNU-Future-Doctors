@@ -1,26 +1,39 @@
-import { useState, useEffect, createContext, useContext } from 'react'
+import { useState, useEffect, createContext, useContext, Suspense, lazy } from 'react'
 import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation } from 'react-router-dom'
 import { supabase } from './supabase'
 import { getTheme } from './theme'
 import Home from './pages/Home'
-import Checklist from './pages/Checklist'
-import Schedule from './pages/Schedule'
-import FilesPage from './pages/FilesPage'
-import Admin from './pages/Admin'
-import MCQ from './pages/MCQ'
-import Summaries from './pages/Summaries'
-import ModulePage from './pages/ModulePage'
-import Auth from './pages/Auth'
-import Profile from './pages/Profile'
-import AnonQuestions from './pages/AnonQuestions'
-import NotFound from './pages/NotFound'
+const Checklist = lazy(() => import('./pages/Checklist'))
+const Schedule = lazy(() => import('./pages/Schedule'))
+const FilesPage = lazy(() => import('./pages/FilesPage'))
+const Admin = lazy(() => import('./pages/Admin'))
+const MCQ = lazy(() => import('./pages/MCQ'))
+const Summaries = lazy(() => import('./pages/Summaries'))
+const ModulePage = lazy(() => import('./pages/ModulePage'))
+const Auth = lazy(() => import('./pages/Auth'))
+const Profile = lazy(() => import('./pages/Profile'))
+const AnonQuestions = lazy(() => import('./pages/AnonQuestions'))
+const NotFound = lazy(() => import('./pages/NotFound'))
 import Footer from './components/Footer'
 
 export const ThemeContext = createContext()
 export const AuthContext = createContext()
+export const ModulesContext = createContext()
 
 export function useTheme() { return useContext(ThemeContext) }
 export function useAuth() { return useContext(AuthContext) }
+export function useModules() { return useContext(ModulesContext) }
+
+function PageLoader({ dark }) {
+  const c = getTheme(dark)
+  return (
+    <div style={{
+      minHeight: '50vh', display: 'flex', alignItems: 'center', justifyContent: 'center'
+    }}>
+      <div style={{ color: c.sub, fontSize: 14, fontWeight: 600 }}>Loading...</div>
+    </div>
+  )
+}
 
 function ScrollToTop() {
   const { pathname } = useLocation()
@@ -53,7 +66,7 @@ export function NavMenu({ dark }) {
         background: dark ? 'rgba(56,189,248,0.1)' : '#f1f5f9',
         color: dark ? '#38bdf8' : '#475569',
         border: `1px solid ${dark ? 'rgba(56,189,248,0.3)' : '#e2e8f0'}`
-      }}>☰ Menu</button>
+      }} aria-label="Open navigation menu" aria-haspopup="true" aria-expanded={open}>☰ Menu</button>
       {open && (
         <div style={{
           position: 'absolute', top: '100%', left: 0,
@@ -96,7 +109,7 @@ function SmartHeader({ dark, toggleTheme }) {
       borderBottom: `1px solid ${dark ? 'rgba(56,189,248,0.2)' : '#e2e8f0'}`,
     }}>
       <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-        <button onClick={() => navigate(-1)} style={{
+        <button onClick={() => navigate(-1)} aria-label="Go back" style={{
           ...navBtn,
           background: dark ? 'rgba(56,189,248,0.1)' : '#f1f5f9',
           color: dark ? '#38bdf8' : '#475569',
@@ -113,7 +126,7 @@ function SmartHeader({ dark, toggleTheme }) {
           background: dark ? 'rgba(56,189,248,0.1)' : '#f1f5f9',
           color: dark ? '#38bdf8' : '#475569',
           border: `1px solid ${dark ? 'rgba(56,189,248,0.3)' : '#e2e8f0'}`
-        }}>{dark ? '☀️' : '🌙'}</button>
+        }} aria-label={dark ? 'Switch to light mode' : 'Switch to dark mode'}>{dark ? '☀️' : '🌙'}</button>
 
         {user ? (
           <button onClick={() => navigate('/profile')} style={{
@@ -151,8 +164,27 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('znu_theme', dark ? 'dark' : 'light')
   }, [dark])
+
   const [user, setUser] = useState(null)
   const [profile, setProfile] = useState(null)
+  const [modules, setModules] = useState([])
+  const [modulesLoaded, setModulesLoaded] = useState(false)
+  const [modulesError, setModulesError] = useState(false)
+
+  async function fetchModules() {
+    const { data, error } = await supabase.from('modules').select('*').order('status').order('created_at')
+    if (data) {
+      const sorted = [
+        ...data.filter(m => m.status === 'active'),
+        ...data.filter(m => m.status !== 'active')
+      ]
+      setModules(sorted)
+    }
+    if (error) setModulesError(true)
+    setModulesLoaded(true)
+  }
+
+  useEffect(() => { fetchModules() }, [])
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -185,6 +217,7 @@ export default function App() {
   return (
     <ThemeContext.Provider value={{ dark }}>
       <AuthContext.Provider value={{ user, signOut, profile, fetchProfile }}>
+        <ModulesContext.Provider value={{ modules, modulesLoaded, modulesError, refreshModules: fetchModules }}>
         <Router>
           <div style={{
             background: bg,
@@ -195,24 +228,27 @@ export default function App() {
             <ScrollToTop />
             <SmartHeader dark={dark} toggleTheme={() => setDark(!dark)} />
             <div style={{ flex: 1 }}>
-              <Routes>
-                <Route path="/" element={<Home dark={dark} toggleTheme={() => setDark(!dark)} />} />
-                <Route path="/module/:moduleId" element={<ModulePage dark={dark} />} />
-                <Route path="/checklist" element={<Checklist dark={dark} />} />
-                <Route path="/schedule" element={<Schedule dark={dark} />} />
-                <Route path="/files" element={<FilesPage dark={dark} />} />
-                <Route path="/summaries" element={<Summaries dark={dark} />} />
-                <Route path="/admin" element={<Admin dark={dark} />} />
-                <Route path="/mcq" element={<MCQ dark={dark} />} />
-                <Route path="/auth" element={<Auth dark={dark} />} />
-                <Route path="/profile" element={<Profile dark={dark} />} />
-                <Route path="/anon-questions" element={<AnonQuestions dark={dark} />} />
-                <Route path="*" element={<NotFound dark={dark} />} />
-              </Routes>
+              <Suspense fallback={<PageLoader dark={dark} />}>
+                <Routes>
+                  <Route path="/" element={<Home dark={dark} toggleTheme={() => setDark(!dark)} />} />
+                  <Route path="/module/:moduleId" element={<ModulePage dark={dark} />} />
+                  <Route path="/checklist" element={<Checklist dark={dark} />} />
+                  <Route path="/schedule" element={<Schedule dark={dark} />} />
+                  <Route path="/files" element={<FilesPage dark={dark} />} />
+                  <Route path="/summaries" element={<Summaries dark={dark} />} />
+                  <Route path="/admin" element={<Admin dark={dark} />} />
+                  <Route path="/mcq" element={<MCQ dark={dark} />} />
+                  <Route path="/auth" element={<Auth dark={dark} />} />
+                  <Route path="/profile" element={<Profile dark={dark} />} />
+                  <Route path="/anon-questions" element={<AnonQuestions dark={dark} />} />
+                  <Route path="*" element={<NotFound dark={dark} />} />
+                </Routes>
+              </Suspense>
             </div>
             <Footer dark={dark} />
           </div>
         </Router>
+        </ModulesContext.Provider>
       </AuthContext.Provider>
     </ThemeContext.Provider>
   )

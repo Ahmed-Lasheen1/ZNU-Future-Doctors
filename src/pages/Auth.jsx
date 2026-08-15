@@ -85,6 +85,7 @@ export default function Auth({ dark }) {
 
         {isSignUp && (
           <input
+            aria-label="Your full name"
             placeholder="Your name (e.g. Ahmed Lasheen)"
             value={name} onChange={e => setName(e.target.value)}
             style={inStyle} />
@@ -92,12 +93,13 @@ export default function Auth({ dark }) {
 
         <input
           type="email"
+          aria-label="Email address"
           placeholder={isSignUp ? "ZNU Email (@med.znu.edu.eg)" : "Email address"}
           value={email} onChange={e => setEmail(e.target.value)}
           style={inStyle} />
 
         <input
-          type="password" placeholder="Password (min 6 characters)"
+          type="password" aria-label="Password" placeholder="Password (min 6 characters)"
           value={password} onChange={e => setPassword(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && handleSubmit()}
           style={inStyle} />

@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../supabase'
 import { getTheme } from '../theme'
 import ErrorBanner from '../components/ErrorBanner'
+import { useModules } from '../App'
 
 function AnimatedCard({ children, delay = 0, onClick, color, dark }) {
   const [visible, setVisible] = useState(false)
@@ -43,7 +44,8 @@ export default function ModulePage({ dark }) {
   const c = getTheme(dark)
   const { moduleId } = useParams()
   const navigate = useNavigate()
-  const [module, setModule] = useState(null)
+  const { modules, modulesLoaded, modulesError } = useModules()
+  const module = modules.find(m => m.id === moduleId) || null
   const [subjects, setSubjects] = useState([])
   const [summaries, setSummaries] = useState([])
   const [visible, setVisible] = useState(false)
@@ -53,22 +55,24 @@ export default function ModulePage({ dark }) {
   useEffect(() => {
     setTimeout(() => setVisible(true), 100)
     async function fetchData() {
-      const [modRes, subRes, sumRes] = await Promise.all([
-        supabase.from('modules').select('*').eq('id', moduleId).single(),
+      const [subRes, sumRes] = await Promise.all([
         supabase.from('subjects').select('*').eq('module_id', moduleId).order('name'),
         supabase.from('summaries').select('*').eq('module_id', moduleId).order('created_at')
       ])
-      if (modRes.data) setModule(modRes.data)
       if (subRes.data) setSubjects(subRes.data)
       if (sumRes.data) setSummaries(sumRes.data)
-      if (modRes.error || subRes.error || sumRes.error) setLoadError(true)
+      if (subRes.error || sumRes.error) setLoadError(true)
     }
     fetchData()
   }, [moduleId])
 
   if (!module) return (
     <div style={{ padding: 24, textAlign: 'center', color: c.sub }}>
-      {loadError ? <ErrorBanner message="Couldn't load this module — check your connection." /> : 'Loading...'}
+      {(loadError || modulesError)
+        ? <ErrorBanner message="Couldn't load this module — check your connection." />
+        : !modulesLoaded
+          ? 'Loading...'
+          : "This module doesn't exist or was removed."}
     </div>
   )
 

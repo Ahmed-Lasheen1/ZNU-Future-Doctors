@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../supabase'
-import { useAuth } from '../App'
+import { useAuth, useModules } from '../App'
 import { getTheme } from '../theme'
 
 export default function Admin({ dark }) {
   const { user, profile } = useAuth()
+  const { refreshModules } = useModules()
   const navigate = useNavigate()
   const isAuth = profile?.role === 'admin'
   const [activeTab, setActiveTab] = useState('modules')
@@ -71,6 +72,7 @@ export default function Admin({ dark }) {
       ]
       setModules(sorted)
     }
+    refreshModules()
   }
 
   async function fetchSubjects() {
@@ -97,7 +99,7 @@ export default function Admin({ dark }) {
   }
 
   async function deleteModule(id) {
-    if (!confirm('Delete this module?')) return
+    if (!confirm('Delete this module? This will also permanently delete all its subjects, files, schedules, questions and summaries. This cannot be undone.')) return
     await supabase.from('modules').delete().eq('id', id)
     fetchModules()
   }
@@ -114,6 +116,7 @@ export default function Admin({ dark }) {
   }
 
   async function deleteSubject(id) {
+    if (!confirm('Delete this subject? Its files and questions will also be deleted. This cannot be undone.')) return
     await supabase.from('subjects').delete().eq('id', id)
     fetchSubjects()
   }
@@ -264,7 +267,7 @@ export default function Admin({ dark }) {
                   </div>
                   <div style={{ display: 'flex', gap: 8 }}>
                     <button onClick={() => toggleModuleStatus(mod)} style={{ ...miniBtn, borderColor: '#f59e0b', color: '#f59e0b' }}>⏸ Done</button>
-                    <button onClick={() => deleteModule(mod.id)} style={{ ...miniBtn, borderColor: '#ef4444', color: '#ef4444' }}>🗑</button>
+                    <button onClick={() => deleteModule(mod.id)} aria-label={`Delete module: ${mod.name}`} style={{ ...miniBtn, borderColor: '#ef4444', color: '#ef4444' }}>🗑</button>
                   </div>
                 </div>
               ))}
@@ -282,7 +285,7 @@ export default function Admin({ dark }) {
                   </div>
                   <div style={{ display: 'flex', gap: 8 }}>
                     <button onClick={() => toggleModuleStatus(mod)} style={{ ...miniBtn, borderColor: '#22c55e', color: '#22c55e' }}>▶ Active</button>
-                    <button onClick={() => deleteModule(mod.id)} style={{ ...miniBtn, borderColor: '#ef4444', color: '#ef4444' }}>🗑</button>
+                    <button onClick={() => deleteModule(mod.id)} aria-label={`Delete module: ${mod.name}`} style={{ ...miniBtn, borderColor: '#ef4444', color: '#ef4444' }}>🗑</button>
                   </div>
                 </div>
               ))}
@@ -316,7 +319,7 @@ export default function Admin({ dark }) {
                       <span style={{ color: c.text, fontWeight: 600 }}>{sub.name}</span>
                       <span style={{ color: c.sub, fontSize: 12, marginLeft: 8 }}>· {sub.type}</span>
                     </div>
-                    <button onClick={() => deleteSubject(sub.id)} style={{ ...miniBtn, borderColor: '#ef4444', color: '#ef4444' }}>🗑</button>
+                    <button onClick={() => deleteSubject(sub.id)} aria-label={`Delete subject: ${sub.name}`} style={{ ...miniBtn, borderColor: '#ef4444', color: '#ef4444' }}>🗑</button>
                   </div>
                 ))}
               </div>

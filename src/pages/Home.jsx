@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { supabase } from '../supabase'
-import { useAuth, NavMenu } from '../App'
+import { useAuth, NavMenu, useModules } from '../App'
 import { getTheme } from '../theme'
 import ErrorBanner from '../components/ErrorBanner'
 
@@ -49,16 +48,11 @@ export default function Home({ dark, toggleTheme }) {
   const c = getTheme(dark)
   const navigate = useNavigate()
   const { user, profile } = useAuth()
-  const [modules, setModules] = useState([])
+  const { modules, modulesError } = useModules()
   const [titleVisible, setTitleVisible] = useState(false)
-  const [loadError, setLoadError] = useState(false)
 
   useEffect(() => {
     setTimeout(() => setTitleVisible(true), 100)
-    supabase.from('modules').select('*').order('created_at').then(({ data, error }) => {
-      if (data) setModules(data)
-      if (error) setLoadError(true)
-    })
   }, [])
 
   const activeModules = modules.filter(m => m.status === 'active')
@@ -74,7 +68,7 @@ export default function Home({ dark, toggleTheme }) {
 
   return (
     <div style={{ padding: '24px 16px 100px' }}>
-      {loadError && <div className="page-container"><ErrorBanner /></div>}
+      {modulesError && <div className="page-container"><ErrorBanner /></div>}
 
       {/* Header */}
       <div style={{
@@ -91,7 +85,7 @@ export default function Home({ dark, toggleTheme }) {
               border: `1px solid ${dark ? 'rgba(56,189,248,0.3)' : '#e2e8f0'}`,
               padding: '6px 14px', borderRadius: 10,
               cursor: 'pointer', fontSize: 16, fontWeight: 700
-            }}>{dark ? '☀️' : '🌙'}</button>
+            }} aria-label={dark ? 'Switch to light mode' : 'Switch to dark mode'}>{dark ? '☀️' : '🌙'}</button>
             <NavMenu dark={dark} />
           </div>
 

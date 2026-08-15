@@ -66,7 +66,7 @@ export default function AnonQuestions({ dark }) {
   const unansweredQs = questions.filter(q => !q.answered)
 
   return (
-    <div style={{ padding: '20px', maxWidth: 700, margin: '0 auto' }}>
+    <div className="page-container" style={{ padding: '20px' }}>
       <h1 style={{ color: '#a78bfa', textAlign: 'center', marginBottom: 8 }}>
         💬 Anonymous Questions
       </h1>
@@ -127,7 +127,7 @@ export default function AnonQuestions({ dark }) {
                   padding: '10px 16px', background: '#ef444420',
                   border: '1px solid #ef444440', borderRadius: 10, cursor: 'pointer',
                   color: '#ef4444', fontFamily: 'inherit', fontWeight: 700
-                }}>🗑</button>
+                }} aria-label="Delete question">🗑</button>
               </div>
             </div>
           ))}

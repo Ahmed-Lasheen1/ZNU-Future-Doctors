@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../supabase'
 import { getTheme } from '../theme'
 import ErrorBanner from '../components/ErrorBanner'
+import { useModules } from '../App'
 
 function SummariesHome({ modules, onSelect, dark }) {
   const c = getTheme(dark)
@@ -157,13 +158,8 @@ function ModuleSummaries({ mod, onBack, dark }) {
 }
 
 export default function Summaries({ dark }) {
-  const [modules, setModules] = useState([])
+  const { modules } = useModules()
   const [selected, setSelected] = useState(null)
-
-  useEffect(() => {
-    supabase.from('modules').select('*').order('created_at')
-      .then(({ data }) => { if (data) setModules(data) })
-  }, [])
 
   if (selected) return <ModuleSummaries mod={selected} onBack={() => setSelected(null)} dark={dark} />
   return <SummariesHome modules={modules} onSelect={setSelected} dark={dark} />
