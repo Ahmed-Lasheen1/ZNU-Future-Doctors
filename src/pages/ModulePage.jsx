@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../supabase'
 import { getTheme } from '../theme'
+import ErrorBanner from '../components/ErrorBanner'
 
 function AnimatedCard({ children, delay = 0, onClick, color, dark }) {
   const [visible, setVisible] = useState(false)
@@ -47,6 +48,7 @@ export default function ModulePage({ dark }) {
   const [summaries, setSummaries] = useState([])
   const [visible, setVisible] = useState(false)
   const [selectedSummary, setSelectedSummary] = useState(null)
+  const [loadError, setLoadError] = useState(false)
 
   useEffect(() => {
     setTimeout(() => setVisible(true), 100)
@@ -59,12 +61,15 @@ export default function ModulePage({ dark }) {
       if (modRes.data) setModule(modRes.data)
       if (subRes.data) setSubjects(subRes.data)
       if (sumRes.data) setSummaries(sumRes.data)
+      if (modRes.error || subRes.error || sumRes.error) setLoadError(true)
     }
     fetchData()
   }, [moduleId])
 
   if (!module) return (
-    <div style={{ padding: 24, textAlign: 'center', color: c.sub }}>Loading...</div>
+    <div style={{ padding: 24, textAlign: 'center', color: c.sub }}>
+      {loadError ? <ErrorBanner message="Couldn't load this module — check your connection." /> : 'Loading...'}
+    </div>
   )
 
   if (selectedSummary) return (
@@ -87,7 +92,7 @@ export default function ModulePage({ dark }) {
   )
 
   return (
-    <div style={{ padding: '24px 16px 100px', maxWidth: 700, margin: '0 auto' }}>
+    <div className="page-container" style={{ padding: '24px 16px 100px' }}>
 
       {/* Module Header */}
       <div style={{
@@ -135,7 +140,7 @@ export default function ModulePage({ dark }) {
         <h2 style={{ color: c.sub, fontSize: 13, fontWeight: 700, letterSpacing: 2, marginBottom: 16, textTransform: 'uppercase' }}>
           📁 Study Materials
         </h2>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+        <div className="card-grid">
           {fileCards.map((card, i) => (
             <AnimatedCard key={i} delay={i * 80} color={card.color} dark={dark}
               onClick={() => navigate(`/files?type=${card.type}&module=${moduleId}`)}>

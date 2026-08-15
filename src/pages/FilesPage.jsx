@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useLocation } from 'react-router-dom'
 import { supabase } from '../supabase'
 import { getTheme } from '../theme'
+import ErrorBanner from '../components/ErrorBanner'
 
 function PDFViewer({ url, onClose }) {
   const getPreviewUrl = (url) => {
@@ -73,6 +74,7 @@ export default function FilesPage({ dark }) {
   const [activeSubject, setActiveSubject] = useState('all')
   const [loading, setLoading] = useState(true)
   const [viewer, setViewer] = useState(null)
+  const [loadError, setLoadError] = useState(false)
   const location = useLocation()
   const params = new URLSearchParams(location.search)
   const fileType = params.get('type')
@@ -120,6 +122,7 @@ export default function FilesPage({ dark }) {
       }
       if (subRes.data) setSubjects(subRes.data)
       if (fileRes.data) setFiles(fileRes.data)
+      if (modRes.error || subRes.error || fileRes.error) setLoadError(true)
       setLoading(false)
     }
     fetchData()
@@ -133,7 +136,8 @@ export default function FilesPage({ dark }) {
   })
 
   return (
-    <div style={{ padding: '20px', maxWidth: 700, margin: '0 auto' }}>
+    <div className="page-container" style={{ padding: '20px' }}>
+      {loadError && <ErrorBanner />}
       {viewer && viewer.file_type === 'pdf' && <PDFViewer url={viewer.url} onClose={() => setViewer(null)} />}
       {viewer && viewer.file_type === 'video' && <VideoViewer url={viewer.url} onClose={() => setViewer(null)} />}
       {viewer && viewer.file_type === 'audio' && <AudioViewer url={viewer.url} name={viewer.name} onClose={() => setViewer(null)} />}

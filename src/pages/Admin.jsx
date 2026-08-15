@@ -82,6 +82,9 @@ export default function Admin({ dark }) {
 
   async function addModule() {
     if (!modName) return
+    if (modules.some(m => m.name.trim().toLowerCase() === modName.trim().toLowerCase())) {
+      return showMsg('❌ A module with this name already exists')
+    }
     const { error } = await supabase.from('modules').insert([{ name: modName, color: modColor, icon: modIcon, status: modStatus }])
     if (!error) { showMsg('✅ Module added!'); setModName(''); fetchModules() }
     else showMsg('❌ ' + error.message)
@@ -101,6 +104,10 @@ export default function Admin({ dark }) {
 
   async function addSubject() {
     if (!subName || !subModuleId) return
+    const existing = subjects.filter(s => s.module_id === subModuleId)
+    if (existing.some(s => s.name.trim().toLowerCase() === subName.trim().toLowerCase())) {
+      return showMsg('❌ This subject already exists in that module')
+    }
     const { error } = await supabase.from('subjects').insert([{ name: subName, module_id: subModuleId, type: subType }])
     if (!error) { showMsg('✅ Subject added!'); setSubName(''); fetchSubjects() }
     else showMsg('❌ ' + error.message)
@@ -197,7 +204,7 @@ export default function Admin({ dark }) {
   const tabs = ['modules', 'subjects', 'files', 'schedules', 'questions', 'summaries']
 
   return (
-    <div style={{ padding: '20px', maxWidth: '650px', margin: '0 auto' }}>
+    <div className="page-container" style={{ padding: '20px', maxWidth: '650px' }}>
       <h2 style={{ color: '#38bdf8', textAlign: 'center', marginBottom: 20 }}>⚙️ Admin Panel</h2>
 
       {msg && (

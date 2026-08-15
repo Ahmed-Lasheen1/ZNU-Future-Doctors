@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../supabase'
 import { getTheme } from '../theme'
+import ErrorBanner from '../components/ErrorBanner'
 
 function SummariesHome({ modules, onSelect, dark }) {
   const c = getTheme(dark)
@@ -10,7 +11,7 @@ function SummariesHome({ modules, onSelect, dark }) {
   ]
 
   return (
-    <div style={{ padding: '24px 16px', maxWidth: 700, margin: '0 auto' }}>
+    <div className="page-container" style={{ padding: '24px 16px' }}>
       <div style={{ textAlign: 'center', padding: '30px 0 24px' }}>
         <div style={{ fontSize: 48, marginBottom: 12 }}>📝</div>
         <h1 style={{
@@ -71,14 +72,16 @@ function ModuleSummaries({ mod, onBack, dark }) {
   const [summaries, setSummaries] = useState([])
   const [selected, setSelected] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState(false)
 
   useEffect(() => {
     supabase.from('summaries')
       .select('*')
       .eq('module_id', mod.id)
       .order('created_at')
-      .then(({ data }) => {
+      .then(({ data, error }) => {
         if (data) setSummaries(data)
+        if (error) setLoadError(true)
         setLoading(false)
       })
   }, [mod.id])
@@ -103,12 +106,13 @@ function ModuleSummaries({ mod, onBack, dark }) {
   )
 
   return (
-    <div style={{ padding: '24px 16px', maxWidth: 700, margin: '0 auto' }}>
+    <div className="page-container" style={{ padding: '24px 16px' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
         <button onClick={onBack} style={backBtn}>← Back</button>
         <h2 style={{ color: mod.color, flex: 1 }}>{mod.icon} {mod.name}</h2>
       </div>
 
+      {loadError && <ErrorBanner />}
       {loading && <p style={{ color: c.sub, textAlign: 'center' }}>Loading...</p>}
 
       {!loading && summaries.length === 0 && (

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../supabase'
 import { getTheme } from '../theme'
+import ErrorBanner from '../components/ErrorBanner'
 
 export default function Schedule({ dark }) {
   const c = getTheme(dark)
@@ -10,6 +11,7 @@ export default function Schedule({ dark }) {
   const [activeType, setActiveType] = useState('study')
   const [loading, setLoading] = useState(true)
   const [viewer, setViewer] = useState(null)
+  const [loadError, setLoadError] = useState(false)
 
   useEffect(() => {
     async function fetchData() {
@@ -28,6 +30,7 @@ export default function Schedule({ dark }) {
         if (active) setActiveModule(active.id)
       }
       if (schRes.data) setSchedules(schRes.data)
+      if (modRes.error || schRes.error) setLoadError(true)
       setLoading(false)
     }
     fetchData()
@@ -47,7 +50,8 @@ export default function Schedule({ dark }) {
   )
 
   return (
-    <div style={{ padding: '20px', maxWidth: 700, margin: '0 auto' }}>
+    <div className="page-container" style={{ padding: '20px' }}>
+      {loadError && <ErrorBanner />}
 
       {viewer && (
         <div style={{

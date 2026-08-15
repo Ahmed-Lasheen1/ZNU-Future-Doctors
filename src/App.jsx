@@ -1,6 +1,7 @@
 import { useState, useEffect, createContext, useContext } from 'react'
 import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation } from 'react-router-dom'
 import { supabase } from './supabase'
+import { getTheme } from './theme'
 import Home from './pages/Home'
 import Checklist from './pages/Checklist'
 import Schedule from './pages/Schedule'
@@ -12,6 +13,7 @@ import ModulePage from './pages/ModulePage'
 import Auth from './pages/Auth'
 import Profile from './pages/Profile'
 import AnonQuestions from './pages/AnonQuestions'
+import NotFound from './pages/NotFound'
 import Footer from './components/Footer'
 
 export const ThemeContext = createContext()
@@ -64,7 +66,7 @@ export function NavMenu({ dark }) {
             <button key={i} onClick={() => { navigate(item.to); setOpen(false) }} style={{
               display: 'block', width: '100%', textAlign: 'left',
               padding: '8px 14px', background: 'transparent', border: 'none',
-              color: dark ? '#e2e8f0' : '#1e293b', fontSize: 13, fontWeight: 600,
+              color: getTheme(dark).text, fontSize: 13, fontWeight: 600,
               borderRadius: 8, cursor: 'pointer', fontFamily: 'inherit'
             }}
               onMouseEnter={e => e.target.style.background = dark ? 'rgba(56,189,248,0.12)' : '#f1f5f9'}
@@ -177,7 +179,7 @@ export default function App() {
         <Router>
           <div style={{
             background: bg,
-            minHeight: '100vh', color: dark ? '#fff' : '#1e293b',
+            minHeight: '100vh', color: getTheme(dark).text,
             display: 'flex', flexDirection: 'column',
             fontFamily: "'Segoe UI', sans-serif"
           }}>
@@ -196,7 +198,7 @@ export default function App() {
                 <Route path="/auth" element={<Auth dark={dark} />} />
                 <Route path="/profile" element={<Profile dark={dark} />} />
                 <Route path="/anon-questions" element={<AnonQuestions dark={dark} />} />
-                <Route path="*" element={<Home dark={dark} />} />
+                <Route path="*" element={<NotFound dark={dark} />} />
               </Routes>
             </div>
             <Footer dark={dark} />

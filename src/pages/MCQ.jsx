@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../supabase'
 import { useAuth } from '../App'
 import { getTheme } from '../theme'
+import ErrorBanner from '../components/ErrorBanner'
 
 export default function MCQ({ dark }) {
   const { user } = useAuth()
@@ -16,6 +17,7 @@ export default function MCQ({ dark }) {
   const [answers, setAnswers] = useState({})
   const [submitted, setSubmitted] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState(false)
   const [timeLeft, setTimeLeft] = useState(0)
   const timerRef = useRef(null)
 
@@ -48,6 +50,7 @@ export default function MCQ({ dark }) {
     }
     if (subRes.data) setSubjects(subRes.data)
     if (qRes.data) setQuestions(qRes.data)
+    if (modRes.error || subRes.error || qRes.error) setLoadError(true)
     setLoading(false)
   }
 
@@ -167,7 +170,7 @@ export default function MCQ({ dark }) {
     )
 
     return (
-      <div style={{ padding: '20px', maxWidth: 700, margin: '0 auto' }}>
+      <div className="page-container" style={{ padding: '20px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
           <button onClick={stopQuiz} style={backBtnStyle(dark)}>← Back</button>
           <h2 style={{ color: '#f472b6', flex: 1, fontSize: 16 }}>
@@ -277,7 +280,8 @@ export default function MCQ({ dark }) {
   }
 
   return (
-    <div style={{ padding: '20px', maxWidth: 700, margin: '0 auto' }}>
+    <div className="page-container" style={{ padding: '20px' }}>
+      {loadError && <ErrorBanner />}
       <h1 style={{ color: '#f472b6', textAlign: 'center', marginBottom: 20 }}>🧪 MCQ Bank</h1>
 
       <div style={{ display: 'flex', gap: 8, overflowX: 'auto', marginBottom: 16, paddingBottom: 4 }}>
@@ -332,7 +336,7 @@ export default function MCQ({ dark }) {
       <h3 style={{ color: c.sub, fontSize: 13, fontWeight: 700, letterSpacing: 2, marginBottom: 16, textTransform: 'uppercase' }}>
         Practice by Subject
       </h3>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+      <div className="card-grid">
         {moduleSubjects.map(sub => {
           const subQs = questions.filter(q => q.subject_id === sub.id && (q.exam_type === 'practice' || q.exam_type === 'both'))
           return (

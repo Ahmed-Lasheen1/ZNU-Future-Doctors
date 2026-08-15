@@ -3,6 +3,7 @@ import { supabase } from '../supabase'
 import { useAuth } from '../App'
 import { useNavigate } from 'react-router-dom'
 import { getTheme } from '../theme'
+import ErrorBanner from '../components/ErrorBanner'
 
 export default function Checklist({ dark }) {
   const { user } = useAuth()
@@ -13,6 +14,7 @@ export default function Checklist({ dark }) {
   const [newTask, setNewTask] = useState('')
   const [newDeadline, setNewDeadline] = useState('')
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState(false)
 
   const c = getTheme(dark)
 
@@ -27,7 +29,8 @@ export default function Checklist({ dark }) {
   useEffect(() => { if (activeModule) fetchTasks() }, [activeModule, user])
 
   async function fetchModules() {
-    const { data } = await supabase.from('modules').select('*').order('created_at')
+    const { data, error } = await supabase.from('modules').select('*').order('created_at')
+    if (error) setLoadError(true)
     if (data) {
       const sorted = [
         ...data.filter(m => m.status === 'active'),
@@ -101,7 +104,8 @@ export default function Checklist({ dark }) {
   const percent = totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) : 0
 
   return (
-    <div style={{ padding: '20px', maxWidth: 700, margin: '0 auto' }}>
+    <div className="page-container" style={{ padding: '20px' }}>
+      {loadError && <ErrorBanner />}
       <h1 style={{ color: '#f59e0b', textAlign: 'center', marginBottom: 8 }}>
         🎯 Checklist
       </h1>
