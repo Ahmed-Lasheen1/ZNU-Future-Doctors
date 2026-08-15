@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../supabase'
+import { getTheme } from '../theme'
 
-export default function Schedule() {
+export default function Schedule({ dark }) {
+  const c = getTheme(dark)
   const [modules, setModules] = useState([])
   const [schedules, setSchedules] = useState([])
   const [activeModule, setActiveModule] = useState(null)
@@ -80,13 +82,13 @@ export default function Schedule() {
         {modules.map(mod => (
           <button key={mod.id} onClick={() => setActiveModule(mod.id)} style={{
             padding: '8px 16px', borderRadius: 10, whiteSpace: 'nowrap',
-            border: `2px solid ${activeModule === mod.id ? mod.color : '#1e3a5f'}`,
+            border: `2px solid ${activeModule === mod.id ? mod.color : c.border}`,
             background: activeModule === mod.id ? `${mod.color}20` : 'transparent',
-            color: activeModule === mod.id ? mod.color : '#64748b',
+            color: activeModule === mod.id ? mod.color : c.sub,
             cursor: 'pointer', fontWeight: 700, fontSize: 13, fontFamily: 'inherit'
           }}>
             {mod.icon} {mod.name}
-            {mod.status === 'completed' && <span style={{ fontSize: 10, marginLeft: 4, color: '#64748b' }}>✓</span>}
+            {mod.status === 'completed' && <span style={{ fontSize: 10, marginLeft: 4, color: c.sub }}>✓</span>}
           </button>
         ))}
       </div>
@@ -95,9 +97,9 @@ export default function Schedule() {
         {['study', 'exam'].map(type => (
           <button key={type} onClick={() => setActiveType(type)} style={{
             flex: 1, padding: '10px', borderRadius: 10, fontFamily: 'inherit',
-            border: `2px solid ${activeType === type ? '#a78bfa' : '#1e3a5f'}`,
+            border: `2px solid ${activeType === type ? '#a78bfa' : c.border}`,
             background: activeType === type ? '#a78bfa20' : 'transparent',
-            color: activeType === type ? '#a78bfa' : '#64748b',
+            color: activeType === type ? '#a78bfa' : c.sub,
             cursor: 'pointer', fontWeight: 700, fontSize: 13
           }}>
             {type === 'study' ? '📅 Study Schedule' : '📝 Exam Schedule'}
@@ -105,30 +107,30 @@ export default function Schedule() {
         ))}
       </div>
 
-      {loading && <p style={{ color: '#94a3b8', textAlign: 'center' }}>Loading...</p>}
+      {loading && <p style={{ color: c.sub, textAlign: 'center' }}>Loading...</p>}
 
       {!loading && filtered.length === 0 && (
         <div style={{
-          background: '#1e293b', border: '1px solid #1e3a5f',
+          background: c.cardFlat, border: `1px solid ${c.border}`,
           borderRadius: 16, padding: 40, textAlign: 'center'
         }}>
-          <p style={{ color: '#64748b' }}>No schedules yet 🚧</p>
+          <p style={{ color: c.sub }}>No schedules yet 🚧</p>
         </div>
       )}
 
       <div style={{ display: 'grid', gap: 16 }}>
         {filtered.map(sch => (
           <div key={sch.id} style={{
-            background: 'linear-gradient(135deg, #1e293b, #0f2540)',
-            border: '1px solid #1e3a5f', borderRadius: 16,
+            background: c.card,
+            border: `1px solid ${c.border}`, borderRadius: 16,
             overflow: 'hidden', transition: 'all 0.2s'
           }}
             onMouseEnter={e => e.currentTarget.style.borderColor = '#a78bfa'}
-            onMouseLeave={e => e.currentTarget.style.borderColor = '#1e3a5f'}>
+            onMouseLeave={e => e.currentTarget.style.borderColor = c.border}>
             <div style={{ padding: '14px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
-                <h3 style={{ color: '#e2e8f0', marginBottom: 4 }}>{sch.title}</h3>
-                {sch.week && <p style={{ color: '#64748b', fontSize: 13 }}>{sch.week}</p>}
+                <h3 style={{ color: c.text, marginBottom: 4 }}>{sch.title}</h3>
+                {sch.week && <p style={{ color: c.sub, fontSize: 13 }}>{sch.week}</p>}
               </div>
               <button onClick={() => setViewer(sch)} style={{
                 background: '#a78bfa', color: '#0f172a', border: 'none',

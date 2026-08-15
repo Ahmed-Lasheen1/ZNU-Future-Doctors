@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../supabase'
+import { getTheme } from '../theme'
 
-function SummariesHome({ modules, onSelect }) {
+function SummariesHome({ modules, onSelect, dark }) {
+  const c = getTheme(dark)
   const sorted = [
     ...modules.filter(m => m.status === 'active'),
     ...modules.filter(m => m.status !== 'active')
@@ -17,20 +19,20 @@ function SummariesHome({ modules, onSelect }) {
           WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
           marginBottom: 8
         }}>Smart Summaries</h1>
-        <p style={{ color: '#94a3b8' }}>Interactive study summaries for each module</p>
+        <p style={{ color: c.sub }}>Interactive study summaries for each module</p>
       </div>
 
       {sorted.length === 0 && (
-        <div style={{ background: '#1e293b', border: '1px solid #1e3a5f', borderRadius: 16, padding: 40, textAlign: 'center' }}>
-          <p style={{ color: '#64748b' }}>No summaries available yet 🚧</p>
+        <div style={{ background: c.cardFlat, border: `1px solid ${c.border}`, borderRadius: 16, padding: 40, textAlign: 'center' }}>
+          <p style={{ color: c.sub }}>No summaries available yet 🚧</p>
         </div>
       )}
 
       <div style={{ display: 'grid', gridTemplateColumns: sorted.length === 1 ? '1fr' : '1fr 1fr', gap: 16 }}>
         {sorted.map(mod => (
           <div key={mod.id} onClick={() => onSelect(mod)} style={{
-            background: 'linear-gradient(135deg, #1e293b, #0f2540)',
-            border: `2px solid ${mod.status === 'active' ? mod.color : '#1e3a5f'}`,
+            background: c.card,
+            border: `2px solid ${mod.status === 'active' ? mod.color : c.border}`,
             borderRadius: 20, padding: 24,
             cursor: 'pointer', transition: 'all 0.25s',
             textAlign: 'center',
@@ -42,7 +44,7 @@ function SummariesHome({ modules, onSelect }) {
               e.currentTarget.style.boxShadow = `0 12px 40px ${mod.color}30`
             }}
             onMouseLeave={e => {
-              e.currentTarget.style.borderColor = mod.status === 'active' ? mod.color : '#1e3a5f'
+              e.currentTarget.style.borderColor = mod.status === 'active' ? mod.color : c.border
               e.currentTarget.style.transform = 'translateY(0)'
               e.currentTarget.style.boxShadow = 'none'
             }}>
@@ -64,7 +66,8 @@ function SummariesHome({ modules, onSelect }) {
   )
 }
 
-function ModuleSummaries({ mod, onBack }) {
+function ModuleSummaries({ mod, onBack, dark }) {
+  const c = getTheme(dark)
   const [summaries, setSummaries] = useState([])
   const [selected, setSelected] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -106,18 +109,18 @@ function ModuleSummaries({ mod, onBack }) {
         <h2 style={{ color: mod.color, flex: 1 }}>{mod.icon} {mod.name}</h2>
       </div>
 
-      {loading && <p style={{ color: '#94a3b8', textAlign: 'center' }}>Loading...</p>}
+      {loading && <p style={{ color: c.sub, textAlign: 'center' }}>Loading...</p>}
 
       {!loading && summaries.length === 0 && (
-        <div style={{ background: '#1e293b', border: '1px solid #1e3a5f', borderRadius: 16, padding: 40, textAlign: 'center' }}>
-          <p style={{ color: '#64748b' }}>No summaries yet 🚧</p>
+        <div style={{ background: c.cardFlat, border: `1px solid ${c.border}`, borderRadius: 16, padding: 40, textAlign: 'center' }}>
+          <p style={{ color: c.sub }}>No summaries yet 🚧</p>
         </div>
       )}
 
       <div style={{ display: 'grid', gap: 12 }}>
         {summaries.map(sum => (
           <div key={sum.id} onClick={() => setSelected(sum)} style={{
-            background: 'linear-gradient(135deg, #1e293b, #0f2540)',
+            background: c.card,
             border: `2px solid ${mod.color}40`,
             borderRadius: 16, padding: '20px 24px',
             cursor: 'pointer', transition: 'all 0.2s',
@@ -133,8 +136,8 @@ function ModuleSummaries({ mod, onBack }) {
                 fontSize: 20, flexShrink: 0
               }}>📝</div>
               <div>
-                <div style={{ color: '#e2e8f0', fontWeight: 700, fontSize: 15 }}>{sum.title}</div>
-                <div style={{ color: '#64748b', fontSize: 12, marginTop: 2 }}>{mod.name}</div>
+                <div style={{ color: c.text, fontWeight: 700, fontSize: 15 }}>{sum.title}</div>
+                <div style={{ color: c.sub, fontSize: 12, marginTop: 2 }}>{mod.name}</div>
               </div>
             </div>
             <div style={{
@@ -149,7 +152,7 @@ function ModuleSummaries({ mod, onBack }) {
   )
 }
 
-export default function Summaries() {
+export default function Summaries({ dark }) {
   const [modules, setModules] = useState([])
   const [selected, setSelected] = useState(null)
 
@@ -158,8 +161,8 @@ export default function Summaries() {
       .then(({ data }) => { if (data) setModules(data) })
   }, [])
 
-  if (selected) return <ModuleSummaries mod={selected} onBack={() => setSelected(null)} />
-  return <SummariesHome modules={modules} onSelect={setSelected} />
+  if (selected) return <ModuleSummaries mod={selected} onBack={() => setSelected(null)} dark={dark} />
+  return <SummariesHome modules={modules} onSelect={setSelected} dark={dark} />
 }
 
 const backBtn = { background: 'rgba(255,255,255,0.08)', border: '2px solid rgba(255,255,255,0.15)', borderRadius: 10, padding: '6px 14px', color: '#94a3b8', cursor: 'pointer', fontSize: 12, fontWeight: 700, fontFamily: 'inherit' }

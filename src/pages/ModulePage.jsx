@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../supabase'
+import { getTheme } from '../theme'
 
-function AnimatedCard({ children, delay = 0, onClick, color }) {
+function AnimatedCard({ children, delay = 0, onClick, color, dark }) {
   const [visible, setVisible] = useState(false)
   const [hovered, setHovered] = useState(false)
 
@@ -20,7 +21,7 @@ function AnimatedCard({ children, delay = 0, onClick, color }) {
         transform: visible ? hovered ? 'translateY(-6px) scale(1.02)' : 'translateY(0)' : 'translateY(20px)',
         transition: 'all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1)',
         cursor: 'pointer',
-        background: hovered ? `linear-gradient(135deg, ${color}25, ${color}10)` : 'linear-gradient(135deg, #1e293b, #0f2540)',
+        background: hovered ? `linear-gradient(135deg, ${color}25, ${color}10)` : (dark ? 'linear-gradient(135deg, #1e293b, #0f2540)' : '#fff'),
         border: `2px solid ${hovered ? color : color + '40'}`,
         borderRadius: 20, padding: '28px 16px', textAlign: 'center',
         boxShadow: hovered ? `0 12px 40px ${color}30` : 'none',
@@ -37,7 +38,8 @@ const fileCards = [
   { emoji: '🎓', title: 'Course Recordings', type: 'courses', color: '#c084fc' },
 ]
 
-export default function ModulePage() {
+export default function ModulePage({ dark }) {
+  const c = getTheme(dark)
   const { moduleId } = useParams()
   const navigate = useNavigate()
   const [module, setModule] = useState(null)
@@ -62,7 +64,7 @@ export default function ModulePage() {
   }, [moduleId])
 
   if (!module) return (
-    <div style={{ padding: 24, textAlign: 'center', color: '#94a3b8' }}>Loading...</div>
+    <div style={{ padding: 24, textAlign: 'center', color: c.sub }}>Loading...</div>
   )
 
   if (selectedSummary) return (
@@ -110,7 +112,7 @@ export default function ModulePage() {
       {/* Subjects */}
       {subjects.length > 0 && (
         <div style={{ marginBottom: 32 }}>
-          <h2 style={{ color: '#94a3b8', fontSize: 13, fontWeight: 700, letterSpacing: 2, marginBottom: 16, textTransform: 'uppercase' }}>
+          <h2 style={{ color: c.sub, fontSize: 13, fontWeight: 700, letterSpacing: 2, marginBottom: 16, textTransform: 'uppercase' }}>
             📚 Subjects
           </h2>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
@@ -130,15 +132,15 @@ export default function ModulePage() {
 
       {/* Study Materials */}
       <div style={{ marginBottom: 32 }}>
-        <h2 style={{ color: '#94a3b8', fontSize: 13, fontWeight: 700, letterSpacing: 2, marginBottom: 16, textTransform: 'uppercase' }}>
+        <h2 style={{ color: c.sub, fontSize: 13, fontWeight: 700, letterSpacing: 2, marginBottom: 16, textTransform: 'uppercase' }}>
           📁 Study Materials
         </h2>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
           {fileCards.map((card, i) => (
-            <AnimatedCard key={i} delay={i * 80} color={card.color}
+            <AnimatedCard key={i} delay={i * 80} color={card.color} dark={dark}
               onClick={() => navigate(`/files?type=${card.type}&module=${moduleId}`)}>
               <div style={{ fontSize: 30, marginBottom: 8 }}>{card.emoji}</div>
-              <div style={{ color: '#e2e8f0', fontSize: 13, fontWeight: 700 }}>{card.title}</div>
+              <div style={{ color: c.text, fontSize: 13, fontWeight: 700 }}>{card.title}</div>
             </AnimatedCard>
           ))}
         </div>
@@ -146,30 +148,30 @@ export default function ModulePage() {
 
       {/* MCQ */}
       <div style={{ marginBottom: 32 }}>
-        <h2 style={{ color: '#94a3b8', fontSize: 13, fontWeight: 700, letterSpacing: 2, marginBottom: 16, textTransform: 'uppercase' }}>
+        <h2 style={{ color: c.sub, fontSize: 13, fontWeight: 700, letterSpacing: 2, marginBottom: 16, textTransform: 'uppercase' }}>
           🧪 Practice
         </h2>
-        <AnimatedCard delay={400} color='#f472b6'
+        <AnimatedCard delay={400} color='#f472b6' dark={dark}
           onClick={() => navigate(`/mcq?module=${moduleId}`)}>
           <div style={{ fontSize: 30, marginBottom: 8 }}>🧪</div>
-          <div style={{ color: '#e2e8f0', fontSize: 13, fontWeight: 700 }}>MCQ Bank</div>
-          <div style={{ color: '#64748b', fontSize: 12, marginTop: 4 }}>Practice questions for this module</div>
+          <div style={{ color: c.text, fontSize: 13, fontWeight: 700 }}>MCQ Bank</div>
+          <div style={{ color: c.sub, fontSize: 12, marginTop: 4 }}>Practice questions for this module</div>
         </AnimatedCard>
       </div>
 
       {/* Smart Summaries */}
       {summaries.length > 0 && (
         <div style={{ marginBottom: 32 }}>
-          <h2 style={{ color: '#94a3b8', fontSize: 13, fontWeight: 700, letterSpacing: 2, marginBottom: 16, textTransform: 'uppercase' }}>
+          <h2 style={{ color: c.sub, fontSize: 13, fontWeight: 700, letterSpacing: 2, marginBottom: 16, textTransform: 'uppercase' }}>
             📝 Smart Summaries
           </h2>
           <div style={{ display: 'grid', gap: 12 }}>
             {summaries.map((sum, i) => (
-              <AnimatedCard key={sum.id} delay={500 + i * 80} color='#34d399'
+              <AnimatedCard key={sum.id} delay={500 + i * 80} color='#34d399' dark={dark}
                 onClick={() => setSelectedSummary(sum)}>
                 <div style={{ fontSize: 30, marginBottom: 8 }}>📝</div>
-                <div style={{ color: '#e2e8f0', fontSize: 13, fontWeight: 700 }}>{sum.title}</div>
-                <div style={{ color: '#64748b', fontSize: 12, marginTop: 4 }}>Interactive Summary</div>
+                <div style={{ color: c.text, fontSize: 13, fontWeight: 700 }}>{sum.title}</div>
+                <div style={{ color: c.sub, fontSize: 12, marginTop: 4 }}>Interactive Summary</div>
               </AnimatedCard>
             ))}
           </div>

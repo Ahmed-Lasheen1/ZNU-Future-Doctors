@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useLocation } from 'react-router-dom'
 import { supabase } from '../supabase'
+import { getTheme } from '../theme'
 
 function PDFViewer({ url, onClose }) {
   const getPreviewUrl = (url) => {
@@ -63,7 +64,8 @@ function AudioViewer({ url, name, onClose }) {
   )
 }
 
-export default function FilesPage() {
+export default function FilesPage({ dark }) {
+  const c = getTheme(dark)
   const [files, setFiles] = useState([])
   const [modules, setModules] = useState([])
   const [subjects, setSubjects] = useState([])
@@ -142,47 +144,47 @@ export default function FilesPage() {
         {modules.map(mod => (
           <button key={mod.id} onClick={() => { setActiveModule(mod.id); setActiveSubject('all') }} style={{
             padding: '8px 16px', borderRadius: 10, whiteSpace: 'nowrap',
-            border: `2px solid ${activeModule === mod.id ? mod.color : '#1e3a5f'}`,
+            border: `2px solid ${activeModule === mod.id ? mod.color : c.border}`,
             background: activeModule === mod.id ? `${mod.color}20` : 'transparent',
-            color: activeModule === mod.id ? mod.color : '#64748b',
+            color: activeModule === mod.id ? mod.color : c.sub,
             cursor: 'pointer', fontWeight: 700, fontSize: 13, fontFamily: 'inherit'
           }}>
             {mod.icon} {mod.name}
-            {mod.status === 'completed' && <span style={{ fontSize: 10, marginLeft: 4, color: '#64748b' }}>✓</span>}
+            {mod.status === 'completed' && <span style={{ fontSize: 10, marginLeft: 4, color: c.sub }}>✓</span>}
           </button>
         ))}
       </div>
 
       {moduleSubjects.length > 0 && (
         <div style={{ display: 'flex', gap: 8, overflowX: 'auto', marginBottom: 20, paddingBottom: 4 }}>
-          <button onClick={() => setActiveSubject('all')} style={{ ...subBtn, borderColor: activeSubject === 'all' ? '#38bdf8' : '#1e3a5f', color: activeSubject === 'all' ? '#38bdf8' : '#64748b' }}>All</button>
+          <button onClick={() => setActiveSubject('all')} style={{ ...subBtn, borderColor: activeSubject === 'all' ? '#38bdf8' : c.border, color: activeSubject === 'all' ? '#38bdf8' : c.sub }}>All</button>
           {moduleSubjects.map(sub => (
-            <button key={sub.id} onClick={() => setActiveSubject(sub.id)} style={{ ...subBtn, borderColor: activeSubject === sub.id ? '#38bdf8' : '#1e3a5f', color: activeSubject === sub.id ? '#38bdf8' : '#64748b' }}>{sub.name}</button>
+            <button key={sub.id} onClick={() => setActiveSubject(sub.id)} style={{ ...subBtn, borderColor: activeSubject === sub.id ? '#38bdf8' : c.border, color: activeSubject === sub.id ? '#38bdf8' : c.sub }}>{sub.name}</button>
           ))}
         </div>
       )}
 
-      {loading && <p style={{ color: '#94a3b8', textAlign: 'center' }}>Loading...</p>}
+      {loading && <p style={{ color: c.sub, textAlign: 'center' }}>Loading...</p>}
 
       {!loading && filtered.length === 0 && (
-        <div style={{ background: '#1e293b', border: '1px solid #1e3a5f', borderRadius: 16, padding: 40, textAlign: 'center' }}>
-          <p style={{ color: '#64748b' }}>No files yet 🚧</p>
+        <div style={{ background: c.cardFlat, border: `1px solid ${c.border}`, borderRadius: 16, padding: 40, textAlign: 'center' }}>
+          <p style={{ color: c.sub }}>No files yet 🚧</p>
         </div>
       )}
 
       {filtered.map(file => (
         <div key={file.id} style={{
-          background: 'linear-gradient(135deg, #1e293b, #0f2540)',
-          border: '1px solid #1e3a5f', borderRadius: 16,
+          background: c.card,
+          border: `1px solid ${c.border}`, borderRadius: 16,
           padding: '16px 20px', marginBottom: 12,
           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
           transition: 'all 0.2s'
         }}
           onMouseEnter={e => e.currentTarget.style.borderColor = '#38bdf8'}
-          onMouseLeave={e => e.currentTarget.style.borderColor = '#1e3a5f'}>
+          onMouseLeave={e => e.currentTarget.style.borderColor = c.border}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <span style={{ fontSize: 24 }}>{getFileIcon(file.file_type)}</span>
-            <span style={{ color: '#e2e8f0', fontWeight: 600, fontSize: 14 }}>{file.name}</span>
+            <span style={{ color: c.text, fontWeight: 600, fontSize: 14 }}>{file.name}</span>
           </div>
           <button onClick={() => setViewer(file)} style={{
             background: '#38bdf8', color: '#0f172a', border: 'none',

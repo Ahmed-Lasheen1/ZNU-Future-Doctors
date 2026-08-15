@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../supabase'
 import { useAuth } from '../App'
+import { getTheme } from '../theme'
 
 export default function Profile({ dark }) {
   const { user, signOut } = useAuth()
@@ -11,12 +12,7 @@ export default function Profile({ dark }) {
   const [tab, setTab] = useState('profile')
   const [loading, setLoading] = useState(true)
 
-  const c = {
-    card: dark ? 'linear-gradient(135deg, #1e293b, #0f2540)' : '#fff',
-    border: dark ? '#1e3a5f' : '#e2e8f0',
-    text: dark ? '#e2e8f0' : '#1e293b',
-    sub: dark ? '#94a3b8' : '#64748b',
-  }
+  const c = getTheme(dark)
 
   useEffect(() => {
     fetchData()

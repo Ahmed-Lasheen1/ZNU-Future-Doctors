@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../supabase'
 import { useAuth } from '../App'
+import { getTheme } from '../theme'
 
 export default function AnonQuestions({ dark }) {
   const { user, profile } = useAuth()
@@ -11,13 +12,7 @@ export default function AnonQuestions({ dark }) {
   const [msg, setMsg] = useState('')
   const [replyText, setReplyText] = useState({})
 
-  const c = {
-    card: dark ? 'linear-gradient(135deg, #1e293b, #0f2540)' : '#fff',
-    border: dark ? '#1e3a5f' : '#e2e8f0',
-    text: dark ? '#e2e8f0' : '#1e293b',
-    sub: dark ? '#94a3b8' : '#64748b',
-    input: dark ? '#0f172a' : '#f8fafc',
-  }
+  const c = getTheme(dark)
 
   const inStyle = {
     width: '100%', padding: '12px', marginBottom: '12px',

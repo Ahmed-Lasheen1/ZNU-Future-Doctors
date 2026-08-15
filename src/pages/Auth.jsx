@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../supabase'
+import { getTheme } from '../theme'
 
 export default function Auth({ dark }) {
   const [email, setEmail] = useState('')
@@ -11,13 +12,7 @@ export default function Auth({ dark }) {
   const [msg, setMsg] = useState('')
   const navigate = useNavigate()
 
-  const c = {
-    card: dark ? 'linear-gradient(135deg, #1e293b, #0f2540)' : '#fff',
-    border: dark ? '#1e3a5f' : '#e2e8f0',
-    text: dark ? '#fff' : '#1e293b',
-    sub: dark ? '#94a3b8' : '#64748b',
-    input: dark ? '#0f172a' : '#f8fafc',
-  }
+  const c = getTheme(dark)
 
   const inStyle = {
     width: '100%', padding: '12px', marginBottom: '12px',

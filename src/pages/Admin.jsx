@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../supabase'
 import { useAuth } from '../App'
+import { getTheme } from '../theme'
 
 export default function Admin({ dark }) {
   const { user, profile } = useAuth()
@@ -53,12 +54,8 @@ export default function Admin({ dark }) {
   const [sumModuleId, setSumModuleId] = useState('')
 
   const c = {
+    ...getTheme(dark),
     bg: dark ? '#0f172a' : '#f8fafc',
-    card: dark ? '#1e293b' : '#fff',
-    border: dark ? '#1e3a5f' : '#e2e8f0',
-    text: dark ? '#e2e8f0' : '#1e293b',
-    sub: dark ? '#94a3b8' : '#64748b',
-    input: dark ? '#0f172a' : '#f8fafc',
   }
 
   useEffect(() => {
