@@ -85,6 +85,13 @@ export default function Home({ dark, toggleTheme }) {
               cursor: 'pointer', fontSize: 16, fontWeight: 700
             }} aria-label={dark ? 'Switch to light mode' : 'Switch to dark mode'}>{dark ? '☀️' : '🌙'}</button>
             <NavMenu dark={dark} />
+            <button onClick={() => navigate('/search')} aria-label="Search" style={{
+              background: dark ? 'rgba(56,189,248,0.1)' : '#f1f5f9',
+              color: dark ? '#38bdf8' : '#475569',
+              border: `1px solid ${dark ? 'rgba(56,189,248,0.3)' : '#e2e8f0'}`,
+              padding: '6px 14px', borderRadius: 10,
+              cursor: 'pointer', fontSize: 16, fontWeight: 700
+            }}>🔍</button>
           </div>
 
           {/* Profile Bar */}

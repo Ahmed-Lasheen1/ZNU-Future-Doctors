@@ -12,6 +12,10 @@ export default function Admin({ dark }) {
   const [activeTab, setActiveTab] = useState('modules')
   const [modules, setModules] = useState([])
   const [subjects, setSubjects] = useState([])
+  const [files, setFiles] = useState([])
+  const [schedules, setSchedules] = useState([])
+  const [questions, setQuestions] = useState([])
+  const [summaries, setSummaries] = useState([])
   const [msg, setMsg] = useState('')
 
   const [modName, setModName] = useState('')
@@ -60,7 +64,9 @@ export default function Admin({ dark }) {
   }
 
   useEffect(() => {
-    if (isAuth) { fetchModules(); fetchSubjects() }
+    if (isAuth) {
+      fetchModules(); fetchSubjects(); fetchFiles(); fetchSchedules(); fetchQuestions(); fetchSummaries()
+    }
   }, [isAuth])
 
   async function fetchModules() {
@@ -121,6 +127,50 @@ export default function Admin({ dark }) {
     fetchSubjects()
   }
 
+  async function fetchFiles() {
+    const { data } = await supabase.from('files').select('*').order('created_at', { ascending: false })
+    if (data) setFiles(data)
+  }
+
+  async function fetchSchedules() {
+    const { data } = await supabase.from('schedules').select('*').order('created_at', { ascending: false })
+    if (data) setSchedules(data)
+  }
+
+  async function fetchQuestions() {
+    const { data } = await supabase.from('questions').select('*').order('created_at', { ascending: false })
+    if (data) setQuestions(data)
+  }
+
+  async function fetchSummaries() {
+    const { data } = await supabase.from('summaries').select('*').order('created_at', { ascending: false })
+    if (data) setSummaries(data)
+  }
+
+  async function deleteFile(id) {
+    if (!confirm('Delete this file? This cannot be undone.')) return
+    await supabase.from('files').delete().eq('id', id)
+    fetchFiles()
+  }
+
+  async function deleteSchedule(id) {
+    if (!confirm('Delete this schedule? This cannot be undone.')) return
+    await supabase.from('schedules').delete().eq('id', id)
+    fetchSchedules()
+  }
+
+  async function deleteQuestion(id) {
+    if (!confirm('Delete this question? This cannot be undone.')) return
+    await supabase.from('questions').delete().eq('id', id)
+    fetchQuestions()
+  }
+
+  async function deleteSummary(id) {
+    if (!confirm('Delete this summary? This cannot be undone.')) return
+    await supabase.from('summaries').delete().eq('id', id)
+    fetchSummaries()
+  }
+
   async function addFile() {
     if (!fileName || !fileUrl || !fileModuleId) return
     const { error } = await supabase.from('files').insert([{
@@ -128,7 +178,7 @@ export default function Admin({ dark }) {
       file_type: fileFileType, module_id: fileModuleId,
       subject_id: fileSubjectId || null
     }])
-    if (!error) { showMsg('✅ File added!'); setFileName(''); setFileUrl('') }
+    if (!error) { showMsg('✅ File added!'); setFileName(''); setFileUrl(''); fetchFiles() }
     else showMsg('❌ ' + error.message)
   }
 
@@ -137,7 +187,7 @@ export default function Admin({ dark }) {
     const { error } = await supabase.from('schedules').insert([{
       title: schTitle, url: schUrl, type: schType, module_id: schModuleId
     }])
-    if (!error) { showMsg('✅ Schedule added!'); setSchTitle(''); setSchUrl('') }
+    if (!error) { showMsg('✅ Schedule added!'); setSchTitle(''); setSchUrl(''); fetchSchedules() }
     else showMsg('❌ ' + error.message)
   }
 
@@ -148,7 +198,7 @@ export default function Admin({ dark }) {
       correct: qCorrect, explanation: qExplanation, exam_type: qExamType,
       module_id: qModuleId, subject_id: qSubjectId || null
     }])
-    if (!error) { showMsg('✅ Question added!'); setQText(''); setQA(''); setQB(''); setQC(''); setQD(''); setQExplanation('') }
+    if (!error) { showMsg('✅ Question added!'); setQText(''); setQA(''); setQB(''); setQC(''); setQD(''); setQExplanation(''); fetchQuestions() }
     else showMsg('❌ ' + error.message)
   }
 
@@ -157,7 +207,7 @@ export default function Admin({ dark }) {
     const { error } = await supabase.from('summaries').insert([{
       title: sumTitle, url: sumUrl, module_id: sumModuleId
     }])
-    if (!error) { showMsg('✅ Summary added!'); setSumTitle(''); setSumUrl('') }
+    if (!error) { showMsg('✅ Summary added!'); setSumTitle(''); setSumUrl(''); fetchSummaries() }
     else showMsg('❌ ' + error.message)
   }
 
@@ -361,6 +411,29 @@ export default function Admin({ dark }) {
         </div>
       )}
 
+      {activeTab === 'files' && files.length > 0 && (
+        <div style={{ marginTop: 16 }}>
+          {modules.map(mod => {
+            const modFiles = files.filter(f => f.module_id === mod.id)
+            if (modFiles.length === 0) return null
+            return (
+              <div key={mod.id} style={{ marginBottom: 16 }}>
+                <h4 style={{ color: mod.color, marginBottom: 8 }}>{mod.icon} {mod.name}</h4>
+                {modFiles.map(f => (
+                  <div key={f.id} style={{ background: c.card, padding: '12px 16px', borderRadius: 12, border: `1px solid ${c.border}`, marginBottom: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                      <span style={{ color: c.text, fontWeight: 600 }}>{f.name}</span>
+                      <span style={{ color: c.sub, fontSize: 12, marginLeft: 8 }}>· {f.type} · {f.file_type}</span>
+                    </div>
+                    <button onClick={() => deleteFile(f.id)} aria-label={`Delete file: ${f.name}`} style={{ ...miniBtn, borderColor: '#ef4444', color: '#ef4444' }}>🗑</button>
+                  </div>
+                ))}
+              </div>
+            )
+          })}
+        </div>
+      )}
+
       {activeTab === 'schedules' && (
         <div style={{ background: c.card, padding: '20px', borderRadius: '16px', border: `1px solid ${c.border}` }}>
           <h3 style={{ color: '#38bdf8', marginBottom: 16 }}>➕ Add Schedule</h3>
@@ -374,6 +447,29 @@ export default function Admin({ dark }) {
           <label style={{ color: c.sub, fontSize: 12, display: 'block', marginBottom: 4 }}>Module</label>
           <ModuleSelect value={schModuleId} onChange={e => setSchModuleId(e.target.value)} />
           <button onClick={addSchedule} style={btnStyle}>Add Schedule</button>
+        </div>
+      )}
+
+      {activeTab === 'schedules' && schedules.length > 0 && (
+        <div style={{ marginTop: 16 }}>
+          {modules.map(mod => {
+            const modSchedules = schedules.filter(s => s.module_id === mod.id)
+            if (modSchedules.length === 0) return null
+            return (
+              <div key={mod.id} style={{ marginBottom: 16 }}>
+                <h4 style={{ color: mod.color, marginBottom: 8 }}>{mod.icon} {mod.name}</h4>
+                {modSchedules.map(s => (
+                  <div key={s.id} style={{ background: c.card, padding: '12px 16px', borderRadius: 12, border: `1px solid ${c.border}`, marginBottom: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                      <span style={{ color: c.text, fontWeight: 600 }}>{s.title}</span>
+                      <span style={{ color: c.sub, fontSize: 12, marginLeft: 8 }}>· {s.type}</span>
+                    </div>
+                    <button onClick={() => deleteSchedule(s.id)} aria-label={`Delete schedule: ${s.title}`} style={{ ...miniBtn, borderColor: '#ef4444', color: '#ef4444' }}>🗑</button>
+                  </div>
+                ))}
+              </div>
+            )
+          })}
         </div>
       )}
 
@@ -412,6 +508,26 @@ export default function Admin({ dark }) {
         </div>
       )}
 
+      {activeTab === 'questions' && questions.length > 0 && (
+        <div style={{ marginTop: 16 }}>
+          {modules.map(mod => {
+            const modQuestions = questions.filter(q => q.module_id === mod.id)
+            if (modQuestions.length === 0) return null
+            return (
+              <div key={mod.id} style={{ marginBottom: 16 }}>
+                <h4 style={{ color: mod.color, marginBottom: 8 }}>{mod.icon} {mod.name} <span style={{ color: c.sub, fontSize: 12, fontWeight: 400 }}>({modQuestions.length})</span></h4>
+                {modQuestions.map(q => (
+                  <div key={q.id} style={{ background: c.card, padding: '12px 16px', borderRadius: 12, border: `1px solid ${c.border}`, marginBottom: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10 }}>
+                    <span style={{ color: c.text, fontWeight: 600, fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{q.question}</span>
+                    <button onClick={() => deleteQuestion(q.id)} aria-label="Delete question" style={{ ...miniBtn, borderColor: '#ef4444', color: '#ef4444', flexShrink: 0 }}>🗑</button>
+                  </div>
+                ))}
+              </div>
+            )
+          })}
+        </div>
+      )}
+
       {activeTab === 'summaries' && (
         <div style={{ background: c.card, padding: '20px', borderRadius: '16px', border: `1px solid ${c.border}` }}>
           <h3 style={{ color: '#38bdf8', marginBottom: 16 }}>➕ Add Summary</h3>
@@ -419,6 +535,26 @@ export default function Admin({ dark }) {
           <input placeholder="Title (e.g. End Module Exam)" value={sumTitle} onChange={e => setSumTitle(e.target.value)} style={inStyle} />
           <input placeholder="Summary URL" value={sumUrl} onChange={e => setSumUrl(e.target.value)} style={inStyle} />
           <button onClick={addSummary} style={btnStyle}>Add Summary</button>
+        </div>
+      )}
+
+      {activeTab === 'summaries' && summaries.length > 0 && (
+        <div style={{ marginTop: 16 }}>
+          {modules.map(mod => {
+            const modSummaries = summaries.filter(s => s.module_id === mod.id)
+            if (modSummaries.length === 0) return null
+            return (
+              <div key={mod.id} style={{ marginBottom: 16 }}>
+                <h4 style={{ color: mod.color, marginBottom: 8 }}>{mod.icon} {mod.name}</h4>
+                {modSummaries.map(s => (
+                  <div key={s.id} style={{ background: c.card, padding: '12px 16px', borderRadius: 12, border: `1px solid ${c.border}`, marginBottom: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ color: c.text, fontWeight: 600 }}>{s.title}</span>
+                    <button onClick={() => deleteSummary(s.id)} aria-label={`Delete summary: ${s.title}`} style={{ ...miniBtn, borderColor: '#ef4444', color: '#ef4444' }}>🗑</button>
+                  </div>
+                ))}
+              </div>
+            )
+          })}
         </div>
       )}
     </div>

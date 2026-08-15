@@ -14,6 +14,7 @@ const Auth = lazy(() => import('./pages/Auth'))
 const Profile = lazy(() => import('./pages/Profile'))
 const AnonQuestions = lazy(() => import('./pages/AnonQuestions'))
 const NotFound = lazy(() => import('./pages/NotFound'))
+const Search = lazy(() => import('./pages/Search'))
 import Footer from './components/Footer'
 
 export const ThemeContext = createContext()
@@ -43,6 +44,7 @@ function ScrollToTop() {
 
 const menuLinks = [
   { to: '/', label: '🏠 Home' },
+  { to: '/search', label: '🔍 Search' },
   { to: '/schedule', label: '📅 Schedules' },
   { to: '/checklist', label: '🎯 Checklist' },
   { to: '/anon-questions', label: '💬 Anonymous Q&A' },
@@ -111,6 +113,12 @@ function SmartHeader({ dark, toggleTheme }) {
           border: `1px solid ${dark ? 'rgba(56,189,248,0.3)' : '#e2e8f0'}`
         }}>← Back</button>
         <NavMenu dark={dark} />
+        <button onClick={() => navigate('/search')} aria-label="Search" style={{
+          ...navBtn,
+          background: dark ? 'rgba(56,189,248,0.1)' : '#f1f5f9',
+          color: dark ? '#38bdf8' : '#475569',
+          border: `1px solid ${dark ? 'rgba(56,189,248,0.3)' : '#e2e8f0'}`
+        }}>🔍</button>
       </div>
 
       <span style={{ color: dark ? '#38bdf8' : '#0ea5e9', fontWeight: 900, fontSize: 16 }}>ZNU Future Doctors</span>
@@ -236,6 +244,7 @@ export default function App() {
                   <Route path="/auth" element={<Auth dark={dark} />} />
                   <Route path="/profile" element={<Profile dark={dark} />} />
                   <Route path="/anon-questions" element={<AnonQuestions dark={dark} />} />
+                  <Route path="/search" element={<Search dark={dark} />} />
                   <Route path="*" element={<NotFound dark={dark} />} />
                 </Routes>
               </Suspense>
