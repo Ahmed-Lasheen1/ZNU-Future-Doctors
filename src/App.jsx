@@ -43,15 +43,10 @@ function ScrollToTop() {
 
 const menuLinks = [
   { to: '/', label: '🏠 Home' },
+  { to: '/schedule', label: '📅 Schedules' },
   { to: '/checklist', label: '🎯 Checklist' },
-  { to: '/schedule', label: '📅 Schedule' },
-  { to: '/files?type=sharah', label: '📖 Explanation Files' },
-  { to: '/files?type=questions', label: '❓ Question Files' },
-  { to: '/files?type=lectures', label: '🎥 Lecture Recordings' },
-  { to: '/files?type=courses', label: '🎓 Course Recordings' },
-  { to: '/summaries', label: '📝 Smart Summaries' },
-  { to: '/mcq', label: '🧪 MCQ Bank' },
   { to: '/anon-questions', label: '💬 Anonymous Q&A' },
+  { to: '/profile', label: '🏆 Leaderboard' },
 ]
 
 export function NavMenu({ dark }) {

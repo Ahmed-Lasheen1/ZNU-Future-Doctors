@@ -38,8 +38,6 @@ function AnimatedCard({ children, delay = 0, onClick, color, dark }) {
 const toolCards = [
   { emoji: '📅', title: 'Schedules', to: '/schedule', color: '#a78bfa' },
   { emoji: '🎯', title: 'Checklist', to: '/checklist', color: '#f59e0b' },
-  { emoji: '📝', title: 'Smart Summaries', to: '/summaries', color: '#34d399' },
-  { emoji: '🧪', title: 'MCQ Bank', to: '/mcq', color: '#f472b6' },
   { emoji: '💬', title: 'Anonymous Q&A', to: '/anon-questions', color: '#a78bfa' },
   { emoji: '🏆', title: 'Leaderboard', to: '/profile', color: '#f59e0b' },
 ]
