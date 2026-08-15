@@ -86,8 +86,9 @@ h1, h2, h3 {
   .page-container { max-width: 1160px; }
 }
 
-/* Card grids: 2 columns on phones, more columns automatically
-   as the viewport grows, using the same card size everywhere. */
+/* Card grids: 2 columns on phones, wider cards (not just more of
+   them) as the screen grows, so cards actually look bigger on a
+   laptop/iPad instead of just multiplying into a dense wall. */
 .card-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -95,9 +96,9 @@ h1, h2, h3 {
 }
 
 @media (min-width: 640px) {
-  .card-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+  .card-grid { grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 14px; }
 }
 
 @media (min-width: 1100px) {
-  .card-grid { gap: 16px; }
+  .card-grid { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 20px; }
 }

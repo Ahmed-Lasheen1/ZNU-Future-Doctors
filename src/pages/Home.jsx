@@ -27,7 +27,7 @@ function AnimatedCard({ children, delay = 0, onClick, color, dark }) {
           ? `linear-gradient(135deg, ${color}25, ${color}10)`
           : c.card,
         border: `2px solid ${hovered ? color : color + '40'}`,
-        borderRadius: 20, padding: '28px 16px', textAlign: 'center',
+        borderRadius: 20, padding: 'clamp(24px, 3vw, 40px) clamp(14px, 2vw, 24px)', textAlign: 'center',
         boxShadow: hovered ? `0 12px 40px ${color}30` : dark ? 'none' : '0 2px 8px rgba(0,0,0,0.06)',
       }}>
       {children}
@@ -147,8 +147,8 @@ export default function Home({ dark, toggleTheme }) {
             {activeModules.map((mod, i) => (
               <AnimatedCard key={mod.id} delay={200 + i * 80} color={mod.color} dark={dark}
                 onClick={() => navigate(`/module/${mod.id}`)}>
-                <div style={{ fontSize: 36, marginBottom: 8 }}>{mod.icon}</div>
-                <div style={{ color: c.text, fontSize: 14, fontWeight: 700, marginBottom: 8 }}>{mod.name}</div>
+                <div style={{ fontSize: 'clamp(32px, 3.5vw, 52px)', marginBottom: 8 }}>{mod.icon}</div>
+                <div style={{ color: c.text, fontSize: 'clamp(14px, 1.2vw, 17px)', fontWeight: 700, marginBottom: 8 }}>{mod.name}</div>
                 <div style={{
                   display: 'inline-block', background: '#22c55e20', color: '#22c55e',
                   border: '1px solid #22c55e40', borderRadius: 20, padding: '2px 10px', fontSize: 11, fontWeight: 700
@@ -166,8 +166,8 @@ export default function Home({ dark, toggleTheme }) {
           {toolCards.map((card, i) => (
             <AnimatedCard key={i} delay={400 + i * 80} color={card.color} dark={dark}
               onClick={() => navigate(card.to)}>
-              <div style={{ fontSize: 30, marginBottom: 8 }}>{card.emoji}</div>
-              <div style={{ color: c.text, fontSize: 13, fontWeight: 700 }}>{card.title}</div>
+              <div style={{ fontSize: 'clamp(28px, 3vw, 42px)', marginBottom: 8 }}>{card.emoji}</div>
+              <div style={{ color: c.text, fontSize: 'clamp(13px, 1.1vw, 16px)', fontWeight: 700 }}>{card.title}</div>
             </AnimatedCard>
           ))}
         </div>
@@ -181,8 +181,8 @@ export default function Home({ dark, toggleTheme }) {
             {completedModules.map((mod, i) => (
               <AnimatedCard key={mod.id} delay={i * 80} color='#475569' dark={dark}
                 onClick={() => navigate(`/module/${mod.id}`)}>
-                <div style={{ fontSize: 30, marginBottom: 8, filter: 'grayscale(0.5)' }}>{mod.icon}</div>
-                <div style={{ color: c.sub, fontSize: 13, fontWeight: 700, marginBottom: 8 }}>{mod.name}</div>
+                <div style={{ fontSize: 'clamp(28px, 3vw, 42px)', marginBottom: 8, filter: 'grayscale(0.5)' }}>{mod.icon}</div>
+                <div style={{ color: c.sub, fontSize: 'clamp(13px, 1.1vw, 16px)', fontWeight: 700, marginBottom: 8 }}>{mod.name}</div>
                 <div style={{
                   display: 'inline-block', background: '#47556920', color: '#64748b',
                   border: '1px solid #47556940', borderRadius: 20, padding: '2px 10px', fontSize: 11, fontWeight: 700

@@ -339,12 +339,12 @@ export default function MCQ({ dark }) {
           return (
             <div key={sub.id} style={{
               background: c.card, border: `1px solid ${c.border}`,
-              borderRadius: 16, padding: 16, cursor: 'pointer', transition: 'all 0.2s'
+              borderRadius: 16, padding: 'clamp(16px, 1.6vw, 24px)', cursor: 'pointer', transition: 'all 0.2s'
             }}
               onMouseEnter={e => e.currentTarget.style.borderColor = '#f472b6'}
               onMouseLeave={e => e.currentTarget.style.borderColor = c.border}
               onClick={() => startQuiz('practice', sub.id)}>
-              <div style={{ color: c.text, fontWeight: 700, marginBottom: 6 }}>{sub.name}</div>
+              <div style={{ color: c.text, fontWeight: 700, marginBottom: 6, fontSize: 'clamp(14px, 1.2vw, 17px)' }}>{sub.name}</div>
               <div style={{ color: c.sub, fontSize: 12, marginBottom: 10 }}>{subQs.length} questions</div>
               <button style={{ ...startBtnStyle, width: '100%', fontSize: 12, padding: '6px 12px' }}>
                 Practice

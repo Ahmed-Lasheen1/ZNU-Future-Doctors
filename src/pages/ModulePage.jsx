@@ -25,7 +25,7 @@ function AnimatedCard({ children, delay = 0, onClick, color, dark }) {
         cursor: 'pointer',
         background: hovered ? `linear-gradient(135deg, ${color}25, ${color}10)` : (dark ? 'linear-gradient(135deg, #1e293b, #0f2540)' : '#fff'),
         border: `2px solid ${hovered ? color : color + '40'}`,
-        borderRadius: 20, padding: '28px 16px', textAlign: 'center',
+        borderRadius: 20, padding: 'clamp(24px, 3vw, 40px) clamp(14px, 2vw, 24px)', textAlign: 'center',
         boxShadow: hovered ? `0 12px 40px ${color}30` : 'none',
       }}>
       {children}
@@ -148,8 +148,8 @@ export default function ModulePage({ dark }) {
           {fileCards.map((card, i) => (
             <AnimatedCard key={i} delay={i * 80} color={card.color} dark={dark}
               onClick={() => navigate(`/files?type=${card.type}&module=${moduleId}`)}>
-              <div style={{ fontSize: 30, marginBottom: 8 }}>{card.emoji}</div>
-              <div style={{ color: c.text, fontSize: 13, fontWeight: 700 }}>{card.title}</div>
+              <div style={{ fontSize: 'clamp(28px, 3vw, 42px)', marginBottom: 8 }}>{card.emoji}</div>
+              <div style={{ color: c.text, fontSize: 'clamp(13px, 1.1vw, 16px)', fontWeight: 700 }}>{card.title}</div>
             </AnimatedCard>
           ))}
         </div>
