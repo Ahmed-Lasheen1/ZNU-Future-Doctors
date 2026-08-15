@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { supabase } from '../supabase'
-
-const PASS = 'Ail@10_11_2006#'
+import { useAuth } from '../App'
 
 export default function Admin({ dark }) {
-  const [pass, setPass] = useState('')
-  const [isAuth, setIsAuth] = useState(false)
+  const { user, profile } = useAuth()
+  const navigate = useNavigate()
+  const isAuth = profile?.role === 'admin'
   const [activeTab, setActiveTab] = useState('modules')
   const [modules, setModules] = useState([])
   const [subjects, setSubjects] = useState([])
@@ -45,6 +46,7 @@ export default function Admin({ dark }) {
   const [qExplanation, setQExplanation] = useState('')
   const [qModuleId, setQModuleId] = useState('')
   const [qSubjectId, setQSubjectId] = useState('')
+  const [qExamType, setQExamType] = useState('both')
 
   const [sumTitle, setSumTitle] = useState('')
   const [sumUrl, setSumUrl] = useState('')
@@ -136,7 +138,7 @@ export default function Admin({ dark }) {
     if (!qText || !qA || !qB || !qC || !qD || !qModuleId) return
     const { error } = await supabase.from('questions').insert([{
       question: qText, option_a: qA, option_b: qB, option_c: qC, option_d: qD,
-      correct: qCorrect, explanation: qExplanation,
+      correct: qCorrect, explanation: qExplanation, exam_type: qExamType,
       module_id: qModuleId, subject_id: qSubjectId || null
     }])
     if (!error) { showMsg('✅ Question added!'); setQText(''); setQA(''); setQB(''); setQC(''); setQD(''); setQExplanation('') }
@@ -180,11 +182,17 @@ export default function Admin({ dark }) {
   )
 
   if (!isAuth) return (
-    <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{ background: c.card, padding: 30, borderRadius: 20, width: '90%', maxWidth: 400, border: `1px solid ${c.border}` }}>
-        <h3 style={{ color: '#38bdf8', textAlign: 'center', marginBottom: 20 }}>🔐 Admin Panel</h3>
-        <input type="password" placeholder="Password" onChange={e => setPass(e.target.value)} style={inStyle} />
-        <button onClick={() => pass === PASS && setIsAuth(true)} style={btnStyle}>Enter</button>
+    <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+      <div style={{ background: c.card, padding: 30, borderRadius: 20, width: '90%', maxWidth: 400, border: `1px solid ${c.border}`, textAlign: 'center' }}>
+        <h3 style={{ color: '#38bdf8', marginBottom: 12 }}>🔐 Admin Panel</h3>
+        <p style={{ color: c.sub, fontSize: 13, marginBottom: 20 }}>
+          {user
+            ? "Your account doesn't have admin access."
+            : 'Sign in with your admin account to continue.'}
+        </p>
+        <button onClick={() => navigate(user ? '/' : '/auth')} style={btnStyle}>
+          {user ? '← Back to Home' : 'Sign In'}
+        </button>
       </div>
     </div>
   )
@@ -385,6 +393,12 @@ export default function Admin({ dark }) {
             <option value="b">B</option>
             <option value="c">C</option>
             <option value="d">D</option>
+          </select>
+          <label style={{ color: c.sub, fontSize: 12, display: 'block', marginBottom: 4 }}>Use In</label>
+          <select value={qExamType} onChange={e => setQExamType(e.target.value)} style={inStyle}>
+            <option value="both">Practice + Mock Exam</option>
+            <option value="practice">Practice Only</option>
+            <option value="mock">Mock Exam Only</option>
           </select>
           <textarea placeholder="Explanation (optional)" value={qExplanation} onChange={e => setQExplanation(e.target.value)} style={{ ...inStyle, minHeight: 60, resize: 'vertical' }} />
           <button onClick={addQuestion} style={btnStyle}>Add Question</button>

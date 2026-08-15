@@ -3,13 +3,12 @@ import { supabase } from '../supabase'
 import { useAuth } from '../App'
 
 export default function AnonQuestions({ dark }) {
-  const { user } = useAuth()
+  const { user, profile } = useAuth()
+  const isAdmin = profile?.role === 'admin'
   const [questions, setQuestions] = useState([])
   const [newQ, setNewQ] = useState('')
   const [loading, setLoading] = useState(true)
   const [msg, setMsg] = useState('')
-  const [isAdmin, setIsAdmin] = useState(false)
-  const [adminPass, setAdminPass] = useState('')
   const [replyText, setReplyText] = useState({})
 
   const c = {
@@ -96,26 +95,13 @@ export default function AnonQuestions({ dark }) {
       </div>
 
       {/* Admin Panel */}
-      {!isAdmin ? (
-        <div style={{ background: c.card, border: `1px solid ${c.border}`, borderRadius: 16, padding: 16, marginBottom: 24 }}>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <input type="password" placeholder="Admin password"
-              value={adminPass} onChange={e => setAdminPass(e.target.value)}
-              style={{ ...inStyle, marginBottom: 0, flex: 1 }} />
-            <button onClick={() => adminPass === 'Ail@10_11_2006#' && setIsAdmin(true)} style={{
-              background: '#38bdf8', color: '#0f172a', border: 'none',
-              padding: '10px 16px', borderRadius: 10, cursor: 'pointer',
-              fontWeight: 700, fontFamily: 'inherit', whiteSpace: 'nowrap'
-            }}>Admin</button>
-          </div>
-        </div>
-      ) : (
+      {isAdmin && (
         <div style={{
           background: '#38bdf810', border: '1px solid #38bdf830',
           borderRadius: 12, padding: '10px 16px', marginBottom: 24,
           color: '#38bdf8', fontSize: 13, fontWeight: 700, textAlign: 'center'
         }}>
-          ✅ Admin Mode Active
+          ✅ Admin Mode Active — replies you post here are visible to everyone
         </div>
       )}
 

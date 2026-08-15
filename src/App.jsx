@@ -26,6 +26,58 @@ function ScrollToTop() {
   return null
 }
 
+const menuLinks = [
+  { to: '/', label: '🏠 Home' },
+  { to: '/checklist', label: '🎯 Checklist' },
+  { to: '/schedule', label: '📅 Schedule' },
+  { to: '/files?type=sharah', label: '📖 Explanation Files' },
+  { to: '/files?type=questions', label: '❓ Question Files' },
+  { to: '/files?type=lectures', label: '🎥 Lecture Recordings' },
+  { to: '/files?type=courses', label: '🎓 Course Recordings' },
+  { to: '/summaries', label: '📝 Smart Summaries' },
+  { to: '/mcq', label: '🧪 MCQ Bank' },
+  { to: '/anon-questions', label: '💬 Anonymous Q&A' },
+]
+
+export function NavMenu({ dark }) {
+  const [open, setOpen] = useState(false)
+  const navigate = useNavigate()
+  return (
+    <div style={{ position: 'relative' }}
+      onMouseEnter={() => setOpen(true)}
+      onMouseLeave={() => setOpen(false)}>
+      <button style={{
+        ...navBtn,
+        background: dark ? 'rgba(56,189,248,0.1)' : '#f1f5f9',
+        color: dark ? '#38bdf8' : '#475569',
+        border: `1px solid ${dark ? 'rgba(56,189,248,0.3)' : '#e2e8f0'}`
+      }}>☰ Menu</button>
+      {open && (
+        <div style={{
+          position: 'absolute', top: '100%', left: 0,
+          background: dark ? '#0f1e35' : '#fff',
+          border: `1px solid ${dark ? 'rgba(56,189,248,0.25)' : '#e2e8f0'}`,
+          borderRadius: 12, padding: 8, minWidth: 200,
+          zIndex: 1100, boxShadow: '0 8px 32px rgba(0,0,0,0.25)'
+        }}>
+          {menuLinks.map((item, i) => (
+            <button key={i} onClick={() => { navigate(item.to); setOpen(false) }} style={{
+              display: 'block', width: '100%', textAlign: 'left',
+              padding: '8px 14px', background: 'transparent', border: 'none',
+              color: dark ? '#e2e8f0' : '#1e293b', fontSize: 13, fontWeight: 600,
+              borderRadius: 8, cursor: 'pointer', fontFamily: 'inherit'
+            }}
+              onMouseEnter={e => e.target.style.background = dark ? 'rgba(56,189,248,0.12)' : '#f1f5f9'}
+              onMouseLeave={e => e.target.style.background = 'transparent'}>
+              {item.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 function SmartHeader({ dark, toggleTheme }) {
   const navigate = useNavigate()
   const location = useLocation()
@@ -41,12 +93,15 @@ function SmartHeader({ dark, toggleTheme }) {
       position: 'sticky', top: 0, zIndex: 1000,
       borderBottom: `1px solid ${dark ? 'rgba(56,189,248,0.2)' : '#e2e8f0'}`,
     }}>
-      <button onClick={() => navigate(-1)} style={{
-        ...navBtn,
-        background: dark ? 'rgba(56,189,248,0.1)' : '#f1f5f9',
-        color: dark ? '#38bdf8' : '#475569',
-        border: `1px solid ${dark ? 'rgba(56,189,248,0.3)' : '#e2e8f0'}`
-      }}>← Back</button>
+      <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+        <button onClick={() => navigate(-1)} style={{
+          ...navBtn,
+          background: dark ? 'rgba(56,189,248,0.1)' : '#f1f5f9',
+          color: dark ? '#38bdf8' : '#475569',
+          border: `1px solid ${dark ? 'rgba(56,189,248,0.3)' : '#e2e8f0'}`
+        }}>← Back</button>
+        <NavMenu dark={dark} />
+      </div>
 
       <span style={{ color: dark ? '#38bdf8' : '#0ea5e9', fontWeight: 900, fontSize: 16 }}>ZNU Future Doctors</span>
 
@@ -124,7 +179,7 @@ export default function App() {
             background: bg,
             minHeight: '100vh', color: dark ? '#fff' : '#1e293b',
             display: 'flex', flexDirection: 'column',
-            fontFamily: "'Segoe UI', sans-serif", direction: 'ltr'
+            fontFamily: "'Segoe UI', sans-serif"
           }}>
             <ScrollToTop />
             <SmartHeader dark={dark} toggleTheme={() => setDark(!dark)} />

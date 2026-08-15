@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../supabase'
-import { useAuth } from '../App'
+import { useAuth, NavMenu } from '../App'
 
 function AnimatedCard({ children, delay = 0, onClick, color, dark }) {
   const [visible, setVisible] = useState(false)
@@ -77,13 +77,16 @@ export default function Home({ dark, toggleTheme }) {
         transition: 'all 0.6s ease'
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-          <button onClick={toggleTheme} style={{
-            background: dark ? 'rgba(56,189,248,0.1)' : '#f1f5f9',
-            color: dark ? '#38bdf8' : '#475569',
-            border: `1px solid ${dark ? 'rgba(56,189,248,0.3)' : '#e2e8f0'}`,
-            padding: '6px 14px', borderRadius: 10,
-            cursor: 'pointer', fontSize: 16, fontWeight: 700
-          }}>{dark ? '☀️' : '🌙'}</button>
+          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+            <button onClick={toggleTheme} style={{
+              background: dark ? 'rgba(56,189,248,0.1)' : '#f1f5f9',
+              color: dark ? '#38bdf8' : '#475569',
+              border: `1px solid ${dark ? 'rgba(56,189,248,0.3)' : '#e2e8f0'}`,
+              padding: '6px 14px', borderRadius: 10,
+              cursor: 'pointer', fontSize: 16, fontWeight: 700
+            }}>{dark ? '☀️' : '🌙'}</button>
+            <NavMenu dark={dark} />
+          </div>
 
           {/* Profile Bar */}
           {user && profile ? (
