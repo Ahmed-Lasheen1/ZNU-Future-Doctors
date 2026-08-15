@@ -141,7 +141,16 @@ const navBtn = {
 }
 
 export default function App() {
-  const [dark, setDark] = useState(true)
+  const [dark, setDark] = useState(() => {
+    const saved = localStorage.getItem('znu_theme')
+    if (saved === 'light') return false
+    if (saved === 'dark') return true
+    return true // default to dark for first-time visitors
+  })
+
+  useEffect(() => {
+    localStorage.setItem('znu_theme', dark ? 'dark' : 'light')
+  }, [dark])
   const [user, setUser] = useState(null)
   const [profile, setProfile] = useState(null)
 
