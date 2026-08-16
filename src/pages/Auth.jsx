@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../supabase'
-import { getTheme } from '../theme'
+import { getTheme, inputStyle } from '../theme'
 
 export default function Auth({ dark }) {
   const [email, setEmail] = useState('')
@@ -13,13 +13,7 @@ export default function Auth({ dark }) {
   const navigate = useNavigate()
 
   const c = getTheme(dark)
-
-  const inStyle = {
-    width: '100%', padding: '12px', marginBottom: '12px',
-    borderRadius: '10px', border: `1px solid ${c.border}`,
-    background: c.input, color: c.text,
-    fontSize: 14, fontFamily: 'inherit', boxSizing: 'border-box', outline: 'none'
-  }
+  const inStyle = inputStyle(c)
 
   function extractCode(email) {
     return email.split('@')[0]
@@ -35,15 +29,21 @@ export default function Auth({ dark }) {
     setMsg('')
 
     if (isSignUp) {
-      const { data, error } = await supabase.auth.signUp({ email, password })
+      // ملحوظة مهمة: مبقيناش بننشئ صف profiles من هنا (الفرونت إند).
+      // إنشاء البروفايل بقى بيحصل تلقائيًا في قاعدة البيانات (trigger)
+      // فور ما يتعمل حساب جديد، وده أأمن وأضمن إنه دايمًا بينفذ حتى
+      // لو حصل مشكلة في الشبكة بعد نجاح الـ signUp.
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            name: name.trim(),
+          }
+        }
+      })
       if (error) { setMsg('❌ ' + error.message); setLoading(false); return }
       if (data.user) {
-        await supabase.from('profiles').insert([{
-          id: data.user.id,
-          name: name.trim(),
-          university_code: extractCode(email),
-          points: 0
-        }])
         setMsg('✅ Account created! You can now sign in.')
         setIsSignUp(false)
       }

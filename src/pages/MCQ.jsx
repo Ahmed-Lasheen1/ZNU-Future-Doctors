@@ -5,7 +5,7 @@ import { getTheme } from '../theme'
 import ErrorBanner from '../components/ErrorBanner'
 
 export default function MCQ({ dark }) {
-  const { user } = useAuth()
+  const { user, fetchProfile } = useAuth()
   const { modules, modulesLoaded, modulesError } = useModules()
   const [subjects, setSubjects] = useState([])
   const [questions, setQuestions] = useState([])
@@ -134,9 +134,12 @@ export default function MCQ({ dark }) {
 
         const newPoints = toRecord.filter(r => r.correct).length
         if (newPoints > 0) {
-          const { data: prof } = await supabase.from('profiles').select('points').eq('id', user.id).single()
-          if (prof) {
-            await supabase.from('profiles').update({ points: prof.points + newPoints }).eq('id', user.id)
+          // بدل ما نعدّل عمود points مباشرة من الفرونت إند (غير آمن)،
+          // بنستخدم دالة award_points في قاعدة البيانات (شوف supabase_migration.sql)
+          // اللي بتتأكد إن المستخدم مسجل دخول وإن العدد منطقي قبل ما تضيف النقاط.
+          const { error } = await supabase.rpc('award_points', { p_amount: newPoints })
+          if (!error) {
+            fetchProfile(user.id) // نحدّث النقاط الظاهرة في الهيدر فورًا
           }
         }
         fetchAnsweredIds()

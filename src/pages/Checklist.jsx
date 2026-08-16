@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../supabase'
 import { useAuth, useModules } from '../App'
 import { useNavigate } from 'react-router-dom'
-import { getTheme } from '../theme'
+import { getTheme, inputStyle } from '../theme'
 import ErrorBanner from '../components/ErrorBanner'
 
 export default function Checklist({ dark }) {
@@ -15,13 +15,7 @@ export default function Checklist({ dark }) {
   const [newDeadline, setNewDeadline] = useState('')
 
   const c = getTheme(dark)
-
-  const inStyle = {
-    padding: '10px 14px', borderRadius: 10,
-    border: `1px solid ${c.border}`,
-    background: c.input, color: c.text,
-    fontSize: 14, fontFamily: 'inherit', outline: 'none'
-  }
+  const inStyle = { ...inputStyle(c), padding: '10px 14px', marginBottom: 0 }
 
   useEffect(() => {
     if (modulesLoaded && modules.length > 0 && !activeModule) {

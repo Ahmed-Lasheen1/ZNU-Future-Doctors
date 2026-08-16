@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../supabase'
 import { useAuth, useModules } from '../App'
-import { getTheme } from '../theme'
+import { getTheme, inputStyle } from '../theme'
+import { fetchModulesSorted } from '../lib/modules'
 
 export default function Admin({ dark }) {
   const { user, profile } = useAuth()
@@ -70,14 +71,8 @@ export default function Admin({ dark }) {
   }, [isAuth])
 
   async function fetchModules() {
-    const { data } = await supabase.from('modules').select('*').order('status').order('created_at')
-    if (data) {
-      const sorted = [
-        ...data.filter(m => m.status === 'active'),
-        ...data.filter(m => m.status !== 'active')
-      ]
-      setModules(sorted)
-    }
+    const { modules: sorted } = await fetchModulesSorted()
+    setModules(sorted)
     refreshModules()
   }
 
@@ -215,12 +210,7 @@ export default function Admin({ dark }) {
   const completedModules = modules.filter(m => m.status !== 'active')
   const filteredSubjects = (moduleId) => subjects.filter(s => s.module_id === moduleId)
 
-  const inStyle = {
-    width: '100%', padding: '12px', marginBottom: '12px',
-    borderRadius: '10px', border: `1px solid ${c.border}`,
-    background: c.input, color: c.text,
-    fontSize: 14, fontFamily: 'inherit', boxSizing: 'border-box', outline: 'none'
-  }
+  const inStyle = inputStyle(c)
 
   const ModuleSelect = ({ value, onChange }) => (
     <select value={value} onChange={onChange} style={inStyle}>

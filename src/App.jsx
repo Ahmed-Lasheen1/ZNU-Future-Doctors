@@ -2,6 +2,7 @@ import { useState, useEffect, createContext, useContext, Suspense, lazy } from '
 import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation } from 'react-router-dom'
 import { supabase } from './supabase'
 import { getTheme } from './theme'
+import { fetchModulesSorted } from './lib/modules'
 import Home from './pages/Home'
 const Checklist = lazy(() => import('./pages/Checklist'))
 const Schedule = lazy(() => import('./pages/Schedule'))
@@ -174,20 +175,14 @@ export default function App() {
   const [modulesLoaded, setModulesLoaded] = useState(false)
   const [modulesError, setModulesError] = useState(false)
 
-  async function fetchModules() {
-    const { data, error } = await supabase.from('modules').select('*').order('status').order('created_at')
-    if (data) {
-      const sorted = [
-        ...data.filter(m => m.status === 'active'),
-        ...data.filter(m => m.status !== 'active')
-      ]
-      setModules(sorted)
-    }
+  async function loadModules() {
+    const { modules: sorted, error } = await fetchModulesSorted()
+    setModules(sorted)
     if (error) setModulesError(true)
     setModulesLoaded(true)
   }
 
-  useEffect(() => { fetchModules() }, [])
+  useEffect(() => { loadModules() }, [])
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -220,7 +215,7 @@ export default function App() {
   return (
     <ThemeContext.Provider value={{ dark }}>
       <AuthContext.Provider value={{ user, signOut, profile, fetchProfile }}>
-        <ModulesContext.Provider value={{ modules, modulesLoaded, modulesError, refreshModules: fetchModules }}>
+        <ModulesContext.Provider value={{ modules, modulesLoaded, modulesError, refreshModules: loadModules }}>
         <Router>
           <div style={{
             background: bg,

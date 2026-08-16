@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../supabase'
 import { useAuth } from '../App'
-import { getTheme } from '../theme'
+import { getTheme, inputStyle } from '../theme'
 
 export default function AnonQuestions({ dark }) {
   const { user, profile } = useAuth()
@@ -13,13 +13,7 @@ export default function AnonQuestions({ dark }) {
   const [replyText, setReplyText] = useState({})
 
   const c = getTheme(dark)
-
-  const inStyle = {
-    width: '100%', padding: '12px', marginBottom: '12px',
-    borderRadius: '10px', border: `1px solid ${c.border}`,
-    background: c.input, color: c.text,
-    fontSize: 14, fontFamily: 'inherit', boxSizing: 'border-box', outline: 'none'
-  }
+  const inStyle = inputStyle(c)
 
   useEffect(() => { fetchQuestions() }, [])
 
