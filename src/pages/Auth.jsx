@@ -8,6 +8,7 @@ export default function Auth({ dark }) {
   const [password, setPassword] = useState('')
   const [name, setName] = useState('')
   const [isSignUp, setIsSignUp] = useState(false)
+  const [forgotMode, setForgotMode] = useState(false)
   const [loading, setLoading] = useState(false)
   const [msg, setMsg] = useState('')
   const navigate = useNavigate()
@@ -29,10 +30,8 @@ export default function Auth({ dark }) {
     setMsg('')
 
     if (isSignUp) {
-      // ملحوظة مهمة: مبقيناش بننشئ صف profiles من هنا (الفرونت إند).
-      // إنشاء البروفايل بقى بيحصل تلقائيًا في قاعدة البيانات (trigger)
-      // فور ما يتعمل حساب جديد، وده أأمن وأضمن إنه دايمًا بينفذ حتى
-      // لو حصل مشكلة في الشبكة بعد نجاح الـ signUp.
+      // ملحوظة: مبنعملش insert للـ profiles من هنا — بيتعمل تلقائيًا في
+      // قاعدة البيانات (trigger) فور إنشاء الحساب، وده أأمن وأضمن.
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -55,6 +54,18 @@ export default function Auth({ dark }) {
     setLoading(false)
   }
 
+  async function handleForgotPassword() {
+    if (!email) return setMsg('Please enter your email address first')
+    setLoading(true)
+    setMsg('')
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`
+    })
+    setLoading(false)
+    if (error) setMsg('❌ ' + error.message)
+    else setMsg('✅ Check your email for a password reset link.')
+  }
+
   return (
     <div style={{
       minHeight: '80vh', display: 'flex',
@@ -70,7 +81,7 @@ export default function Auth({ dark }) {
             ZNU Future Doctors
           </h2>
           <p style={{ color: c.sub, fontSize: 13 }}>
-            {isSignUp ? 'Create your account' : 'Sign in to your account'}
+            {forgotMode ? 'Reset your password' : isSignUp ? 'Create your account' : 'Sign in to your account'}
           </p>
         </div>
 
@@ -83,64 +94,105 @@ export default function Auth({ dark }) {
           }}>{msg}</div>
         )}
 
-        {isSignUp && (
-          <input
-            aria-label="Your full name"
-            placeholder="Your name (e.g. Ahmed Lasheen)"
-            value={name} onChange={e => setName(e.target.value)}
-            style={inStyle} />
+        {forgotMode ? (
+          <>
+            <input
+              type="email"
+              aria-label="Email address"
+              placeholder="Your account email"
+              value={email} onChange={e => setEmail(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleForgotPassword()}
+              style={inStyle} />
+
+            <button onClick={handleForgotPassword} disabled={loading} style={{
+              width: '100%', padding: '12px', background: '#38bdf8',
+              border: 'none', borderRadius: 10, fontWeight: 700,
+              cursor: loading ? 'not-allowed' : 'pointer',
+              color: '#0f172a', fontFamily: 'inherit', fontSize: 14,
+              opacity: loading ? 0.7 : 1, marginBottom: 12
+            }}>
+              {loading ? 'Sending...' : 'Send Reset Link'}
+            </button>
+
+            <button onClick={() => { setForgotMode(false); setMsg('') }} style={{
+              width: '100%', padding: '10px',
+              background: 'transparent', border: `1px solid ${c.border}`,
+              borderRadius: 10, cursor: 'pointer',
+              color: c.sub, fontFamily: 'inherit', fontSize: 13
+            }}>
+              ← Back to Sign In
+            </button>
+          </>
+        ) : (
+          <>
+            {isSignUp && (
+              <input
+                aria-label="Your full name"
+                placeholder="Your name (e.g. Ahmed Lasheen)"
+                value={name} onChange={e => setName(e.target.value)}
+                style={inStyle} />
+            )}
+
+            <input
+              type="email"
+              aria-label="Email address"
+              placeholder={isSignUp ? "ZNU Email (@med.znu.edu.eg)" : "Email address"}
+              value={email} onChange={e => setEmail(e.target.value)}
+              style={inStyle} />
+
+            <input
+              type="password" aria-label="Password" placeholder="Password (min 6 characters)"
+              value={password} onChange={e => setPassword(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleSubmit()}
+              style={inStyle} />
+
+            {!isSignUp && (
+              <div style={{ textAlign: 'right', marginTop: -6, marginBottom: 14 }}>
+                <span onClick={() => { setForgotMode(true); setMsg('') }} style={{
+                  color: '#38bdf8', fontSize: 12, cursor: 'pointer', textDecoration: 'underline'
+                }}>Forgot password?</span>
+              </div>
+            )}
+
+            {isSignUp && email.includes('@med.znu.edu.eg') && (
+              <div style={{
+                background: '#38bdf820', border: '1px solid #38bdf840',
+                borderRadius: 10, padding: '8px 12px', marginBottom: 12,
+                color: '#38bdf8', fontSize: 12
+              }}>
+                🎓 University Code: <strong>{extractCode(email)}</strong>
+              </div>
+            )}
+
+            <button onClick={handleSubmit} disabled={loading} style={{
+              width: '100%', padding: '12px', background: '#38bdf8',
+              border: 'none', borderRadius: 10, fontWeight: 700,
+              cursor: loading ? 'not-allowed' : 'pointer',
+              color: '#0f172a', fontFamily: 'inherit', fontSize: 14,
+              opacity: loading ? 0.7 : 1, marginBottom: 12
+            }}>
+              {loading ? 'Loading...' : isSignUp ? 'Create Account' : 'Sign In'}
+            </button>
+
+            <button onClick={() => { setIsSignUp(!isSignUp); setMsg('') }} style={{
+              width: '100%', padding: '10px',
+              background: 'transparent', border: `1px solid ${c.border}`,
+              borderRadius: 10, cursor: 'pointer',
+              color: c.sub, fontFamily: 'inherit', fontSize: 13
+            }}>
+              {isSignUp ? 'Already have an account? Sign In' : "Don't have an account? Sign Up"}
+            </button>
+
+            <button onClick={() => navigate('/')} style={{
+              width: '100%', padding: '10px', marginTop: 8,
+              background: 'transparent', border: 'none',
+              cursor: 'pointer', color: dark ? '#475569' : '#94a3b8',
+              fontFamily: 'inherit', fontSize: 12
+            }}>
+              Continue without account →
+            </button>
+          </>
         )}
-
-        <input
-          type="email"
-          aria-label="Email address"
-          placeholder={isSignUp ? "ZNU Email (@med.znu.edu.eg)" : "Email address"}
-          value={email} onChange={e => setEmail(e.target.value)}
-          style={inStyle} />
-
-        <input
-          type="password" aria-label="Password" placeholder="Password (min 6 characters)"
-          value={password} onChange={e => setPassword(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && handleSubmit()}
-          style={inStyle} />
-
-        {isSignUp && email.includes('@med.znu.edu.eg') && (
-          <div style={{
-            background: '#38bdf820', border: '1px solid #38bdf840',
-            borderRadius: 10, padding: '8px 12px', marginBottom: 12,
-            color: '#38bdf8', fontSize: 12
-          }}>
-            🎓 University Code: <strong>{extractCode(email)}</strong>
-          </div>
-        )}
-
-        <button onClick={handleSubmit} disabled={loading} style={{
-          width: '100%', padding: '12px', background: '#38bdf8',
-          border: 'none', borderRadius: 10, fontWeight: 700,
-          cursor: loading ? 'not-allowed' : 'pointer',
-          color: '#0f172a', fontFamily: 'inherit', fontSize: 14,
-          opacity: loading ? 0.7 : 1, marginBottom: 12
-        }}>
-          {loading ? 'Loading...' : isSignUp ? 'Create Account' : 'Sign In'}
-        </button>
-
-        <button onClick={() => { setIsSignUp(!isSignUp); setMsg('') }} style={{
-          width: '100%', padding: '10px',
-          background: 'transparent', border: `1px solid ${c.border}`,
-          borderRadius: 10, cursor: 'pointer',
-          color: c.sub, fontFamily: 'inherit', fontSize: 13
-        }}>
-          {isSignUp ? 'Already have an account? Sign In' : "Don't have an account? Sign Up"}
-        </button>
-
-        <button onClick={() => navigate('/')} style={{
-          width: '100%', padding: '10px', marginTop: 8,
-          background: 'transparent', border: 'none',
-          cursor: 'pointer', color: dark ? '#475569' : '#94a3b8',
-          fontFamily: 'inherit', fontSize: 12
-        }}>
-          Continue without account →
-        </button>
       </div>
     </div>
   )

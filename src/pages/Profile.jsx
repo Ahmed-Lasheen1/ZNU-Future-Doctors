@@ -2,7 +2,81 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../supabase'
 import { useAuth } from '../App'
-import { getTheme } from '../theme'
+import { getTheme, inputStyle } from '../theme'
+
+function EditProfileForm({ profile, dark, onUpdated }) {
+  const c = getTheme(dark)
+  const inStyle = inputStyle(c)
+
+  const [name, setName] = useState(profile.name || '')
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [msg, setMsg] = useState('')
+
+  async function saveName() {
+    if (!name.trim()) return setMsg('❌ Name cannot be empty')
+    setSaving(true)
+    setMsg('')
+    const { error } = await supabase.from('profiles').update({ name: name.trim() }).eq('id', profile.id)
+    setSaving(false)
+    if (error) { setMsg('❌ ' + error.message); return }
+    setMsg('✅ Name updated!')
+    onUpdated()
+  }
+
+  async function savePassword() {
+    if (!newPassword || newPassword.length < 6) return setMsg('❌ Password must be at least 6 characters')
+    if (newPassword !== confirmPassword) return setMsg('❌ Passwords do not match')
+    setSaving(true)
+    setMsg('')
+    const { error } = await supabase.auth.updateUser({ password: newPassword })
+    setSaving(false)
+    if (error) { setMsg('❌ ' + error.message); return }
+    setMsg('✅ Password updated!')
+    setNewPassword('')
+    setConfirmPassword('')
+  }
+
+  return (
+    <div style={{ background: c.card, border: `1px solid ${c.border}`, borderRadius: 16, padding: 20, marginBottom: 16 }}>
+      <h3 style={{ color: '#38bdf8', marginBottom: 16, fontSize: 15 }}>✏️ Edit Profile</h3>
+
+      {msg && (
+        <div style={{
+          background: msg.includes('✅') ? '#22c55e20' : '#ef444420',
+          border: `1px solid ${msg.includes('✅') ? '#22c55e40' : '#ef444440'}`,
+          borderRadius: 10, padding: '10px 14px', marginBottom: 16,
+          color: msg.includes('✅') ? '#22c55e' : '#ef4444', fontSize: 13
+        }}>{msg}</div>
+      )}
+
+      <label style={{ color: c.sub, fontSize: 12, display: 'block', marginBottom: 4 }}>Full Name</label>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
+        <input value={name} onChange={e => setName(e.target.value)} style={{ ...inStyle, marginBottom: 0, flex: 1 }} />
+        <button onClick={saveName} disabled={saving} style={{
+          background: '#38bdf8', color: '#0f172a', border: 'none',
+          padding: '0 16px', borderRadius: 10, cursor: saving ? 'not-allowed' : 'pointer',
+          fontWeight: 700, fontFamily: 'inherit', fontSize: 13, whiteSpace: 'nowrap'
+        }}>Save</button>
+      </div>
+
+      <label style={{ color: c.sub, fontSize: 12, display: 'block', marginBottom: 4 }}>Change Password</label>
+      <input type="password" placeholder="New password (min 6 characters)"
+        value={newPassword} onChange={e => setNewPassword(e.target.value)} style={inStyle} />
+      <input type="password" placeholder="Confirm new password"
+        value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)}
+        onKeyDown={e => e.key === 'Enter' && savePassword()}
+        style={inStyle} />
+      <button onClick={savePassword} disabled={saving} style={{
+        width: '100%', padding: '10px', background: 'transparent',
+        border: `1px solid ${c.border}`, borderRadius: 10,
+        cursor: saving ? 'not-allowed' : 'pointer',
+        color: c.text, fontFamily: 'inherit', fontSize: 13, fontWeight: 700
+      }}>{saving ? 'Saving...' : 'Update Password'}</button>
+    </div>
+  )
+}
 
 export default function Profile({ dark }) {
   const { user, signOut } = useAuth()
@@ -11,6 +85,7 @@ export default function Profile({ dark }) {
   const [leaderboard, setLeaderboard] = useState([])
   const [tab, setTab] = useState('profile')
   const [loading, setLoading] = useState(true)
+  const [editing, setEditing] = useState(false)
 
   const c = getTheme(dark)
 
@@ -109,7 +184,14 @@ export default function Profile({ dark }) {
 
               {/* Info */}
               <div style={{ background: c.card, border: `1px solid ${c.border}`, borderRadius: 16, padding: 20, marginBottom: 16 }}>
-                <h3 style={{ color: '#38bdf8', marginBottom: 16, fontSize: 15 }}>📋 Account Info</h3>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                  <h3 style={{ color: '#38bdf8', fontSize: 15 }}>📋 Account Info</h3>
+                  <button onClick={() => setEditing(!editing)} style={{
+                    background: 'transparent', border: `1px solid ${c.border}`,
+                    borderRadius: 8, padding: '4px 12px', cursor: 'pointer',
+                    color: c.sub, fontFamily: 'inherit', fontSize: 12, fontWeight: 700
+                  }}>{editing ? 'Cancel' : '✏️ Edit'}</button>
+                </div>
                 {[
                   { label: 'Full Name', value: `Dr. ${profile.name}` },
                   { label: 'University Code', value: profile.university_code },
@@ -126,6 +208,10 @@ export default function Profile({ dark }) {
                   </div>
                 ))}
               </div>
+
+              {editing && (
+                <EditProfileForm profile={profile} dark={dark} onUpdated={fetchData} />
+              )}
 
               <button onClick={async () => { await signOut(); navigate('/') }} style={{
                 width: '100%', padding: '12px',

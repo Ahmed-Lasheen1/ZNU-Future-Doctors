@@ -14,6 +14,7 @@ const ModulePage = lazy(() => import('./pages/ModulePage'))
 const Auth = lazy(() => import('./pages/Auth'))
 const Profile = lazy(() => import('./pages/Profile'))
 const AnonQuestions = lazy(() => import('./pages/AnonQuestions'))
+const ResetPassword = lazy(() => import('./pages/ResetPassword'))
 const NotFound = lazy(() => import('./pages/NotFound'))
 const Search = lazy(() => import('./pages/Search'))
 import Footer from './components/Footer'
@@ -236,6 +237,7 @@ export default function App() {
                   <Route path="/admin" element={<Admin dark={dark} />} />
                   <Route path="/mcq" element={<MCQ dark={dark} />} />
                   <Route path="/auth" element={<Auth dark={dark} />} />
+                  <Route path="/reset-password" element={<ResetPassword dark={dark} />} />
                   <Route path="/profile" element={<Profile dark={dark} />} />
                   <Route path="/anon-questions" element={<AnonQuestions dark={dark} />} />
                   <Route path="/search" element={<Search dark={dark} />} />
