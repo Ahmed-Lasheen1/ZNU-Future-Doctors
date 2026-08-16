@@ -2,7 +2,7 @@ import { useState, useEffect, createContext, useContext, Suspense, lazy } from '
 import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation } from 'react-router-dom'
 import { supabase } from './supabase'
 import { getTheme } from './theme'
-import { fetchModulesSorted } from './modules'
+import { fetchModulesSorted } from './lib/modules'
 import Home from './pages/Home'
 const Checklist = lazy(() => import('./pages/Checklist'))
 const Schedule = lazy(() => import('./pages/Schedule'))
