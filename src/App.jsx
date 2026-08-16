@@ -45,7 +45,6 @@ function ScrollToTop() {
 
 const menuLinks = [
   { to: '/', label: '🏠 Home' },
-  { to: '/search', label: '🔍 Search' },
   { to: '/schedule', label: '📅 Schedules' },
   { to: '/checklist', label: '🎯 Checklist' },
   { to: '/anon-questions', label: '💬 Anonymous Q&A' },

@@ -101,7 +101,8 @@ export default function Admin({ dark }) {
 
   async function deleteModule(id) {
     if (!confirm('Delete this module? This will also permanently delete all its subjects, files, schedules, questions and summaries. This cannot be undone.')) return
-    await supabase.from('modules').delete().eq('id', id)
+    const { error } = await supabase.from('modules').delete().eq('id', id)
+    if (error) showMsg('❌ ' + error.message)
     fetchModules()
   }
 
@@ -118,7 +119,8 @@ export default function Admin({ dark }) {
 
   async function deleteSubject(id) {
     if (!confirm('Delete this subject? Its files and questions will also be deleted. This cannot be undone.')) return
-    await supabase.from('subjects').delete().eq('id', id)
+    const { error } = await supabase.from('subjects').delete().eq('id', id)
+    if (error) showMsg('❌ ' + error.message)
     fetchSubjects()
   }
 
@@ -144,25 +146,29 @@ export default function Admin({ dark }) {
 
   async function deleteFile(id) {
     if (!confirm('Delete this file? This cannot be undone.')) return
-    await supabase.from('files').delete().eq('id', id)
+    const { error } = await supabase.from('files').delete().eq('id', id)
+    if (error) showMsg('❌ ' + error.message)
     fetchFiles()
   }
 
   async function deleteSchedule(id) {
     if (!confirm('Delete this schedule? This cannot be undone.')) return
-    await supabase.from('schedules').delete().eq('id', id)
+    const { error } = await supabase.from('schedules').delete().eq('id', id)
+    if (error) showMsg('❌ ' + error.message)
     fetchSchedules()
   }
 
   async function deleteQuestion(id) {
     if (!confirm('Delete this question? This cannot be undone.')) return
-    await supabase.from('questions').delete().eq('id', id)
+    const { error } = await supabase.from('questions').delete().eq('id', id)
+    if (error) showMsg('❌ ' + error.message)
     fetchQuestions()
   }
 
   async function deleteSummary(id) {
     if (!confirm('Delete this summary? This cannot be undone.')) return
-    await supabase.from('summaries').delete().eq('id', id)
+    const { error } = await supabase.from('summaries').delete().eq('id', id)
+    if (error) showMsg('❌ ' + error.message)
     fetchSummaries()
   }
 
