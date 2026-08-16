@@ -2,7 +2,11 @@
 // Goal: make the app installable and keep the shell available offline,
 // without needing a build-time list of hashed asset filenames.
 
-const CACHE_NAME = 'znu-shell-v1'
+// ملحوظة: رقم النسخة اتزود من v1 لـ v2 عشان أي جهاز فتح الموقع قبل كده
+// (وكانت متخزنة عنده نسخة قديمة من الأيقونات، أو من غير أيقونات خالص)
+// يجبر المتصفح إنه يمسح الكاش القديم ويجيب كل حاجة جديدة، من ضمنها
+// الأيقونات الجديدة.
+const CACHE_NAME = 'znu-shell-v2'
 const SHELL_URLS = ['/', '/favicon.svg', '/icon-192.png', '/icon-512.png']
 
 self.addEventListener('install', (event) => {
