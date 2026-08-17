@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { supabase } from '../supabase'
 import { useAuth } from '../App'
 import { getTheme, inputStyle } from '../theme'
@@ -83,9 +83,13 @@ function EditProfileForm({ profile, dark, onUpdated }) {
 export default function Profile({ dark }) {
   const { user, signOut } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
   const [profile, setProfile] = useState(null)
   const [leaderboard, setLeaderboard] = useState([])
-  const [tab, setTab] = useState('profile')
+  const [tab, setTab] = useState(() => {
+    const params = new URLSearchParams(location.search)
+    return params.get('tab') === 'leaderboard' ? 'leaderboard' : 'profile'
+  })
   const [loading, setLoading] = useState(true)
   const [editing, setEditing] = useState(false)
 

@@ -10,7 +10,7 @@ const toolCards = [
   { emoji: '📅', title: 'Schedules', to: '/schedule', color: '#a78bfa' },
   { emoji: '🎯', title: 'Checklist', to: '/checklist', color: '#f59e0b' },
   { emoji: '💬', title: 'Anonymous Q&A', to: '/anon-questions', color: '#a78bfa' },
-  { emoji: '🏆', title: 'Leaderboard', to: '/profile', color: '#f59e0b' },
+  { emoji: '🏆', title: 'Leaderboard', to: '/profile?tab=leaderboard', color: '#f59e0b' },
 ]
 
 export default function Home({ dark, toggleTheme }) {

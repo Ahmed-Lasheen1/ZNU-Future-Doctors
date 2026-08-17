@@ -49,7 +49,7 @@ const menuLinks = [
   { to: '/schedule', label: '📅 Schedules' },
   { to: '/checklist', label: '🎯 Checklist' },
   { to: '/anon-questions', label: '💬 Anonymous Q&A' },
-  { to: '/profile', label: '🏆 Leaderboard' },
+  { to: '/profile?tab=leaderboard', label: '🏆 Leaderboard' },
 ]
 
 export function NavMenu({ dark }) {
