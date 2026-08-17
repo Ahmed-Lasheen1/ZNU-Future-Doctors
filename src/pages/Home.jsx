@@ -130,7 +130,7 @@ export default function Home({ dark, toggleTheme }) {
             padding: '14px 20px', textAlign: 'center',
             color: c.text, fontSize: 14, fontWeight: 600, lineHeight: 1.6
           }}>
-            📢 {announcement}
+             {announcement}
           </div>
         </div>
       )}
