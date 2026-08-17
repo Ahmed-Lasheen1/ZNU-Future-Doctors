@@ -59,6 +59,9 @@ export default function Admin({ dark }) {
   const [sumUrl, setSumUrl] = useState('')
   const [sumModuleId, setSumModuleId] = useState('')
 
+  const [announcement, setAnnouncement] = useState('')
+  const [announcementSaving, setAnnouncementSaving] = useState(false)
+
   const c = {
     ...getTheme(dark),
     bg: dark ? '#0f172a' : '#f8fafc',
@@ -66,9 +69,21 @@ export default function Admin({ dark }) {
 
   useEffect(() => {
     if (isAuth) {
-      fetchModules(); fetchSubjects(); fetchFiles(); fetchSchedules(); fetchQuestions(); fetchSummaries()
+      fetchModules(); fetchSubjects(); fetchFiles(); fetchSchedules(); fetchQuestions(); fetchSummaries(); fetchAnnouncement()
     }
   }, [isAuth])
+
+  async function fetchAnnouncement() {
+    const { data } = await supabase.from('site_settings').select('value').eq('key', 'home_announcement').single()
+    if (data) setAnnouncement(data.value || '')
+  }
+
+  async function saveAnnouncement() {
+    setAnnouncementSaving(true)
+    const { error } = await supabase.from('site_settings').upsert({ key: 'home_announcement', value: announcement.trim() })
+    setAnnouncementSaving(false)
+    showMsg(error ? '❌ ' + error.message : '✅ Announcement updated!')
+  }
 
   async function fetchModules() {
     const { modules: sorted } = await fetchModulesSorted()
@@ -250,7 +265,7 @@ export default function Admin({ dark }) {
     </div>
   )
 
-  const tabs = ['modules', 'subjects', 'files', 'schedules', 'questions', 'summaries']
+  const tabs = ['modules', 'subjects', 'files', 'schedules', 'questions', 'summaries', 'announcement']
 
   return (
     <div className="page-container" style={{ padding: '20px', maxWidth: '650px' }}>
@@ -551,6 +566,23 @@ export default function Admin({ dark }) {
               </div>
             )
           })}
+        </div>
+      )}
+      {activeTab === 'announcement' && (
+        <div style={{ background: c.card, padding: '20px', borderRadius: '16px', border: `1px solid ${c.border}` }}>
+          <h3 style={{ color: '#38bdf8', marginBottom: 8 }}>📢 Home Page Announcement</h3>
+          <p style={{ color: c.sub, fontSize: 13, marginBottom: 16 }}>
+            الجملة دي هتظهر في شريط فوق صفحة الـ Home لكل الناس. سيبها فاضية
+            لو عايز الشريط يختفي خالص.
+          </p>
+          <textarea
+            placeholder="مثلاً: امتحان الفارما الأسبوع الجاي، ذاكروا كويس! 🔥"
+            value={announcement}
+            onChange={e => setAnnouncement(e.target.value)}
+            style={{ ...inStyle, minHeight: 80, resize: 'vertical' }} />
+          <button onClick={saveAnnouncement} disabled={announcementSaving} style={btnStyle}>
+            {announcementSaving ? 'Saving...' : 'Save Announcement'}
+          </button>
         </div>
       )}
     </div>

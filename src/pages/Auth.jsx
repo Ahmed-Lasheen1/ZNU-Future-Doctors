@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../supabase'
 import { getTheme, inputStyle } from '../theme'
+import { containsProfanity } from '../lib/moderation'
 
 export default function Auth({ dark }) {
   const [email, setEmail] = useState('')
@@ -23,6 +24,12 @@ export default function Auth({ dark }) {
   async function handleSubmit() {
     if (!email || !password) return setMsg('Please fill all fields')
     if (isSignUp && !name) return setMsg('Please enter your name')
+    if (isSignUp && containsProfanity(name)) {
+      return setMsg('❌ برجاء اختيار اسم مناسب — الاسم اللي كتبته يحتوي على كلمات غير لائقة')
+    }
+    if (isSignUp && containsProfanity(email.split('@')[0])) {
+      return setMsg('❌ الإيميل يحتوي على كلمات غير لائقة')
+    }
     if (isSignUp && !email.includes('@med.znu.edu.eg')) {
       return setMsg('❌ Please use your ZNU email (@med.znu.edu.eg)')
     }
@@ -63,7 +70,7 @@ export default function Auth({ dark }) {
     })
     setLoading(false)
     if (error) setMsg('❌ ' + error.message)
-    else setMsg('✅ Check your email for a password reset link.')
+    else setMsg('✅ Check your email for a password reset link. لو مالقتوش خلال دقايق، افتح مجلد Junk/Spam وهتلاقيه هناك.')
   }
 
   return (
@@ -76,7 +83,7 @@ export default function Auth({ dark }) {
         borderRadius: 20, padding: 32, width: '90%', maxWidth: 400
       }}>
         <div style={{ textAlign: 'center', marginBottom: 24 }}>
-          <div style={{ fontSize: 40, marginBottom: 8 }}>🏥</div>
+          <img src="/icon-512.png" alt="ZNU Future Doctors" style={{ width: 64, height: 64, marginBottom: 8, borderRadius: 16 }} />
           <h2 style={{ color: '#38bdf8', fontSize: 22, fontWeight: 900, marginBottom: 4 }}>
             ZNU Future Doctors
           </h2>

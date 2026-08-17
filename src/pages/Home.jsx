@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth, NavMenu, useModules } from '../App'
 import { getTheme } from '../theme'
+import { supabase } from '../supabase'
 import ErrorBanner from '../components/ErrorBanner'
 import AnimatedCard from '../components/AnimatedCard'
 
@@ -18,9 +19,15 @@ export default function Home({ dark, toggleTheme }) {
   const { user, profile } = useAuth()
   const { modules, modulesError } = useModules()
   const [titleVisible, setTitleVisible] = useState(false)
+  const [announcement, setAnnouncement] = useState('')
 
   useEffect(() => {
     setTimeout(() => setTitleVisible(true), 100)
+  }, [])
+
+  useEffect(() => {
+    supabase.from('site_settings').select('value').eq('key', 'home_announcement').single()
+      .then(({ data }) => { if (data?.value) setAnnouncement(data.value) })
   }, [])
 
   const activeModules = modules.filter(m => m.status === 'active')
@@ -102,7 +109,7 @@ export default function Home({ dark, toggleTheme }) {
           )}
         </div>
 
-        <div style={{ fontSize: 56, marginBottom: 12, filter: 'drop-shadow(0 0 20px rgba(56,189,248,0.5))' }}>🏥</div>
+        <img src="/icon-512.png" alt="ZNU Future Doctors" style={{ width: 88, height: 88, marginBottom: 12, borderRadius: 22, filter: 'drop-shadow(0 0 20px rgba(56,189,248,0.5))' }} />
         <h1 style={{
           fontSize: 28, fontWeight: 900,
           background: 'linear-gradient(135deg, #38bdf8, #818cf8)',
@@ -113,6 +120,20 @@ export default function Home({ dark, toggleTheme }) {
           Your Integrated Medical Study Platform
         </p>
       </div>
+
+      {/* Announcement */}
+      {announcement && (
+        <div className="page-container" style={{ marginBottom: 24 }}>
+          <div style={{
+            background: 'linear-gradient(135deg, #38bdf820, #818cf815)',
+            border: '1px solid #38bdf840', borderRadius: 16,
+            padding: '14px 20px', textAlign: 'center',
+            color: c.text, fontSize: 14, fontWeight: 600, lineHeight: 1.6
+          }}>
+            📢 {announcement}
+          </div>
+        </div>
+      )}
 
       {/* Active Modules */}
       {activeModules.length > 0 && (

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../supabase'
 import { useAuth } from '../App'
 import { getTheme, inputStyle } from '../theme'
+import { containsProfanity } from '../lib/moderation'
 
 function EditProfileForm({ profile, dark, onUpdated }) {
   const c = getTheme(dark)
@@ -16,6 +17,7 @@ function EditProfileForm({ profile, dark, onUpdated }) {
 
   async function saveName() {
     if (!name.trim()) return setMsg('❌ Name cannot be empty')
+    if (containsProfanity(name)) return setMsg('❌ برجاء اختيار اسم مناسب — الاسم يحتوي على كلمات غير لائقة')
     setSaving(true)
     setMsg('')
     const { error } = await supabase.from('profiles').update({ name: name.trim() }).eq('id', profile.id)
