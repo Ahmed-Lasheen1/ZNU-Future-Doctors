@@ -128,9 +128,10 @@ export default function Home({ dark, toggleTheme }) {
             background: 'linear-gradient(135deg, #38bdf820, #818cf815)',
             border: '1px solid #38bdf840', borderRadius: 16,
             padding: '14px 20px', textAlign: 'center',
-            color: c.text, fontSize: 14, fontWeight: 600, lineHeight: 1.6
+            color: c.text, fontSize: 14, fontWeight: 600, lineHeight: 1.6,
+            whiteSpace: 'pre-wrap'
           }}>
-             {announcement}
+            {announcement}
           </div>
         </div>
       )}
