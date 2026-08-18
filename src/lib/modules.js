@@ -7,7 +7,7 @@ export async function fetchModulesSorted() {
     .from('modules')
     .select('*')
     .order('status')
-    .order('created_at')
+    .order('created_at', { ascending: false })
 
   if (error || !data) return { modules: [], error }
 
