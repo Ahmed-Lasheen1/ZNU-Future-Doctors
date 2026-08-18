@@ -134,12 +134,13 @@ export default function MCQ({ dark }) {
 
         const newPoints = toRecord.filter(r => r.correct).length
         if (newPoints > 0) {
-          // بدل ما نعدّل عمود points مباشرة من الفرونت إند (غير آمن)،
-          // بنستخدم دالة award_points في قاعدة البيانات (شوف supabase_migration.sql)
-          // اللي بتتأكد إن المستخدم مسجل دخول وإن العدد منطقي قبل ما تضيف النقاط.
+          // Instead of updating the points column directly from the
+          // frontend (unsafe), we call the award_points database function
+          // (see supabase_migration.sql), which checks the user is signed
+          // in and the amount is reasonable before adding points.
           const { error } = await supabase.rpc('award_points', { p_amount: newPoints })
           if (!error) {
-            fetchProfile(user.id) // نحدّث النقاط الظاهرة في الهيدر فورًا
+            fetchProfile(user.id) // refresh the points shown in the header immediately
           }
         }
         fetchAnsweredIds()

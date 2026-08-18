@@ -1,7 +1,7 @@
 import { supabase } from '../supabase'
 
-// نفس منطق تحميل وترتيب الموديولز اللي كان مكرر في App.jsx و Admin.jsx
-// (الأكتيف الأول، بعدين الكومبليتد)، دلوقتي في مكان واحد بس.
+// Same load-and-sort logic that used to be duplicated in App.jsx and
+// Admin.jsx (active modules first, then completed), now lives in one place.
 export async function fetchModulesSorted() {
   const { data, error } = await supabase
     .from('modules')

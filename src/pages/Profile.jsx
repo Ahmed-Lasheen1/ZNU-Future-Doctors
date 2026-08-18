@@ -17,7 +17,7 @@ function EditProfileForm({ profile, dark, onUpdated }) {
 
   async function saveName() {
     if (!name.trim()) return setMsg('❌ Name cannot be empty')
-    if (containsProfanity(name)) return setMsg('❌ برجاء اختيار اسم مناسب — الاسم يحتوي على كلمات غير لائقة')
+    if (containsProfanity(name)) return setMsg('❌ Please choose an appropriate name — it contains inappropriate words')
     setSaving(true)
     setMsg('')
     const { error } = await supabase.from('profiles').update({ name: name.trim() }).eq('id', profile.id)

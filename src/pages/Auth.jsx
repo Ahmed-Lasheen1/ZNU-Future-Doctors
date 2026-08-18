@@ -25,10 +25,10 @@ export default function Auth({ dark }) {
     if (!email || !password) return setMsg('Please fill all fields')
     if (isSignUp && !name) return setMsg('Please enter your name')
     if (isSignUp && containsProfanity(name)) {
-      return setMsg('❌ برجاء اختيار اسم مناسب — الاسم اللي كتبته يحتوي على كلمات غير لائقة')
+      return setMsg('❌ Please choose an appropriate name — the name you entered contains inappropriate words')
     }
     if (isSignUp && containsProfanity(email.split('@')[0])) {
-      return setMsg('❌ الإيميل يحتوي على كلمات غير لائقة')
+      return setMsg('❌ The email contains inappropriate words')
     }
     if (isSignUp && !email.includes('@med.znu.edu.eg')) {
       return setMsg('❌ Please use your ZNU email (@med.znu.edu.eg)')
@@ -37,8 +37,9 @@ export default function Auth({ dark }) {
     setMsg('')
 
     if (isSignUp) {
-      // ملحوظة: مبنعملش insert للـ profiles من هنا — بيتعمل تلقائيًا في
-      // قاعدة البيانات (trigger) فور إنشاء الحساب، وده أأمن وأضمن.
+      // Note: we no longer insert into profiles from here — the profile
+      // row is now created automatically in the database (trigger) as
+      // soon as the account is created, which is safer and more reliable.
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -70,7 +71,7 @@ export default function Auth({ dark }) {
     })
     setLoading(false)
     if (error) setMsg('❌ ' + error.message)
-    else setMsg('✅ Check your email for a password reset link. لو مالقتوش خلال دقايق، افتح مجلد Junk/Spam وهتلاقيه هناك.')
+    else setMsg("✅ Check your email for a password reset link. If you don't see it within a few minutes, check your Junk/Spam folder.")
   }
 
   return (

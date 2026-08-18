@@ -15,8 +15,9 @@ export default function ResetPassword({ dark }) {
   const [msg, setMsg] = useState('')
 
   useEffect(() => {
-    // لما المستخدم يدوس على لينك الإيميل، Supabase بيبعته هنا مع "recovery
-    // session" مؤقتة. لازم نستنى لحظة عشان الـ client يقرأها من الرابط.
+    // When the user clicks the link in their email, Supabase redirects here
+    // with a temporary recovery session. Give the client a moment to read
+    // it from the URL.
     supabase.auth.getSession().then(({ data: { session } }) => {
       setReady(!!session)
       if (!session) setMsg('❌ This reset link is invalid or expired. Please request a new one.')

@@ -572,35 +572,27 @@ export default function Admin({ dark }) {
         <div style={{ background: c.card, padding: '20px', borderRadius: '16px', border: `1px solid ${c.border}` }}>
           <h3 style={{ color: '#38bdf8', marginBottom: 8 }}>📢 Home Page Announcement</h3>
           <p style={{ color: c.sub, fontSize: 13, marginBottom: 16 }}>
-            الجملة دي هتظهر في شريط فوق صفحة الـ Home لكل الناس. سيبها فاضية
-            لو عايز الشريط يختفي خالص. تقدر تنزل سطر جديد عادي (Enter) وهيفضل
-            بنفس الشكل لما يظهر في الموقع.
+            This shows in a banner at the top of the Home page for everyone.
+            Leave it empty to hide the banner completely. Press Enter for a
+            new line — it'll look exactly the same on the site. The box
+            below is styled exactly like it'll appear, so what you see here
+            is what students will see.
           </p>
           <textarea
-            placeholder="مثلاً: امتحان الفارما الأسبوع الجاي، ذاكروا كويس! 🔥"
+            placeholder="e.g. Pharma exam next week, study well! 🔥"
             value={announcement}
             onChange={e => setAnnouncement(e.target.value)}
-            style={{ ...inStyle, minHeight: 100, resize: 'vertical' }} />
+            style={{
+              width: '100%', minHeight: 100, padding: '14px 20px',
+              borderRadius: 16, border: '1px solid #38bdf840',
+              background: 'linear-gradient(135deg, #38bdf820, #818cf815)',
+              color: c.text, fontSize: 14, fontWeight: 600, lineHeight: 1.6,
+              textAlign: 'center', fontFamily: 'inherit', outline: 'none',
+              resize: 'vertical', marginBottom: 12
+            }} />
           <button onClick={saveAnnouncement} disabled={announcementSaving} style={btnStyle}>
             {announcementSaving ? 'Saving...' : 'Save Announcement'}
           </button>
-
-          {announcement.trim() && (
-            <div style={{ marginTop: 24 }}>
-              <div style={{ color: c.sub, fontSize: 12, fontWeight: 700, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 1 }}>
-                👁 Preview — شكله في صفحة الـ Home
-              </div>
-              <div style={{
-                background: 'linear-gradient(135deg, #38bdf820, #818cf815)',
-                border: '1px solid #38bdf840', borderRadius: 16,
-                padding: '14px 20px', textAlign: 'center',
-                color: c.text, fontSize: 14, fontWeight: 600, lineHeight: 1.6,
-                whiteSpace: 'pre-wrap'
-              }}>
-                {announcement}
-              </div>
-            </div>
-          )}
         </div>
       )}
     </div>
