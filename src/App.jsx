@@ -11,6 +11,7 @@ const Admin = lazy(() => import('./pages/Admin'))
 const MCQ = lazy(() => import('./pages/MCQ'))
 const Summaries = lazy(() => import('./pages/Summaries'))
 const ModulePage = lazy(() => import('./pages/ModulePage'))
+const StagePage = lazy(() => import('./pages/StagePage'))
 const Auth = lazy(() => import('./pages/Auth'))
 const Profile = lazy(() => import('./pages/Profile'))
 const AnonQuestions = lazy(() => import('./pages/AnonQuestions'))
@@ -230,6 +231,7 @@ export default function App() {
                 <Routes>
                   <Route path="/" element={<Home dark={dark} toggleTheme={() => setDark(!dark)} />} />
                   <Route path="/module/:moduleId" element={<ModulePage dark={dark} />} />
+                  <Route path="/module/:moduleId/stage/:stage" element={<StagePage dark={dark} />} />
                   <Route path="/checklist" element={<Checklist dark={dark} />} />
                   <Route path="/schedule" element={<Schedule dark={dark} />} />
                   <Route path="/files" element={<FilesPage dark={dark} />} />

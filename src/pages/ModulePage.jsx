@@ -5,6 +5,7 @@ import { getTheme } from '../theme'
 import ErrorBanner from '../components/ErrorBanner'
 import AnimatedCard from '../components/AnimatedCard'
 import { useModules } from '../App'
+import { EXAM_STAGE_CARDS } from '../lib/examStages'
 
 const fileCards = [
   { emoji: '📖', title: 'Explanation Files', type: 'sharah', color: '#38bdf8' },
@@ -13,28 +14,16 @@ const fileCards = [
   { emoji: '🎓', title: 'Course Recordings', type: 'courses', color: '#c084fc' },
 ]
 
-const EXAM_STAGES = [
-  { value: 'all', label: 'All' },
-  { value: 'tbl', label: '🟢 TBL' },
-  { value: 'end_module', label: '🔵 End Module' },
-  { value: 'practical', label: '🟠 Practical' },
-  { value: 'final', label: '🟣 Final' },
-  { value: 'general', label: '⚪ General' },
-]
-
 export default function ModulePage({ dark }) {
   const c = getTheme(dark)
   const { moduleId } = useParams()
   const navigate = useNavigate()
   const { modules, modulesLoaded, modulesError } = useModules()
   const module = modules.find(m => m.id === moduleId) || null
-  const [summaries, setSummaries] = useState([])
   const [presentFileTypes, setPresentFileTypes] = useState(new Set())
   const [visible, setVisible] = useState(false)
-  const [selectedSummary, setSelectedSummary] = useState(null)
   const [loadError, setLoadError] = useState(false)
   const [driveUrl, setDriveUrl] = useState('')
-  const [activeStage, setActiveStage] = useState('all')
 
   useEffect(() => {
     supabase.from('site_settings').select('value').eq('key', 'drive_url').single()
@@ -43,16 +32,11 @@ export default function ModulePage({ dark }) {
 
   useEffect(() => {
     setTimeout(() => setVisible(true), 100)
-    async function fetchData() {
-      const [sumRes, fileRes] = await Promise.all([
-        supabase.from('summaries').select('*').eq('module_id', moduleId).order('created_at'),
-        supabase.from('files').select('type').eq('module_id', moduleId)
-      ])
-      if (sumRes.data) setSummaries(sumRes.data)
-      if (fileRes.data) setPresentFileTypes(new Set(fileRes.data.map(f => f.type)))
-      if (sumRes.error || fileRes.error) setLoadError(true)
-    }
-    fetchData()
+    supabase.from('files').select('type').eq('module_id', moduleId)
+      .then(({ data, error }) => {
+        if (data) setPresentFileTypes(new Set(data.map(f => f.type)))
+        if (error) setLoadError(true)
+      })
   }, [moduleId])
 
   if (!module) return (
@@ -65,28 +49,7 @@ export default function ModulePage({ dark }) {
     </div>
   )
 
-  if (selectedSummary) return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
-      <div style={{
-        background: 'linear-gradient(135deg, #1a2a4a, #0f1e35)',
-        borderBottom: '2px solid #2a4a7a',
-        padding: '12px 20px',
-        display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0
-      }}>
-        <button onClick={() => setSelectedSummary(null)} style={backBtn}>← Back</button>
-        <div style={{ flex: 1, textAlign: 'center' }}>
-          <div style={{ fontSize: 11, color: '#7eb8ff', letterSpacing: 2, textTransform: 'uppercase' }}>{module.name}</div>
-          <div style={{ fontSize: 16, fontWeight: 900, color: module.color }}>{selectedSummary.title}</div>
-        </div>
-        <div style={{ width: 80 }} />
-      </div>
-      <iframe src={selectedSummary.url} style={{ flex: 1, border: 'none', width: '100%' }} title={selectedSummary.title} />
-    </div>
-  )
-
   const filteredFileCards = fileCards.filter(card => presentFileTypes.has(card.type))
-  const filteredSummaries = summaries.filter(s => activeStage === 'all' || (s.exam_stage || 'general') === activeStage)
-  const mcqLink = `/mcq?module=${moduleId}${activeStage !== 'all' ? `&stage=${activeStage}` : ''}`
 
   return (
     <div className="page-container" style={{ padding: '24px 16px 100px' }}>
@@ -111,20 +74,18 @@ export default function ModulePage({ dark }) {
         </div>
       </div>
 
-      {/* Exam Stage — right at the top so it's the first choice students make */}
+      {/* Exam Stage — the main way in, big cards, no small colored dots */}
       <div style={{ marginBottom: 32 }}>
         <h2 style={{ color: c.sub, fontSize: 13, fontWeight: 700, letterSpacing: 2, marginBottom: 16, textTransform: 'uppercase' }}>
           🎯 Exam Stage
         </h2>
-        <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 4 }}>
-          {EXAM_STAGES.map(stage => (
-            <button key={stage.value} onClick={() => setActiveStage(stage.value)} style={{
-              padding: '8px 16px', borderRadius: 10, whiteSpace: 'nowrap',
-              border: `2px solid ${activeStage === stage.value ? module.color : c.border}`,
-              background: activeStage === stage.value ? `${module.color}20` : 'transparent',
-              color: activeStage === stage.value ? module.color : c.sub,
-              cursor: 'pointer', fontWeight: 700, fontSize: 13, fontFamily: 'inherit'
-            }}>{stage.label}</button>
+        <div className="card-grid">
+          {EXAM_STAGE_CARDS.map((stage, i) => (
+            <AnimatedCard key={stage.value} delay={i * 80} color={stage.color} dark={dark}
+              onClick={() => navigate(`/module/${moduleId}/stage/${stage.value}`)}>
+              <div style={{ fontSize: 'clamp(28px, 3vw, 42px)', marginBottom: 8 }}>{stage.emoji}</div>
+              <div style={{ color: c.text, fontSize: 'clamp(13px, 1.1vw, 16px)', fontWeight: 700 }}>{stage.title}</div>
+            </AnimatedCard>
           ))}
         </div>
       </div>
@@ -172,36 +133,28 @@ export default function ModulePage({ dark }) {
         </div>
       )}
 
-      {/* Smart Summaries — always shown, same treatment as Practice below */}
+      {/* Smart Summaries — always a single card, same treatment as Practice.
+          Opens the module's summaries list, which shows its own empty
+          state if there's nothing there yet. */}
       <div style={{ marginBottom: 32 }}>
         <h2 style={{ color: c.sub, fontSize: 13, fontWeight: 700, letterSpacing: 2, marginBottom: 16, textTransform: 'uppercase' }}>
           📝 Smart Summaries
         </h2>
-        {filteredSummaries.length > 0 ? (
-          <div style={{ display: 'grid', gap: 12 }}>
-            {filteredSummaries.map((sum, i) => (
-              <AnimatedCard key={sum.id} delay={i * 80} color='#34d399' dark={dark}
-                onClick={() => setSelectedSummary(sum)}>
-                <div style={{ fontSize: 30, marginBottom: 8 }}>📝</div>
-                <div style={{ color: c.text, fontSize: 13, fontWeight: 700 }}>{sum.title}</div>
-                <div style={{ color: c.sub, fontSize: 12, marginTop: 4 }}>Interactive Summary</div>
-              </AnimatedCard>
-            ))}
-          </div>
-        ) : (
-          <div style={{ background: c.card, border: `1px solid ${c.border}`, borderRadius: 16, padding: 24, textAlign: 'center' }}>
-            <p style={{ color: c.sub, fontSize: 13 }}>No summaries here yet 🚧</p>
-          </div>
-        )}
+        <AnimatedCard delay={200} color='#34d399' dark={dark}
+          onClick={() => navigate(`/summaries?module=${moduleId}`)}>
+          <div style={{ fontSize: 30, marginBottom: 8 }}>📝</div>
+          <div style={{ color: c.text, fontSize: 13, fontWeight: 700 }}>All Summaries</div>
+          <div style={{ color: c.sub, fontSize: 12, marginTop: 4 }}>View summaries for this module</div>
+        </AnimatedCard>
       </div>
 
-      {/* MCQ */}
+      {/* Practice */}
       <div style={{ marginBottom: 32 }}>
         <h2 style={{ color: c.sub, fontSize: 13, fontWeight: 700, letterSpacing: 2, marginBottom: 16, textTransform: 'uppercase' }}>
           🧪 Practice
         </h2>
-        <AnimatedCard delay={200} color='#f472b6' dark={dark}
-          onClick={() => navigate(mcqLink)}>
+        <AnimatedCard delay={300} color='#f472b6' dark={dark}
+          onClick={() => navigate(`/mcq?module=${moduleId}`)}>
           <div style={{ fontSize: 30, marginBottom: 8 }}>🧪</div>
           <div style={{ color: c.text, fontSize: 13, fontWeight: 700 }}>MCQ Bank</div>
           <div style={{ color: c.sub, fontSize: 12, marginTop: 4 }}>Practice questions for this module</div>
@@ -210,5 +163,3 @@ export default function ModulePage({ dark }) {
     </div>
   )
 }
-
-const backBtn = { background: 'rgba(255,255,255,0.08)', border: '2px solid rgba(255,255,255,0.15)', borderRadius: 10, padding: '6px 14px', color: '#94a3b8', cursor: 'pointer', fontSize: 12, fontWeight: 700, fontFamily: 'inherit' }

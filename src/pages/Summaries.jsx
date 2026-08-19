@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useLocation } from 'react-router-dom'
 import { supabase } from '../supabase'
 import { getTheme } from '../theme'
 import ErrorBanner from '../components/ErrorBanner'
@@ -183,7 +184,18 @@ function ModuleSummaries({ mod, onBack, dark }) {
 
 export default function Summaries({ dark }) {
   const { modules } = useModules()
+  const location = useLocation()
   const [selected, setSelected] = useState(null)
+
+  useEffect(() => {
+    if (selected || modules.length === 0) return
+    const params = new URLSearchParams(location.search)
+    const moduleParam = params.get('module')
+    if (moduleParam) {
+      const found = modules.find(m => m.id === moduleParam)
+      if (found) setSelected(found)
+    }
+  }, [modules, location.search])
 
   if (selected) return <ModuleSummaries mod={selected} onBack={() => setSelected(null)} dark={dark} />
   return <SummariesHome modules={modules} onSelect={setSelected} dark={dark} />
