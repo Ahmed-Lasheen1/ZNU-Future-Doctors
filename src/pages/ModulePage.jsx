@@ -24,6 +24,12 @@ export default function ModulePage({ dark }) {
   const [visible, setVisible] = useState(false)
   const [selectedSummary, setSelectedSummary] = useState(null)
   const [loadError, setLoadError] = useState(false)
+  const [driveUrl, setDriveUrl] = useState('')
+
+  useEffect(() => {
+    supabase.from('site_settings').select('value').eq('key', 'drive_url').single()
+      .then(({ data }) => { if (data?.value) setDriveUrl(data.value) })
+  }, [])
 
   useEffect(() => {
     setTimeout(() => setVisible(true), 100)
@@ -126,6 +132,28 @@ export default function ModulePage({ dark }) {
             </AnimatedCard>
           ))}
         </div>
+
+        {driveUrl && (
+          <a href={driveUrl} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }}>
+            <div style={{
+              marginTop: 16, background: c.card, border: `1px solid ${c.border}`,
+              borderRadius: 16, padding: '16px 20px',
+              display: 'flex', alignItems: 'center', gap: 14, transition: 'all 0.2s'
+            }}
+              onMouseEnter={e => e.currentTarget.style.borderColor = '#22c55e'}
+              onMouseLeave={e => e.currentTarget.style.borderColor = c.border}>
+              <div style={{
+                background: '#22c55e20', border: '1px solid #22c55e40',
+                borderRadius: 12, width: 44, height: 44,
+                display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0
+              }}>📁</div>
+              <div>
+                <div style={{ color: c.text, fontWeight: 700, fontSize: 14 }}>University Google Drive</div>
+                <div style={{ color: c.sub, fontSize: 12, marginTop: 2 }}>Lectures, recordings & more</div>
+              </div>
+            </div>
+          </a>
+        )}
       </div>
 
       {/* MCQ */}

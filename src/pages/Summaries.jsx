@@ -4,6 +4,15 @@ import { getTheme } from '../theme'
 import ErrorBanner from '../components/ErrorBanner'
 import { useModules } from '../App'
 
+const EXAM_STAGES = [
+  { value: 'all', label: 'All' },
+  { value: 'tbl', label: '🟢 TBL' },
+  { value: 'end_module', label: '🔵 End Module' },
+  { value: 'practical', label: '🟠 Practical' },
+  { value: 'final', label: '🟣 Final' },
+  { value: 'general', label: '⚪ General' },
+]
+
 function SummariesHome({ modules, onSelect, dark }) {
   const c = getTheme(dark)
   const sorted = [
@@ -74,6 +83,7 @@ function ModuleSummaries({ mod, onBack, dark }) {
   const [selected, setSelected] = useState(null)
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState(false)
+  const [activeStage, setActiveStage] = useState('all')
 
   useEffect(() => {
     supabase.from('summaries')
@@ -86,6 +96,8 @@ function ModuleSummaries({ mod, onBack, dark }) {
         setLoading(false)
       })
   }, [mod.id])
+
+  const filtered = summaries.filter(s => activeStage === 'all' || (s.exam_stage || 'general') === activeStage)
 
   if (selected) return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
@@ -114,16 +126,28 @@ function ModuleSummaries({ mod, onBack, dark }) {
       </div>
 
       {loadError && <ErrorBanner />}
+
+      <div style={{ display: 'flex', gap: 8, overflowX: 'auto', marginBottom: 20, paddingBottom: 4 }}>
+        {EXAM_STAGES.map(stage => (
+          <button key={stage.value} onClick={() => setActiveStage(stage.value)} style={{
+            padding: '6px 14px', borderRadius: 20, background: 'transparent',
+            border: `1px solid ${activeStage === stage.value ? mod.color : c.border}`,
+            whiteSpace: 'nowrap', fontSize: 12, cursor: 'pointer', fontWeight: 600,
+            fontFamily: 'inherit', color: activeStage === stage.value ? mod.color : c.sub
+          }}>{stage.label}</button>
+        ))}
+      </div>
+
       {loading && <p style={{ color: c.sub, textAlign: 'center' }}>Loading...</p>}
 
-      {!loading && summaries.length === 0 && (
+      {!loading && filtered.length === 0 && (
         <div style={{ background: c.cardFlat, border: `1px solid ${c.border}`, borderRadius: 16, padding: 40, textAlign: 'center' }}>
-          <p style={{ color: c.sub }}>No summaries yet 🚧</p>
+          <p style={{ color: c.sub }}>No summaries here yet 🚧</p>
         </div>
       )}
 
       <div style={{ display: 'grid', gap: 12 }}>
-        {summaries.map(sum => (
+        {filtered.map(sum => (
           <div key={sum.id} onClick={() => setSelected(sum)} style={{
             background: c.card,
             border: `2px solid ${mod.color}40`,

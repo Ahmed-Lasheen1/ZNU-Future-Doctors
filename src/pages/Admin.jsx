@@ -5,6 +5,14 @@ import { useAuth, useModules } from '../App'
 import { getTheme, inputStyle } from '../theme'
 import { fetchModulesSorted } from '../lib/modules'
 
+const EXAM_STAGES = [
+  { value: 'tbl', label: '🟢 TBL' },
+  { value: 'end_module', label: '🔵 End Module' },
+  { value: 'practical', label: '🟠 Practical' },
+  { value: 'final', label: '🟣 Final' },
+  { value: 'general', label: '⚪ General' },
+]
+
 export default function Admin({ dark }) {
   const { user, profile } = useAuth()
   const { refreshModules } = useModules()
@@ -54,13 +62,20 @@ export default function Admin({ dark }) {
   const [qModuleId, setQModuleId] = useState('')
   const [qSubjectId, setQSubjectId] = useState('')
   const [qExamType, setQExamType] = useState('both')
+  const [qExamStage, setQExamStage] = useState('general')
+  const [bulkMode, setBulkMode] = useState(false)
+  const [bulkText, setBulkText] = useState('')
+  const [bulkSaving, setBulkSaving] = useState(false)
 
   const [sumTitle, setSumTitle] = useState('')
   const [sumUrl, setSumUrl] = useState('')
   const [sumModuleId, setSumModuleId] = useState('')
+  const [sumExamStage, setSumExamStage] = useState('general')
 
   const [announcement, setAnnouncement] = useState('')
   const [announcementSaving, setAnnouncementSaving] = useState(false)
+  const [driveUrl, setDriveUrl] = useState('')
+  const [driveUrlSaving, setDriveUrlSaving] = useState(false)
 
   const c = {
     ...getTheme(dark),
@@ -74,8 +89,13 @@ export default function Admin({ dark }) {
   }, [isAuth])
 
   async function fetchAnnouncement() {
-    const { data } = await supabase.from('site_settings').select('value').eq('key', 'home_announcement').single()
-    if (data) setAnnouncement(data.value || '')
+    const { data } = await supabase.from('site_settings').select('key, value').in('key', ['home_announcement', 'drive_url'])
+    if (data) {
+      const ann = data.find(r => r.key === 'home_announcement')
+      const drive = data.find(r => r.key === 'drive_url')
+      if (ann) setAnnouncement(ann.value || '')
+      if (drive) setDriveUrl(drive.value || '')
+    }
   }
 
   async function saveAnnouncement() {
@@ -83,6 +103,13 @@ export default function Admin({ dark }) {
     const { error } = await supabase.from('site_settings').upsert({ key: 'home_announcement', value: announcement.trim() })
     setAnnouncementSaving(false)
     showMsg(error ? '❌ ' + error.message : '✅ Announcement updated!')
+  }
+
+  async function saveDriveUrl() {
+    setDriveUrlSaving(true)
+    const { error } = await supabase.from('site_settings').upsert({ key: 'drive_url', value: driveUrl.trim() })
+    setDriveUrlSaving(false)
+    showMsg(error ? '❌ ' + error.message : '✅ Drive link updated!')
   }
 
   async function fetchModules() {
@@ -212,16 +239,91 @@ export default function Admin({ dark }) {
     const { error } = await supabase.from('questions').insert([{
       question: qText, option_a: qA, option_b: qB, option_c: qC, option_d: qD,
       correct: qCorrect, explanation: qExplanation, exam_type: qExamType,
-      module_id: qModuleId, subject_id: qSubjectId || null
+      exam_stage: qExamStage, module_id: qModuleId, subject_id: qSubjectId || null
     }])
     if (!error) { showMsg('✅ Question added!'); setQText(''); setQA(''); setQB(''); setQC(''); setQD(''); setQExplanation(''); fetchQuestions() }
     else showMsg('❌ ' + error.message)
   }
 
+  // Parses a block of pasted text into multiple questions at once.
+  // Expected format per question, separated by a blank line:
+  //   Q: question text
+  //   A) option a
+  //   B) option b
+  //   C) option c
+  //   D) option d
+  //   Correct: B
+  //   Explanation: optional explanation
+  function parseBulkQuestions(text) {
+    const blocks = text.split(/\n\s*\n/).map(b => b.trim()).filter(Boolean)
+    const questions = []
+    const errors = []
+
+    blocks.forEach((block, idx) => {
+      const lines = block.split('\n').map(l => l.trim()).filter(Boolean)
+      const qLine = lines.find(l => /^Q[:\-]/i.test(l))
+      const aLine = lines.find(l => /^A[)\.\-]/i.test(l))
+      const bLine = lines.find(l => /^B[)\.\-]/i.test(l))
+      const cLine = lines.find(l => /^C[)\.\-]/i.test(l))
+      const dLine = lines.find(l => /^D[)\.\-]/i.test(l))
+      const correctLine = lines.find(l => /^Correct[:\-]/i.test(l))
+      const explLine = lines.find(l => /^Explanation[:\-]/i.test(l))
+
+      if (!qLine || !aLine || !bLine || !cLine || !dLine || !correctLine) {
+        errors.push(`Question ${idx + 1}: missing Q/A/B/C/D/Correct line`)
+        return
+      }
+      const correctLetter = correctLine.replace(/^Correct[:\-]/i, '').trim().toLowerCase().charAt(0)
+      if (!['a', 'b', 'c', 'd'].includes(correctLetter)) {
+        errors.push(`Question ${idx + 1}: "Correct" must be A, B, C or D`)
+        return
+      }
+      questions.push({
+        question: qLine.replace(/^Q[:\-]/i, '').trim(),
+        option_a: aLine.replace(/^A[)\.\-]/i, '').trim(),
+        option_b: bLine.replace(/^B[)\.\-]/i, '').trim(),
+        option_c: cLine.replace(/^C[)\.\-]/i, '').trim(),
+        option_d: dLine.replace(/^D[)\.\-]/i, '').trim(),
+        correct: correctLetter,
+        explanation: explLine ? explLine.replace(/^Explanation[:\-]/i, '').trim() : '',
+      })
+    })
+
+    return { questions, errors }
+  }
+
+  async function bulkAddQuestions() {
+    if (!qModuleId) return showMsg('❌ Please select a module first')
+    if (!bulkText.trim()) return showMsg('❌ Paste some questions first')
+
+    const { questions: parsed, errors } = parseBulkQuestions(bulkText)
+    if (errors.length > 0) {
+      showMsg(`❌ ${errors.length} question(s) have a formatting problem — ${errors[0]}`)
+      return
+    }
+    if (parsed.length === 0) return showMsg('❌ No questions found in the text')
+
+    setBulkSaving(true)
+    const rows = parsed.map(q => ({
+      ...q,
+      exam_type: qExamType,
+      exam_stage: qExamStage,
+      module_id: qModuleId,
+      subject_id: qSubjectId || null
+    }))
+    const { error } = await supabase.from('questions').insert(rows)
+    setBulkSaving(false)
+
+    if (error) { showMsg('❌ ' + error.message); return }
+    showMsg(`✅ ${rows.length} questions added!`)
+    setBulkText('')
+    fetchQuestions()
+  }
+
   async function addSummary() {
     if (!sumTitle || !sumUrl || !sumModuleId) return
     const { error } = await supabase.from('summaries').insert([{
-      title: sumTitle, url: sumUrl, module_id: sumModuleId
+      title: sumTitle, url: sumUrl, module_id: sumModuleId, exam_stage: sumExamStage
     }])
     if (!error) { showMsg('✅ Summary added!'); setSumTitle(''); setSumUrl(''); fetchSummaries() }
     else showMsg('❌ ' + error.message)
@@ -265,7 +367,7 @@ export default function Admin({ dark }) {
     </div>
   )
 
-  const tabs = ['modules', 'subjects', 'files', 'schedules', 'questions', 'summaries', 'announcement']
+  const tabs = ['modules', 'subjects', 'files', 'schedules', 'questions', 'summaries', 'settings']
 
   return (
     <div className="page-container" style={{ padding: '20px', maxWidth: '650px' }}>
@@ -486,7 +588,15 @@ export default function Admin({ dark }) {
 
       {activeTab === 'questions' && (
         <div style={{ background: c.card, padding: '20px', borderRadius: '16px', border: `1px solid ${c.border}` }}>
-          <h3 style={{ color: '#38bdf8', marginBottom: 16 }}>➕ Add MCQ Question</h3>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+            <h3 style={{ color: '#38bdf8' }}>{bulkMode ? '📋 Bulk Add Questions' : '➕ Add MCQ Question'}</h3>
+            <button onClick={() => setBulkMode(!bulkMode)} style={{
+              background: 'transparent', border: `1px solid ${c.border}`,
+              borderRadius: 8, padding: '6px 12px', cursor: 'pointer',
+              color: c.sub, fontFamily: 'inherit', fontSize: 12, fontWeight: 700
+            }}>{bulkMode ? '✏️ Single Add' : '📋 Bulk Add'}</button>
+          </div>
+
           <ModuleSelect value={qModuleId} onChange={e => { setQModuleId(e.target.value); setQSubjectId('') }} />
           {qModuleId && (
             <select value={qSubjectId} onChange={e => setQSubjectId(e.target.value)} style={inStyle}>
@@ -494,28 +604,71 @@ export default function Admin({ dark }) {
               {filteredSubjects(qModuleId).map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
             </select>
           )}
-          <textarea placeholder="Question" value={qText} onChange={e => setQText(e.target.value)} style={{ ...inStyle, minHeight: 80, resize: 'vertical' }} />
-          {['A', 'B', 'C', 'D'].map((opt, i) => (
-            <input key={opt} placeholder={`Option ${opt}`}
-              value={[qA, qB, qC, qD][i]}
-              onChange={e => [setQA, setQB, setQC, setQD][i](e.target.value)}
-              style={inStyle} />
-          ))}
-          <label style={{ color: c.sub, fontSize: 12, display: 'block', marginBottom: 4 }}>Correct Answer</label>
-          <select value={qCorrect} onChange={e => setQCorrect(e.target.value)} style={inStyle}>
-            <option value="a">A</option>
-            <option value="b">B</option>
-            <option value="c">C</option>
-            <option value="d">D</option>
-          </select>
           <label style={{ color: c.sub, fontSize: 12, display: 'block', marginBottom: 4 }}>Use In</label>
           <select value={qExamType} onChange={e => setQExamType(e.target.value)} style={inStyle}>
             <option value="both">Practice + Mock Exam</option>
             <option value="practice">Practice Only</option>
             <option value="mock">Mock Exam Only</option>
           </select>
-          <textarea placeholder="Explanation (optional)" value={qExplanation} onChange={e => setQExplanation(e.target.value)} style={{ ...inStyle, minHeight: 60, resize: 'vertical' }} />
-          <button onClick={addQuestion} style={btnStyle}>Add Question</button>
+          <label style={{ color: c.sub, fontSize: 12, display: 'block', marginBottom: 4 }}>Exam Stage</label>
+          <select value={qExamStage} onChange={e => setQExamStage(e.target.value)} style={inStyle}>
+            {EXAM_STAGES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+          </select>
+
+          {bulkMode ? (
+            <>
+              <p style={{ color: c.sub, fontSize: 12, marginBottom: 8, lineHeight: 1.6 }}>
+                Paste as many questions as you want below, one after another,
+                separated by an empty line. Every question in this box will
+                be added to the module/subject/type selected above. Format:
+              </p>
+              <pre style={{
+                background: c.input, border: `1px solid ${c.border}`, borderRadius: 10,
+                padding: 12, fontSize: 11, color: c.sub, marginBottom: 12,
+                whiteSpace: 'pre-wrap', lineHeight: 1.6
+              }}>{`Q: What is the powerhouse of the cell?
+A) Nucleus
+B) Mitochondria
+C) Ribosome
+D) Golgi apparatus
+Correct: B
+Explanation: Mitochondria produce ATP.
+
+Q: Second question here...
+A) ...
+B) ...
+C) ...
+D) ...
+Correct: A`}</pre>
+              <textarea
+                placeholder="Paste your questions here..."
+                value={bulkText}
+                onChange={e => setBulkText(e.target.value)}
+                style={{ ...inStyle, minHeight: 240, resize: 'vertical', fontFamily: 'monospace', fontSize: 12 }} />
+              <button onClick={bulkAddQuestions} disabled={bulkSaving} style={btnStyle}>
+                {bulkSaving ? 'Adding...' : 'Parse & Add All'}
+              </button>
+            </>
+          ) : (
+            <>
+              <textarea placeholder="Question" value={qText} onChange={e => setQText(e.target.value)} style={{ ...inStyle, minHeight: 80, resize: 'vertical' }} />
+              {['A', 'B', 'C', 'D'].map((opt, i) => (
+                <input key={opt} placeholder={`Option ${opt}`}
+                  value={[qA, qB, qC, qD][i]}
+                  onChange={e => [setQA, setQB, setQC, setQD][i](e.target.value)}
+                  style={inStyle} />
+              ))}
+              <label style={{ color: c.sub, fontSize: 12, display: 'block', marginBottom: 4 }}>Correct Answer</label>
+              <select value={qCorrect} onChange={e => setQCorrect(e.target.value)} style={inStyle}>
+                <option value="a">A</option>
+                <option value="b">B</option>
+                <option value="c">C</option>
+                <option value="d">D</option>
+              </select>
+              <textarea placeholder="Explanation (optional)" value={qExplanation} onChange={e => setQExplanation(e.target.value)} style={{ ...inStyle, minHeight: 60, resize: 'vertical' }} />
+              <button onClick={addQuestion} style={btnStyle}>Add Question</button>
+            </>
+          )}
         </div>
       )}
 
@@ -543,6 +696,10 @@ export default function Admin({ dark }) {
         <div style={{ background: c.card, padding: '20px', borderRadius: '16px', border: `1px solid ${c.border}` }}>
           <h3 style={{ color: '#38bdf8', marginBottom: 16 }}>➕ Add Summary</h3>
           <ModuleSelect value={sumModuleId} onChange={e => setSumModuleId(e.target.value)} />
+          <label style={{ color: c.sub, fontSize: 12, display: 'block', marginBottom: 4 }}>Exam Stage</label>
+          <select value={sumExamStage} onChange={e => setSumExamStage(e.target.value)} style={inStyle}>
+            {EXAM_STAGES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+          </select>
           <input placeholder="Title (e.g. End Module Exam)" value={sumTitle} onChange={e => setSumTitle(e.target.value)} style={inStyle} />
           <input placeholder="Summary URL" value={sumUrl} onChange={e => setSumUrl(e.target.value)} style={inStyle} />
           <button onClick={addSummary} style={btnStyle}>Add Summary</button>
@@ -568,31 +725,50 @@ export default function Admin({ dark }) {
           })}
         </div>
       )}
-      {activeTab === 'announcement' && (
-        <div style={{ background: c.card, padding: '20px', borderRadius: '16px', border: `1px solid ${c.border}` }}>
-          <h3 style={{ color: '#38bdf8', marginBottom: 8 }}>📢 Home Page Announcement</h3>
-          <p style={{ color: c.sub, fontSize: 13, marginBottom: 16 }}>
-            This shows in a banner at the top of the Home page for everyone.
-            Leave it empty to hide the banner completely. Press Enter for a
-            new line — it'll look exactly the same on the site. The box
-            below is styled exactly like it'll appear, so what you see here
-            is what students will see.
-          </p>
-          <textarea
-            placeholder="e.g. Pharma exam next week, study well! 🔥"
-            value={announcement}
-            onChange={e => setAnnouncement(e.target.value)}
-            style={{
-              width: '100%', minHeight: 100, padding: '14px 20px',
-              borderRadius: 16, border: '1px solid #38bdf840',
-              background: 'linear-gradient(135deg, #38bdf820, #818cf815)',
-              color: c.text, fontSize: 14, fontWeight: 600, lineHeight: 1.6,
-              textAlign: 'center', fontFamily: 'inherit', outline: 'none',
-              resize: 'vertical', marginBottom: 12
-            }} />
-          <button onClick={saveAnnouncement} disabled={announcementSaving} style={btnStyle}>
-            {announcementSaving ? 'Saving...' : 'Save Announcement'}
-          </button>
+      {activeTab === 'settings' && (
+        <div>
+          <div style={{ background: c.card, padding: '20px', borderRadius: '16px', border: `1px solid ${c.border}`, marginBottom: 16 }}>
+            <h3 style={{ color: '#38bdf8', marginBottom: 8 }}>📁 University Google Drive Link</h3>
+            <p style={{ color: c.sub, fontSize: 13, marginBottom: 16 }}>
+              One link, shown on every module page, pointing to the
+              university's shared Drive (lectures, recordings, etc.).
+              Leave it empty to hide the button.
+            </p>
+            <input
+              placeholder="https://drive.google.com/..."
+              value={driveUrl}
+              onChange={e => setDriveUrl(e.target.value)}
+              style={inStyle} />
+            <button onClick={saveDriveUrl} disabled={driveUrlSaving} style={btnStyle}>
+              {driveUrlSaving ? 'Saving...' : 'Save Drive Link'}
+            </button>
+          </div>
+
+          <div style={{ background: c.card, padding: '20px', borderRadius: '16px', border: `1px solid ${c.border}` }}>
+            <h3 style={{ color: '#38bdf8', marginBottom: 8 }}>📢 Home Page Announcement</h3>
+            <p style={{ color: c.sub, fontSize: 13, marginBottom: 16 }}>
+              This shows in a banner at the top of the Home page for everyone.
+              Leave it empty to hide the banner completely. Press Enter for a
+              new line — it'll look exactly the same on the site. The box
+              below is styled exactly like it'll appear, so what you see here
+              is what students will see.
+            </p>
+            <textarea
+              placeholder="e.g. Pharma exam next week, study well! 🔥"
+              value={announcement}
+              onChange={e => setAnnouncement(e.target.value)}
+              style={{
+                width: '100%', minHeight: 100, padding: '14px 20px',
+                borderRadius: 16, border: '1px solid #38bdf840',
+                background: 'linear-gradient(135deg, #38bdf820, #818cf815)',
+                color: c.text, fontSize: 14, fontWeight: 600, lineHeight: 1.6,
+                textAlign: 'center', fontFamily: 'inherit', outline: 'none',
+                resize: 'vertical', marginBottom: 12
+              }} />
+            <button onClick={saveAnnouncement} disabled={announcementSaving} style={btnStyle}>
+              {announcementSaving ? 'Saving...' : 'Save Announcement'}
+            </button>
+          </div>
         </div>
       )}
     </div>

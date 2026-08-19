@@ -4,6 +4,15 @@ import { useAuth, useModules } from '../App'
 import { getTheme } from '../theme'
 import ErrorBanner from '../components/ErrorBanner'
 
+const EXAM_STAGES = [
+  { value: 'all', label: 'All' },
+  { value: 'tbl', label: '🟢 TBL' },
+  { value: 'end_module', label: '🔵 End Module' },
+  { value: 'practical', label: '🟠 Practical' },
+  { value: 'final', label: '🟣 Final' },
+  { value: 'general', label: '⚪ General' },
+]
+
 export default function MCQ({ dark }) {
   const { user, fetchProfile } = useAuth()
   const { modules, modulesLoaded, modulesError } = useModules()
@@ -11,6 +20,7 @@ export default function MCQ({ dark }) {
   const [questions, setQuestions] = useState([])
   const [answeredIds, setAnsweredIds] = useState(new Set())
   const [activeModule, setActiveModule] = useState(null)
+  const [activeStage, setActiveStage] = useState('all')
   const [activeSubject, setActiveSubject] = useState('all')
   const [quizMode, setQuizMode] = useState(null)
   const [quizQuestions, setQuizQuestions] = useState([])
@@ -68,7 +78,8 @@ export default function MCQ({ dark }) {
         ? q.exam_type === 'mock' || q.exam_type === 'both'
         : q.exam_type === 'practice' || q.exam_type === 'both'
       const subMatch = activeSubject === 'all' || q.subject_id === activeSubject
-      return modMatch && typeMatch && subMatch
+      const stageMatch = activeStage === 'all' || (q.exam_stage || 'general') === activeStage
+      return modMatch && typeMatch && subMatch && stageMatch
     })
   }
 
@@ -77,7 +88,11 @@ export default function MCQ({ dark }) {
   function startQuiz(type, subjectId = null) {
     let qs = type === 'mock'
       ? shuffle(getFilteredQuestions('mock')).slice(0, 36)
-      : shuffle(questions.filter(q => q.subject_id === subjectId && (q.exam_type === 'practice' || q.exam_type === 'both'))).slice(0, 50)
+      : shuffle(questions.filter(q =>
+          q.subject_id === subjectId &&
+          (q.exam_type === 'practice' || q.exam_type === 'both') &&
+          (activeStage === 'all' || (q.exam_stage || 'general') === activeStage)
+        )).slice(0, 50)
 
     setQuizQuestions(qs)
     setAnswers({})
@@ -300,6 +315,15 @@ export default function MCQ({ dark }) {
         ))}
       </div>
 
+      <div style={{ display: 'flex', gap: 8, overflowX: 'auto', marginBottom: 16, paddingBottom: 4 }}>
+        {EXAM_STAGES.map(stage => (
+          <button key={stage.value} onClick={() => setActiveStage(stage.value)} style={{
+            ...subBtnStyle, borderColor: activeStage === stage.value ? '#f472b6' : c.border,
+            color: activeStage === stage.value ? '#f472b6' : c.sub
+          }}>{stage.label}</button>
+        ))}
+      </div>
+
       <div style={{ display: 'flex', gap: 8, overflowX: 'auto', marginBottom: 24, paddingBottom: 4 }}>
         <button onClick={() => setActiveSubject('all')} style={{
           ...subBtnStyle, borderColor: activeSubject === 'all' ? '#f472b6' : c.border,
@@ -339,7 +363,11 @@ export default function MCQ({ dark }) {
       </h3>
       <div className="card-grid">
         {moduleSubjects.map(sub => {
-          const subQs = questions.filter(q => q.subject_id === sub.id && (q.exam_type === 'practice' || q.exam_type === 'both'))
+          const subQs = questions.filter(q =>
+            q.subject_id === sub.id &&
+            (q.exam_type === 'practice' || q.exam_type === 'both') &&
+            (activeStage === 'all' || (q.exam_stage || 'general') === activeStage)
+          )
           return (
             <div key={sub.id} style={{
               background: c.card, border: `1px solid ${c.border}`,
