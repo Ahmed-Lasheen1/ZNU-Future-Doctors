@@ -6,13 +6,7 @@ import ErrorBanner from '../components/ErrorBanner'
 import AnimatedCard from '../components/AnimatedCard'
 import { useModules } from '../App'
 import { EXAM_STAGE_CARDS } from '../lib/examStages'
-
-const fileCards = [
-  { emoji: '📖', title: 'Explanation Files', type: 'sharah', color: '#38bdf8' },
-  { emoji: '❓', title: 'Question Files', type: 'questions', color: '#60a5fa' },
-  { emoji: '🎥', title: 'Lecture Recordings', type: 'lectures', color: '#818cf8' },
-  { emoji: '🎓', title: 'Course Recordings', type: 'courses', color: '#c084fc' },
-]
+import { FILE_CARDS } from '../lib/fileCards'
 
 export default function ModulePage({ dark }) {
   const c = getTheme(dark)
@@ -49,7 +43,7 @@ export default function ModulePage({ dark }) {
     </div>
   )
 
-  const filteredFileCards = fileCards.filter(card => presentFileTypes.has(card.type))
+  const filteredFileCards = FILE_CARDS.filter(card => presentFileTypes.has(card.type))
 
   return (
     <div className="page-container" style={{ padding: '24px 16px 100px' }}>

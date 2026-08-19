@@ -42,6 +42,7 @@ export default function Admin({ dark }) {
   const [fileFileType, setFileFileType] = useState('pdf')
   const [fileModuleId, setFileModuleId] = useState('')
   const [fileSubjectId, setFileSubjectId] = useState('')
+  const [fileExamStage, setFileExamStage] = useState('general')
 
   const [schTitle, setSchTitle] = useState('')
   const [schUrl, setSchUrl] = useState('')
@@ -219,7 +220,7 @@ export default function Admin({ dark }) {
     const { error } = await supabase.from('files').insert([{
       name: fileName, url: fileUrl, type: fileType,
       file_type: fileFileType, module_id: fileModuleId,
-      subject_id: fileSubjectId || null
+      subject_id: fileSubjectId || null, exam_stage: fileExamStage
     }])
     if (!error) { showMsg('✅ File added!'); setFileName(''); setFileUrl(''); fetchFiles() }
     else showMsg('❌ ' + error.message)
@@ -520,6 +521,10 @@ export default function Admin({ dark }) {
               </select>
             </>
           )}
+          <label style={{ color: c.sub, fontSize: 12, display: 'block', marginBottom: 4 }}>Exam Stage</label>
+          <select value={fileExamStage} onChange={e => setFileExamStage(e.target.value)} style={inStyle}>
+            {EXAM_STAGES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+          </select>
           <button onClick={addFile} style={btnStyle}>Add File</button>
         </div>
       )}

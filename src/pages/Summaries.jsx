@@ -78,13 +78,13 @@ function SummariesHome({ modules, onSelect, dark }) {
   )
 }
 
-function ModuleSummaries({ mod, onBack, dark }) {
+function ModuleSummaries({ mod, onBack, dark, initialStage }) {
   const c = getTheme(dark)
   const [summaries, setSummaries] = useState([])
   const [selected, setSelected] = useState(null)
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState(false)
-  const [activeStage, setActiveStage] = useState('all')
+  const [activeStage, setActiveStage] = useState(initialStage || 'all')
 
   useEffect(() => {
     supabase.from('summaries')
@@ -197,7 +197,9 @@ export default function Summaries({ dark }) {
     }
   }, [modules, location.search])
 
-  if (selected) return <ModuleSummaries mod={selected} onBack={() => setSelected(null)} dark={dark} />
+  const initialStage = new URLSearchParams(location.search).get('stage') || 'all'
+
+  if (selected) return <ModuleSummaries mod={selected} onBack={() => setSelected(null)} dark={dark} initialStage={initialStage} />
   return <SummariesHome modules={modules} onSelect={setSelected} dark={dark} />
 }
 

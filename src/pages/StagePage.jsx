@@ -6,6 +6,7 @@ import ErrorBanner from '../components/ErrorBanner'
 import AnimatedCard from '../components/AnimatedCard'
 import { useModules } from '../App'
 import { stageMeta } from '../lib/examStages'
+import { FILE_CARDS } from '../lib/fileCards'
 
 export default function StagePage({ dark }) {
   const c = getTheme(dark)
@@ -14,22 +15,14 @@ export default function StagePage({ dark }) {
   const { modules, modulesLoaded, modulesError } = useModules()
   const module = modules.find(m => m.id === moduleId) || null
   const meta = stageMeta(stage)
-  const [summaries, setSummaries] = useState([])
-  const [loading, setLoading] = useState(true)
+  const [presentFileTypes, setPresentFileTypes] = useState(new Set())
   const [loadError, setLoadError] = useState(false)
-  const [selectedSummary, setSelectedSummary] = useState(null)
 
   useEffect(() => {
-    setLoading(true)
-    supabase.from('summaries')
-      .select('*')
-      .eq('module_id', moduleId)
-      .eq('exam_stage', stage)
-      .order('created_at')
+    supabase.from('files').select('type').eq('module_id', moduleId).eq('exam_stage', stage)
       .then(({ data, error }) => {
-        if (data) setSummaries(data)
+        if (data) setPresentFileTypes(new Set(data.map(f => f.type)))
         if (error) setLoadError(true)
-        setLoading(false)
       })
   }, [moduleId, stage])
 
@@ -43,30 +36,12 @@ export default function StagePage({ dark }) {
     </div>
   )
 
-  if (selectedSummary) return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
-      <div style={{
-        background: 'linear-gradient(135deg, #1a2a4a, #0f1e35)',
-        borderBottom: '2px solid #2a4a7a',
-        padding: '12px 20px',
-        display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0
-      }}>
-        <button onClick={() => setSelectedSummary(null)} style={backBtn}>← Back</button>
-        <div style={{ flex: 1, textAlign: 'center' }}>
-          <div style={{ fontSize: 11, color: '#7eb8ff', letterSpacing: 2, textTransform: 'uppercase' }}>{module.name} · {meta.title}</div>
-          <div style={{ fontSize: 16, fontWeight: 900, color: module.color }}>{selectedSummary.title}</div>
-        </div>
-        <div style={{ width: 80 }} />
-      </div>
-      <iframe src={selectedSummary.url} style={{ flex: 1, border: 'none', width: '100%' }} title={selectedSummary.title} />
-    </div>
-  )
+  const filteredFileCards = FILE_CARDS.filter(card => presentFileTypes.has(card.type))
 
   return (
     <div className="page-container" style={{ padding: '24px 16px 100px' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
+      <div style={{ marginBottom: 8 }}>
         <button onClick={() => navigate(`/module/${moduleId}`)} style={backBtn}>← Back</button>
-        <div style={{ width: 60 }} />
       </div>
 
       <div style={{ textAlign: 'center', padding: '10px 0 30px' }}>
@@ -75,36 +50,44 @@ export default function StagePage({ dark }) {
         <div style={{ color: c.sub, fontSize: 13 }}>{module.icon} {module.name}</div>
       </div>
 
-      {/* Summaries for this stage */}
+      {/* Study Materials — only what's tagged for this specific stage */}
+      {filteredFileCards.length > 0 && (
+        <div style={{ marginBottom: 32 }}>
+          <h2 style={{ color: c.sub, fontSize: 13, fontWeight: 700, letterSpacing: 2, marginBottom: 16, textTransform: 'uppercase' }}>
+            📁 Study Materials
+          </h2>
+          <div className="card-grid">
+            {filteredFileCards.map((card, i) => (
+              <AnimatedCard key={i} delay={i * 80} color={card.color} dark={dark}
+                onClick={() => navigate(`/files?type=${card.type}&module=${moduleId}`)}>
+                <div style={{ fontSize: 'clamp(28px, 3vw, 42px)', marginBottom: 8 }}>{card.emoji}</div>
+                <div style={{ color: c.text, fontSize: 'clamp(13px, 1.1vw, 16px)', fontWeight: 700 }}>{card.title}</div>
+              </AnimatedCard>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Smart Summaries — single card, same treatment as Practice.
+          Opens the summaries page pre-filtered to this exact stage. */}
       <div style={{ marginBottom: 32 }}>
         <h2 style={{ color: c.sub, fontSize: 13, fontWeight: 700, letterSpacing: 2, marginBottom: 16, textTransform: 'uppercase' }}>
           📝 Smart Summaries
         </h2>
-        {loading ? (
-          <p style={{ color: c.sub, textAlign: 'center' }}>Loading...</p>
-        ) : summaries.length > 0 ? (
-          <div style={{ display: 'grid', gap: 12 }}>
-            {summaries.map((sum, i) => (
-              <AnimatedCard key={sum.id} delay={i * 80} color='#34d399' dark={dark} onClick={() => setSelectedSummary(sum)}>
-                <div style={{ fontSize: 30, marginBottom: 8 }}>📝</div>
-                <div style={{ color: c.text, fontSize: 13, fontWeight: 700 }}>{sum.title}</div>
-                <div style={{ color: c.sub, fontSize: 12, marginTop: 4 }}>Interactive Summary</div>
-              </AnimatedCard>
-            ))}
-          </div>
-        ) : (
-          <div style={{ background: c.card, border: `1px solid ${c.border}`, borderRadius: 16, padding: 24, textAlign: 'center' }}>
-            <p style={{ color: c.sub, fontSize: 13 }}>No summaries here yet 🚧</p>
-          </div>
-        )}
+        <AnimatedCard delay={200} color='#34d399' dark={dark}
+          onClick={() => navigate(`/summaries?module=${moduleId}&stage=${stage}`)}>
+          <div style={{ fontSize: 30, marginBottom: 8 }}>📝</div>
+          <div style={{ color: c.text, fontSize: 13, fontWeight: 700 }}>Summaries</div>
+          <div style={{ color: c.sub, fontSize: 12, marginTop: 4 }}>{meta.title} summaries</div>
+        </AnimatedCard>
       </div>
 
-      {/* Practice for this stage */}
+      {/* Practice */}
       <div style={{ marginBottom: 32 }}>
         <h2 style={{ color: c.sub, fontSize: 13, fontWeight: 700, letterSpacing: 2, marginBottom: 16, textTransform: 'uppercase' }}>
           🧪 Practice
         </h2>
-        <AnimatedCard delay={200} color='#f472b6' dark={dark}
+        <AnimatedCard delay={300} color='#f472b6' dark={dark}
           onClick={() => navigate(`/mcq?module=${moduleId}&stage=${stage}`)}>
           <div style={{ fontSize: 30, marginBottom: 8 }}>🧪</div>
           <div style={{ color: c.text, fontSize: 13, fontWeight: 700 }}>MCQ Bank</div>
