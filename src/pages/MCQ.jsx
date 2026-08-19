@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { useLocation } from 'react-router-dom'
 import { supabase } from '../supabase'
 import { useAuth, useModules } from '../App'
 import { getTheme } from '../theme'
@@ -16,11 +17,15 @@ const EXAM_STAGES = [
 export default function MCQ({ dark }) {
   const { user, fetchProfile } = useAuth()
   const { modules, modulesLoaded, modulesError } = useModules()
+  const location = useLocation()
   const [subjects, setSubjects] = useState([])
   const [questions, setQuestions] = useState([])
   const [answeredIds, setAnsweredIds] = useState(new Set())
   const [activeModule, setActiveModule] = useState(null)
-  const [activeStage, setActiveStage] = useState('all')
+  const [activeStage, setActiveStage] = useState(() => {
+    const params = new URLSearchParams(location.search)
+    return params.get('stage') || 'all'
+  })
   const [activeSubject, setActiveSubject] = useState('all')
   const [quizMode, setQuizMode] = useState(null)
   const [quizQuestions, setQuizQuestions] = useState([])
@@ -44,6 +49,10 @@ export default function MCQ({ dark }) {
 
   useEffect(() => {
     if (modulesLoaded && modules.length > 0 && !activeModule) {
+      const params = new URLSearchParams(location.search)
+      const moduleParam = params.get('module')
+      const fromLink = moduleParam && modules.find(m => m.id === moduleParam)
+      if (fromLink) { setActiveModule(fromLink.id); return }
       const active = modules.find(m => m.status === 'active')
       setActiveModule(active ? active.id : modules[0].id)
     }
