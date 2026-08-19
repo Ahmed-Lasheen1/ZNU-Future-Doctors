@@ -44,7 +44,7 @@ export default function Search({ dark }) {
     const like = `%${q}%`
     const [fileRes, questionRes, summaryRes, scheduleRes] = await Promise.all([
       supabase.from('files').select('*').ilike('name', like).limit(20),
-      supabase.from('questions').select('*').ilike('question', like).limit(20),
+      supabase.from('questions').select('id, question, module_id, exam_type, exam_stage, created_at').ilike('question', like).limit(20),
       supabase.from('summaries').select('*').ilike('title', like).limit(20),
       supabase.from('schedules').select('*').ilike('title', like).limit(20),
     ])

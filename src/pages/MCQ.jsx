@@ -28,6 +28,10 @@ export default function MCQ({ dark }) {
   const [quizQuestions, setQuizQuestions] = useState([])
   const [answers, setAnswers] = useState({})
   const [submitted, setSubmitted] = useState(false)
+  const [grading, setGrading] = useState(false)
+  // Keyed by question id → { is_correct, correct_answer, explanation }.
+  // Filled in only after the server grades the quiz — never before.
+  const [results, setResults] = useState({})
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState(false)
   const [timeLeft, setTimeLeft] = useState(0)
@@ -59,7 +63,13 @@ export default function MCQ({ dark }) {
     setLoading(true)
     const [subRes, qRes] = await Promise.all([
       supabase.from('subjects').select('*').order('name'),
-      supabase.from('questions').select('*').order('created_at')
+      // Note: deliberately NOT selecting `correct` or `explanation` here —
+      // those columns are blocked at the database level for this role
+      // anyway (see supabase_secure_mcq.sql). Grading happens server-side
+      // via the grade_mcq() function, only after the student submits.
+      supabase.from('questions')
+        .select('id, question, option_a, option_b, option_c, option_d, exam_type, exam_stage, module_id, subject_id, created_at')
+        .order('created_at')
     ])
     if (subRes.data) setSubjects(subRes.data)
     if (qRes.data) setQuestions(qRes.data)
@@ -102,6 +112,7 @@ export default function MCQ({ dark }) {
 
     setQuizQuestions(qs)
     setAnswers({})
+    setResults({})
     setSubmitted(false)
     setQuizMode(type)
 
@@ -110,7 +121,7 @@ export default function MCQ({ dark }) {
       setTimeLeft(mins * 60)
       timerRef.current = setInterval(() => {
         setTimeLeft(prev => {
-          if (prev <= 1) { clearInterval(timerRef.current); setSubmitted(true); return 0 }
+          if (prev <= 1) { clearInterval(timerRef.current); submitQuiz(); return 0 }
           return prev - 1
         })
       }, 1000)
@@ -122,6 +133,7 @@ export default function MCQ({ dark }) {
     setQuizMode(null)
     setQuizQuestions([])
     setAnswers({})
+    setResults({})
     setSubmitted(false)
     setTimeLeft(0)
   }
@@ -133,13 +145,33 @@ export default function MCQ({ dark }) {
 
   async function submitQuiz() {
     clearInterval(timerRef.current)
+    setGrading(true)
+
+    // Ask the server to grade every question in this quiz. The client
+    // only ever sends the student's chosen letters — it never had the
+    // correct answers to begin with, so there's nothing to fake here.
+    const payload = quizQuestions.map((q, i) => ({ id: q.id, answer: answers[i] || null }))
+    const { data: graded, error } = await supabase.rpc('grade_mcq', { p_answers: payload })
+
+    const resultMap = {}
+    if (graded) {
+      graded.forEach(r => {
+        resultMap[r.question_id] = {
+          is_correct: r.is_correct,
+          correct_answer: r.correct_answer,
+          explanation: r.explanation
+        }
+      })
+    }
+    setResults(resultMap)
+    setGrading(false)
     setSubmitted(true)
 
-    if (user) {
+    if (!error && user) {
       const toRecord = quizQuestions
-        .map((q, i) => ({
+        .map(q => ({
           question_id: q.id,
-          correct: answers[i] === q.correct,
+          correct: resultMap[q.id]?.is_correct || false,
           isNew: !answeredIds.has(q.id)
         }))
         .filter(r => r.isNew)
@@ -155,12 +187,10 @@ export default function MCQ({ dark }) {
 
         const newPoints = toRecord.filter(r => r.correct).length
         if (newPoints > 0) {
-          // Instead of updating the points column directly from the
-          // frontend (unsafe), we call the award_points database function
-          // (see supabase_migration.sql), which checks the user is signed
-          // in and the amount is reasonable before adding points.
-          const { error } = await supabase.rpc('award_points', { p_amount: newPoints })
-          if (!error) {
+          // Points are still added through the award_points RPC — the
+          // server checked the answers, so this count can be trusted.
+          const { error: pointsError } = await supabase.rpc('award_points', { p_amount: newPoints })
+          if (!pointsError) {
             fetchProfile(user.id) // refresh the points shown in the header immediately
           }
         }
@@ -170,7 +200,7 @@ export default function MCQ({ dark }) {
   }
 
   function getScore() {
-    return quizQuestions.filter((q, i) => answers[i] === q.correct).length
+    return quizQuestions.filter(q => results[q.id]?.is_correct).length
   }
 
   const optionLabels = ['a', 'b', 'c', 'd']
@@ -220,6 +250,10 @@ export default function MCQ({ dark }) {
           </div>
         )}
 
+        {grading && (
+          <div style={{ textAlign: 'center', padding: 24, color: c.sub, fontSize: 14 }}>Grading...</div>
+        )}
+
         {submitted && (
           <div style={{
             background: percent >= 60 ? 'linear-gradient(135deg, #064e3b, #059669)' : 'linear-gradient(135deg, #7f1d1d, #dc2626)',
@@ -238,8 +272,9 @@ export default function MCQ({ dark }) {
           </div>
         )}
 
-        {quizQuestions.map((q, qi) => {
-          const isCorrect = answers[qi] === q.correct
+        {!grading && quizQuestions.map((q, qi) => {
+          const result = results[q.id]
+          const isCorrect = submitted && result?.is_correct
           return (
             <div key={qi} style={{
               background: c.card,
@@ -255,8 +290,8 @@ export default function MCQ({ dark }) {
                 const label = optionLabels[ai]
                 let bg = c.input, border = c.border, color = c.sub
                 if (answers[qi] === label && !submitted) { bg = '#1e3a5f'; border = '#38bdf8'; color = '#38bdf8' }
-                if (submitted && label === q.correct) { bg = '#064e3b'; border = '#4ade80'; color = '#4ade80' }
-                if (submitted && answers[qi] === label && label !== q.correct) { bg = '#7f1d1d'; border = '#f87171'; color = '#f87171' }
+                if (submitted && result && label === result.correct_answer) { bg = '#064e3b'; border = '#4ade80'; color = '#4ade80' }
+                if (submitted && result && answers[qi] === label && label !== result.correct_answer) { bg = '#7f1d1d'; border = '#f87171'; color = '#f87171' }
                 return (
                   <div key={ai} onClick={() => selectAnswer(qi, label)} style={{
                     background: bg, border: `1px solid ${border}`,
@@ -268,13 +303,13 @@ export default function MCQ({ dark }) {
                   </div>
                 )
               })}
-              {submitted && q.explanation && (
+              {submitted && result?.explanation && (
                 <div style={{
                   background: dark ? '#1e3a5f' : '#f0f9ff',
                   borderRadius: 10, padding: '10px 14px', marginTop: 10,
                   color: c.sub, fontSize: 12
                 }}>
-                  💡 {q.explanation}
+                  💡 {result.explanation}
                 </div>
               )}
             </div>
@@ -283,18 +318,20 @@ export default function MCQ({ dark }) {
 
         {!submitted && (
           <button onClick={submitQuiz}
-            disabled={Object.keys(answers).length < total}
+            disabled={Object.keys(answers).length < total || grading}
             style={{
-              background: Object.keys(answers).length < total ? (dark ? '#1e293b' : '#e2e8f0') : '#38bdf8',
-              color: Object.keys(answers).length < total ? c.sub : '#0f172a',
+              background: (Object.keys(answers).length < total || grading) ? (dark ? '#1e293b' : '#e2e8f0') : '#38bdf8',
+              color: (Object.keys(answers).length < total || grading) ? c.sub : '#0f172a',
               border: 'none', padding: '14px', borderRadius: 12,
-              cursor: Object.keys(answers).length < total ? 'not-allowed' : 'pointer',
+              cursor: (Object.keys(answers).length < total || grading) ? 'not-allowed' : 'pointer',
               fontWeight: 700, fontSize: 16, width: '100%',
               fontFamily: 'inherit', marginBottom: 20
             }}>
-            {Object.keys(answers).length < total
-              ? `Answer all questions (${Object.keys(answers).length}/${total})`
-              : '✅ Submit'}
+            {grading
+              ? 'Grading...'
+              : Object.keys(answers).length < total
+                ? `Answer all questions (${Object.keys(answers).length}/${total})`
+                : '✅ Submit'}
           </button>
         )}
       </div>

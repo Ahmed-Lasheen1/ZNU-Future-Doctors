@@ -173,7 +173,14 @@ export default function Admin({ dark }) {
   }
 
   async function fetchQuestions() {
-    const { data } = await supabase.from('questions').select('*').order('created_at', { ascending: false })
+    // Note: `correct` and `explanation` are intentionally excluded — those
+    // two columns are blocked at the database level for everyone (see
+    // supabase_secure_mcq.sql), including this admin panel. The question
+    // list below only ever needs the question text and its module.
+    const { data } = await supabase
+      .from('questions')
+      .select('id, question, module_id, subject_id, exam_type, exam_stage, created_at')
+      .order('created_at', { ascending: false })
     if (data) setQuestions(data)
   }
 
