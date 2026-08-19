@@ -4,14 +4,9 @@ import { supabase } from '../supabase'
 import { useAuth, useModules } from '../App'
 import { getTheme, inputStyle } from '../theme'
 import { fetchModulesSorted } from '../lib/modules'
+import { EXAM_STAGES as STAGE_META } from '../lib/examStages'
 
-const EXAM_STAGES = [
-  { value: 'tbl', label: '🟢 TBL' },
-  { value: 'end_module', label: '🔵 End Module' },
-  { value: 'practical', label: '🟠 Practical' },
-  { value: 'final', label: '🟣 Final' },
-  { value: 'general', label: '⚪ General' },
-]
+const EXAM_STAGES = STAGE_META.map(s => ({ value: s.value, label: `${s.emoji} ${s.title}` }))
 
 export default function Admin({ dark }) {
   const { user, profile } = useAuth()
@@ -42,7 +37,7 @@ export default function Admin({ dark }) {
   const [fileFileType, setFileFileType] = useState('pdf')
   const [fileModuleId, setFileModuleId] = useState('')
   const [fileSubjectId, setFileSubjectId] = useState('')
-  const [fileExamStage, setFileExamStage] = useState('general')
+  const [fileExamStage, setFileExamStage] = useState('tbl')
 
   const [schTitle, setSchTitle] = useState('')
   const [schUrl, setSchUrl] = useState('')
@@ -63,7 +58,7 @@ export default function Admin({ dark }) {
   const [qModuleId, setQModuleId] = useState('')
   const [qSubjectId, setQSubjectId] = useState('')
   const [qExamType, setQExamType] = useState('both')
-  const [qExamStage, setQExamStage] = useState('general')
+  const [qExamStage, setQExamStage] = useState('tbl')
   const [bulkMode, setBulkMode] = useState(false)
   const [bulkText, setBulkText] = useState('')
   const [bulkSaving, setBulkSaving] = useState(false)
@@ -71,7 +66,7 @@ export default function Admin({ dark }) {
   const [sumTitle, setSumTitle] = useState('')
   const [sumUrl, setSumUrl] = useState('')
   const [sumModuleId, setSumModuleId] = useState('')
-  const [sumExamStage, setSumExamStage] = useState('general')
+  const [sumExamStage, setSumExamStage] = useState('tbl')
 
   const [announcement, setAnnouncement] = useState('')
   const [announcementSaving, setAnnouncementSaving] = useState(false)

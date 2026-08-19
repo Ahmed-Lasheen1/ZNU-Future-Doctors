@@ -17,6 +17,12 @@ export default function StagePage({ dark }) {
   const meta = stageMeta(stage)
   const [presentFileTypes, setPresentFileTypes] = useState(new Set())
   const [loadError, setLoadError] = useState(false)
+  const [driveUrl, setDriveUrl] = useState('')
+
+  useEffect(() => {
+    supabase.from('site_settings').select('value').eq('key', 'drive_url').single()
+      .then(({ data }) => { if (data?.value) setDriveUrl(data.value) })
+  }, [])
 
   useEffect(() => {
     supabase.from('files').select('type').eq('module_id', moduleId).eq('exam_stage', stage)
@@ -50,21 +56,46 @@ export default function StagePage({ dark }) {
         <div style={{ color: c.sub, fontSize: 13 }}>{module.icon} {module.name}</div>
       </div>
 
-      {/* Study Materials — only what's tagged for this specific stage */}
-      {filteredFileCards.length > 0 && (
+      {/* Study Materials — only what's tagged for this specific stage, plus the university Drive link */}
+      {(filteredFileCards.length > 0 || driveUrl) && (
         <div style={{ marginBottom: 32 }}>
           <h2 style={{ color: c.sub, fontSize: 13, fontWeight: 700, letterSpacing: 2, marginBottom: 16, textTransform: 'uppercase' }}>
             📁 Study Materials
           </h2>
-          <div className="card-grid">
-            {filteredFileCards.map((card, i) => (
-              <AnimatedCard key={i} delay={i * 80} color={card.color} dark={dark}
-                onClick={() => navigate(`/files?type=${card.type}&module=${moduleId}`)}>
-                <div style={{ fontSize: 'clamp(28px, 3vw, 42px)', marginBottom: 8 }}>{card.emoji}</div>
-                <div style={{ color: c.text, fontSize: 'clamp(13px, 1.1vw, 16px)', fontWeight: 700 }}>{card.title}</div>
-              </AnimatedCard>
-            ))}
-          </div>
+          {filteredFileCards.length > 0 && (
+            <div className="card-grid">
+              {filteredFileCards.map((card, i) => (
+                <AnimatedCard key={i} delay={i * 80} color={card.color} dark={dark}
+                  onClick={() => navigate(`/files?type=${card.type}&module=${moduleId}`)}>
+                  <div style={{ fontSize: 'clamp(28px, 3vw, 42px)', marginBottom: 8 }}>{card.emoji}</div>
+                  <div style={{ color: c.text, fontSize: 'clamp(13px, 1.1vw, 16px)', fontWeight: 700 }}>{card.title}</div>
+                </AnimatedCard>
+              ))}
+            </div>
+          )}
+
+          {driveUrl && (
+            <a href={driveUrl} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }}>
+              <div style={{
+                marginTop: filteredFileCards.length > 0 ? 16 : 0,
+                background: c.card, border: `1px solid ${c.border}`,
+                borderRadius: 16, padding: '16px 20px',
+                display: 'flex', alignItems: 'center', gap: 14, transition: 'all 0.2s'
+              }}
+                onMouseEnter={e => e.currentTarget.style.borderColor = '#22c55e'}
+                onMouseLeave={e => e.currentTarget.style.borderColor = c.border}>
+                <div style={{
+                  background: '#22c55e20', border: '1px solid #22c55e40',
+                  borderRadius: 12, width: 44, height: 44,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0
+                }}>📁</div>
+                <div>
+                  <div style={{ color: c.text, fontWeight: 700, fontSize: 14 }}>University Google Drive</div>
+                  <div style={{ color: c.sub, fontSize: 12, marginTop: 2 }}>Lectures, recordings & more</div>
+                </div>
+              </div>
+            </a>
+          )}
         </div>
       )}
 

@@ -109,7 +109,7 @@ export default function Home({ dark, toggleTheme }) {
           )}
         </div>
 
-        <img src="/icon-512.png" alt="ZNU Future Doctors" style={{ width: 88, height: 88, marginBottom: 12, borderRadius: 22, filter: 'drop-shadow(0 0 20px rgba(56,189,248,0.5))' }} />
+        <img src="/icon-512.png" alt="ZNU Future Doctors" style={{ width: 88, height: 88, marginBottom: 12, borderRadius: '50%', objectFit: 'cover', filter: 'drop-shadow(0 0 20px rgba(56,189,248,0.5))' }} />
         <h1 style={{
           fontSize: 28, fontWeight: 900,
           background: 'linear-gradient(135deg, #38bdf8, #818cf8)',

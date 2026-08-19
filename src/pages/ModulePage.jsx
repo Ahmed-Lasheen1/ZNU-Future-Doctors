@@ -5,7 +5,7 @@ import { getTheme } from '../theme'
 import ErrorBanner from '../components/ErrorBanner'
 import AnimatedCard from '../components/AnimatedCard'
 import { useModules } from '../App'
-import { EXAM_STAGE_CARDS } from '../lib/examStages'
+import { EXAM_STAGES } from '../lib/examStages'
 import { FILE_CARDS } from '../lib/fileCards'
 
 export default function ModulePage({ dark }) {
@@ -74,7 +74,7 @@ export default function ModulePage({ dark }) {
           🎯 Exam Stage
         </h2>
         <div className="card-grid">
-          {EXAM_STAGE_CARDS.map((stage, i) => (
+          {EXAM_STAGES.map((stage, i) => (
             <AnimatedCard key={stage.value} delay={i * 80} color={stage.color} dark={dark}
               onClick={() => navigate(`/module/${moduleId}/stage/${stage.value}`)}>
               <div style={{ fontSize: 'clamp(28px, 3vw, 42px)', marginBottom: 8 }}>{stage.emoji}</div>

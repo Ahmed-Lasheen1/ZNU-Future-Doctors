@@ -123,7 +123,7 @@ function SmartHeader({ dark, toggleTheme }) {
         }}>🔍</button>
       </div>
 
-      <span style={{ color: dark ? '#38bdf8' : '#0ea5e9', fontWeight: 900, fontSize: 16 }}>ZNU Future Doctors</span>
+      <span className="smart-header-title" style={{ color: dark ? '#38bdf8' : '#0ea5e9', fontWeight: 900, fontSize: 16 }}>ZNU Future Doctors</span>
 
       <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
         <button onClick={toggleTheme} style={{

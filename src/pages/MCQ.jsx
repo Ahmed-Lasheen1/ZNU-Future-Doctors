@@ -4,14 +4,11 @@ import { supabase } from '../supabase'
 import { useAuth, useModules } from '../App'
 import { getTheme } from '../theme'
 import ErrorBanner from '../components/ErrorBanner'
+import { EXAM_STAGES as STAGE_META } from '../lib/examStages'
 
 const EXAM_STAGES = [
   { value: 'all', label: 'All' },
-  { value: 'tbl', label: '🟢 TBL' },
-  { value: 'end_module', label: '🔵 End Module' },
-  { value: 'practical', label: '🟠 Practical' },
-  { value: 'final', label: '🟣 Final' },
-  { value: 'general', label: '⚪ General' },
+  ...STAGE_META.map(s => ({ value: s.value, label: `${s.emoji} ${s.title}` }))
 ]
 
 export default function MCQ({ dark }) {
