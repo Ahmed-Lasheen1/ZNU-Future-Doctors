@@ -84,7 +84,7 @@ export default function Auth({ dark }) {
         borderRadius: 20, padding: 32, width: '90%', maxWidth: 400
       }}>
         <div style={{ textAlign: 'center', marginBottom: 24 }}>
-          <img src="/icon-512.png" alt="ZNU Future Doctors" style={{ width: 64, height: 64, marginBottom: 8, borderRadius: 16 }} />
+          <img src={dark ? '/icon-512.png' : '/icon-512-light.png'} alt="ZNU Future Doctors" style={{ width: 64, height: 64, marginBottom: 8, borderRadius: '50%', objectFit: 'cover' }} />
           <h2 style={{ color: '#38bdf8', fontSize: 22, fontWeight: 900, marginBottom: 4 }}>
             ZNU Future Doctors
           </h2>
