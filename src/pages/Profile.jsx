@@ -4,8 +4,9 @@ import { supabase } from '../supabase'
 import { useAuth } from '../App'
 import { getTheme, inputStyle } from '../theme'
 import { containsProfanity } from '../lib/moderation'
+import InlineMessage from '../components/InlineMessage'
 
-function EditProfileForm({ profile, dark, onUpdated }) {
+function EditProfileForm({ profile, dark, onUpdated, onProfileRefresh }) {
   const c = getTheme(dark)
   const inStyle = inputStyle(c)
 
@@ -24,7 +25,11 @@ function EditProfileForm({ profile, dark, onUpdated }) {
     setSaving(false)
     if (error) { setMsg('❌ ' + error.message); return }
     setMsg('✅ Name updated!')
+    // Refresh both this page's local copy AND the shared AuthContext
+    // profile — without the second call, the header and Home page kept
+    // showing the old name until the user signed out and back in.
     onUpdated()
+    onProfileRefresh()
   }
 
   async function savePassword() {
@@ -44,14 +49,7 @@ function EditProfileForm({ profile, dark, onUpdated }) {
     <div style={{ background: c.card, border: `1px solid ${c.border}`, borderRadius: 16, padding: 20, marginBottom: 16 }}>
       <h3 style={{ color: '#38bdf8', marginBottom: 16, fontSize: 15 }}>✏️ Edit Profile</h3>
 
-      {msg && (
-        <div style={{
-          background: msg.includes('✅') ? '#22c55e20' : '#ef444420',
-          border: `1px solid ${msg.includes('✅') ? '#22c55e40' : '#ef444440'}`,
-          borderRadius: 10, padding: '10px 14px', marginBottom: 16,
-          color: msg.includes('✅') ? '#22c55e' : '#ef4444', fontSize: 13
-        }}>{msg}</div>
-      )}
+      <InlineMessage message={msg} />
 
       <label style={{ color: c.sub, fontSize: 12, display: 'block', marginBottom: 4 }}>Full Name</label>
       <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
@@ -81,7 +79,7 @@ function EditProfileForm({ profile, dark, onUpdated }) {
 }
 
 export default function Profile({ dark }) {
-  const { user, signOut } = useAuth()
+  const { user, signOut, fetchProfile } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const [profile, setProfile] = useState(null)
@@ -216,7 +214,12 @@ export default function Profile({ dark }) {
               </div>
 
               {editing && (
-                <EditProfileForm profile={profile} dark={dark} onUpdated={fetchData} />
+                <EditProfileForm
+                  profile={profile}
+                  dark={dark}
+                  onUpdated={fetchData}
+                  onProfileRefresh={() => fetchProfile(user.id)}
+                />
               )}
 
               <button onClick={async () => { await signOut(); navigate('/') }} style={{

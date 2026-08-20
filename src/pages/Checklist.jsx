@@ -4,6 +4,7 @@ import { useAuth, useModules } from '../App'
 import { useNavigate } from 'react-router-dom'
 import { getTheme, inputStyle } from '../theme'
 import ErrorBanner from '../components/ErrorBanner'
+import ModuleTabs from '../components/ModuleTabs'
 
 export default function Checklist({ dark }) {
   const { user } = useAuth()
@@ -45,7 +46,10 @@ export default function Checklist({ dark }) {
       }]).select().single()
       if (data) setTasks(prev => [...prev, data])
     } else {
-      const task = { id: Date.now().toString(), text: newTask.trim(), done: false, module_id: activeModule, deadline: newDeadline || null }
+      // crypto.randomUUID() instead of Date.now().toString() — avoids any
+      // theoretical id collision if "Add" is pressed twice in the same
+      // millisecond, and matches the format real backend ids use.
+      const task = { id: crypto.randomUUID(), text: newTask.trim(), done: false, module_id: activeModule, deadline: newDeadline || null }
       const updated = [...tasks, task]
       setTasks(updated)
       localStorage.setItem(`checklist_${activeModule}`, JSON.stringify(updated))
@@ -114,20 +118,7 @@ export default function Checklist({ dark }) {
       )}
 
       {/* Module Tabs */}
-      <div style={{ display: 'flex', gap: 8, overflowX: 'auto', marginBottom: 20, paddingBottom: 4 }}>
-        {modules.map(mod => (
-          <button key={mod.id} onClick={() => setActiveModule(mod.id)} style={{
-            padding: '8px 16px', borderRadius: 10, whiteSpace: 'nowrap',
-            border: `2px solid ${activeModule === mod.id ? mod.color : c.border}`,
-            background: activeModule === mod.id ? `${mod.color}20` : 'transparent',
-            color: activeModule === mod.id ? mod.color : c.sub,
-            cursor: 'pointer', fontWeight: 700, fontSize: 13, fontFamily: 'inherit'
-          }}>
-            {mod.icon} {mod.name}
-            {mod.status === 'completed' && <span style={{ fontSize: 10, marginLeft: 4 }}>✓</span>}
-          </button>
-        ))}
-      </div>
+      <ModuleTabs modules={modules} activeModule={activeModule} onSelect={setActiveModule} dark={dark} />
 
       {/* Progress */}
       {totalTasks > 0 && (

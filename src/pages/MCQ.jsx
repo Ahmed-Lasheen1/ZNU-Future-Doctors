@@ -4,6 +4,7 @@ import { supabase } from '../supabase'
 import { useAuth, useModules } from '../App'
 import { getTheme } from '../theme'
 import ErrorBanner from '../components/ErrorBanner'
+import ModuleTabs from '../components/ModuleTabs'
 import { EXAM_STAGES as STAGE_META } from '../lib/examStages'
 
 const EXAM_STAGES = [
@@ -343,20 +344,12 @@ export default function MCQ({ dark }) {
       {(loadError || modulesError) && <ErrorBanner />}
       <h1 style={{ color: '#f472b6', textAlign: 'center', marginBottom: 20 }}>🧪 MCQ Bank</h1>
 
-      <div style={{ display: 'flex', gap: 8, overflowX: 'auto', marginBottom: 16, paddingBottom: 4 }}>
-        {modules.map(mod => (
-          <button key={mod.id} onClick={() => { setActiveModule(mod.id); setActiveSubject('all') }} style={{
-            padding: '8px 16px', borderRadius: 10, whiteSpace: 'nowrap',
-            border: `2px solid ${activeModule === mod.id ? mod.color : c.border}`,
-            background: activeModule === mod.id ? `${mod.color}20` : 'transparent',
-            color: activeModule === mod.id ? mod.color : c.sub,
-            cursor: 'pointer', fontWeight: 700, fontSize: 13, fontFamily: 'inherit'
-          }}>
-            {mod.icon} {mod.name}
-            {mod.status === 'completed' && <span style={{ fontSize: 10, marginLeft: 4, color: c.sub }}>✓</span>}
-          </button>
-        ))}
-      </div>
+      <ModuleTabs
+        modules={modules}
+        activeModule={activeModule}
+        onSelect={(id) => { setActiveModule(id); setActiveSubject('all') }}
+        dark={dark}
+      />
 
       <div style={{ display: 'flex', gap: 8, overflowX: 'auto', marginBottom: 16, paddingBottom: 4 }}>
         {EXAM_STAGES.map(stage => (

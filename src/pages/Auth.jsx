@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../supabase'
 import { getTheme, inputStyle } from '../theme'
 import { containsProfanity } from '../lib/moderation'
+import InlineMessage from '../components/InlineMessage'
 
 export default function Auth({ dark }) {
   const [email, setEmail] = useState('')
@@ -93,14 +94,7 @@ export default function Auth({ dark }) {
           </p>
         </div>
 
-        {msg && (
-          <div style={{
-            background: msg.includes('✅') ? '#22c55e20' : '#ef444420',
-            border: `1px solid ${msg.includes('✅') ? '#22c55e40' : '#ef444440'}`,
-            borderRadius: 10, padding: '10px 14px', marginBottom: 16,
-            color: msg.includes('✅') ? '#22c55e' : '#ef4444', fontSize: 13
-          }}>{msg}</div>
-        )}
+        <InlineMessage message={msg} />
 
         {forgotMode ? (
           <>

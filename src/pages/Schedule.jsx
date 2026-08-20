@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../supabase'
 import { getTheme } from '../theme'
 import ErrorBanner from '../components/ErrorBanner'
+import ModuleTabs from '../components/ModuleTabs'
 import { useModules } from '../App'
 
 export default function Schedule({ dark }) {
@@ -78,20 +79,7 @@ export default function Schedule({ dark }) {
         📅 Schedules
       </h1>
 
-      <div style={{ display: 'flex', gap: 8, overflowX: 'auto', marginBottom: 16, paddingBottom: 4 }}>
-        {modules.map(mod => (
-          <button key={mod.id} onClick={() => setActiveModule(mod.id)} style={{
-            padding: '8px 16px', borderRadius: 10, whiteSpace: 'nowrap',
-            border: `2px solid ${activeModule === mod.id ? mod.color : c.border}`,
-            background: activeModule === mod.id ? `${mod.color}20` : 'transparent',
-            color: activeModule === mod.id ? mod.color : c.sub,
-            cursor: 'pointer', fontWeight: 700, fontSize: 13, fontFamily: 'inherit'
-          }}>
-            {mod.icon} {mod.name}
-            {mod.status === 'completed' && <span style={{ fontSize: 10, marginLeft: 4, color: c.sub }}>✓</span>}
-          </button>
-        ))}
-      </div>
+      <ModuleTabs modules={modules} activeModule={activeModule} onSelect={setActiveModule} dark={dark} />
 
       <div style={{ display: 'flex', gap: 10, marginBottom: 24 }}>
         {['study', 'exam'].map(type => (

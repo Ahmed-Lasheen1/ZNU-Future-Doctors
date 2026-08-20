@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useLocation } from 'react-router-dom'
 import { supabase } from '../supabase'
-import { getTheme } from '../theme'
+import { getTheme, backBtnStyle } from '../theme'
 import ErrorBanner from '../components/ErrorBanner'
 import { useModules } from '../App'
 import { EXAM_STAGES as STAGE_META } from '../lib/examStages'
@@ -105,7 +105,7 @@ function ModuleSummaries({ mod, onBack, dark, initialStage }) {
         padding: '12px 20px',
         display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0
       }}>
-        <button onClick={() => setSelected(null)} style={backBtn}>← Back</button>
+        <button onClick={() => setSelected(null)} style={backBtnStyle()}>← Back</button>
         <div style={{ flex: 1, textAlign: 'center' }}>
           <div style={{ fontSize: 11, color: '#7eb8ff', letterSpacing: 2, textTransform: 'uppercase' }}>{mod.name}</div>
           <div style={{ fontSize: 16, fontWeight: 900, color: mod.color }}>{selected.title}</div>
@@ -119,7 +119,7 @@ function ModuleSummaries({ mod, onBack, dark, initialStage }) {
   return (
     <div className="page-container" style={{ padding: '24px 16px' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
-        <button onClick={onBack} style={backBtn}>← Back</button>
+        <button onClick={onBack} style={backBtnStyle()}>← Back</button>
         <h2 style={{ color: mod.color, flex: 1 }}>{mod.icon} {mod.name}</h2>
       </div>
 
@@ -199,5 +199,3 @@ export default function Summaries({ dark }) {
   if (selected) return <ModuleSummaries mod={selected} onBack={() => setSelected(null)} dark={dark} initialStage={initialStage} />
   return <SummariesHome modules={modules} onSelect={setSelected} dark={dark} />
 }
-
-const backBtn = { background: 'rgba(255,255,255,0.08)', border: '2px solid rgba(255,255,255,0.15)', borderRadius: 10, padding: '6px 14px', color: '#94a3b8', cursor: 'pointer', fontSize: 12, fontWeight: 700, fontFamily: 'inherit' }

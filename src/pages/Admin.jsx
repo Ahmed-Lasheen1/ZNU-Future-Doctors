@@ -5,8 +5,15 @@ import { useAuth, useModules } from '../App'
 import { getTheme, inputStyle } from '../theme'
 import { fetchModulesSorted } from '../lib/modules'
 import { EXAM_STAGES as STAGE_META } from '../lib/examStages'
+import InlineMessage from '../components/InlineMessage'
 
 const EXAM_STAGES = STAGE_META.map(s => ({ value: s.value, label: `${s.emoji} ${s.title}` }))
+
+// Cap on list queries below (files/schedules/questions/summaries) so the
+// admin panel stays fast as content grows. 200 is far more than the app
+// has today — bump this if the module ever genuinely needs more rows
+// listed here at once.
+const LIST_LIMIT = 200
 
 export default function Admin({ dark }) {
   const { user, profile } = useAuth()
@@ -163,12 +170,14 @@ export default function Admin({ dark }) {
   }
 
   async function fetchFiles() {
-    const { data } = await supabase.from('files').select('*').order('created_at', { ascending: false })
+    // Newest first, capped at LIST_LIMIT — keeps the admin panel fast as
+    // the file library grows instead of pulling every row every time.
+    const { data } = await supabase.from('files').select('*').order('created_at', { ascending: false }).limit(LIST_LIMIT)
     if (data) setFiles(data)
   }
 
   async function fetchSchedules() {
-    const { data } = await supabase.from('schedules').select('*').order('created_at', { ascending: false })
+    const { data } = await supabase.from('schedules').select('*').order('created_at', { ascending: false }).limit(LIST_LIMIT)
     if (data) setSchedules(data)
   }
 
@@ -181,11 +190,12 @@ export default function Admin({ dark }) {
       .from('questions')
       .select('id, question, module_id, subject_id, exam_type, exam_stage, created_at')
       .order('created_at', { ascending: false })
+      .limit(LIST_LIMIT)
     if (data) setQuestions(data)
   }
 
   async function fetchSummaries() {
-    const { data } = await supabase.from('summaries').select('*').order('created_at', { ascending: false })
+    const { data } = await supabase.from('summaries').select('*').order('created_at', { ascending: false }).limit(LIST_LIMIT)
     if (data) setSummaries(data)
   }
 
@@ -376,14 +386,7 @@ export default function Admin({ dark }) {
     <div className="page-container" style={{ padding: '20px', maxWidth: '650px' }}>
       <h2 style={{ color: '#38bdf8', textAlign: 'center', marginBottom: 20 }}>⚙️ Admin Panel</h2>
 
-      {msg && (
-        <div style={{
-          background: msg.includes('✅') ? '#22c55e20' : '#ef444420',
-          border: `1px solid ${msg.includes('✅') ? '#22c55e40' : '#ef444440'}`,
-          borderRadius: 12, padding: '12px 16px', marginBottom: 16,
-          color: msg.includes('✅') ? '#22c55e' : '#ef4444', textAlign: 'center'
-        }}>{msg}</div>
-      )}
+      <InlineMessage message={msg} />
 
       <div style={{ display: 'flex', gap: 8, marginBottom: 20, overflowX: 'auto', paddingBottom: 8 }}>
         {tabs.map(t => (

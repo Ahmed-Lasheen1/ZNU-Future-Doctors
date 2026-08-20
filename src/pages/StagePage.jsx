@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../supabase'
-import { getTheme } from '../theme'
+import { getTheme, backBtnStyle } from '../theme'
 import ErrorBanner from '../components/ErrorBanner'
 import AnimatedCard from '../components/AnimatedCard'
 import { useModules } from '../App'
@@ -57,7 +57,7 @@ export default function StagePage({ dark }) {
         padding: '12px 20px',
         display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0
       }}>
-        <button onClick={() => setSelectedSummary(null)} style={backBtn}>← Back</button>
+        <button onClick={() => setSelectedSummary(null)} style={backBtnStyle()}>← Back</button>
         <div style={{ flex: 1, textAlign: 'center' }}>
           <div style={{ fontSize: 11, color: '#7eb8ff', letterSpacing: 2, textTransform: 'uppercase' }}>{module.name} · {meta.title}</div>
           <div style={{ fontSize: 16, fontWeight: 900, color: module.color }}>{selectedSummary.title}</div>
@@ -84,7 +84,7 @@ export default function StagePage({ dark }) {
   return (
     <div className="page-container" style={{ padding: '24px 16px 100px' }}>
       <div style={{ marginBottom: 8 }}>
-        <button onClick={() => navigate(`/module/${moduleId}`)} style={backBtn}>← Back</button>
+        <button onClick={() => navigate(`/module/${moduleId}`)} style={backBtnStyle()}>← Back</button>
       </div>
 
       <div style={{ textAlign: 'center', padding: '10px 0 30px' }}>
@@ -167,5 +167,3 @@ export default function StagePage({ dark }) {
     </div>
   )
 }
-
-const backBtn = { background: 'rgba(255,255,255,0.08)', border: '2px solid rgba(255,255,255,0.15)', borderRadius: 10, padding: '6px 14px', color: '#94a3b8', cursor: 'pointer', fontSize: 12, fontWeight: 700, fontFamily: 'inherit' }

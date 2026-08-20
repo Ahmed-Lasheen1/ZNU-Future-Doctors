@@ -43,3 +43,16 @@ export function buttonStyle(theme, color = theme.blue) {
     color: '#0f172a', fontFamily: 'inherit', fontSize: 14
   }
 }
+
+// Shared "← Back" pill button used at the top of full-screen viewer
+// pages (Summaries, StagePage). Previously this exact style object was
+// copy-pasted in both files — now it lives here once.
+export function backBtnStyle() {
+  return {
+    background: 'rgba(255,255,255,0.08)',
+    border: '2px solid rgba(255,255,255,0.15)',
+    borderRadius: 10, padding: '6px 14px',
+    color: '#94a3b8', cursor: 'pointer',
+    fontSize: 12, fontWeight: 700, fontFamily: 'inherit'
+  }
+}
