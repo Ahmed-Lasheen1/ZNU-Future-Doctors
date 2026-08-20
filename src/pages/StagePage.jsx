@@ -16,6 +16,8 @@ export default function StagePage({ dark }) {
   const module = modules.find(m => m.id === moduleId) || null
   const meta = stageMeta(stage)
   const [presentFileTypes, setPresentFileTypes] = useState(new Set())
+  const [summaries, setSummaries] = useState([])
+  const [selectedSummary, setSelectedSummary] = useState(null)
   const [loadError, setLoadError] = useState(false)
   const [driveUrl, setDriveUrl] = useState('')
 
@@ -30,6 +32,11 @@ export default function StagePage({ dark }) {
         if (data) setPresentFileTypes(new Set(data.map(f => f.type)))
         if (error) setLoadError(true)
       })
+    supabase.from('summaries').select('*').eq('module_id', moduleId).eq('exam_stage', stage).order('created_at')
+      .then(({ data, error }) => {
+        if (data) setSummaries(data)
+        if (error) setLoadError(true)
+      })
   }, [moduleId, stage])
 
   if (!module) return (
@@ -42,7 +49,37 @@ export default function StagePage({ dark }) {
     </div>
   )
 
+  if (selectedSummary) return (
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
+      <div style={{
+        background: 'linear-gradient(135deg, #1a2a4a, #0f1e35)',
+        borderBottom: '2px solid #2a4a7a',
+        padding: '12px 20px',
+        display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0
+      }}>
+        <button onClick={() => setSelectedSummary(null)} style={backBtn}>← Back</button>
+        <div style={{ flex: 1, textAlign: 'center' }}>
+          <div style={{ fontSize: 11, color: '#7eb8ff', letterSpacing: 2, textTransform: 'uppercase' }}>{module.name} · {meta.title}</div>
+          <div style={{ fontSize: 16, fontWeight: 900, color: module.color }}>{selectedSummary.title}</div>
+        </div>
+        <div style={{ width: 80 }} />
+      </div>
+      <iframe src={selectedSummary.url} style={{ flex: 1, border: 'none', width: '100%' }} title={selectedSummary.title} />
+    </div>
+  )
+
   const filteredFileCards = FILE_CARDS.filter(card => presentFileTypes.has(card.type))
+
+  function openSummaries() {
+    // One summary for this stage → open it directly, no extra click.
+    // Zero or several → send to the picker page (it shows the empty
+    // state itself if there's nothing there yet).
+    if (summaries.length === 1) {
+      setSelectedSummary(summaries[0])
+    } else {
+      navigate(`/summaries?module=${moduleId}&stage=${stage}`)
+    }
+  }
 
   return (
     <div className="page-container" style={{ padding: '24px 16px 100px' }}>
@@ -99,17 +136,19 @@ export default function StagePage({ dark }) {
         </div>
       )}
 
-      {/* Smart Summaries — single card, same treatment as Practice.
-          Opens the summaries page pre-filtered to this exact stage. */}
+      {/* Smart Summaries — opens the summary directly when there's only
+          one (the common case). Falls back to the picker page only when
+          there's more than one to choose from. */}
       <div style={{ marginBottom: 32 }}>
         <h2 style={{ color: c.sub, fontSize: 13, fontWeight: 700, letterSpacing: 2, marginBottom: 16, textTransform: 'uppercase' }}>
           📝 Smart Summaries
         </h2>
-        <AnimatedCard delay={200} color='#34d399' dark={dark}
-          onClick={() => navigate(`/summaries?module=${moduleId}&stage=${stage}`)}>
+        <AnimatedCard delay={200} color='#34d399' dark={dark} onClick={openSummaries}>
           <div style={{ fontSize: 30, marginBottom: 8 }}>📝</div>
           <div style={{ color: c.text, fontSize: 13, fontWeight: 700 }}>Summaries</div>
-          <div style={{ color: c.sub, fontSize: 12, marginTop: 4 }}>{meta.title} summaries</div>
+          <div style={{ color: c.sub, fontSize: 12, marginTop: 4 }}>
+            {summaries.length === 0 ? `${meta.title} summaries` : summaries.length === 1 ? summaries[0].title : `${summaries.length} available`}
+          </div>
         </AnimatedCard>
       </div>
 
