@@ -3,12 +3,14 @@ import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation } from
 import { supabase } from './supabase'
 import { getTheme } from './theme'
 import { fetchModulesSorted } from './lib/modules'
+import ToastProvider from './components/ToastProvider'
 import Home from './pages/Home'
 const Checklist = lazy(() => import('./pages/Checklist'))
 const Schedule = lazy(() => import('./pages/Schedule'))
 const FilesPage = lazy(() => import('./pages/FilesPage'))
 const Admin = lazy(() => import('./pages/Admin'))
 const MCQ = lazy(() => import('./pages/MCQ'))
+const Review = lazy(() => import('./pages/Review'))
 const Summaries = lazy(() => import('./pages/Summaries'))
 const ModulePage = lazy(() => import('./pages/ModulePage'))
 const StagePage = lazy(() => import('./pages/StagePage'))
@@ -49,6 +51,7 @@ const menuLinks = [
   { to: '/', label: '🏠 Home' },
   { to: '/schedule', label: '📅 Schedules' },
   { to: '/checklist', label: '🎯 Checklist' },
+  { to: '/review', label: '📚 Review' },
   { to: '/anon-questions', label: '💬 Anonymous Q&A' },
   { to: '/profile?tab=leaderboard', label: '🏆 Leaderboard' },
 ]
@@ -217,6 +220,7 @@ export default function App() {
     <ThemeContext.Provider value={{ dark }}>
       <AuthContext.Provider value={{ user, signOut, profile, fetchProfile }}>
         <ModulesContext.Provider value={{ modules, modulesLoaded, modulesError, refreshModules: loadModules }}>
+        <ToastProvider>
         <Router>
           <div style={{
             background: bg,
@@ -238,6 +242,7 @@ export default function App() {
                   <Route path="/summaries" element={<Summaries dark={dark} />} />
                   <Route path="/admin" element={<Admin dark={dark} />} />
                   <Route path="/mcq" element={<MCQ dark={dark} />} />
+                  <Route path="/review" element={<Review dark={dark} />} />
                   <Route path="/auth" element={<Auth dark={dark} />} />
                   <Route path="/reset-password" element={<ResetPassword dark={dark} />} />
                   <Route path="/profile" element={<Profile dark={dark} />} />
@@ -250,6 +255,7 @@ export default function App() {
             <Footer dark={dark} />
           </div>
         </Router>
+        </ToastProvider>
         </ModulesContext.Provider>
       </AuthContext.Provider>
     </ThemeContext.Provider>

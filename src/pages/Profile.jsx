@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { supabase } from '../supabase'
-import { useAuth } from '../App'
+import { useAuth, useModules } from '../App'
 import { getTheme, inputStyle } from '../theme'
 import { containsProfanity } from '../lib/moderation'
 import InlineMessage from '../components/InlineMessage'
+import { getGuestHistory } from '../lib/reviewStorage'
 
 function EditProfileForm({ profile, dark, onUpdated, onProfileRefresh }) {
   const c = getTheme(dark)
@@ -80,6 +81,7 @@ function EditProfileForm({ profile, dark, onUpdated, onProfileRefresh }) {
 
 export default function Profile({ dark }) {
   const { user, signOut, fetchProfile } = useAuth()
+  const { modules } = useModules()
   const navigate = useNavigate()
   const location = useLocation()
   const [profile, setProfile] = useState(null)
@@ -90,12 +92,18 @@ export default function Profile({ dark }) {
   })
   const [loading, setLoading] = useState(true)
   const [editing, setEditing] = useState(false)
+  const [history, setHistory] = useState([])
+  const [historyLoading, setHistoryLoading] = useState(true)
 
   const c = getTheme(dark)
 
   useEffect(() => {
     fetchData()
   }, [user])
+
+  useEffect(() => {
+    if (tab === 'history') loadHistory()
+  }, [tab, user])
 
   async function fetchData() {
     setLoading(true)
@@ -112,6 +120,24 @@ export default function Profile({ dark }) {
     setLoading(false)
   }
 
+  async function loadHistory() {
+    setHistoryLoading(true)
+    if (user) {
+      const { data } = await supabase
+        .from('exam_history')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('completed_at', { ascending: false })
+        .limit(50)
+      setHistory(data || [])
+    } else {
+      // Guest: same idea, just read from this device's localStorage
+      // instead of Supabase (see src/lib/reviewStorage.js).
+      setHistory(getGuestHistory())
+    }
+    setHistoryLoading(false)
+  }
+
   const medalColors = ['#f59e0b', '#94a3b8', '#cd7c2f']
 
   return (
@@ -119,7 +145,7 @@ export default function Profile({ dark }) {
 
       {/* Tabs */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 24 }}>
-        {['profile', 'leaderboard'].map(t => (
+        {['profile', 'leaderboard', 'history'].map(t => (
           <button key={t} onClick={() => setTab(t)} style={{
             flex: 1, padding: '10px', borderRadius: 10, fontFamily: 'inherit',
             border: `2px solid ${tab === t ? '#38bdf8' : c.border}`,
@@ -127,7 +153,7 @@ export default function Profile({ dark }) {
             color: tab === t ? '#38bdf8' : c.sub,
             cursor: 'pointer', fontWeight: 700, fontSize: 13
           }}>
-            {t === 'profile' ? '👤 My Profile' : '🏆 Leaderboard'}
+            {t === 'profile' ? '👤 Profile' : t === 'leaderboard' ? '🏆 Leaderboard' : '🕘 History'}
           </button>
         ))}
       </div>
@@ -287,6 +313,60 @@ export default function Profile({ dark }) {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {tab === 'history' && (
+        <div>
+          <h2 style={{ color: '#f472b6', textAlign: 'center', marginBottom: 20 }}>
+            🕘 Exam History
+          </h2>
+
+          {!user && (
+            <div style={{
+              background: '#38bdf820', border: '1px solid #38bdf840', borderRadius: 12,
+              padding: '10px 16px', marginBottom: 16, textAlign: 'center', fontSize: 13, color: '#38bdf8'
+            }}>
+              💡 Showing history saved on this device only.{' '}
+              <span style={{ cursor: 'pointer', textDecoration: 'underline' }} onClick={() => navigate('/auth')}>Sign in</span>{' '}
+              to keep it across devices.
+            </div>
+          )}
+
+          {historyLoading && <p style={{ color: c.sub, textAlign: 'center' }}>Loading...</p>}
+
+          {!historyLoading && history.length === 0 && (
+            <div style={{ background: c.card, border: `1px solid ${c.border}`, borderRadius: 16, padding: 40, textAlign: 'center' }}>
+              <p style={{ color: c.sub }}>No exams attempted yet 📚</p>
+            </div>
+          )}
+
+          {!historyLoading && history.map((h, i) => {
+            const mod = modules.find(m => m.id === h.module_id)
+            const completedAt = h.completed_at
+            return (
+              <div key={i} style={{
+                background: c.card, border: `1px solid ${c.border}`, borderRadius: 14,
+                padding: '14px 18px', marginBottom: 10, display: 'flex',
+                justifyContent: 'space-between', alignItems: 'center', gap: 12
+              }}>
+                <div>
+                  <div style={{ color: c.text, fontWeight: 700, fontSize: 14 }}>
+                    {mod ? `${mod.icon} ${mod.name}` : 'Module'} · {h.quiz_type === 'mock' ? '📝 Mock' : '🧪 Practice'}
+                  </div>
+                  <div style={{ color: c.sub, fontSize: 12, marginTop: 2 }}>
+                    {new Date(completedAt).toLocaleDateString()} · {h.correct}/{h.total} correct
+                    {h.time_sec ? ` · ${Math.floor(h.time_sec / 60)}m ${h.time_sec % 60}s` : ''}
+                  </div>
+                </div>
+                <div style={{
+                  background: h.score >= 60 ? '#22c55e20' : '#ef444420',
+                  color: h.score >= 60 ? '#22c55e' : '#ef4444',
+                  borderRadius: 20, padding: '4px 14px', fontWeight: 900, fontSize: 14, flexShrink: 0
+                }}>{h.score}%</div>
+              </div>
+            )
+          })}
         </div>
       )}
     </div>

@@ -1,21 +1,34 @@
 import { useState, useEffect, useRef } from 'react'
-import { useLocation } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { supabase } from '../supabase'
 import { useAuth, useModules } from '../App'
 import { getTheme } from '../theme'
+import { useToast } from '../components/ToastProvider'
 import ErrorBanner from '../components/ErrorBanner'
 import ModuleTabs from '../components/ModuleTabs'
+import QuestionPalette from '../components/QuestionPalette'
+import ScoreRing from '../components/ScoreRing'
 import { EXAM_STAGES as STAGE_META } from '../lib/examStages'
+import {
+  getGuestFlags, toggleGuestFlag,
+  saveGuestIncorrect, enrichGuestFlagsWithResults,
+  addGuestHistory,
+  getGuestActiveExam, saveGuestActiveExam, clearGuestActiveExam
+} from '../lib/reviewStorage'
 
 const EXAM_STAGES = [
   { value: 'all', label: 'All' },
   ...STAGE_META.map(s => ({ value: s.value, label: `${s.emoji} ${s.title}` }))
 ]
 
+const MOCK_MINUTES = 36
+
 export default function MCQ({ dark }) {
   const { user, fetchProfile } = useAuth()
   const { modules, modulesLoaded, modulesError } = useModules()
   const location = useLocation()
+  const navigate = useNavigate()
+  const showToast = useToast()
   const [subjects, setSubjects] = useState([])
   const [questions, setQuestions] = useState([])
   const [answeredIds, setAnsweredIds] = useState(new Set())
@@ -36,7 +49,10 @@ export default function MCQ({ dark }) {
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState(false)
   const [timeLeft, setTimeLeft] = useState(0)
+  const [flaggedIds, setFlaggedIds] = useState(new Set())
+  const [resumeData, setResumeData] = useState(null)
   const timerRef = useRef(null)
+  const quizStartedAtRef = useRef(null)
 
   const c = getTheme(dark)
 
@@ -59,6 +75,53 @@ export default function MCQ({ dark }) {
       setActiveModule(active ? active.id : modules[0].id)
     }
   }, [modulesLoaded, modules])
+
+  // ── Retry mode: arriving here from the Review page with a specific
+  // set of questions to answer again (real grading, not read-only). ──────
+  useEffect(() => {
+    if (location.state?.retryQuestions?.length) {
+      startRetryQuiz(location.state.retryQuestions)
+      // Clear the router state so refreshing this page (or navigating
+      // back to it later) doesn't restart the same retry quiz.
+      navigate(location.pathname, { replace: true, state: {} })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.state])
+
+  // ── Paused-exam check (Resume) ─────────────────────────────────────────
+  // Runs whenever we're back on the module list (not mid-quiz) or the
+  // auth state settles, so signing in mid-session also picks up a
+  // paused exam saved under the account.
+  useEffect(() => {
+    if (quizMode) return
+    let cancelled = false
+    loadSavedActiveExam().then(saved => { if (!cancelled) setResumeData(saved) })
+    return () => { cancelled = true }
+  }, [user, quizMode])
+
+  // Persist quiz progress as it changes, so it can be resumed later.
+  // (Retry quizzes are short and re-derivable from the Review page, so
+  // there's no need to save/resume those specifically.)
+  useEffect(() => {
+    if (!quizMode || submitted || quizMode === 'retry') return
+    persistActiveExam({
+      activeModule, quizMode, quizQuestions, answers, startedAt: quizStartedAtRef.current
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [quizMode, quizQuestions, answers, submitted])
+
+  // Auto-submit exactly once when the mock-exam timer reaches zero.
+  // Using an effect keyed on `timeLeft` (rather than calling submitQuiz
+  // directly inside the interval) guarantees this always sees the
+  // current quizQuestions/answers, not a stale closure from whenever
+  // the interval was created.
+  useEffect(() => {
+    if (quizMode === 'mock' && !submitted && !grading && timeLeft === 0 && quizQuestions.length > 0) {
+      clearInterval(timerRef.current)
+      submitQuiz()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [timeLeft])
 
   async function fetchData() {
     setLoading(true)
@@ -102,6 +165,81 @@ export default function MCQ({ dark }) {
 
   function shuffle(arr) { return [...arr].sort(() => Math.random() - 0.5) }
 
+  // ── Paused exam: persistence helpers (Supabase for signed-in users,
+  // localStorage for guests — same dual pattern Checklist.jsx uses) ──────
+  async function persistActiveExam(payload) {
+    if (user) {
+      await supabase.from('active_exams').upsert(
+        { user_id: user.id, exam_data: payload, updated_at: new Date().toISOString() },
+        { onConflict: 'user_id' }
+      )
+    } else {
+      saveGuestActiveExam(payload)
+    }
+  }
+  async function clearActiveExam() {
+    if (user) await supabase.from('active_exams').delete().eq('user_id', user.id)
+    else clearGuestActiveExam()
+  }
+  async function loadSavedActiveExam() {
+    if (user) {
+      const { data } = await supabase.from('active_exams').select('exam_data').eq('user_id', user.id).maybeSingle()
+      return data?.exam_data || null
+    }
+    return getGuestActiveExam()
+  }
+
+  // ── Flags: load for the current quiz's questions, and toggle one ──────
+  async function loadFlagsFor(ids) {
+    if (ids.length === 0) return new Set()
+    if (user) {
+      const { data } = await supabase.from('flagged_questions').select('question_id').eq('user_id', user.id).in('question_id', ids)
+      return new Set((data || []).map(r => r.question_id))
+    }
+    const flags = getGuestFlags()
+    return new Set(flags.filter(f => ids.includes(f.question_id)).map(f => f.question_id))
+  }
+
+  async function toggleFlagFor(q) {
+    const isFlagged = flaggedIds.has(q.id)
+    const next = new Set(flaggedIds)
+    if (isFlagged) {
+      next.delete(q.id)
+      if (user) await supabase.from('flagged_questions').delete().eq('user_id', user.id).eq('question_id', q.id)
+      else toggleGuestFlag({ question_id: q.id })
+      showToast('Flag removed')
+    } else {
+      next.add(q.id)
+      // Tagged with the question's OWN module (q.module_id), not
+      // whichever module tab happens to be active — matters for retry
+      // quizzes, which can mix questions from several modules.
+      if (user) {
+        await supabase.from('flagged_questions').insert({ user_id: user.id, question_id: q.id, module_id: q.module_id })
+      } else {
+        toggleGuestFlag({
+          question_id: q.id, question: q.question,
+          option_a: q.option_a, option_b: q.option_b, option_c: q.option_c, option_d: q.option_d,
+          module_id: q.module_id
+        })
+      }
+      showToast('🚩 Question flagged')
+    }
+    setFlaggedIds(next)
+  }
+
+  // ── Mock-exam timer: always computed from wall-clock elapsed time
+  // (not a simple per-second decrement), so it stays accurate even
+  // after the tab was backgrounded or the exam was paused and resumed
+  // on another day. ──────────────────────────────────────────────────
+  function startMockTimer(startedAt) {
+    const tick = () => {
+      const elapsed = Math.floor((Date.now() - startedAt) / 1000)
+      setTimeLeft(Math.max(0, MOCK_MINUTES * 60 - elapsed))
+    }
+    tick()
+    timerRef.current = setInterval(tick, 1000)
+  }
+
   function startQuiz(type, subjectId = null) {
     let qs = type === 'mock'
       ? shuffle(getFilteredQuestions('mock')).slice(0, 36)
@@ -116,20 +254,53 @@ export default function MCQ({ dark }) {
     setResults({})
     setSubmitted(false)
     setQuizMode(type)
+    setResumeData(null)
+    quizStartedAtRef.current = Date.now()
+    loadFlagsFor(qs.map(q => q.id)).then(setFlaggedIds)
 
-    if (type === 'mock') {
-      const mins = 36
-      setTimeLeft(mins * 60)
-      timerRef.current = setInterval(() => {
-        setTimeLeft(prev => {
-          if (prev <= 1) { clearInterval(timerRef.current); submitQuiz(); return 0 }
-          return prev - 1
-        })
-      }, 1000)
-    }
+    if (type === 'mock') startMockTimer(quizStartedAtRef.current)
+  }
+
+  // Real, gradable retry of a specific set of questions (e.g. everything
+  // currently in the student's Incorrect or Flagged list) — untimed,
+  // like practice, and graded the exact same way through grade_mcq(),
+  // which only needs question ids and doesn't care which module/subject
+  // they came from.
+  function startRetryQuiz(list) {
+    setQuizQuestions(list)
+    setAnswers({})
+    setResults({})
+    setSubmitted(false)
+    setQuizMode('retry')
+    setResumeData(null)
+    quizStartedAtRef.current = Date.now()
+    loadFlagsFor(list.map(q => q.id)).then(setFlaggedIds)
+  }
+
+  async function resumeExam() {
+    if (!resumeData) return
+    setActiveModule(resumeData.activeModule)
+    setQuizQuestions(resumeData.quizQuestions || [])
+    setAnswers(resumeData.answers || {})
+    setResults({})
+    setSubmitted(false)
+    setQuizMode(resumeData.quizMode)
+    quizStartedAtRef.current = resumeData.startedAt
+    loadFlagsFor((resumeData.quizQuestions || []).map(q => q.id)).then(setFlaggedIds)
+
+    if (resumeData.quizMode === 'mock') startMockTimer(resumeData.startedAt)
+    setResumeData(null)
+  }
+
+  async function discardResume() {
+    await clearActiveExam()
+    setResumeData(null)
   }
 
   function stopQuiz() {
+    // Deliberately does NOT clear the saved paused-exam record — that's
+    // exactly what lets the student resume it later. Only the explicit
+    // "Discard" button on the resume banner clears it.
     clearInterval(timerRef.current)
     setQuizMode(null)
     setQuizQuestions([])
@@ -137,11 +308,20 @@ export default function MCQ({ dark }) {
     setResults({})
     setSubmitted(false)
     setTimeLeft(0)
+    setFlaggedIds(new Set())
   }
 
   function selectAnswer(qi, opt) {
     if (submitted) return
     setAnswers(prev => ({ ...prev, [qi]: opt }))
+  }
+
+  function tryAgain() {
+    // A retry quiz's question set doesn't come from the normal
+    // module/subject filters, so it re-runs the exact same list rather
+    // than going through startQuiz()'s filtering logic.
+    if (quizMode === 'retry') startRetryQuiz(quizQuestions)
+    else startQuiz(quizMode)
   }
 
   async function submitQuiz() {
@@ -167,6 +347,21 @@ export default function MCQ({ dark }) {
     setResults(resultMap)
     setGrading(false)
     setSubmitted(true)
+
+    // The paused-exam snapshot is only useful while a quiz is still in
+    // progress — clear it now that it's graded, one way or another.
+    clearActiveExam()
+
+    const total = quizQuestions.length
+    const correctCount = quizQuestions.filter(q => resultMap[q.id]?.is_correct).length
+    const scorePercent = total > 0 ? Math.round((correctCount / total) * 100) : 0
+    const timeSec = quizMode === 'mock' ? Math.max(0, MOCK_MINUTES * 60 - timeLeft) : null
+    // Retry quizzes can mix questions from several modules/subjects, so
+    // tag the history row with the first question's own module/subject
+    // as a best-effort label rather than the (possibly unrelated)
+    // currently-active module tab.
+    const historyModuleId = quizMode === 'retry' ? (quizQuestions[0]?.module_id || null) : activeModule
+    const historySubjectId = (quizMode === 'practice' || quizMode === 'retry') ? (quizQuestions[0]?.subject_id || null) : null
 
     if (!error && user) {
       const toRecord = quizQuestions
@@ -197,6 +392,34 @@ export default function MCQ({ dark }) {
         }
         fetchAnsweredIds()
       }
+
+      // Per-attempt history log — shown on the profile's History tab.
+      supabase.from('exam_history').insert({
+        user_id: user.id,
+        module_id: historyModuleId,
+        quiz_type: quizMode,
+        subject_id: historySubjectId,
+        total, correct: correctCount, score: scorePercent, time_sec: timeSec
+      }).then(({ error: historyError }) => {
+        if (historyError) console.warn('[MCQ] exam_history insert failed:', historyError)
+      })
+    } else if (!user) {
+      // Guest — everything lives on this device only.
+      quizQuestions.forEach(q => {
+        const r = resultMap[q.id]
+        if (r && !r.is_correct) {
+          saveGuestIncorrect({
+            question_id: q.id, question: q.question,
+            option_a: q.option_a, option_b: q.option_b, option_c: q.option_c, option_d: q.option_d,
+            module_id: q.module_id, correct_answer: r.correct_answer, explanation: r.explanation
+          })
+        }
+      })
+      enrichGuestFlagsWithResults(resultMap)
+      addGuestHistory({
+        module_id: historyModuleId, quiz_type: quizMode,
+        total, correct: correctCount, score: scorePercent, time_sec: timeSec
+      })
     }
   }
 
@@ -209,11 +432,15 @@ export default function MCQ({ dark }) {
 
   const formatTime = (s) => `${Math.floor(s / 60).toString().padStart(2, '0')}:${(s % 60).toString().padStart(2, '0')}`
 
+  const quizTitle = quizMode === 'mock' ? '📝 Mock Exam' : quizMode === 'retry' ? '🔁 Retry' : '🧪 Practice'
+
   if (quizMode) {
     const score = submitted ? getScore() : 0
     const total = quizQuestions.length
     const percent = total > 0 ? Math.round((score / total) * 100) : 0
-    const timePercent = quizMode === 'mock' ? (timeLeft / (36 * 60)) * 100 : 100
+    const timePercent = quizMode === 'mock' ? (timeLeft / (MOCK_MINUTES * 60)) * 100 : 100
+    const answeredIndexes = new Set(Object.keys(answers).map(Number))
+    const flaggedIndexes = new Set(quizQuestions.map((q, i) => flaggedIds.has(q.id) ? i : null).filter(i => i !== null))
 
     if (total === 0) return (
       <div style={{ padding: 24, textAlign: 'center' }}>
@@ -226,9 +453,7 @@ export default function MCQ({ dark }) {
       <div className="page-container" style={{ padding: '20px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
           <button onClick={stopQuiz} style={backBtnStyle(dark)}>← Back</button>
-          <h2 style={{ color: '#f472b6', flex: 1, fontSize: 16 }}>
-            {quizMode === 'mock' ? '📝 Mock Exam' : '🧪 Practice'}
-          </h2>
+          <h2 style={{ color: '#f472b6', flex: 1, fontSize: 16 }}>{quizTitle}</h2>
           {quizMode === 'mock' && !submitted && (
             <div style={{
               background: timeLeft < 300 ? '#ef444420' : '#38bdf820',
@@ -251,6 +476,19 @@ export default function MCQ({ dark }) {
           </div>
         )}
 
+        {!submitted && !grading && (
+          <QuestionPalette
+            total={total}
+            answeredIndexes={answeredIndexes}
+            flaggedIndexes={flaggedIndexes}
+            dark={dark}
+            onGoTo={(i) => {
+              const el = document.getElementById(`mcq-question-${i}`)
+              if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+            }}
+          />
+        )}
+
         {grading && (
           <div style={{ textAlign: 'center', padding: 24, color: c.sub, fontSize: 14 }}>Grading...</div>
         )}
@@ -261,11 +499,10 @@ export default function MCQ({ dark }) {
             border: `2px solid ${percent >= 60 ? '#4ade80' : '#f87171'}`,
             borderRadius: 20, padding: 24, textAlign: 'center', marginBottom: 24
           }}>
-            <div style={{ fontSize: 48, marginBottom: 8 }}>{percent >= 80 ? '🏆' : percent >= 60 ? '✅' : '📚'}</div>
-            <div style={{ fontSize: 36, fontWeight: 900, color: '#fff', marginBottom: 4 }}>{score}/{total}</div>
-            <div style={{ fontSize: 22, color: percent >= 60 ? '#4ade80' : '#f87171', fontWeight: 700 }}>{percent}%</div>
+            <ScoreRing percent={percent} />
+            <div style={{ fontSize: 32, fontWeight: 900, color: '#fff', marginTop: 12, marginBottom: 4 }}>{score}/{total}</div>
             {user && <div style={{ color: '#f59e0b', fontSize: 13, marginTop: 8 }}>⭐ Points earned for new correct answers!</div>}
-            <button onClick={() => startQuiz(quizMode)} style={{
+            <button onClick={tryAgain} style={{
               background: '#38bdf8', color: '#0f172a', border: 'none',
               padding: '10px 24px', borderRadius: 10, cursor: 'pointer',
               fontWeight: 700, fontSize: 14, marginTop: 16, fontFamily: 'inherit'
@@ -277,16 +514,24 @@ export default function MCQ({ dark }) {
           const result = results[q.id]
           const isCorrect = submitted && result?.is_correct
           return (
-            <div key={qi} style={{
+            <div key={qi} id={`mcq-question-${qi}`} style={{
               background: c.card,
               border: submitted
                 ? `2px solid ${isCorrect ? '#4ade80' : answers[qi] ? '#f87171' : c.border}`
                 : `1px solid ${c.border}`,
-              borderRadius: 16, padding: 20, marginBottom: 16
+              borderRadius: 16, padding: 20, marginBottom: 16, scrollMarginTop: 20
             }}>
-              <p style={{ color: c.text, fontWeight: 700, marginBottom: 14, fontSize: 14 }}>
-                {qi + 1}. {q.question}
-              </p>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8, marginBottom: 14 }}>
+                <p style={{ color: c.text, fontWeight: 700, fontSize: 14, margin: 0, flex: 1 }}>
+                  {qi + 1}. {q.question}
+                </p>
+                {!submitted && (
+                  <button onClick={() => toggleFlagFor(q)} aria-label={flaggedIds.has(q.id) ? 'Remove flag' : 'Flag this question'} style={{
+                    background: 'transparent', border: 'none', cursor: 'pointer', fontSize: 18,
+                    color: flaggedIds.has(q.id) ? '#f59e0b' : c.sub, flexShrink: 0, lineHeight: 1, padding: 0
+                  }}>🚩</button>
+                )}
+              </div>
               {optionTexts(q).map((opt, ai) => {
                 const label = optionLabels[ai]
                 let bg = c.input, border = c.border, color = c.sub
@@ -342,7 +587,36 @@ export default function MCQ({ dark }) {
   return (
     <div className="page-container" style={{ padding: '20px' }}>
       {(loadError || modulesError) && <ErrorBanner />}
-      <h1 style={{ color: '#f472b6', textAlign: 'center', marginBottom: 20 }}>🧪 MCQ Bank</h1>
+      <h1 style={{ color: '#f472b6', textAlign: 'center', marginBottom: 12 }}>🧪 MCQ Bank</h1>
+
+      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
+        <button onClick={() => navigate('/review')} style={{
+          background: 'transparent', border: `1px solid ${c.border}`, borderRadius: 20,
+          padding: '6px 16px', color: c.sub, cursor: 'pointer', fontFamily: 'inherit', fontSize: 12, fontWeight: 700
+        }}>📚 Review Incorrect & Flagged</button>
+      </div>
+
+      {resumeData && (
+        <div style={{
+          background: '#f472b620', border: '1px solid #f472b640', borderRadius: 12,
+          padding: '12px 16px', marginBottom: 16, display: 'flex', alignItems: 'center',
+          justifyContent: 'space-between', gap: 10, flexWrap: 'wrap'
+        }}>
+          <div style={{ color: '#f472b6', fontSize: 13, fontWeight: 700 }}>
+            ⏸ Paused {resumeData.quizMode === 'mock' ? 'mock exam' : 'practice quiz'} — {Object.keys(resumeData.answers || {}).length}/{(resumeData.quizQuestions || []).length} answered
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button onClick={resumeExam} style={{
+              background: '#f472b6', color: '#0f172a', border: 'none', padding: '6px 14px',
+              borderRadius: 8, cursor: 'pointer', fontWeight: 700, fontSize: 12, fontFamily: 'inherit'
+            }}>▶ Continue</button>
+            <button onClick={discardResume} style={{
+              background: 'transparent', border: '1px solid #f472b640', color: '#f472b6',
+              padding: '6px 14px', borderRadius: 8, cursor: 'pointer', fontWeight: 700, fontSize: 12, fontFamily: 'inherit'
+            }}>Discard</button>
+          </div>
+        </div>
+      )}
 
       <ModuleTabs
         modules={modules}
