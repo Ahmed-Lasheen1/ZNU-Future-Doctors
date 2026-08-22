@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../supabase'
 import { useAuth, useModules } from '../App'
 import { getTheme } from '../theme'
+import { useToast } from '../components/ToastProvider'
 import ErrorBanner from '../components/ErrorBanner'
 import { getGuestFlags, getGuestIncorrect, toggleGuestFlag } from '../lib/reviewStorage'
 
@@ -10,14 +11,18 @@ export default function Review({ dark }) {
   const { user } = useAuth()
   const { modules } = useModules()
   const navigate = useNavigate()
+  const showToast = useToast()
   const c = getTheme(dark)
 
   const [tab, setTab] = useState('incorrect')
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [moduleFilter, setModuleFilter] = useState('all')
 
   useEffect(() => { fetchTab() }, [tab, user])
+  useEffect(() => { setSearchQuery(''); setModuleFilter('all') }, [tab])
 
   async function fetchTab() {
     setLoading(true)
@@ -70,12 +75,37 @@ export default function Review({ dark }) {
       toggleGuestFlag({ question_id: questionId })
     }
     setItems(prev => prev.filter(i => (i.question_id || i.id) !== questionId))
+    showToast('Flag removed')
+  }
+
+  function retryAll(list) {
+    // A real graded quiz through MCQ.jsx — not just re-reading the
+    // explanation. Strip the answer/explanation fields before handing
+    // the set over, since a retry should feel like a fresh attempt.
+    const retryQuestions = list.map(item => ({
+      id: item.question_id || item.id,
+      question: item.question,
+      option_a: item.option_a, option_b: item.option_b, option_c: item.option_c, option_d: item.option_d,
+      module_id: item.module_id, subject_id: item.subject_id
+    }))
+    navigate('/mcq', { state: { retryQuestions } })
   }
 
   function moduleFor(id) { return modules.find(m => m.id === id) }
 
   const optionLabels = ['a', 'b', 'c', 'd']
   const optionsOf = (item) => [item.option_a, item.option_b, item.option_c, item.option_d]
+
+  const filteredItems = items.filter(item => {
+    const matchesModule = moduleFilter === 'all' || item.module_id === moduleFilter
+    const matchesSearch = !searchQuery.trim() || item.question.toLowerCase().includes(searchQuery.trim().toLowerCase())
+    return matchesModule && matchesSearch
+  })
+
+  // Only offer the module filter dropdown if the list actually spans
+  // more than one module — otherwise it's just clutter.
+  const modulesInList = [...new Set(items.map(i => i.module_id).filter(Boolean))]
+  const showModuleFilter = modulesInList.length > 1
 
   return (
     <div className="page-container" style={{ padding: '20px' }}>
@@ -84,7 +114,7 @@ export default function Review({ dark }) {
         Questions you got wrong, and questions you flagged during a quiz
       </p>
 
-      <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
         {[{ id: 'incorrect', label: '❌ Incorrect' }, { id: 'flagged', label: '🚩 Flagged' }].map(t => (
           <button key={t.id} onClick={() => setTab(t.id)} style={{
             flex: 1, padding: '10px', borderRadius: 10, fontFamily: 'inherit',
@@ -119,7 +149,52 @@ export default function Review({ dark }) {
         </div>
       )}
 
-      {items.map(item => {
+      {!loading && items.length > 0 && (
+        <>
+          <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
+            <input
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              placeholder="🔍 Search questions..."
+              style={{
+                flex: 1, minWidth: 160, padding: '10px 14px', borderRadius: 10,
+                border: `1px solid ${c.border}`, background: c.input, color: c.text,
+                fontSize: 13, fontFamily: 'inherit', outline: 'none'
+              }}
+            />
+            {showModuleFilter && (
+              <select value={moduleFilter} onChange={e => setModuleFilter(e.target.value)} style={{
+                padding: '10px 14px', borderRadius: 10, border: `1px solid ${c.border}`,
+                background: c.input, color: c.text, fontSize: 13, fontFamily: 'inherit', outline: 'none'
+              }}>
+                <option value="all">All modules</option>
+                {modulesInList.map(id => {
+                  const mod = moduleFor(id)
+                  return <option key={id} value={id}>{mod ? `${mod.icon} ${mod.name}` : id}</option>
+                })}
+              </select>
+            )}
+          </div>
+
+          {filteredItems.length > 0 && (
+            <button onClick={() => retryAll(filteredItems)} style={{
+              width: '100%', padding: '12px', background: '#f472b6', color: '#0f172a',
+              border: 'none', borderRadius: 10, cursor: 'pointer', fontWeight: 700,
+              fontSize: 14, fontFamily: 'inherit', marginBottom: 16
+            }}>
+              🔁 Retry {filteredItems.length === items.length ? 'All' : `These ${filteredItems.length}`} {tab === 'incorrect' ? 'Incorrect' : 'Flagged'} Questions
+            </button>
+          )}
+        </>
+      )}
+
+      {!loading && items.length > 0 && filteredItems.length === 0 && (
+        <div style={{ background: c.card, border: `1px solid ${c.border}`, borderRadius: 16, padding: 32, textAlign: 'center' }}>
+          <p style={{ color: c.sub }}>No matches for your search/filter 🔎</p>
+        </div>
+      )}
+
+      {filteredItems.map(item => {
         const qId = item.question_id || item.id
         const mod = moduleFor(item.module_id)
         return (
@@ -159,12 +234,10 @@ export default function Review({ dark }) {
             )}
 
             <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-              {item.module_id && (
-                <button onClick={() => navigate(`/mcq?module=${item.module_id}`)} style={{
-                  flex: 1, padding: '8px', background: 'transparent', border: `1px solid ${c.border}`,
-                  borderRadius: 8, color: c.sub, cursor: 'pointer', fontFamily: 'inherit', fontSize: 12, fontWeight: 700
-                }}>🧪 Practice this module</button>
-              )}
+              <button onClick={() => retryAll([item])} style={{
+                flex: 1, padding: '8px', background: 'transparent', border: `1px solid ${c.border}`,
+                borderRadius: 8, color: c.sub, cursor: 'pointer', fontFamily: 'inherit', fontSize: 12, fontWeight: 700
+              }}>🔁 Retry this one</button>
               {tab === 'flagged' && (
                 <button onClick={() => unflag(qId)} style={{
                   padding: '8px 12px', background: 'transparent', border: '1px solid #ef444440',

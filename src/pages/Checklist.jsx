@@ -5,11 +5,13 @@ import { useNavigate } from 'react-router-dom'
 import { getTheme, inputStyle } from '../theme'
 import ErrorBanner from '../components/ErrorBanner'
 import ModuleTabs from '../components/ModuleTabs'
+import { useToast } from '../components/ToastProvider'
 
 export default function Checklist({ dark }) {
   const { user } = useAuth()
   const navigate = useNavigate()
   const { modules, modulesLoaded, modulesError } = useModules()
+  const showToast = useToast()
   const [activeModule, setActiveModule] = useState(null)
   const [tasks, setTasks] = useState([])
   const [newTask, setNewTask] = useState('')
@@ -56,6 +58,7 @@ export default function Checklist({ dark }) {
     }
     setNewTask('')
     setNewDeadline('')
+    showToast('✅ Task added')
   }
 
   async function toggleTask(task) {

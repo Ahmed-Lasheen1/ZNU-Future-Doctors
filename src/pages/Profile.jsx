@@ -5,11 +5,13 @@ import { useAuth, useModules } from '../App'
 import { getTheme, inputStyle } from '../theme'
 import { containsProfanity } from '../lib/moderation'
 import InlineMessage from '../components/InlineMessage'
+import { useToast } from '../components/ToastProvider'
 import { getGuestHistory } from '../lib/reviewStorage'
 
 function EditProfileForm({ profile, dark, onUpdated, onProfileRefresh }) {
   const c = getTheme(dark)
   const inStyle = inputStyle(c)
+  const showToast = useToast()
 
   const [name, setName] = useState(profile.name || '')
   const [newPassword, setNewPassword] = useState('')
@@ -26,6 +28,7 @@ function EditProfileForm({ profile, dark, onUpdated, onProfileRefresh }) {
     setSaving(false)
     if (error) { setMsg('❌ ' + error.message); return }
     setMsg('✅ Name updated!')
+    showToast('✅ Name updated')
     // Refresh both this page's local copy AND the shared AuthContext
     // profile — without the second call, the header and Home page kept
     // showing the old name until the user signed out and back in.
@@ -42,6 +45,7 @@ function EditProfileForm({ profile, dark, onUpdated, onProfileRefresh }) {
     setSaving(false)
     if (error) { setMsg('❌ ' + error.message); return }
     setMsg('✅ Password updated!')
+    showToast('✅ Password updated')
     setNewPassword('')
     setConfirmPassword('')
   }
@@ -318,9 +322,24 @@ export default function Profile({ dark }) {
 
       {tab === 'history' && (
         <div>
-          <h2 style={{ color: '#f472b6', textAlign: 'center', marginBottom: 20 }}>
+          <h2 style={{ color: '#f472b6', textAlign: 'center', marginBottom: 8 }}>
             🕘 Exam History
           </h2>
+
+          {!historyLoading && history.length > 0 && (() => {
+            const totalAttempted = history.reduce((a, h) => a + h.total, 0)
+            const totalCorrect = history.reduce((a, h) => a + h.correct, 0)
+            const accuracy = totalAttempted > 0 ? Math.round((totalCorrect / totalAttempted) * 100) : null
+            if (accuracy === null) return null
+            return (
+              <div style={{ textAlign: 'center', marginBottom: 20 }}>
+                <span style={{ color: '#f472b6', fontWeight: 900, fontSize: 20 }}>🎯 {accuracy}%</span>
+                <span style={{ color: c.sub, fontSize: 12, fontWeight: 600, marginLeft: 8 }}>
+                  overall accuracy ({totalCorrect}/{totalAttempted})
+                </span>
+              </div>
+            )
+          })()}
 
           {!user && (
             <div style={{
