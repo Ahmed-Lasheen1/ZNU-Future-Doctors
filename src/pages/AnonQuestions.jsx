@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../supabase'
 import { useAuth } from '../App'
 import { getTheme, inputStyle } from '../theme'
+import NotifyPermissionButton from '../components/NotifyPermissionButton'
+import { getMyAnonTokens, addMyAnonToken, getNotifiedTokens, markTokensNotified } from '../lib/anonTracking'
 
 export default function AnonQuestions({ dark }) {
   const { user, profile } = useAuth()
@@ -17,6 +19,26 @@ export default function AnonQuestions({ dark }) {
 
   useEffect(() => { fetchQuestions() }, [])
 
+  // Once the question list loads, check if any of THIS browser's own
+  // tracked questions just became answered, and fire a one-time local
+  // notification for each (only if notification permission was
+  // already granted, and only once per question via notifiedTokens).
+  useEffect(() => {
+    if (!('Notification' in window) || Notification.permission !== 'granted') return
+    const myTokens = getMyAnonTokens()
+    if (myTokens.length === 0) return
+    const notified = getNotifiedTokens()
+    const newlyAnswered = questions.filter(q =>
+      q.tracking_token && myTokens.includes(q.tracking_token) && q.answered && !notified.includes(q.tracking_token)
+    )
+    if (newlyAnswered.length > 0) {
+      newlyAnswered.forEach(() => {
+        new Notification('💬 ZNU Future Doctors', { body: 'Your anonymous question has been answered!' })
+      })
+      markTokensNotified(newlyAnswered.map(q => q.tracking_token))
+    }
+  }, [questions])
+
   async function fetchQuestions() {
     setLoading(true)
     const { data } = await supabase
@@ -29,8 +51,13 @@ export default function AnonQuestions({ dark }) {
 
   async function submitQuestion() {
     if (!newQ.trim()) return
-    const { error } = await supabase.from('anonymous_questions').insert([{ question: newQ.trim() }])
+    // Generated fresh per question and saved only in this browser — see
+    // src/lib/anonTracking.js for how this stays anonymous to everyone
+    // else while still letting this device recognize its own question.
+    const token = crypto.randomUUID()
+    const { error } = await supabase.from('anonymous_questions').insert([{ question: newQ.trim(), tracking_token: token }])
     if (!error) {
+      addMyAnonToken(token)
       setMsg('✅ Question submitted anonymously!')
       setNewQ('')
       fetchQuestions()
@@ -59,14 +86,49 @@ export default function AnonQuestions({ dark }) {
   const answeredQs = questions.filter(q => q.answered)
   const unansweredQs = questions.filter(q => !q.answered)
 
+  const myTokens = getMyAnonTokens()
+  const myQuestions = questions.filter(q => q.tracking_token && myTokens.includes(q.tracking_token))
+
   return (
     <div className="page-container" style={{ padding: '20px' }}>
       <h1 style={{ color: '#a78bfa', textAlign: 'center', marginBottom: 8 }}>
         💬 Anonymous Questions
       </h1>
-      <p style={{ color: c.sub, textAlign: 'center', marginBottom: 24, fontSize: 14 }}>
+      <p style={{ color: c.sub, textAlign: 'center', marginBottom: 16, fontSize: 14 }}>
         Ask anything anonymously — no one knows who you are!
       </p>
+
+      <NotifyPermissionButton dark={dark} label="🔔 Notify me when my question is answered" />
+
+      {/* My Questions — recognized only by this browser, see anonTracking.js */}
+      {myQuestions.length > 0 && (
+        <div style={{ marginBottom: 24 }}>
+          <h3 style={{ color: '#a78bfa', marginBottom: 12, fontSize: 14 }}>🔎 My Questions (this device)</h3>
+          {myQuestions.map(q => (
+            <div key={q.id} style={{
+              background: c.card, border: `1px solid ${q.answered ? '#22c55e40' : c.border}`,
+              borderRadius: 14, padding: '14px 16px', marginBottom: 10
+            }}>
+              <p style={{ color: c.text, fontSize: 13, marginBottom: 8 }}>{q.question}</p>
+              <span style={{
+                fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 12,
+                background: q.answered ? '#22c55e20' : '#f59e0b20',
+                color: q.answered ? '#22c55e' : '#f59e0b'
+              }}>
+                {q.answered ? '✅ Answered' : '⏳ Waiting for an answer'}
+              </span>
+              {q.answered && q.answer && (
+                <div style={{
+                  background: '#22c55e15', border: '1px solid #22c55e30',
+                  borderRadius: 10, padding: '10px 14px', marginTop: 10
+                }}>
+                  <p style={{ color: c.text, fontSize: 13 }}>{q.answer}</p>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Submit Question */}
       <div style={{ background: c.card, border: `1px solid ${c.border}`, borderRadius: 16, padding: 20, marginBottom: 24 }}>

@@ -12,9 +12,9 @@ import { EXAM_STAGES as STAGE_META } from '../lib/examStages'
 import {
   getGuestFlags, toggleGuestFlag,
   saveGuestIncorrect, enrichGuestFlagsWithResults,
-  addGuestHistory,
-  getGuestActiveExam, saveGuestActiveExam, clearGuestActiveExam
+  addGuestHistory
 } from '../lib/reviewStorage'
+import { loadSavedActiveExam, persistActiveExam, clearActiveExam } from '../lib/activeExam'
 
 const EXAM_STAGES = [
   { value: 'all', label: 'All' },
@@ -95,7 +95,7 @@ export default function MCQ({ dark }) {
   useEffect(() => {
     if (quizMode) return
     let cancelled = false
-    loadSavedActiveExam().then(saved => { if (!cancelled) setResumeData(saved) })
+    loadSavedActiveExam(user).then(saved => { if (!cancelled) setResumeData(saved) })
     return () => { cancelled = true }
   }, [user, quizMode])
 
@@ -104,7 +104,7 @@ export default function MCQ({ dark }) {
   // there's no need to save/resume those specifically.)
   useEffect(() => {
     if (!quizMode || submitted || quizMode === 'retry') return
-    persistActiveExam({
+    persistActiveExam(user, {
       activeModule, quizMode, quizQuestions, answers, startedAt: quizStartedAtRef.current
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -123,6 +123,8 @@ export default function MCQ({ dark }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [timeLeft])
 
+  const [usingCache, setUsingCache] = useState(false)
+
   async function fetchData() {
     setLoading(true)
     const [subRes, qRes] = await Promise.all([
@@ -135,9 +137,26 @@ export default function MCQ({ dark }) {
         .select('id, question, option_a, option_b, option_c, option_d, exam_type, exam_stage, module_id, subject_id, created_at')
         .order('created_at')
     ])
-    if (subRes.data) setSubjects(subRes.data)
-    if (qRes.data) setQuestions(qRes.data)
-    if (subRes.error || qRes.error) setLoadError(true)
+
+    if (subRes.error || qRes.error) {
+      // Offline fallback — reuse the last successfully loaded question
+      // bank (cached in localStorage below) so a student without a
+      // connection can still browse/answer questions. Submitting still
+      // needs a connection, since grading happens server-side by design.
+      const cachedSubjects = localStorage.getItem('mcq_subjects_cache')
+      const cachedQuestions = localStorage.getItem('mcq_questions_cache')
+      if (cachedQuestions) {
+        setQuestions(JSON.parse(cachedQuestions))
+        setSubjects(cachedSubjects ? JSON.parse(cachedSubjects) : [])
+        setUsingCache(true)
+      } else {
+        setLoadError(true)
+      }
+    } else {
+      if (subRes.data) { setSubjects(subRes.data); localStorage.setItem('mcq_subjects_cache', JSON.stringify(subRes.data)) }
+      if (qRes.data) { setQuestions(qRes.data); localStorage.setItem('mcq_questions_cache', JSON.stringify(qRes.data)) }
+      setUsingCache(false)
+    }
     setLoading(false)
   }
 
@@ -164,30 +183,6 @@ export default function MCQ({ dark }) {
   }
 
   function shuffle(arr) { return [...arr].sort(() => Math.random() - 0.5) }
-
-  // ── Paused exam: persistence helpers (Supabase for signed-in users,
-  // localStorage for guests — same dual pattern Checklist.jsx uses) ──────
-  async function persistActiveExam(payload) {
-    if (user) {
-      await supabase.from('active_exams').upsert(
-        { user_id: user.id, exam_data: payload, updated_at: new Date().toISOString() },
-        { onConflict: 'user_id' }
-      )
-    } else {
-      saveGuestActiveExam(payload)
-    }
-  }
-  async function clearActiveExam() {
-    if (user) await supabase.from('active_exams').delete().eq('user_id', user.id)
-    else clearGuestActiveExam()
-  }
-  async function loadSavedActiveExam() {
-    if (user) {
-      const { data } = await supabase.from('active_exams').select('exam_data').eq('user_id', user.id).maybeSingle()
-      return data?.exam_data || null
-    }
-    return getGuestActiveExam()
-  }
 
   // ── Flags: load for the current quiz's questions, and toggle one ──────
   async function loadFlagsFor(ids) {
@@ -293,7 +288,7 @@ export default function MCQ({ dark }) {
   }
 
   async function discardResume() {
-    await clearActiveExam()
+    await clearActiveExam(user)
     setResumeData(null)
   }
 
@@ -334,6 +329,15 @@ export default function MCQ({ dark }) {
     const payload = quizQuestions.map((q, i) => ({ id: q.id, answer: answers[i] || null }))
     const { data: graded, error } = await supabase.rpc('grade_mcq', { p_answers: payload })
 
+    if (error) {
+      // Likely offline or a network blip — don't mark the quiz as
+      // submitted or touch the paused-exam snapshot, so the student's
+      // answers are still safely there to retry once back online.
+      setGrading(false)
+      showToast('⚠️ Could not submit — check your connection and try again', 'error')
+      return
+    }
+
     const resultMap = {}
     if (graded) {
       graded.forEach(r => {
@@ -349,8 +353,8 @@ export default function MCQ({ dark }) {
     setSubmitted(true)
 
     // The paused-exam snapshot is only useful while a quiz is still in
-    // progress — clear it now that it's graded, one way or another.
-    clearActiveExam()
+    // progress — clear it now that it's graded.
+    clearActiveExam(user)
 
     const total = quizQuestions.length
     const correctCount = quizQuestions.filter(q => resultMap[q.id]?.is_correct).length
@@ -587,6 +591,14 @@ export default function MCQ({ dark }) {
   return (
     <div className="page-container" style={{ padding: '20px' }}>
       {(loadError || modulesError) && <ErrorBanner />}
+      {usingCache && (
+        <div style={{
+          background: '#f59e0b20', border: '1px solid #f59e0b40', borderRadius: 12,
+          padding: '10px 16px', marginBottom: 16, textAlign: 'center', fontSize: 13, color: '#f59e0b'
+        }}>
+          📴 You're offline — showing questions saved from your last visit. Submitting a quiz needs a connection.
+        </div>
+      )}
       <h1 style={{ color: '#f472b6', textAlign: 'center', marginBottom: 12 }}>🧪 MCQ Bank</h1>
 
       <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>

@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom'
 import { getTheme, inputStyle } from '../theme'
 import ErrorBanner from '../components/ErrorBanner'
 import ModuleTabs from '../components/ModuleTabs'
+import NotifyPermissionButton from '../components/NotifyPermissionButton'
 import { useToast } from '../components/ToastProvider'
 
 export default function Checklist({ dark }) {
@@ -88,6 +89,26 @@ export default function Checklist({ dark }) {
     return diff >= 0 && diff <= 2 * 24 * 60 * 60 * 1000
   }
 
+  // Fires a local browser notification (only if permission was already
+  // granted) at most once per day, summarizing any overdue/due-soon
+  // tasks. This only triggers while the app is actually open — a true
+  // always-on background reminder would need a push server, which is
+  // separate infrastructure beyond this check.
+  useEffect(() => {
+    if (!('Notification' in window) || Notification.permission !== 'granted') return
+    if (tasks.length === 0) return
+    const todayStr = new Date().toDateString()
+    if (localStorage.getItem('checklist_last_notify') === todayStr) return
+
+    const urgent = tasks.filter(t => !t.done && (isOverdue(t.deadline) || isDueSoon(t.deadline)))
+    if (urgent.length > 0) {
+      new Notification('📅 ZNU Future Doctors', {
+        body: `You have ${urgent.length} checklist item(s) due soon or overdue.`
+      })
+      localStorage.setItem('checklist_last_notify', todayStr)
+    }
+  }, [tasks])
+
   const doneTasks = tasks.filter(t => t.done).length
   const totalTasks = tasks.length
   const percent = totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) : 0
@@ -98,6 +119,8 @@ export default function Checklist({ dark }) {
       <h1 style={{ color: '#f59e0b', textAlign: 'center', marginBottom: 8 }}>
         🎯 Checklist
       </h1>
+
+      <NotifyPermissionButton dark={dark} label="🔔 Enable deadline reminders" />
 
       {!user && (
         <div style={{

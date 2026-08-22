@@ -5,6 +5,9 @@ import { getTheme } from '../theme'
 import { supabase } from '../supabase'
 import ErrorBanner from '../components/ErrorBanner'
 import AnimatedCard from '../components/AnimatedCard'
+import { computeStreak } from '../lib/streak'
+import { getGuestHistory } from '../lib/reviewStorage'
+import { loadSavedActiveExam } from '../lib/activeExam'
 
 const toolCards = [
   { emoji: '📅', title: 'Schedules', to: '/schedule', color: '#a78bfa' },
@@ -20,6 +23,8 @@ export default function Home({ dark, toggleTheme }) {
   const { modules, modulesError } = useModules()
   const [titleVisible, setTitleVisible] = useState(false)
   const [announcement, setAnnouncement] = useState('')
+  const [streak, setStreak] = useState(0)
+  const [pausedExam, setPausedExam] = useState(null)
 
   useEffect(() => {
     setTimeout(() => setTitleVisible(true), 100)
@@ -29,6 +34,27 @@ export default function Home({ dark, toggleTheme }) {
     supabase.from('site_settings').select('value').eq('key', 'home_announcement').single()
       .then(({ data }) => { if (data?.value) setAnnouncement(data.value) })
   }, [])
+
+  // Study streak — consecutive days with at least one quiz attempt,
+  // computed from exam_history (or the guest-local equivalent).
+  useEffect(() => {
+    async function loadStreak() {
+      if (user) {
+        const { data } = await supabase.from('exam_history').select('completed_at').eq('user_id', user.id)
+        setStreak(computeStreak((data || []).map(r => r.completed_at)))
+      } else {
+        setStreak(computeStreak(getGuestHistory().map(r => r.completed_at)))
+      }
+    }
+    loadStreak()
+  }, [user])
+
+  // "Continue where you left off" — a paused mock/practice exam saved
+  // from MCQ.jsx. Clicking it just opens the MCQ page, which shows the
+  // same resume banner and does the actual restoring.
+  useEffect(() => {
+    loadSavedActiveExam(user).then(setPausedExam)
+  }, [user])
 
   const activeModules = modules.filter(m => m.status === 'active')
   const completedModules = modules.filter(m => m.status === 'completed')
@@ -119,7 +145,38 @@ export default function Home({ dark, toggleTheme }) {
         <p style={{ color: c.sub, fontSize: 15 }}>
           Your Integrated Medical Study Platform
         </p>
+
+        {streak > 0 && (
+          <div style={{
+            display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 12,
+            background: '#f59e0b20', border: '1px solid #f59e0b40',
+            borderRadius: 20, padding: '6px 16px', color: '#f59e0b', fontSize: 13, fontWeight: 700
+          }}>
+            🔥 {streak}-day study streak
+          </div>
+        )}
       </div>
+
+      {/* Continue where you left off */}
+      {pausedExam && (
+        <div className="page-container" style={{ marginBottom: 24 }}>
+          <div onClick={() => navigate('/mcq')} style={{
+            background: '#f472b620', border: '2px solid #f472b660', borderRadius: 16,
+            padding: '16px 20px', cursor: 'pointer', display: 'flex', alignItems: 'center',
+            justifyContent: 'space-between', gap: 12, transition: 'all 0.2s'
+          }}
+            onMouseEnter={e => e.currentTarget.style.borderColor = '#f472b6'}
+            onMouseLeave={e => e.currentTarget.style.borderColor = '#f472b660'}>
+            <div>
+              <div style={{ color: '#f472b6', fontWeight: 700, fontSize: 14 }}>⏸ Continue where you left off</div>
+              <div style={{ color: c.sub, fontSize: 12, marginTop: 2 }}>
+                {Object.keys(pausedExam.answers || {}).length}/{(pausedExam.quizQuestions || []).length} answered
+              </div>
+            </div>
+            <div style={{ color: '#f472b6', fontSize: 20 }}>→</div>
+          </div>
+        </div>
+      )}
 
       {/* Announcement */}
       {announcement && (
