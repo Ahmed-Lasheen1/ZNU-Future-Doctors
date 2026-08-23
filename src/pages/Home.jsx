@@ -5,6 +5,7 @@ import { getTheme } from '../theme'
 import { supabase } from '../supabase'
 import ErrorBanner from '../components/ErrorBanner'
 import AnimatedCard from '../components/AnimatedCard'
+import AutoGrid from '../components/AutoGrid'
 import { computeStreak } from '../lib/streak'
 import { getGuestHistory } from '../lib/reviewStorage'
 import { loadSavedActiveExam } from '../lib/activeExam'
@@ -272,19 +273,19 @@ export default function Home({ dark, toggleTheme }) {
       {pausedExam && (
         <div className="page-container" style={{ marginBottom: 24 }}>
           <div onClick={() => navigate('/mcq')} style={{
-            background: '#f472b620', border: '2px solid #f472b660', borderRadius: 16,
+            background: '#e2725b20', border: '2px solid #e2725b60', borderRadius: 16,
             padding: '16px 20px', cursor: 'pointer', display: 'flex', alignItems: 'center',
             justifyContent: 'space-between', gap: 12, transition: 'all 0.2s'
           }}
-            onMouseEnter={e => e.currentTarget.style.borderColor = '#f472b6'}
-            onMouseLeave={e => e.currentTarget.style.borderColor = '#f472b660'}>
+            onMouseEnter={e => e.currentTarget.style.borderColor = '#e2725b'}
+            onMouseLeave={e => e.currentTarget.style.borderColor = '#e2725b60'}>
             <div>
-              <div style={{ color: '#f472b6', fontWeight: 700, fontSize: 14 }}>⏸ Continue where you left off</div>
+              <div style={{ color: '#e2725b', fontWeight: 700, fontSize: 14 }}>⏸ Continue where you left off</div>
               <div style={{ color: c.sub, fontSize: 12, marginTop: 2 }}>
                 {Object.keys(pausedExam.answers || {}).length}/{(pausedExam.quizQuestions || []).length} answered
               </div>
             </div>
-            <div style={{ color: '#f472b6', fontSize: 20 }}>→</div>
+            <div style={{ color: '#e2725b', fontSize: 20 }}>→</div>
           </div>
         </div>
       )}
@@ -308,7 +309,7 @@ export default function Home({ dark, toggleTheme }) {
       {activeModules.length > 0 && (
         <div className="page-container" style={{ marginBottom: 32 }}>
           {sectionTitle('🟢 Active Modules')}
-          <div className="card-grid" style={{ gridTemplateColumns: activeModules.length === 1 ? '1fr' : undefined }}>
+          <AutoGrid>
             {activeModules.map((mod, i) => (
               <AnimatedCard key={mod.id} delay={200 + i * 80} color={mod.color} dark={dark}
                 onClick={() => navigate(`/module/${mod.id}`)}>
@@ -320,14 +321,14 @@ export default function Home({ dark, toggleTheme }) {
                 }}>● Active</div>
               </AnimatedCard>
             ))}
-          </div>
+          </AutoGrid>
         </div>
       )}
 
       {/* Tools */}
       <div className="page-container" style={{ marginBottom: 32 }}>
         {sectionTitle('🛠 Tools')}
-        <div className="card-grid">
+        <AutoGrid>
           {toolCards.map((card, i) => (
             <AnimatedCard key={i} delay={400 + i * 80} color={card.color} dark={dark}
               onClick={() => navigate(card.to)}>
@@ -335,14 +336,14 @@ export default function Home({ dark, toggleTheme }) {
               <div style={{ color: c.text, fontSize: 'clamp(13px, 1.1vw, 16px)', fontWeight: 700 }}>{card.title}</div>
             </AnimatedCard>
           ))}
-        </div>
+        </AutoGrid>
       </div>
 
       {/* Completed Modules */}
       {completedModules.length > 0 && (
         <div className="page-container">
           {sectionTitle('✅ Completed Modules')}
-          <div className="card-grid">
+          <AutoGrid>
             {completedModules.map((mod, i) => (
               <AnimatedCard key={mod.id} delay={i * 80} color='#475569' dark={dark}
                 onClick={() => navigate(`/module/${mod.id}`)}>
@@ -354,7 +355,7 @@ export default function Home({ dark, toggleTheme }) {
                 }}>✓ Completed</div>
               </AnimatedCard>
             ))}
-          </div>
+          </AutoGrid>
         </div>
       )}
     </div>

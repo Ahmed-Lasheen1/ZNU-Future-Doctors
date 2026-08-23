@@ -8,7 +8,7 @@ import ErrorBanner from '../components/ErrorBanner'
 const typeMeta = {
   module: { icon: '🏥', label: 'Module', color: '#38bdf8' },
   file: { icon: '📄', label: 'File', color: '#60a5fa' },
-  question: { icon: '🧪', label: 'MCQ Question', color: '#f472b6' },
+  question: { icon: '🧪', label: 'MCQ Question', color: '#e2725b' },
   summary: { icon: '📝', label: 'Summary', color: '#34d399' },
   schedule: { icon: '📅', label: 'Schedule', color: '#a78bfa' },
 }

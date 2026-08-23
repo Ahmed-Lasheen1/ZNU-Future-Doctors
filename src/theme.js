@@ -8,7 +8,12 @@ export const brand = {
   amber: '#f59e0b',
   green: '#22c55e',
   red: '#ef4444',
-  pink: '#f472b6',
+  // MCQ/quiz brand color — a warm terracotta red, deliberately distinct
+  // from `red` above (#ef4444), which is reserved for errors/danger
+  // (delete buttons, error banners, overdue tasks, wrong-answer
+  // highlighting). Keeping them visually separate means a themed MCQ
+  // card is never mistaken for an error state.
+  pink: '#e2725b',
   teal: '#34d399',
 }
 

@@ -4,6 +4,7 @@ import { supabase } from '../supabase'
 import { getTheme } from '../theme'
 import ErrorBanner from '../components/ErrorBanner'
 import AnimatedCard from '../components/AnimatedCard'
+import AutoGrid from '../components/AutoGrid'
 import { useModules } from '../App'
 import { EXAM_STAGES } from '../lib/examStages'
 import { FILE_CARDS } from '../lib/fileCards'
@@ -73,7 +74,7 @@ export default function ModulePage({ dark }) {
         <h2 style={{ color: c.sub, fontSize: 13, fontWeight: 700, letterSpacing: 2, marginBottom: 16, textTransform: 'uppercase' }}>
           🎯 Exam Stage
         </h2>
-        <div className="card-grid">
+        <AutoGrid>
           {EXAM_STAGES.map((stage, i) => (
             <AnimatedCard key={stage.value} delay={i * 80} color={stage.color} dark={dark}
               onClick={() => navigate(`/module/${moduleId}/stage/${stage.value}`)}>
@@ -81,7 +82,7 @@ export default function ModulePage({ dark }) {
               <div style={{ color: c.text, fontSize: 'clamp(13px, 1.1vw, 16px)', fontWeight: 700 }}>{stage.title}</div>
             </AnimatedCard>
           ))}
-        </div>
+        </AutoGrid>
       </div>
 
       {/* Study Materials — only shown once something's actually there */}
@@ -91,7 +92,7 @@ export default function ModulePage({ dark }) {
             📁 Study Materials
           </h2>
           {filteredFileCards.length > 0 && (
-            <div className="card-grid">
+            <AutoGrid>
               {filteredFileCards.map((card, i) => (
                 <AnimatedCard key={i} delay={i * 80} color={card.color} dark={dark}
                   onClick={() => navigate(`/files?type=${card.type}&module=${moduleId}`)}>
@@ -99,7 +100,7 @@ export default function ModulePage({ dark }) {
                   <div style={{ color: c.text, fontSize: 'clamp(13px, 1.1vw, 16px)', fontWeight: 700 }}>{card.title}</div>
                 </AnimatedCard>
               ))}
-            </div>
+            </AutoGrid>
           )}
 
           {driveUrl && (
@@ -147,7 +148,7 @@ export default function ModulePage({ dark }) {
         <h2 style={{ color: c.sub, fontSize: 13, fontWeight: 700, letterSpacing: 2, marginBottom: 16, textTransform: 'uppercase' }}>
           🧪 Practice
         </h2>
-        <AnimatedCard delay={300} color='#f472b6' dark={dark}
+        <AnimatedCard delay={300} color='#e2725b' dark={dark}
           onClick={() => navigate(`/mcq?module=${moduleId}`)}>
           <div style={{ fontSize: 30, marginBottom: 8 }}>🧪</div>
           <div style={{ color: c.text, fontSize: 13, fontWeight: 700 }}>MCQ Bank</div>

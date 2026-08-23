@@ -8,6 +8,8 @@ import ErrorBanner from '../components/ErrorBanner'
 import ModuleTabs from '../components/ModuleTabs'
 import QuestionPalette from '../components/QuestionPalette'
 import ScoreRing from '../components/ScoreRing'
+import QuestionSourceBadge from '../components/QuestionSourceBadge'
+import AutoGrid from '../components/AutoGrid'
 import { EXAM_STAGES as STAGE_META } from '../lib/examStages'
 import {
   getGuestFlags, toggleGuestFlag,
@@ -448,7 +450,7 @@ export default function MCQ({ dark }) {
 
     if (total === 0) return (
       <div style={{ padding: 24, textAlign: 'center' }}>
-        <h2 style={{ color: '#f472b6' }}>No questions available yet! 🚧</h2>
+        <h2 style={{ color: '#e2725b' }}>No questions available yet! 🚧</h2>
         <button onClick={stopQuiz} style={backBtnStyle(dark)}>← Back</button>
       </div>
     )
@@ -457,7 +459,7 @@ export default function MCQ({ dark }) {
       <div className="page-container" style={{ padding: '20px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
           <button onClick={stopQuiz} style={backBtnStyle(dark)}>← Back</button>
-          <h2 style={{ color: '#f472b6', flex: 1, fontSize: 16 }}>{quizTitle}</h2>
+          <h2 style={{ color: '#e2725b', flex: 1, fontSize: 16 }}>{quizTitle}</h2>
           {quizMode === 'mock' && !submitted && (
             <div style={{
               background: timeLeft < 300 ? '#ef444420' : '#38bdf820',
@@ -599,7 +601,7 @@ export default function MCQ({ dark }) {
           📴 You're offline — showing questions saved from your last visit. Submitting a quiz needs a connection.
         </div>
       )}
-      <h1 style={{ color: '#f472b6', textAlign: 'center', marginBottom: 12 }}>🧪 MCQ Bank</h1>
+      <h1 style={{ color: '#e2725b', textAlign: 'center', marginBottom: 12 }}>🧪 MCQ Bank</h1>
 
       <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
         <button onClick={() => navigate('/review')} style={{
@@ -610,20 +612,20 @@ export default function MCQ({ dark }) {
 
       {resumeData && (
         <div style={{
-          background: '#f472b620', border: '1px solid #f472b640', borderRadius: 12,
+          background: '#e2725b20', border: '1px solid #e2725b40', borderRadius: 12,
           padding: '12px 16px', marginBottom: 16, display: 'flex', alignItems: 'center',
           justifyContent: 'space-between', gap: 10, flexWrap: 'wrap'
         }}>
-          <div style={{ color: '#f472b6', fontSize: 13, fontWeight: 700 }}>
+          <div style={{ color: '#e2725b', fontSize: 13, fontWeight: 700 }}>
             ⏸ Paused {resumeData.quizMode === 'mock' ? 'mock exam' : 'practice quiz'} — {Object.keys(resumeData.answers || {}).length}/{(resumeData.quizQuestions || []).length} answered
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
             <button onClick={resumeExam} style={{
-              background: '#f472b6', color: '#0f172a', border: 'none', padding: '6px 14px',
+              background: '#e2725b', color: '#0f172a', border: 'none', padding: '6px 14px',
               borderRadius: 8, cursor: 'pointer', fontWeight: 700, fontSize: 12, fontFamily: 'inherit'
             }}>▶ Continue</button>
             <button onClick={discardResume} style={{
-              background: 'transparent', border: '1px solid #f472b640', color: '#f472b6',
+              background: 'transparent', border: '1px solid #e2725b40', color: '#e2725b',
               padding: '6px 14px', borderRadius: 8, cursor: 'pointer', fontWeight: 700, fontSize: 12, fontFamily: 'inherit'
             }}>Discard</button>
           </div>
@@ -640,21 +642,21 @@ export default function MCQ({ dark }) {
       <div style={{ display: 'flex', gap: 8, overflowX: 'auto', marginBottom: 16, paddingBottom: 4 }}>
         {EXAM_STAGES.map(stage => (
           <button key={stage.value} onClick={() => setActiveStage(stage.value)} style={{
-            ...subBtnStyle, borderColor: activeStage === stage.value ? '#f472b6' : c.border,
-            color: activeStage === stage.value ? '#f472b6' : c.sub
+            ...subBtnStyle, borderColor: activeStage === stage.value ? '#e2725b' : c.border,
+            color: activeStage === stage.value ? '#e2725b' : c.sub
           }}>{stage.label}</button>
         ))}
       </div>
 
       <div style={{ display: 'flex', gap: 8, overflowX: 'auto', marginBottom: 24, paddingBottom: 4 }}>
         <button onClick={() => setActiveSubject('all')} style={{
-          ...subBtnStyle, borderColor: activeSubject === 'all' ? '#f472b6' : c.border,
-          color: activeSubject === 'all' ? '#f472b6' : c.sub
+          ...subBtnStyle, borderColor: activeSubject === 'all' ? '#e2725b' : c.border,
+          color: activeSubject === 'all' ? '#e2725b' : c.sub
         }}>All</button>
         {moduleSubjects.map(sub => (
           <button key={sub.id} onClick={() => setActiveSubject(sub.id)} style={{
-            ...subBtnStyle, borderColor: activeSubject === sub.id ? '#f472b6' : c.border,
-            color: activeSubject === sub.id ? '#f472b6' : c.sub
+            ...subBtnStyle, borderColor: activeSubject === sub.id ? '#e2725b' : c.border,
+            color: activeSubject === sub.id ? '#e2725b' : c.sub
           }}>{sub.name}</button>
         ))}
       </div>
@@ -663,14 +665,14 @@ export default function MCQ({ dark }) {
 
       {/* Mock Exam */}
       <div style={{
-        background: c.card, border: '2px solid #f472b640',
+        background: c.card, border: '2px solid #e2725b40',
         borderRadius: 20, padding: 24, marginBottom: 16, transition: 'all 0.2s'
       }}
-        onMouseEnter={e => e.currentTarget.style.borderColor = '#f472b6'}
-        onMouseLeave={e => e.currentTarget.style.borderColor = '#f472b640'}>
+        onMouseEnter={e => e.currentTarget.style.borderColor = '#e2725b'}
+        onMouseLeave={e => e.currentTarget.style.borderColor = '#e2725b40'}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
-            <h3 style={{ color: '#f472b6', marginBottom: 6 }}>📝 Mock Exam</h3>
+            <h3 style={{ color: '#e2725b', marginBottom: 6 }}>📝 Mock Exam</h3>
             <p style={{ color: c.sub, fontSize: 13 }}>
               {Math.min(36, getFilteredQuestions('mock').length)} questions · ⏱ 36 minutes
             </p>
@@ -695,7 +697,7 @@ export default function MCQ({ dark }) {
               background: c.card, border: `1px solid ${c.border}`,
               borderRadius: 16, padding: 'clamp(16px, 1.6vw, 24px)', cursor: 'pointer', transition: 'all 0.2s'
             }}
-              onMouseEnter={e => e.currentTarget.style.borderColor = '#f472b6'}
+              onMouseEnter={e => e.currentTarget.style.borderColor = '#e2725b'}
               onMouseLeave={e => e.currentTarget.style.borderColor = c.border}
               onClick={() => startQuiz('practice', sub.id)}>
               <div style={{ color: c.text, fontWeight: 700, marginBottom: 6, fontSize: 'clamp(14px, 1.2vw, 17px)' }}>{sub.name}</div>
@@ -712,5 +714,5 @@ export default function MCQ({ dark }) {
 }
 
 const subBtnStyle = { padding: '6px 14px', borderRadius: 20, background: 'transparent', border: '1px solid', whiteSpace: 'nowrap', fontSize: 12, cursor: 'pointer', fontWeight: 600, fontFamily: 'inherit' }
-const startBtnStyle = { background: '#f472b6', color: '#0f172a', border: 'none', padding: '10px 20px', borderRadius: 10, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }
+const startBtnStyle = { background: '#e2725b', color: '#0f172a', border: 'none', padding: '10px 20px', borderRadius: 10, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }
 const backBtnStyle = (dark) => ({ background: dark ? 'rgba(255,255,255,0.08)' : '#f1f5f9', border: `1px solid ${dark ? 'rgba(255,255,255,0.15)' : '#e2e8f0'}`, borderRadius: 10, padding: '8px 16px', color: dark ? '#94a3b8' : '#64748b', cursor: 'pointer', fontSize: 13, fontWeight: 700, fontFamily: 'inherit' })

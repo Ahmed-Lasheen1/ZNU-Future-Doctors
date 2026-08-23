@@ -329,7 +329,7 @@ export default function Profile({ dark }) {
 
       {tab === 'history' && (
         <div>
-          <h2 style={{ color: '#f472b6', textAlign: 'center', marginBottom: 8 }}>
+          <h2 style={{ color: '#e2725b', textAlign: 'center', marginBottom: 8 }}>
             🕘 Exam History
           </h2>
 
@@ -347,7 +347,7 @@ export default function Profile({ dark }) {
             if (accuracy === null) return null
             return (
               <div style={{ textAlign: 'center', marginBottom: 20 }}>
-                <span style={{ color: '#f472b6', fontWeight: 900, fontSize: 20 }}>🎯 {accuracy}%</span>
+                <span style={{ color: '#e2725b', fontWeight: 900, fontSize: 20 }}>🎯 {accuracy}%</span>
                 <span style={{ color: c.sub, fontSize: 12, fontWeight: 600, marginLeft: 8 }}>
                   overall accuracy ({totalCorrect}/{totalAttempted})
                 </span>

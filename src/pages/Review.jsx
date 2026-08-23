@@ -6,6 +6,7 @@ import { getTheme } from '../theme'
 import { useToast } from '../components/ToastProvider'
 import ErrorBanner from '../components/ErrorBanner'
 import { getGuestFlags, getGuestIncorrect, toggleGuestFlag } from '../lib/reviewStorage'
+import QuestionSourceBadge from '../components/QuestionSourceBadge'
 
 export default function Review({ dark }) {
   const { user } = useAuth()
@@ -109,7 +110,7 @@ export default function Review({ dark }) {
 
   return (
     <div className="page-container" style={{ padding: '20px' }}>
-      <h1 style={{ color: '#f472b6', textAlign: 'center', marginBottom: 8 }}>📚 Review</h1>
+      <h1 style={{ color: '#e2725b', textAlign: 'center', marginBottom: 8 }}>📚 Review</h1>
       <p style={{ color: c.sub, textAlign: 'center', marginBottom: 12, fontSize: 13 }}>
         Questions you got wrong, and questions you flagged during a quiz
       </p>
@@ -125,9 +126,9 @@ export default function Review({ dark }) {
         {[{ id: 'incorrect', label: '❌ Incorrect' }, { id: 'flagged', label: '🚩 Flagged' }].map(t => (
           <button key={t.id} onClick={() => setTab(t.id)} style={{
             flex: 1, padding: '10px', borderRadius: 10, fontFamily: 'inherit',
-            border: `2px solid ${tab === t.id ? '#f472b6' : c.border}`,
-            background: tab === t.id ? '#f472b620' : 'transparent',
-            color: tab === t.id ? '#f472b6' : c.sub,
+            border: `2px solid ${tab === t.id ? '#e2725b' : c.border}`,
+            background: tab === t.id ? '#e2725b20' : 'transparent',
+            color: tab === t.id ? '#e2725b' : c.sub,
             cursor: 'pointer', fontWeight: 700, fontSize: 13
           }}>{t.label}</button>
         ))}
@@ -185,7 +186,7 @@ export default function Review({ dark }) {
 
           {filteredItems.length > 0 && (
             <button onClick={() => retryAll(filteredItems)} style={{
-              width: '100%', padding: '12px', background: '#f472b6', color: '#0f172a',
+              width: '100%', padding: '12px', background: '#e2725b', color: '#0f172a',
               border: 'none', borderRadius: 10, cursor: 'pointer', fontWeight: 700,
               fontSize: 14, fontFamily: 'inherit', marginBottom: 16
             }}>
@@ -206,8 +207,11 @@ export default function Review({ dark }) {
         const mod = moduleFor(item.module_id)
         return (
           <div key={qId} style={{ background: c.card, border: `1px solid ${c.border}`, borderRadius: 16, padding: 20, marginBottom: 16 }}>
-            {mod && (
-              <div style={{ color: mod.color, fontSize: 11, fontWeight: 700, marginBottom: 8 }}>{mod.icon} {mod.name}</div>
+            {(mod || item.source) && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
+                {mod && <div style={{ color: mod.color, fontSize: 11, fontWeight: 700 }}>{mod.icon} {mod.name}</div>}
+                {item.source && <QuestionSourceBadge source={item.source} />}
+              </div>
             )}
             <p style={{ color: c.text, fontWeight: 700, marginBottom: 12, fontSize: 14 }}>{item.question}</p>
 
