@@ -8,6 +8,12 @@ import InlineMessage from '../components/InlineMessage'
 import { useToast } from '../components/ToastProvider'
 import { getGuestHistory } from '../lib/reviewStorage'
 
+// Small helper so a missing/blank name never crashes the avatar badge —
+// falls back to a "?" instead of calling .charAt(0) on an empty string.
+function initialOf(name) {
+  return name && name.trim() ? name.trim().charAt(0).toUpperCase() : '?'
+}
+
 function EditProfileForm({ profile, dark, onUpdated, onProfileRefresh }) {
   const c = getTheme(dark)
   const inStyle = inputStyle(c)
@@ -198,7 +204,7 @@ export default function Profile({ dark }) {
                   fontSize: 32, fontWeight: 900, color: '#fff',
                   margin: '0 auto 16px'
                 }}>
-                  {profile.name.charAt(0).toUpperCase()}
+                  {initialOf(profile.name)}
                 </div>
                 <h2 style={{ color: '#38bdf8', fontSize: 22, fontWeight: 900, marginBottom: 4 }}>
                   Dr. {profile.name}

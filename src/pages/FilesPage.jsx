@@ -9,11 +9,18 @@ import { useModules } from '../App'
 function PDFViewer({ url, onClose }) {
   const getPreviewUrl = (url) => {
     if (!url) return ''
-    if (url.includes('drive.google.com')) {
-      const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/)
-      if (match) return `https://drive.google.com/file/d/${match[1]}/preview`
+    try {
+      if (url.includes('drive.google.com')) {
+        const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/)
+        if (match) return `https://drive.google.com/file/d/${match[1]}/preview`
+      }
+      return url
+    } catch {
+      // A malformed URL (e.g. a typo'd admin entry) shouldn't crash the
+      // whole viewer — fall back to the raw value and let the iframe
+      // itself show its own "can't load" state instead.
+      return url
     }
-    return url
   }
   return (
     <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.95)', zIndex: 2000, display: 'flex', flexDirection: 'column' }}>
@@ -29,19 +36,26 @@ function PDFViewer({ url, onClose }) {
 function VideoViewer({ url, onClose }) {
   const getEmbedUrl = (url) => {
     if (!url) return ''
-    if (url.includes('youtube.com/watch')) {
-      const id = new URL(url).searchParams.get('v')
-      return `https://www.youtube.com/embed/${id}`
+    try {
+      if (url.includes('youtube.com/watch')) {
+        const id = new URL(url).searchParams.get('v')
+        return `https://www.youtube.com/embed/${id}`
+      }
+      if (url.includes('youtu.be/')) {
+        const id = url.split('youtu.be/')[1].split('?')[0]
+        return `https://www.youtube.com/embed/${id}`
+      }
+      if (url.includes('drive.google.com')) {
+        const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/)
+        if (match) return `https://drive.google.com/file/d/${match[1]}/preview`
+      }
+      return url
+    } catch {
+      // Same reasoning as PDFViewer above — a bad URL (e.g. `new URL()`
+      // throwing on something that isn't a valid absolute URL) should
+      // degrade gracefully instead of taking down the whole page.
+      return url
     }
-    if (url.includes('youtu.be/')) {
-      const id = url.split('youtu.be/')[1].split('?')[0]
-      return `https://www.youtube.com/embed/${id}`
-    }
-    if (url.includes('drive.google.com')) {
-      const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/)
-      if (match) return `https://drive.google.com/file/d/${match[1]}/preview`
-    }
-    return url
   }
   return (
     <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.95)', zIndex: 2000, display: 'flex', flexDirection: 'column' }}>

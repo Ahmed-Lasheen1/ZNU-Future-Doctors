@@ -23,6 +23,11 @@ export default function Search({ dark }) {
   const [error, setError] = useState(false)
   const debounceRef = useRef(null)
   const inputRef = useRef(null)
+  // Bumped on every new search; a response only gets applied if it's
+  // still the most recent one requested. Without this, a slower older
+  // request that resolves after a newer one can overwrite fresh
+  // results with stale ones (classic search-box race condition).
+  const searchIdRef = useRef(0)
 
   useEffect(() => { inputRef.current?.focus() }, [])
 
@@ -39,6 +44,7 @@ export default function Search({ dark }) {
   }
 
   async function runSearch(q) {
+    const requestId = ++searchIdRef.current
     setLoading(true)
     setError(false)
     const like = `%${q}%`
@@ -48,6 +54,11 @@ export default function Search({ dark }) {
       supabase.from('summaries').select('*').ilike('title', like).limit(20),
       supabase.from('schedules').select('*').ilike('title', like).limit(20),
     ])
+
+    // A newer search has started since this one was fired — drop these
+    // results instead of letting them clobber the newer (still loading
+    // or already-applied) ones.
+    if (requestId !== searchIdRef.current) return
 
     if (fileRes.error || questionRes.error || summaryRes.error || scheduleRes.error) {
       setError(true)

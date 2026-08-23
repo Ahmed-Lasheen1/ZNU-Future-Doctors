@@ -78,14 +78,33 @@ export default function Checklist({ dark }) {
     if (!user) localStorage.setItem(`checklist_${activeModule}`, JSON.stringify(updated))
   }
 
+  // Parses a "YYYY-MM-DD" date-input value as a LOCAL calendar date.
+  // Deliberately not `new Date(dateString)` — the native parser treats
+  // a bare date string as UTC midnight, while "today" below is built
+  // in local time. Mixing those two silently shifts the day boundary
+  // by the user's UTC offset (tasks could show "Overdue" hours early,
+  // or hours late, depending on timezone). Parsing both sides the same
+  // way keeps the comparison to whole calendar days, matching how
+  // streak.js already handles the same kind of date-only comparison.
+  function parseLocalDate(dateStr) {
+    const [y, m, d] = dateStr.split('-').map(Number)
+    return new Date(y, m - 1, d)
+  }
+
+  function startOfToday() {
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    return today
+  }
+
   function isOverdue(deadline) {
     if (!deadline) return false
-    return new Date(deadline) < new Date(new Date().toDateString())
+    return parseLocalDate(deadline) < startOfToday()
   }
 
   function isDueSoon(deadline) {
     if (!deadline) return false
-    const diff = new Date(deadline) - new Date(new Date().toDateString())
+    const diff = parseLocalDate(deadline) - startOfToday()
     return diff >= 0 && diff <= 2 * 24 * 60 * 60 * 1000
   }
 

@@ -35,11 +35,18 @@ export default function Schedule({ dark }) {
 
   const getPreviewUrl = (url) => {
     if (!url) return ''
-    if (url.includes('drive.google.com')) {
-      const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/)
-      if (match) return `https://drive.google.com/file/d/${match[1]}/preview`
+    try {
+      if (url.includes('drive.google.com')) {
+        const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/)
+        if (match) return `https://drive.google.com/file/d/${match[1]}/preview`
+      }
+      return url
+    } catch {
+      // A malformed admin-entered URL shouldn't crash the viewer —
+      // fall back to the raw value and let the iframe show its own
+      // "can't load" state instead.
+      return url
     }
-    return url
   }
 
   const filtered = schedules.filter(s =>

@@ -17,6 +17,12 @@ const toolCards = [
   { emoji: '🏆', title: 'Leaderboard', to: '/profile?tab=leaderboard', color: '#f59e0b' },
 ]
 
+// Small helper so a missing/blank name never crashes the avatar badge —
+// falls back to a "?" instead of calling .charAt(0) on an empty string.
+function initialOf(name) {
+  return name && name.trim() ? name.trim().charAt(0).toUpperCase() : '?'
+}
+
 export default function Home({ dark, toggleTheme }) {
   const c = getTheme(dark)
   const navigate = useNavigate()
@@ -188,7 +194,7 @@ export default function Home({ dark, toggleTheme }) {
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 fontSize: 14, fontWeight: 900, color: '#fff', flexShrink: 0
               }}>
-                {profile.name.charAt(0).toUpperCase()}
+                {initialOf(profile.name)}
               </div>
               <div style={{ textAlign: 'left' }}>
                 <div style={{ color: c.text, fontSize: 13, fontWeight: 700 }}>
