@@ -8,6 +8,7 @@ import AnimatedCard from '../components/AnimatedCard'
 import { computeStreak } from '../lib/streak'
 import { getGuestHistory } from '../lib/reviewStorage'
 import { loadSavedActiveExam } from '../lib/activeExam'
+import NotifyPermissionButton from '../components/NotifyPermissionButton'
 
 const toolCards = [
   { emoji: '📅', title: 'Schedules', to: '/schedule', color: '#a78bfa' },
@@ -25,6 +26,7 @@ export default function Home({ dark, toggleTheme }) {
   const [announcement, setAnnouncement] = useState('')
   const [streak, setStreak] = useState(0)
   const [pausedExam, setPausedExam] = useState(null)
+  const [weeklySummary, setWeeklySummary] = useState(null)
 
   useEffect(() => {
     setTimeout(() => setTitleVisible(true), 100)
@@ -55,6 +57,78 @@ export default function Home({ dark, toggleTheme }) {
   useEffect(() => {
     loadSavedActiveExam(user).then(setPausedExam)
   }, [user])
+
+  // Weekly summary — a lightweight, auto-refreshing recap built purely
+  // from exam_history (or its guest-local equivalent), so there's
+  // nothing extra to maintain: questions attempted, accuracy, and the
+  // most-practiced subject over the last 7 days.
+  useEffect(() => {
+    async function loadWeekly() {
+      const weekAgoMs = Date.now() - 7 * 24 * 60 * 60 * 1000
+      let rows = []
+      if (user) {
+        const { data } = await supabase
+          .from('exam_history')
+          .select('total, correct, subject_id, completed_at')
+          .eq('user_id', user.id)
+          .gte('completed_at', new Date(weekAgoMs).toISOString())
+        rows = data || []
+      } else {
+        rows = getGuestHistory().filter(h => h.completed_at >= weekAgoMs)
+      }
+
+      if (rows.length === 0) { setWeeklySummary(null); return }
+
+      const totalAttempted = rows.reduce((a, h) => a + h.total, 0)
+      const totalCorrect = rows.reduce((a, h) => a + h.correct, 0)
+      const accuracy = totalAttempted > 0 ? Math.round((100 * totalCorrect) / totalAttempted) : 0
+
+      const bySubject = {}
+      rows.forEach(h => { if (h.subject_id) bySubject[h.subject_id] = (bySubject[h.subject_id] || 0) + h.total })
+      const topSubjectId = Object.entries(bySubject).sort((a, b) => b[1] - a[1])[0]?.[0] || null
+
+      let topSubjectName = null
+      if (topSubjectId) {
+        const { data: subData } = await supabase.from('subjects').select('name').eq('id', topSubjectId).single()
+        topSubjectName = subData?.name || null
+      }
+
+      setWeeklySummary({ totalAttempted, accuracy, topSubjectName })
+    }
+    loadWeekly()
+  }, [user])
+
+  // Upcoming-exam reminder — fires a local notification (only if
+  // permission was already granted, at most once per day) when an
+  // admin-set exam date is 0-2 days away. This only triggers while the
+  // app is actually open; a true always-on background push would need
+  // separate push-server infrastructure.
+  useEffect(() => {
+    async function checkExamReminders() {
+      if (!('Notification' in window) || Notification.permission !== 'granted') return
+      const { data } = await supabase.from('schedules').select('title, date, module_id').eq('type', 'exam').not('date', 'is', null)
+      if (!data || data.length === 0) return
+
+      const today = new Date(); today.setHours(0, 0, 0, 0)
+      const upcoming = data.filter(s => {
+        const diffDays = Math.round((new Date(s.date) - today) / (24 * 60 * 60 * 1000))
+        return diffDays >= 0 && diffDays <= 2
+      })
+      if (upcoming.length === 0) return
+
+      const todayStr = today.toDateString()
+      if (localStorage.getItem('exam_reminder_last_notify') === todayStr) return
+
+      upcoming.forEach(s => {
+        const mod = modules.find(m => m.id === s.module_id)
+        new Notification('📝 Upcoming Exam', {
+          body: `${mod ? mod.name + ' — ' : ''}${s.title} is coming up soon!`
+        })
+      })
+      localStorage.setItem('exam_reminder_last_notify', todayStr)
+    }
+    checkExamReminders()
+  }, [modules])
 
   const activeModules = modules.filter(m => m.status === 'active')
   const completedModules = modules.filter(m => m.status === 'completed')
@@ -156,6 +230,37 @@ export default function Home({ dark, toggleTheme }) {
           </div>
         )}
       </div>
+
+      <div className="page-container">
+        <NotifyPermissionButton dark={dark} label="🔔 Enable exam & deadline reminders" />
+      </div>
+
+      {/* Weekly summary — auto-computed from exam_history, no setup needed */}
+      {weeklySummary && (
+        <div className="page-container" style={{ marginBottom: 24 }}>
+          <div style={{ background: c.card, border: `1px solid ${c.border}`, borderRadius: 16, padding: '18px 20px' }}>
+            <div style={{ color: c.sub, fontSize: 12, fontWeight: 700, letterSpacing: 1, marginBottom: 12, textTransform: 'uppercase' }}>
+              📈 This Week
+            </div>
+            <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
+              <div>
+                <div style={{ color: '#38bdf8', fontWeight: 900, fontSize: 20 }}>{weeklySummary.totalAttempted}</div>
+                <div style={{ color: c.sub, fontSize: 11 }}>Questions</div>
+              </div>
+              <div>
+                <div style={{ color: weeklySummary.accuracy >= 60 ? '#22c55e' : '#ef4444', fontWeight: 900, fontSize: 20 }}>{weeklySummary.accuracy}%</div>
+                <div style={{ color: c.sub, fontSize: 11 }}>Accuracy</div>
+              </div>
+              {weeklySummary.topSubjectName && (
+                <div>
+                  <div style={{ color: '#a78bfa', fontWeight: 900, fontSize: 14 }}>{weeklySummary.topSubjectName}</div>
+                  <div style={{ color: c.sub, fontSize: 11 }}>Most practiced</div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Continue where you left off */}
       {pausedExam && (

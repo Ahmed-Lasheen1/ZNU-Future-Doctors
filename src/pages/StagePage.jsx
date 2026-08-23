@@ -22,9 +22,15 @@ export default function StagePage({ dark }) {
   const [driveUrl, setDriveUrl] = useState('')
 
   useEffect(() => {
-    supabase.from('site_settings').select('value').eq('key', 'drive_url').single()
-      .then(({ data }) => { if (data?.value) setDriveUrl(data.value) })
-  }, [])
+    // Stage-specific link takes priority (e.g. "drive_url_final"); falls
+    // back to the general "drive_url" if that stage has nothing set.
+    supabase.from('site_settings').select('key, value').in('key', ['drive_url', `drive_url_${stage}`])
+      .then(({ data }) => {
+        if (!data) return
+        const byKey = Object.fromEntries(data.map(r => [r.key, r.value]))
+        setDriveUrl(byKey[`drive_url_${stage}`] || byKey['drive_url'] || '')
+      })
+  }, [stage])
 
   useEffect(() => {
     supabase.from('files').select('type').eq('module_id', moduleId).eq('exam_stage', stage)

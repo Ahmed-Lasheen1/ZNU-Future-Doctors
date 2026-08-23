@@ -119,6 +119,7 @@ export default function Schedule({ dark }) {
               <div>
                 <h3 style={{ color: c.text, marginBottom: 4 }}>{sch.title}</h3>
                 {sch.week && <p style={{ color: c.sub, fontSize: 13 }}>{sch.week}</p>}
+                {sch.date && <p style={{ color: '#a78bfa', fontSize: 12, fontWeight: 700 }}>📅 {new Date(sch.date).toLocaleDateString()}</p>}
               </div>
               <button onClick={() => setViewer(sch)} style={{
                 background: '#a78bfa', color: '#0f172a', border: 'none',
