@@ -136,7 +136,7 @@ export default function MCQ({ dark }) {
       // anyway (see supabase_secure_mcq.sql). Grading happens server-side
       // via the grade_mcq() function, only after the student submits.
       supabase.from('questions')
-        .select('id, question, option_a, option_b, option_c, option_d, exam_type, exam_stage, module_id, subject_id, created_at')
+        .select('id, question, option_a, option_b, option_c, option_d, exam_type, exam_stage, module_id, subject_id, source, created_at')
         .order('created_at')
     ])
 
@@ -216,7 +216,7 @@ export default function MCQ({ dark }) {
         toggleGuestFlag({
           question_id: q.id, question: q.question,
           option_a: q.option_a, option_b: q.option_b, option_c: q.option_c, option_d: q.option_d,
-          module_id: q.module_id
+          module_id: q.module_id, source: q.source
         })
       }
       showToast('🚩 Question flagged')
@@ -417,7 +417,7 @@ export default function MCQ({ dark }) {
           saveGuestIncorrect({
             question_id: q.id, question: q.question,
             option_a: q.option_a, option_b: q.option_b, option_c: q.option_c, option_d: q.option_d,
-            module_id: q.module_id, correct_answer: r.correct_answer, explanation: r.explanation
+            module_id: q.module_id, source: q.source, correct_answer: r.correct_answer, explanation: r.explanation
           })
         }
       })
@@ -527,7 +527,7 @@ export default function MCQ({ dark }) {
                 : `1px solid ${c.border}`,
               borderRadius: 16, padding: 20, marginBottom: 16, scrollMarginTop: 20
             }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8, marginBottom: 14 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8, marginBottom: 10 }}>
                 <p style={{ color: c.text, fontWeight: 700, fontSize: 14, margin: 0, flex: 1 }}>
                   {qi + 1}. {q.question}
                 </p>
@@ -538,6 +538,11 @@ export default function MCQ({ dark }) {
                   }}>🚩</button>
                 )}
               </div>
+              {q.source && (
+                <div style={{ marginBottom: 10 }}>
+                  <QuestionSourceBadge source={q.source} />
+                </div>
+              )}
               {optionTexts(q).map((opt, ai) => {
                 const label = optionLabels[ai]
                 let bg = c.input, border = c.border, color = c.sub
@@ -685,7 +690,7 @@ export default function MCQ({ dark }) {
       <h3 style={{ color: c.sub, fontSize: 13, fontWeight: 700, letterSpacing: 2, marginBottom: 16, textTransform: 'uppercase' }}>
         Practice by Subject
       </h3>
-      <div className="card-grid">
+      <AutoGrid>
         {moduleSubjects.map(sub => {
           const subQs = questions.filter(q =>
             q.subject_id === sub.id &&
@@ -708,7 +713,7 @@ export default function MCQ({ dark }) {
             </div>
           )
         })}
-      </div>
+      </AutoGrid>
     </div>
   )
 }
