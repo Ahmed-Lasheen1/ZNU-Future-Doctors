@@ -83,6 +83,9 @@ export default function Admin({ dark }) {
   const [driveUrl, setDriveUrl] = useState('')
   const [stageDriveUrls, setStageDriveUrls] = useState({ tbl: '', end_module: '', practical: '', final: '' })
   const [driveUrlSaving, setDriveUrlSaving] = useState(false)
+  const [broadcastTitle, setBroadcastTitle] = useState('')
+  const [broadcastBody, setBroadcastBody] = useState('')
+  const [broadcastSending, setBroadcastSending] = useState(false)
 
   const c = {
     ...getTheme(dark),
@@ -131,6 +134,30 @@ export default function Admin({ dark }) {
     const { error } = await supabase.from('site_settings').upsert(upserts)
     setDriveUrlSaving(false)
     showMsg(error ? '❌ ' + error.message : '✅ Drive links updated!')
+  }
+
+  // Sends a real push notification to every registered device — see
+  // api/push/broadcast.js. The server independently re-checks that
+  // this account has role='admin' before sending anything.
+  async function sendBroadcast() {
+    if (!broadcastTitle.trim() || !broadcastBody.trim()) return showMsg('❌ Please fill in both fields')
+    setBroadcastSending(true)
+    const { data: { session } } = await supabase.auth.getSession()
+    try {
+      const res = await fetch('/api/push/broadcast', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token}` },
+        body: JSON.stringify({ title: broadcastTitle.trim(), body: broadcastBody.trim() })
+      })
+      const result = await res.json()
+      setBroadcastSending(false)
+      if (!res.ok) return showMsg('❌ ' + (result.error || 'Failed to send'))
+      showMsg(`✅ Sent to ${result.sent} device(s)!`)
+      setBroadcastTitle(''); setBroadcastBody('')
+    } catch (e) {
+      setBroadcastSending(false)
+      showMsg('❌ Network error — please try again')
+    }
   }
 
   async function fetchModules() {
@@ -819,6 +846,18 @@ Correct: A`}</pre>
 
       {activeTab === 'settings' && (
         <div>
+          <div style={{ background: c.card, padding: '20px', borderRadius: '16px', border: `1px solid ${c.border}`, marginBottom: 16 }}>
+            <h3 style={{ color: '#38bdf8', marginBottom: 8 }}>📢 Send Push Notification to Everyone</h3>
+            <p style={{ color: c.sub, fontSize: 13, marginBottom: 16 }}>
+              Delivered instantly to every device with notifications enabled — even if they don't have the site open right now.
+            </p>
+            <input placeholder="Title (e.g. New questions added!)" value={broadcastTitle} onChange={e => setBroadcastTitle(e.target.value)} style={inStyle} />
+            <textarea placeholder="Message" value={broadcastBody} onChange={e => setBroadcastBody(e.target.value)} style={{ ...inStyle, minHeight: 70, resize: 'vertical' }} />
+            <button onClick={sendBroadcast} disabled={broadcastSending} style={btnStyle}>
+              {broadcastSending ? 'Sending...' : '📤 Send to Everyone'}
+            </button>
+          </div>
+
           <div style={{ background: c.card, padding: '20px', borderRadius: '16px', border: `1px solid ${c.border}`, marginBottom: 16 }}>
             <h3 style={{ color: '#38bdf8', marginBottom: 8 }}>📁 Google Drive Links</h3>
             <p style={{ color: c.sub, fontSize: 13, marginBottom: 16 }}>
