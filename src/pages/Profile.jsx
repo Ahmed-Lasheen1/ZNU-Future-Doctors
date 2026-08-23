@@ -92,7 +92,8 @@ export default function Profile({ dark }) {
   const [leaderboard, setLeaderboard] = useState([])
   const [tab, setTab] = useState(() => {
     const params = new URLSearchParams(location.search)
-    return params.get('tab') === 'leaderboard' ? 'leaderboard' : 'profile'
+    const t = params.get('tab')
+    return t === 'leaderboard' || t === 'history' ? t : 'profile'
   })
   const [loading, setLoading] = useState(true)
   const [editing, setEditing] = useState(false)
@@ -325,6 +326,13 @@ export default function Profile({ dark }) {
           <h2 style={{ color: '#f472b6', textAlign: 'center', marginBottom: 8 }}>
             🕘 Exam History
           </h2>
+
+          <div style={{ textAlign: 'center', marginBottom: 16 }}>
+            <button onClick={() => navigate('/review')} style={{
+              background: 'transparent', border: `1px solid ${c.border}`, borderRadius: 20,
+              padding: '6px 16px', color: c.sub, cursor: 'pointer', fontFamily: 'inherit', fontSize: 12, fontWeight: 700
+            }}>📚 See my incorrect & flagged questions</button>
+          </div>
 
           {!historyLoading && history.length > 0 && (() => {
             const totalAttempted = history.reduce((a, h) => a + h.total, 0)

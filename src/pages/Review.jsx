@@ -110,9 +110,16 @@ export default function Review({ dark }) {
   return (
     <div className="page-container" style={{ padding: '20px' }}>
       <h1 style={{ color: '#f472b6', textAlign: 'center', marginBottom: 8 }}>📚 Review</h1>
-      <p style={{ color: c.sub, textAlign: 'center', marginBottom: 20, fontSize: 13 }}>
+      <p style={{ color: c.sub, textAlign: 'center', marginBottom: 12, fontSize: 13 }}>
         Questions you got wrong, and questions you flagged during a quiz
       </p>
+
+      <div style={{ textAlign: 'center', marginBottom: 20 }}>
+        <button onClick={() => navigate('/profile?tab=history')} style={{
+          background: 'transparent', border: `1px solid ${c.border}`, borderRadius: 20,
+          padding: '6px 16px', color: c.sub, cursor: 'pointer', fontFamily: 'inherit', fontSize: 12, fontWeight: 700
+        }}>🕘 See my full exam history</button>
+      </div>
 
       <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
         {[{ id: 'incorrect', label: '❌ Incorrect' }, { id: 'flagged', label: '🚩 Flagged' }].map(t => (
