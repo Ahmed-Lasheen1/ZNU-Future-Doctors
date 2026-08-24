@@ -6,7 +6,7 @@ import ErrorBanner from '../components/ErrorBanner'
 import AnimatedCard from '../components/AnimatedCard'
 import AutoGrid from '../components/AutoGrid'
 import { useModules } from '../App'
-import { stageMeta } from '../lib/examStages'
+import { fetchModuleStages, stageMetaFrom } from '../lib/moduleStages'
 import { FILE_CARDS } from '../lib/fileCards'
 
 export default function StagePage({ dark }) {
@@ -15,12 +15,17 @@ export default function StagePage({ dark }) {
   const navigate = useNavigate()
   const { modules, modulesLoaded, modulesError } = useModules()
   const module = modules.find(m => m.id === moduleId) || null
-  const meta = stageMeta(stage)
+  const [stages, setStages] = useState([])
+  const meta = stageMetaFrom(stages, stage)
   const [presentFileTypes, setPresentFileTypes] = useState(new Set())
   const [summaries, setSummaries] = useState([])
   const [selectedSummary, setSelectedSummary] = useState(null)
   const [loadError, setLoadError] = useState(false)
   const [driveUrl, setDriveUrl] = useState('')
+
+  useEffect(() => {
+    fetchModuleStages(moduleId).then(setStages)
+  }, [moduleId])
 
   useEffect(() => {
     // Stage-specific link takes priority (e.g. "drive_url_final"); falls

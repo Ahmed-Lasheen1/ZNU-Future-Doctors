@@ -10,18 +10,13 @@ import QuestionPalette from '../components/QuestionPalette'
 import ScoreRing from '../components/ScoreRing'
 import QuestionSourceBadge from '../components/QuestionSourceBadge'
 import AutoGrid from '../components/AutoGrid'
-import { EXAM_STAGES as STAGE_META } from '../lib/examStages'
+import { fetchModuleStages } from '../lib/moduleStages'
 import {
   getGuestFlags, toggleGuestFlag,
   saveGuestIncorrect, enrichGuestFlagsWithResults,
   addGuestHistory
 } from '../lib/reviewStorage'
 import { loadSavedActiveExam, persistActiveExam, clearActiveExam } from '../lib/activeExam'
-
-const EXAM_STAGES = [
-  { value: 'all', label: 'All' },
-  ...STAGE_META.map(s => ({ value: s.value, label: `${s.emoji} ${s.title}` }))
-]
 
 const MOCK_MINUTES = 36
 
@@ -40,6 +35,11 @@ export default function MCQ({ dark }) {
     return params.get('stage') || 'all'
   })
   const [activeSubject, setActiveSubject] = useState('all')
+  const [stages, setStages] = useState([])
+  const [lessonFilter] = useState(() => {
+    const params = new URLSearchParams(location.search)
+    return params.get('lesson') || null
+  })
   const [quizMode, setQuizMode] = useState(null)
   const [quizQuestions, setQuizQuestions] = useState([])
   const [answers, setAnswers] = useState({})
@@ -90,6 +90,17 @@ export default function MCQ({ dark }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.state])
 
+  // Arriving from LessonPage with ?lesson=<id> — auto-start a practice
+  // quiz scoped to just that lesson's questions, untimed like normal
+  // practice, using the same grading path.
+  useEffect(() => {
+    if (lessonFilter && !quizMode && questions.length > 0) {
+      const lessonQs = questions.filter(q => q.lesson_id === lessonFilter)
+      startRetryQuiz(lessonQs)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lessonFilter, questions])
+
   // ── Paused-exam check (Resume) ─────────────────────────────────────────
   // Runs whenever we're back on the module list (not mid-quiz) or the
   // auth state settles, so signing in mid-session also picks up a
@@ -127,6 +138,10 @@ export default function MCQ({ dark }) {
 
   const [usingCache, setUsingCache] = useState(false)
 
+  useEffect(() => {
+    fetchModuleStages(activeModule).then(setStages)
+  }, [activeModule])
+
   async function fetchData() {
     setLoading(true)
     const [subRes, qRes] = await Promise.all([
@@ -136,7 +151,7 @@ export default function MCQ({ dark }) {
       // anyway (see supabase_secure_mcq.sql). Grading happens server-side
       // via the grade_mcq() function, only after the student submits.
       supabase.from('questions')
-        .select('id, question, option_a, option_b, option_c, option_d, exam_type, exam_stage, module_id, subject_id, source, created_at')
+        .select('id, question, option_a, option_b, option_c, option_d, exam_type, exam_stage, module_id, subject_id, lesson_id, source, created_at')
         .order('created_at')
     ])
 
@@ -645,7 +660,7 @@ export default function MCQ({ dark }) {
       />
 
       <div style={{ display: 'flex', gap: 8, overflowX: 'auto', marginBottom: 16, paddingBottom: 4 }}>
-        {EXAM_STAGES.map(stage => (
+        {[{ value: 'all', label: 'All' }, ...stages.map(s => ({ value: s.value, label: `${s.emoji} ${s.title}` }))].map(stage => (
           <button key={stage.value} onClick={() => setActiveStage(stage.value)} style={{
             ...subBtnStyle, borderColor: activeStage === stage.value ? '#e2725b' : c.border,
             color: activeStage === stage.value ? '#e2725b' : c.sub

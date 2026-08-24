@@ -6,7 +6,7 @@ import ErrorBanner from '../components/ErrorBanner'
 import AnimatedCard from '../components/AnimatedCard'
 import AutoGrid from '../components/AutoGrid'
 import { useModules } from '../App'
-import { EXAM_STAGES } from '../lib/examStages'
+import { fetchModuleStages } from '../lib/moduleStages'
 import { FILE_CARDS } from '../lib/fileCards'
 
 export default function ModulePage({ dark }) {
@@ -19,6 +19,8 @@ export default function ModulePage({ dark }) {
   const [visible, setVisible] = useState(false)
   const [loadError, setLoadError] = useState(false)
   const [driveUrl, setDriveUrl] = useState('')
+  const [examStages, setExamStages] = useState([])
+  const [subjects, setSubjects] = useState([])
 
   useEffect(() => {
     supabase.from('site_settings').select('value').eq('key', 'drive_url').single()
@@ -30,6 +32,14 @@ export default function ModulePage({ dark }) {
     supabase.from('files').select('type').eq('module_id', moduleId)
       .then(({ data, error }) => {
         if (data) setPresentFileTypes(new Set(data.map(f => f.type)))
+        if (error) setLoadError(true)
+      })
+    // A module can customize its own exam-stage set (see Admin →
+    // Stages) — falls back to the 4 global defaults if it hasn't.
+    fetchModuleStages(moduleId).then(setExamStages)
+    supabase.from('subjects').select('*').eq('module_id', moduleId).order('name')
+      .then(({ data, error }) => {
+        if (data) setSubjects(data)
         if (error) setLoadError(true)
       })
   }, [moduleId])
@@ -75,7 +85,7 @@ export default function ModulePage({ dark }) {
           🎯 Exam Stage
         </h2>
         <AutoGrid>
-          {EXAM_STAGES.map((stage, i) => (
+          {examStages.map((stage, i) => (
             <AnimatedCard key={stage.value} delay={i * 80} color={stage.color} dark={dark}
               onClick={() => navigate(`/module/${moduleId}/stage/${stage.value}`)}>
               <div style={{ fontSize: 'clamp(28px, 3vw, 42px)', marginBottom: 8 }}>{stage.emoji}</div>
@@ -84,6 +94,25 @@ export default function ModulePage({ dark }) {
           ))}
         </AutoGrid>
       </div>
+
+      {/* Study by Lesson — subject cards, mirroring the Exam Stage
+          layout. Only shown once the module actually has subjects. */}
+      {subjects.length > 0 && (
+        <div style={{ marginBottom: 32 }}>
+          <h2 style={{ color: c.sub, fontSize: 13, fontWeight: 700, letterSpacing: 2, marginBottom: 16, textTransform: 'uppercase' }}>
+            📖 Study by Lesson
+          </h2>
+          <AutoGrid>
+            {subjects.map((sub, i) => (
+              <AnimatedCard key={sub.id} delay={i * 80} color='#34d399' dark={dark}
+                onClick={() => navigate(`/module/${moduleId}/subject/${sub.id}`)}>
+                <div style={{ fontSize: 'clamp(28px, 3vw, 42px)', marginBottom: 8 }}>📖</div>
+                <div style={{ color: c.text, fontSize: 'clamp(13px, 1.1vw, 16px)', fontWeight: 700 }}>{sub.name}</div>
+              </AnimatedCard>
+            ))}
+          </AutoGrid>
+        </div>
+      )}
 
       {/* Study Materials — only shown once something's actually there */}
       {(filteredFileCards.length > 0 || driveUrl) && (

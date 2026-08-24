@@ -5,6 +5,7 @@ import { useAuth, useModules } from '../App'
 import { getTheme, inputStyle } from '../theme'
 import { fetchModulesSorted } from '../lib/modules'
 import { EXAM_STAGES as STAGE_META } from '../lib/examStages'
+import { fetchModuleStages } from '../lib/moduleStages'
 import InlineMessage from '../components/InlineMessage'
 
 const EXAM_STAGES = STAGE_META.map(s => ({ value: s.value, label: `${s.emoji} ${s.title}` }))
@@ -14,6 +15,10 @@ const EXAM_STAGES = STAGE_META.map(s => ({ value: s.value, label: `${s.emoji} ${
 // has today — bump this if the module ever genuinely needs more rows
 // listed here at once.
 const LIST_LIMIT = 200
+
+function slugify(text) {
+  return text.toLowerCase().trim().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '') || 'stage'
+}
 
 export default function Admin({ dark }) {
   const { user, profile } = useAuth()
@@ -27,19 +32,26 @@ export default function Admin({ dark }) {
   const [schedules, setSchedules] = useState([])
   const [questions, setQuestions] = useState([])
   const [summaries, setSummaries] = useState([])
+  const [lessons, setLessons] = useState([])
   const [difficulty, setDifficulty] = useState([])
   const [difficultyLoading, setDifficultyLoading] = useState(false)
   const [msg, setMsg] = useState('')
 
+  // ── Modules ──────────────────────────────────────────────────
+  const [editingModuleId, setEditingModuleId] = useState(null)
   const [modName, setModName] = useState('')
   const [modColor, setModColor] = useState('#38bdf8')
   const [modIcon, setModIcon] = useState('📚')
   const [modStatus, setModStatus] = useState('active')
 
+  // ── Subjects ─────────────────────────────────────────────────
+  const [editingSubjectId, setEditingSubjectId] = useState(null)
   const [subName, setSubName] = useState('')
   const [subModuleId, setSubModuleId] = useState('')
   const [subType, setSubType] = useState('both')
 
+  // ── Files ────────────────────────────────────────────────────
+  const [editingFileId, setEditingFileId] = useState(null)
   const [fileName, setFileName] = useState('')
   const [fileUrl, setFileUrl] = useState('')
   const [fileType, setFileType] = useState('sharah')
@@ -47,17 +59,32 @@ export default function Admin({ dark }) {
   const [fileModuleId, setFileModuleId] = useState('')
   const [fileSubjectId, setFileSubjectId] = useState('')
   const [fileExamStage, setFileExamStage] = useState('tbl')
+  const [fileStageOptions, setFileStageOptions] = useState(EXAM_STAGES)
 
+  // ── Schedules ────────────────────────────────────────────────
+  const [editingScheduleId, setEditingScheduleId] = useState(null)
   const [schTitle, setSchTitle] = useState('')
   const [schUrl, setSchUrl] = useState('')
   const [schType, setSchType] = useState('study')
   const [schModuleId, setSchModuleId] = useState('')
   const [schDate, setSchDate] = useState('')
 
-  const [taskText, setTaskText] = useState('')
-  const [taskModuleId, setTaskModuleId] = useState('')
-  const [taskSubjectId, setTaskSubjectId] = useState('')
+  // ── Lessons ──────────────────────────────────────────────────
+  const [editingLessonId, setEditingLessonId] = useState(null)
+  const [lessonModuleId, setLessonModuleId] = useState('')
+  const [lessonSubjectId, setLessonSubjectId] = useState('')
+  const [lessonTitle, setLessonTitle] = useState('')
+  const [lessonSummaryUrl, setLessonSummaryUrl] = useState('')
 
+  // ── Per-module exam stages ───────────────────────────────────
+  const [stageModuleId, setStageModuleId] = useState('')
+  const [moduleStagesList, setModuleStagesList] = useState([])
+  const [stagesIsCustom, setStagesIsCustom] = useState(false)
+  const [stagesLoading, setStagesLoading] = useState(false)
+  const [stagesSaving, setStagesSaving] = useState(false)
+
+  // ── Questions ────────────────────────────────────────────────
+  const [editingQuestionId, setEditingQuestionId] = useState(null)
   const [qText, setQText] = useState('')
   const [qA, setQA] = useState('')
   const [qB, setQB] = useState('')
@@ -67,18 +94,24 @@ export default function Admin({ dark }) {
   const [qExplanation, setQExplanation] = useState('')
   const [qModuleId, setQModuleId] = useState('')
   const [qSubjectId, setQSubjectId] = useState('')
+  const [qLessonId, setQLessonId] = useState('')
   const [qExamType, setQExamType] = useState('both')
   const [qExamStage, setQExamStage] = useState('tbl')
+  const [qStageOptions, setQStageOptions] = useState(EXAM_STAGES)
   const [qSource, setQSource] = useState('')
   const [bulkMode, setBulkMode] = useState(false)
   const [bulkText, setBulkText] = useState('')
   const [bulkSaving, setBulkSaving] = useState(false)
 
+  // ── Summaries ────────────────────────────────────────────────
+  const [editingSummaryId, setEditingSummaryId] = useState(null)
   const [sumTitle, setSumTitle] = useState('')
   const [sumUrl, setSumUrl] = useState('')
   const [sumModuleId, setSumModuleId] = useState('')
   const [sumExamStage, setSumExamStage] = useState('tbl')
+  const [sumStageOptions, setSumStageOptions] = useState(EXAM_STAGES)
 
+  // ── Settings ─────────────────────────────────────────────────
   const [announcement, setAnnouncement] = useState('')
   const [announcementSaving, setAnnouncementSaving] = useState(false)
   const [driveUrl, setDriveUrl] = useState('')
@@ -95,13 +128,32 @@ export default function Admin({ dark }) {
 
   useEffect(() => {
     if (isAuth) {
-      fetchModules(); fetchSubjects(); fetchFiles(); fetchSchedules(); fetchQuestions(); fetchSummaries(); fetchAnnouncement()
+      fetchModules(); fetchSubjects(); fetchFiles(); fetchSchedules(); fetchQuestions()
+      fetchSummaries(); fetchLessons(); fetchAnnouncement()
     }
   }, [isAuth])
 
   useEffect(() => {
     if (isAuth && activeTab === 'analytics') fetchDifficulty()
   }, [isAuth, activeTab])
+
+  useEffect(() => {
+    if (isAuth && activeTab === 'stages' && stageModuleId) loadModuleStagesForAdmin(stageModuleId)
+  }, [isAuth, activeTab, stageModuleId])
+
+  // Every place that lets an admin pick an exam stage for a piece of
+  // content should offer THAT module's actual stage set, not just the
+  // 4 global defaults — so these three re-fetch whenever the relevant
+  // module selector changes.
+  useEffect(() => {
+    fetchModuleStages(fileModuleId).then(list => setFileStageOptions(list.map(s => ({ value: s.value, label: `${s.emoji} ${s.title}` }))))
+  }, [fileModuleId])
+  useEffect(() => {
+    fetchModuleStages(qModuleId).then(list => setQStageOptions(list.map(s => ({ value: s.value, label: `${s.emoji} ${s.title}` }))))
+  }, [qModuleId])
+  useEffect(() => {
+    fetchModuleStages(sumModuleId).then(list => setSumStageOptions(list.map(s => ({ value: s.value, label: `${s.emoji} ${s.title}` }))))
+  }, [sumModuleId])
 
   async function fetchAnnouncement() {
     const keys = ['home_announcement', 'drive_url', ...STAGE_META.map(s => `drive_url_${s.value}`)]
@@ -172,16 +224,35 @@ export default function Admin({ dark }) {
     if (data) setSubjects(data)
   }
 
+  async function fetchLessons() {
+    const { data } = await supabase.from('lessons').select('*').order('created_at', { ascending: false }).limit(LIST_LIMIT)
+    if (data) setLessons(data)
+  }
+
   function showMsg(m) { setMsg(m); setTimeout(() => setMsg(''), 3000) }
 
-  async function addModule() {
+  // ── Modules: add or update ───────────────────────────────────
+  function editModule(mod) {
+    setEditingModuleId(mod.id)
+    setModName(mod.name); setModColor(mod.color); setModIcon(mod.icon); setModStatus(mod.status)
+  }
+  function resetModuleForm() {
+    setEditingModuleId(null); setModName(''); setModColor('#38bdf8'); setModIcon('📚'); setModStatus('active')
+  }
+  async function saveModule() {
     if (!modName) return
-    if (modules.some(m => m.name.trim().toLowerCase() === modName.trim().toLowerCase())) {
-      return showMsg('❌ A module with this name already exists')
+    const dup = modules.some(m => m.name.trim().toLowerCase() === modName.trim().toLowerCase() && m.id !== editingModuleId)
+    if (dup) return showMsg('❌ A module with this name already exists')
+
+    if (editingModuleId) {
+      const { error } = await supabase.from('modules').update({ name: modName, color: modColor, icon: modIcon, status: modStatus }).eq('id', editingModuleId)
+      if (!error) { showMsg('✅ Module updated!'); resetModuleForm(); fetchModules() }
+      else showMsg('❌ ' + error.message)
+    } else {
+      const { error } = await supabase.from('modules').insert([{ name: modName, color: modColor, icon: modIcon, status: modStatus }])
+      if (!error) { showMsg('✅ Module added!'); resetModuleForm(); fetchModules() }
+      else showMsg('❌ ' + error.message)
     }
-    const { error } = await supabase.from('modules').insert([{ name: modName, color: modColor, icon: modIcon, status: modStatus }])
-    if (!error) { showMsg('✅ Module added!'); setModName(''); fetchModules() }
-    else showMsg('❌ ' + error.message)
   }
 
   async function toggleModuleStatus(mod) {
@@ -192,24 +263,40 @@ export default function Admin({ dark }) {
 
   async function deleteModule(id) {
     if (!confirm('Delete this module? This will also permanently delete all its subjects, files, schedules, questions and summaries. This cannot be undone.')) return
+    if (editingModuleId === id) resetModuleForm()
     const { error } = await supabase.from('modules').delete().eq('id', id)
     showMsg(error ? '❌ ' + error.message : '✅ Module deleted')
     fetchModules()
   }
 
-  async function addSubject() {
+  // ── Subjects: add or update ──────────────────────────────────
+  function editSubject(sub) {
+    setEditingSubjectId(sub.id)
+    setSubModuleId(sub.module_id); setSubName(sub.name); setSubType(sub.type)
+  }
+  function resetSubjectForm() {
+    setEditingSubjectId(null); setSubName(''); setSubType('both')
+  }
+  async function saveSubject() {
     if (!subName || !subModuleId) return
-    const existing = subjects.filter(s => s.module_id === subModuleId)
+    const existing = subjects.filter(s => s.module_id === subModuleId && s.id !== editingSubjectId)
     if (existing.some(s => s.name.trim().toLowerCase() === subName.trim().toLowerCase())) {
       return showMsg('❌ This subject already exists in that module')
     }
-    const { error } = await supabase.from('subjects').insert([{ name: subName, module_id: subModuleId, type: subType }])
-    if (!error) { showMsg('✅ Subject added!'); setSubName(''); fetchSubjects() }
-    else showMsg('❌ ' + error.message)
+    if (editingSubjectId) {
+      const { error } = await supabase.from('subjects').update({ name: subName, module_id: subModuleId, type: subType }).eq('id', editingSubjectId)
+      if (!error) { showMsg('✅ Subject updated!'); resetSubjectForm(); fetchSubjects() }
+      else showMsg('❌ ' + error.message)
+    } else {
+      const { error } = await supabase.from('subjects').insert([{ name: subName, module_id: subModuleId, type: subType }])
+      if (!error) { showMsg('✅ Subject added!'); resetSubjectForm(); fetchSubjects() }
+      else showMsg('❌ ' + error.message)
+    }
   }
 
   async function deleteSubject(id) {
-    if (!confirm('Delete this subject? Its files and questions will also be deleted. This cannot be undone.')) return
+    if (!confirm('Delete this subject? Its files, lessons and questions will also be deleted. This cannot be undone.')) return
+    if (editingSubjectId === id) resetSubjectForm()
     const { error } = await supabase.from('subjects').delete().eq('id', id)
     showMsg(error ? '❌ ' + error.message : '✅ Subject deleted')
     fetchSubjects()
@@ -230,11 +317,13 @@ export default function Admin({ dark }) {
   async function fetchQuestions() {
     // Note: `correct` and `explanation` are intentionally excluded — those
     // two columns are blocked at the database level for everyone (see
-    // supabase_secure_mcq.sql), including this admin panel. The question
-    // list below only ever needs the question text and its module.
+    // supabase_secure_mcq.sql), including this admin panel's LIST view.
+    // Editing a specific question instead goes through admin_get_question
+    // / admin_update_question (see supabase_lessons_stages_and_admin_edit.sql),
+    // which check the caller is actually an admin before revealing them.
     const { data } = await supabase
       .from('questions')
-      .select('id, question, module_id, subject_id, exam_type, exam_stage, created_at')
+      .select('id, question, module_id, subject_id, lesson_id, exam_type, exam_stage, source, created_at')
       .order('created_at', { ascending: false })
       .limit(LIST_LIMIT)
     if (data) setQuestions(data)
@@ -258,6 +347,7 @@ export default function Admin({ dark }) {
 
   async function deleteFile(id) {
     if (!confirm('Delete this file? This cannot be undone.')) return
+    if (editingFileId === id) resetFileForm()
     const { error } = await supabase.from('files').delete().eq('id', id)
     showMsg(error ? '❌ ' + error.message : '✅ File deleted')
     fetchFiles()
@@ -265,6 +355,7 @@ export default function Admin({ dark }) {
 
   async function deleteSchedule(id) {
     if (!confirm('Delete this schedule? This cannot be undone.')) return
+    if (editingScheduleId === id) resetScheduleForm()
     const { error } = await supabase.from('schedules').delete().eq('id', id)
     showMsg(error ? '❌ ' + error.message : '✅ Schedule deleted')
     fetchSchedules()
@@ -272,6 +363,7 @@ export default function Admin({ dark }) {
 
   async function deleteQuestion(id) {
     if (!confirm('Delete this question? This cannot be undone.')) return
+    if (editingQuestionId === id) resetQuestionForm()
     const { error } = await supabase.from('questions').delete().eq('id', id)
     showMsg(error ? '❌ ' + error.message : '✅ Question deleted')
     fetchQuestions()
@@ -279,42 +371,196 @@ export default function Admin({ dark }) {
 
   async function deleteSummary(id) {
     if (!confirm('Delete this summary? This cannot be undone.')) return
+    if (editingSummaryId === id) resetSummaryForm()
     const { error } = await supabase.from('summaries').delete().eq('id', id)
     showMsg(error ? '❌ ' + error.message : '✅ Summary deleted')
     fetchSummaries()
   }
 
-  async function addFile() {
+  // ── Files: add or update ─────────────────────────────────────
+  function editFile(f) {
+    setEditingFileId(f.id)
+    setFileName(f.name); setFileUrl(f.url); setFileType(f.type); setFileFileType(f.file_type)
+    setFileModuleId(f.module_id); setFileSubjectId(f.subject_id || ''); setFileExamStage(f.exam_stage)
+  }
+  function resetFileForm() {
+    setEditingFileId(null); setFileName(''); setFileUrl('')
+  }
+  async function saveFile() {
     if (!fileName || !fileUrl || !fileModuleId) return
-    const { error } = await supabase.from('files').insert([{
+    const payload = {
       name: fileName, url: fileUrl, type: fileType,
       file_type: fileFileType, module_id: fileModuleId,
       subject_id: fileSubjectId || null, exam_stage: fileExamStage
-    }])
-    if (!error) { showMsg('✅ File added!'); setFileName(''); setFileUrl(''); fetchFiles() }
-    else showMsg('❌ ' + error.message)
+    }
+    if (editingFileId) {
+      const { error } = await supabase.from('files').update(payload).eq('id', editingFileId)
+      if (!error) { showMsg('✅ File updated!'); resetFileForm(); fetchFiles() }
+      else showMsg('❌ ' + error.message)
+    } else {
+      const { error } = await supabase.from('files').insert([payload])
+      if (!error) { showMsg('✅ File added!'); resetFileForm(); fetchFiles() }
+      else showMsg('❌ ' + error.message)
+    }
   }
 
-  async function addSchedule() {
+  // ── Schedules: add or update ─────────────────────────────────
+  function editSchedule(s) {
+    setEditingScheduleId(s.id)
+    setSchTitle(s.title); setSchUrl(s.url); setSchType(s.type); setSchModuleId(s.module_id); setSchDate(s.date || '')
+  }
+  function resetScheduleForm() {
+    setEditingScheduleId(null); setSchTitle(''); setSchUrl(''); setSchDate('')
+  }
+  async function saveSchedule() {
     if (!schTitle || !schUrl || !schModuleId) return
-    const { error } = await supabase.from('schedules').insert([{
+    const payload = {
       title: schTitle, url: schUrl, type: schType, module_id: schModuleId,
       date: schType === 'exam' && schDate ? schDate : null
-    }])
-    if (!error) { showMsg('✅ Schedule added!'); setSchTitle(''); setSchUrl(''); setSchDate(''); fetchSchedules() }
-    else showMsg('❌ ' + error.message)
+    }
+    if (editingScheduleId) {
+      const { error } = await supabase.from('schedules').update(payload).eq('id', editingScheduleId)
+      if (!error) { showMsg('✅ Schedule updated!'); resetScheduleForm(); fetchSchedules() }
+      else showMsg('❌ ' + error.message)
+    } else {
+      const { error } = await supabase.from('schedules').insert([payload])
+      if (!error) { showMsg('✅ Schedule added!'); resetScheduleForm(); fetchSchedules() }
+      else showMsg('❌ ' + error.message)
+    }
   }
 
-  async function addQuestion() {
+  // ── Lessons: add or update ───────────────────────────────────
+  function editLesson(l) {
+    setEditingLessonId(l.id)
+    setLessonModuleId(l.module_id); setLessonSubjectId(l.subject_id)
+    setLessonTitle(l.title); setLessonSummaryUrl(l.summary_url || '')
+  }
+  function resetLessonForm() {
+    setEditingLessonId(null); setLessonTitle(''); setLessonSummaryUrl('')
+  }
+  async function saveLesson() {
+    if (!lessonTitle || !lessonSubjectId || !lessonModuleId) return showMsg('❌ Pick a module, subject, and title first')
+    const payload = { title: lessonTitle, summary_url: lessonSummaryUrl || null, subject_id: lessonSubjectId, module_id: lessonModuleId }
+    if (editingLessonId) {
+      const { error } = await supabase.from('lessons').update(payload).eq('id', editingLessonId)
+      if (!error) { showMsg('✅ Lesson updated!'); resetLessonForm(); fetchLessons() }
+      else showMsg('❌ ' + error.message)
+    } else {
+      const { error } = await supabase.from('lessons').insert([payload])
+      if (!error) { showMsg('✅ Lesson added!'); resetLessonForm(); fetchLessons() }
+      else showMsg('❌ ' + error.message)
+    }
+  }
+  async function deleteLesson(id) {
+    if (!confirm('Delete this lesson? Questions tagged to it keep their module/subject tags but lose the lesson link. This cannot be undone.')) return
+    if (editingLessonId === id) resetLessonForm()
+    const { error } = await supabase.from('lessons').delete().eq('id', id)
+    showMsg(error ? '❌ ' + error.message : '✅ Lesson deleted')
+    fetchLessons()
+  }
+
+  // ── Per-module exam stages ───────────────────────────────────
+  async function loadModuleStagesForAdmin(moduleId) {
+    setStagesLoading(true)
+    const { data } = await supabase.from('module_exam_stages').select('*').eq('module_id', moduleId).order('position')
+    if (data && data.length > 0) {
+      setModuleStagesList(data.map(s => ({ id: s.id, value: s.value, title: s.title, emoji: s.emoji, color: s.color })))
+      setStagesIsCustom(true)
+    } else {
+      setModuleStagesList(STAGE_META.map(s => ({ id: null, value: s.value, title: s.title, emoji: s.emoji, color: s.color })))
+      setStagesIsCustom(false)
+    }
+    setStagesLoading(false)
+  }
+
+  function updateStageField(index, field, val) {
+    setModuleStagesList(prev => prev.map((s, i) => i === index ? { ...s, [field]: val } : s))
+  }
+  function removeStageRow(index) {
+    setModuleStagesList(prev => prev.filter((_, i) => i !== index))
+  }
+  function addStageRow() {
+    const existingValues = moduleStagesList.map(s => s.value)
+    let value = 'new_stage'
+    let suffix = 1
+    while (existingValues.includes(value)) { value = `new_stage_${suffix}`; suffix++ }
+    setModuleStagesList(prev => [...prev, { id: null, value, title: 'New Stage', emoji: '📌', color: '#64748b' }])
+  }
+
+  async function saveModuleStages() {
+    if (!stageModuleId) return
+    if (moduleStagesList.length === 0) return showMsg('❌ A module needs at least one exam stage')
+    setStagesSaving(true)
+    // Simplest correct approach: replace the whole set atomically rather
+    // than diffing row-by-row (a module only has a handful of stages).
+    await supabase.from('module_exam_stages').delete().eq('module_id', stageModuleId)
+    const rows = moduleStagesList.map((s, i) => ({
+      module_id: stageModuleId,
+      value: s.value || slugify(s.title),
+      title: s.title || 'Stage',
+      emoji: s.emoji || '📌',
+      color: s.color || '#64748b',
+      position: i
+    }))
+    const { error } = await supabase.from('module_exam_stages').insert(rows)
+    setStagesSaving(false)
+    if (error) return showMsg('❌ ' + error.message)
+    showMsg('✅ Stages saved for this module!')
+    setStagesIsCustom(true)
+    loadModuleStagesForAdmin(stageModuleId)
+  }
+
+  async function resetModuleStages() {
+    if (!stageModuleId) return
+    if (!confirm("Reset this module to the 4 default exam stages? Custom stages you added will be removed — anything already tagged with a removed stage keeps that tag, it just won't have a matching button anymore.")) return
+    setStagesSaving(true)
+    await supabase.from('module_exam_stages').delete().eq('module_id', stageModuleId)
+    setStagesSaving(false)
+    showMsg('✅ Reset to default stages')
+    loadModuleStagesForAdmin(stageModuleId)
+  }
+
+  // ── Questions: add or update ─────────────────────────────────
+  async function editQuestion(q) {
+    // The list view above never has `correct`/`explanation` — those are
+    // locked down at the DB level for everyone except this one admin-only
+    // RPC, which double-checks role='admin' itself before returning them.
+    const { data, error } = await supabase.rpc('admin_get_question', { p_question_id: q.id })
+    if (error || !data || data.length === 0) return showMsg('❌ Could not load this question for editing')
+    const full = data[0]
+    setEditingQuestionId(full.id)
+    setQText(full.question); setQA(full.option_a); setQB(full.option_b); setQC(full.option_c); setQD(full.option_d)
+    setQCorrect(full.correct || 'a'); setQExplanation(full.explanation || '')
+    setQExamType(full.exam_type); setQExamStage(full.exam_stage)
+    setQModuleId(full.module_id); setQSubjectId(full.subject_id || '')
+    setQLessonId(full.lesson_id || ''); setQSource(full.source || '')
+    setBulkMode(false)
+  }
+  function resetQuestionForm() {
+    setEditingQuestionId(null)
+    setQText(''); setQA(''); setQB(''); setQC(''); setQD(''); setQCorrect('a'); setQExplanation(''); setQLessonId('')
+  }
+  async function saveQuestion() {
     if (!qText || !qA || !qB || !qC || !qD || !qModuleId) return
-    const { error } = await supabase.from('questions').insert([{
-      question: qText, option_a: qA, option_b: qB, option_c: qC, option_d: qD,
-      correct: qCorrect, explanation: qExplanation, exam_type: qExamType,
-      exam_stage: qExamStage, module_id: qModuleId, subject_id: qSubjectId || null,
-      source: qSource || null
-    }])
-    if (!error) { showMsg('✅ Question added!'); setQText(''); setQA(''); setQB(''); setQC(''); setQD(''); setQExplanation(''); fetchQuestions() }
-    else showMsg('❌ ' + error.message)
+    if (editingQuestionId) {
+      const { error } = await supabase.rpc('admin_update_question', {
+        p_id: editingQuestionId,
+        p_question: qText, p_option_a: qA, p_option_b: qB, p_option_c: qC, p_option_d: qD,
+        p_correct: qCorrect, p_explanation: qExplanation, p_exam_type: qExamType, p_exam_stage: qExamStage,
+        p_module_id: qModuleId, p_subject_id: qSubjectId || null, p_lesson_id: qLessonId || null, p_source: qSource || null
+      })
+      if (!error) { showMsg('✅ Question updated!'); resetQuestionForm(); fetchQuestions() }
+      else showMsg('❌ ' + error.message)
+    } else {
+      const { error } = await supabase.from('questions').insert([{
+        question: qText, option_a: qA, option_b: qB, option_c: qC, option_d: qD,
+        correct: qCorrect, explanation: qExplanation, exam_type: qExamType,
+        exam_stage: qExamStage, module_id: qModuleId, subject_id: qSubjectId || null,
+        lesson_id: qLessonId || null, source: qSource || null
+      }])
+      if (!error) { showMsg('✅ Question added!'); resetQuestionForm(); fetchQuestions() }
+      else showMsg('❌ ' + error.message)
+    }
   }
 
   // Parses a block of pasted text into multiple questions at once.
@@ -382,6 +628,7 @@ export default function Admin({ dark }) {
       exam_stage: qExamStage,
       module_id: qModuleId,
       subject_id: qSubjectId || null,
+      lesson_id: qLessonId || null,
       source: qSource || null
     }))
     const { error } = await supabase.from('questions').insert(rows)
@@ -393,18 +640,32 @@ export default function Admin({ dark }) {
     fetchQuestions()
   }
 
-  async function addSummary() {
+  // ── Summaries: add or update ─────────────────────────────────
+  function editSummary(s) {
+    setEditingSummaryId(s.id)
+    setSumTitle(s.title); setSumUrl(s.url); setSumModuleId(s.module_id); setSumExamStage(s.exam_stage)
+  }
+  function resetSummaryForm() {
+    setEditingSummaryId(null); setSumTitle(''); setSumUrl('')
+  }
+  async function saveSummary() {
     if (!sumTitle || !sumUrl || !sumModuleId) return
-    const { error } = await supabase.from('summaries').insert([{
-      title: sumTitle, url: sumUrl, module_id: sumModuleId, exam_stage: sumExamStage
-    }])
-    if (!error) { showMsg('✅ Summary added!'); setSumTitle(''); setSumUrl(''); fetchSummaries() }
-    else showMsg('❌ ' + error.message)
+    const payload = { title: sumTitle, url: sumUrl, module_id: sumModuleId, exam_stage: sumExamStage }
+    if (editingSummaryId) {
+      const { error } = await supabase.from('summaries').update(payload).eq('id', editingSummaryId)
+      if (!error) { showMsg('✅ Summary updated!'); resetSummaryForm(); fetchSummaries() }
+      else showMsg('❌ ' + error.message)
+    } else {
+      const { error } = await supabase.from('summaries').insert([payload])
+      if (!error) { showMsg('✅ Summary added!'); resetSummaryForm(); fetchSummaries() }
+      else showMsg('❌ ' + error.message)
+    }
   }
 
   const activeModules = modules.filter(m => m.status === 'active')
   const completedModules = modules.filter(m => m.status !== 'active')
   const filteredSubjects = (moduleId) => subjects.filter(s => s.module_id === moduleId)
+  const filteredLessons = (subjectId) => lessons.filter(l => l.subject_id === subjectId)
 
   const inStyle = inputStyle(c)
 
@@ -440,7 +701,7 @@ export default function Admin({ dark }) {
     </div>
   )
 
-  const tabs = ['modules', 'subjects', 'files', 'schedules', 'questions', 'summaries', 'analytics', 'settings']
+  const tabs = ['modules', 'subjects', 'lessons', 'files', 'schedules', 'questions', 'summaries', 'stages', 'analytics', 'settings']
 
   return (
     <div className="page-container" style={{ padding: '20px', maxWidth: '650px' }}>
@@ -463,7 +724,7 @@ export default function Admin({ dark }) {
       {activeTab === 'modules' && (
         <div>
           <div style={{ background: c.card, padding: '20px', borderRadius: '16px', border: `1px solid ${c.border}`, marginBottom: 16 }}>
-            <h3 style={{ color: '#38bdf8', marginBottom: 16 }}>➕ Add Module</h3>
+            <h3 style={{ color: '#38bdf8', marginBottom: 16 }}>{editingModuleId ? '✏️ Edit Module' : '➕ Add Module'}</h3>
             <input placeholder="Module name" value={modName} onChange={e => setModName(e.target.value)} style={inStyle} />
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
               <div>
@@ -482,7 +743,10 @@ export default function Admin({ dark }) {
                 </select>
               </div>
             </div>
-            <button onClick={addModule} style={btnStyle}>Add Module</button>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button onClick={saveModule} style={{ ...btnStyle, flex: 1 }}>{editingModuleId ? 'Save Changes' : 'Add Module'}</button>
+              {editingModuleId && <button onClick={resetModuleForm} style={cancelBtnStyle(c)}>Cancel</button>}
+            </div>
           </div>
 
           {activeModules.length > 0 && (
@@ -495,6 +759,7 @@ export default function Admin({ dark }) {
                     <div style={{ color: mod.color, fontWeight: 700 }}>{mod.name}</div>
                   </div>
                   <div style={{ display: 'flex', gap: 8 }}>
+                    <button onClick={() => editModule(mod)} aria-label={`Edit module: ${mod.name}`} style={{ ...miniBtn, borderColor: '#38bdf8', color: '#38bdf8' }}>✏️</button>
                     <button onClick={() => toggleModuleStatus(mod)} style={{ ...miniBtn, borderColor: '#f59e0b', color: '#f59e0b' }}>⏸ Done</button>
                     <button onClick={() => deleteModule(mod.id)} aria-label={`Delete module: ${mod.name}`} style={{ ...miniBtn, borderColor: '#ef4444', color: '#ef4444' }}>🗑</button>
                   </div>
@@ -513,6 +778,7 @@ export default function Admin({ dark }) {
                     <div style={{ color: mod.color, fontWeight: 700 }}>{mod.name}</div>
                   </div>
                   <div style={{ display: 'flex', gap: 8 }}>
+                    <button onClick={() => editModule(mod)} aria-label={`Edit module: ${mod.name}`} style={{ ...miniBtn, borderColor: '#38bdf8', color: '#38bdf8' }}>✏️</button>
                     <button onClick={() => toggleModuleStatus(mod)} style={{ ...miniBtn, borderColor: '#22c55e', color: '#22c55e' }}>▶ Active</button>
                     <button onClick={() => deleteModule(mod.id)} aria-label={`Delete module: ${mod.name}`} style={{ ...miniBtn, borderColor: '#ef4444', color: '#ef4444' }}>🗑</button>
                   </div>
@@ -526,7 +792,7 @@ export default function Admin({ dark }) {
       {activeTab === 'subjects' && (
         <div>
           <div style={{ background: c.card, padding: '20px', borderRadius: '16px', border: `1px solid ${c.border}`, marginBottom: 16 }}>
-            <h3 style={{ color: '#38bdf8', marginBottom: 16 }}>➕ Add Subject</h3>
+            <h3 style={{ color: '#38bdf8', marginBottom: 16 }}>{editingSubjectId ? '✏️ Edit Subject' : '➕ Add Subject'}</h3>
             <ModuleSelect value={subModuleId} onChange={e => setSubModuleId(e.target.value)} />
             <input placeholder="Subject name" value={subName} onChange={e => setSubName(e.target.value)} style={inStyle} />
             <select value={subType} onChange={e => setSubType(e.target.value)} style={inStyle}>
@@ -534,7 +800,10 @@ export default function Admin({ dark }) {
               <option value="theory">Theory Only</option>
               <option value="practical">Practical Only</option>
             </select>
-            <button onClick={addSubject} style={btnStyle}>Add Subject</button>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button onClick={saveSubject} style={{ ...btnStyle, flex: 1 }}>{editingSubjectId ? 'Save Changes' : 'Add Subject'}</button>
+              {editingSubjectId && <button onClick={resetSubjectForm} style={cancelBtnStyle(c)}>Cancel</button>}
+            </div>
           </div>
           {modules.map(mod => {
             const subs = filteredSubjects(mod.id)
@@ -548,7 +817,10 @@ export default function Admin({ dark }) {
                       <span style={{ color: c.text, fontWeight: 600 }}>{sub.name}</span>
                       <span style={{ color: c.sub, fontSize: 12, marginLeft: 8 }}>· {sub.type}</span>
                     </div>
-                    <button onClick={() => deleteSubject(sub.id)} aria-label={`Delete subject: ${sub.name}`} style={{ ...miniBtn, borderColor: '#ef4444', color: '#ef4444' }}>🗑</button>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <button onClick={() => editSubject(sub)} aria-label={`Edit subject: ${sub.name}`} style={{ ...miniBtn, borderColor: '#38bdf8', color: '#38bdf8' }}>✏️</button>
+                      <button onClick={() => deleteSubject(sub.id)} aria-label={`Delete subject: ${sub.name}`} style={{ ...miniBtn, borderColor: '#ef4444', color: '#ef4444' }}>🗑</button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -557,9 +829,63 @@ export default function Admin({ dark }) {
         </div>
       )}
 
+      {activeTab === 'lessons' && (
+        <div>
+          <div style={{ background: c.card, padding: '20px', borderRadius: '16px', border: `1px solid ${c.border}`, marginBottom: 16 }}>
+            <h3 style={{ color: '#38bdf8', marginBottom: 8 }}>{editingLessonId ? '✏️ Edit Lesson' : '➕ Add Lesson'}</h3>
+            <p style={{ color: c.sub, fontSize: 13, marginBottom: 16 }}>
+              A lesson lives under a subject and shows two things to students: a summary link and its own tagged
+              question set (tag questions to a lesson from the Questions tab).
+            </p>
+            <ModuleSelect value={lessonModuleId} onChange={e => { setLessonModuleId(e.target.value); setLessonSubjectId('') }} />
+            {lessonModuleId && (
+              <select value={lessonSubjectId} onChange={e => setLessonSubjectId(e.target.value)} style={inStyle}>
+                <option value="">Select Subject</option>
+                {filteredSubjects(lessonModuleId).map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+              </select>
+            )}
+            <input placeholder="Lesson title" value={lessonTitle} onChange={e => setLessonTitle(e.target.value)} style={inStyle} />
+            <input placeholder="Summary URL (optional)" value={lessonSummaryUrl} onChange={e => setLessonSummaryUrl(e.target.value)} style={inStyle} />
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button onClick={saveLesson} style={{ ...btnStyle, flex: 1 }}>{editingLessonId ? 'Save Changes' : 'Add Lesson'}</button>
+              {editingLessonId && <button onClick={resetLessonForm} style={cancelBtnStyle(c)}>Cancel</button>}
+            </div>
+          </div>
+
+          {modules.map(mod => {
+            const modSubjects = filteredSubjects(mod.id)
+            const modLessons = lessons.filter(l => l.module_id === mod.id)
+            if (modLessons.length === 0) return null
+            return (
+              <div key={mod.id} style={{ marginBottom: 16 }}>
+                <h4 style={{ color: mod.color, marginBottom: 8 }}>{mod.icon} {mod.name}</h4>
+                {modSubjects.map(sub => {
+                  const subLessons = modLessons.filter(l => l.subject_id === sub.id)
+                  if (subLessons.length === 0) return null
+                  return (
+                    <div key={sub.id} style={{ marginBottom: 10 }}>
+                      <div style={{ color: c.sub, fontSize: 12, fontWeight: 700, marginBottom: 6 }}>{sub.name}</div>
+                      {subLessons.map(l => (
+                        <div key={l.id} style={{ background: c.card, padding: '12px 16px', borderRadius: 12, border: `1px solid ${c.border}`, marginBottom: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span style={{ color: c.text, fontWeight: 600 }}>{l.title}</span>
+                          <div style={{ display: 'flex', gap: 8 }}>
+                            <button onClick={() => editLesson(l)} aria-label={`Edit lesson: ${l.title}`} style={{ ...miniBtn, borderColor: '#38bdf8', color: '#38bdf8' }}>✏️</button>
+                            <button onClick={() => deleteLesson(l.id)} aria-label={`Delete lesson: ${l.title}`} style={{ ...miniBtn, borderColor: '#ef4444', color: '#ef4444' }}>🗑</button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )
+                })}
+              </div>
+            )
+          })}
+        </div>
+      )}
+
       {activeTab === 'files' && (
         <div style={{ background: c.card, padding: '20px', borderRadius: '16px', border: `1px solid ${c.border}` }}>
-          <h3 style={{ color: '#38bdf8', marginBottom: 16 }}>➕ Add File / Recording</h3>
+          <h3 style={{ color: '#38bdf8', marginBottom: 16 }}>{editingFileId ? '✏️ Edit File / Recording' : '➕ Add File / Recording'}</h3>
           <input placeholder="File name" value={fileName} onChange={e => setFileName(e.target.value)} style={inStyle} />
           <input placeholder="URL (Drive / YouTube / SoundCloud)" value={fileUrl} onChange={e => setFileUrl(e.target.value)} style={inStyle} />
           <label style={{ color: c.sub, fontSize: 12, display: 'block', marginBottom: 4 }}>Content Type</label>
@@ -588,9 +914,12 @@ export default function Admin({ dark }) {
           )}
           <label style={{ color: c.sub, fontSize: 12, display: 'block', marginBottom: 4 }}>Exam Stage</label>
           <select value={fileExamStage} onChange={e => setFileExamStage(e.target.value)} style={inStyle}>
-            {EXAM_STAGES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+            {fileStageOptions.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
           </select>
-          <button onClick={addFile} style={btnStyle}>Add File</button>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button onClick={saveFile} style={{ ...btnStyle, flex: 1 }}>{editingFileId ? 'Save Changes' : 'Add File'}</button>
+            {editingFileId && <button onClick={resetFileForm} style={cancelBtnStyle(c)}>Cancel</button>}
+          </div>
         </div>
       )}
 
@@ -608,7 +937,10 @@ export default function Admin({ dark }) {
                       <span style={{ color: c.text, fontWeight: 600 }}>{f.name}</span>
                       <span style={{ color: c.sub, fontSize: 12, marginLeft: 8 }}>· {f.type} · {f.file_type}</span>
                     </div>
-                    <button onClick={() => deleteFile(f.id)} aria-label={`Delete file: ${f.name}`} style={{ ...miniBtn, borderColor: '#ef4444', color: '#ef4444' }}>🗑</button>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <button onClick={() => editFile(f)} aria-label={`Edit file: ${f.name}`} style={{ ...miniBtn, borderColor: '#38bdf8', color: '#38bdf8' }}>✏️</button>
+                      <button onClick={() => deleteFile(f.id)} aria-label={`Delete file: ${f.name}`} style={{ ...miniBtn, borderColor: '#ef4444', color: '#ef4444' }}>🗑</button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -619,7 +951,7 @@ export default function Admin({ dark }) {
 
       {activeTab === 'schedules' && (
         <div style={{ background: c.card, padding: '20px', borderRadius: '16px', border: `1px solid ${c.border}` }}>
-          <h3 style={{ color: '#38bdf8', marginBottom: 16 }}>➕ Add Schedule</h3>
+          <h3 style={{ color: '#38bdf8', marginBottom: 16 }}>{editingScheduleId ? '✏️ Edit Schedule' : '➕ Add Schedule'}</h3>
           <input placeholder="Title (e.g. Week 1)" value={schTitle} onChange={e => setSchTitle(e.target.value)} style={inStyle} />
           <input placeholder="Image URL (Google Drive)" value={schUrl} onChange={e => setSchUrl(e.target.value)} style={inStyle} />
           <label style={{ color: c.sub, fontSize: 12, display: 'block', marginBottom: 4 }}>Type</label>
@@ -635,7 +967,10 @@ export default function Admin({ dark }) {
           )}
           <label style={{ color: c.sub, fontSize: 12, display: 'block', marginBottom: 4 }}>Module</label>
           <ModuleSelect value={schModuleId} onChange={e => setSchModuleId(e.target.value)} />
-          <button onClick={addSchedule} style={btnStyle}>Add Schedule</button>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button onClick={saveSchedule} style={{ ...btnStyle, flex: 1 }}>{editingScheduleId ? 'Save Changes' : 'Add Schedule'}</button>
+            {editingScheduleId && <button onClick={resetScheduleForm} style={cancelBtnStyle(c)}>Cancel</button>}
+          </div>
         </div>
       )}
 
@@ -653,7 +988,10 @@ export default function Admin({ dark }) {
                       <span style={{ color: c.text, fontWeight: 600 }}>{s.title}</span>
                       <span style={{ color: c.sub, fontSize: 12, marginLeft: 8 }}>· {s.type}{s.date ? ` · 📅 ${s.date}` : ''}</span>
                     </div>
-                    <button onClick={() => deleteSchedule(s.id)} aria-label={`Delete schedule: ${s.title}`} style={{ ...miniBtn, borderColor: '#ef4444', color: '#ef4444' }}>🗑</button>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <button onClick={() => editSchedule(s)} aria-label={`Edit schedule: ${s.title}`} style={{ ...miniBtn, borderColor: '#38bdf8', color: '#38bdf8' }}>✏️</button>
+                      <button onClick={() => deleteSchedule(s.id)} aria-label={`Delete schedule: ${s.title}`} style={{ ...miniBtn, borderColor: '#ef4444', color: '#ef4444' }}>🗑</button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -665,20 +1003,33 @@ export default function Admin({ dark }) {
       {activeTab === 'questions' && (
         <div style={{ background: c.card, padding: '20px', borderRadius: '16px', border: `1px solid ${c.border}` }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-            <h3 style={{ color: '#38bdf8' }}>{bulkMode ? '📋 Bulk Add Questions' : '➕ Add MCQ Question'}</h3>
-            <button onClick={() => setBulkMode(!bulkMode)} style={{
-              background: 'transparent', border: `1px solid ${c.border}`,
-              borderRadius: 8, padding: '6px 12px', cursor: 'pointer',
-              color: c.sub, fontFamily: 'inherit', fontSize: 12, fontWeight: 700
-            }}>{bulkMode ? '✏️ Single Add' : '📋 Bulk Add'}</button>
+            <h3 style={{ color: '#38bdf8' }}>
+              {editingQuestionId ? '✏️ Edit Question' : bulkMode ? '📋 Bulk Add Questions' : '➕ Add MCQ Question'}
+            </h3>
+            {!editingQuestionId && (
+              <button onClick={() => setBulkMode(!bulkMode)} style={{
+                background: 'transparent', border: `1px solid ${c.border}`,
+                borderRadius: 8, padding: '6px 12px', cursor: 'pointer',
+                color: c.sub, fontFamily: 'inherit', fontSize: 12, fontWeight: 700
+              }}>{bulkMode ? '✏️ Single Add' : '📋 Bulk Add'}</button>
+            )}
           </div>
 
-          <ModuleSelect value={qModuleId} onChange={e => { setQModuleId(e.target.value); setQSubjectId('') }} />
+          <ModuleSelect value={qModuleId} onChange={e => { setQModuleId(e.target.value); setQSubjectId(''); setQLessonId('') }} />
           {qModuleId && (
-            <select value={qSubjectId} onChange={e => setQSubjectId(e.target.value)} style={inStyle}>
+            <select value={qSubjectId} onChange={e => { setQSubjectId(e.target.value); setQLessonId('') }} style={inStyle}>
               <option value="">All Subjects</option>
               {filteredSubjects(qModuleId).map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
             </select>
+          )}
+          {qSubjectId && filteredLessons(qSubjectId).length > 0 && (
+            <>
+              <label style={{ color: c.sub, fontSize: 12, display: 'block', marginBottom: 4 }}>Lesson (optional)</label>
+              <select value={qLessonId} onChange={e => setQLessonId(e.target.value)} style={inStyle}>
+                <option value="">No specific lesson</option>
+                {filteredLessons(qSubjectId).map(l => <option key={l.id} value={l.id}>{l.title}</option>)}
+              </select>
+            </>
           )}
           <label style={{ color: c.sub, fontSize: 12, display: 'block', marginBottom: 4 }}>Use In</label>
           <select value={qExamType} onChange={e => setQExamType(e.target.value)} style={inStyle}>
@@ -688,7 +1039,7 @@ export default function Admin({ dark }) {
           </select>
           <label style={{ color: c.sub, fontSize: 12, display: 'block', marginBottom: 4 }}>Exam Stage</label>
           <select value={qExamStage} onChange={e => setQExamStage(e.target.value)} style={inStyle}>
-            {EXAM_STAGES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+            {qStageOptions.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
           </select>
           <label style={{ color: c.sub, fontSize: 12, display: 'block', marginBottom: 4 }}>Source (optional)</label>
           <select value={qSource} onChange={e => setQSource(e.target.value)} style={inStyle}>
@@ -698,7 +1049,7 @@ export default function Admin({ dark }) {
             <option value="university">🎓 University Doctors</option>
           </select>
 
-          {bulkMode ? (
+          {bulkMode && !editingQuestionId ? (
             <>
               <p style={{ color: c.sub, fontSize: 12, marginBottom: 8, lineHeight: 1.6 }}>
                 Paste as many questions as you want below, one after another,
@@ -749,7 +1100,10 @@ Correct: A`}</pre>
                 <option value="d">D</option>
               </select>
               <textarea placeholder="Explanation (optional)" value={qExplanation} onChange={e => setQExplanation(e.target.value)} style={{ ...inStyle, minHeight: 60, resize: 'vertical' }} />
-              <button onClick={addQuestion} style={btnStyle}>Add Question</button>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button onClick={saveQuestion} style={{ ...btnStyle, flex: 1 }}>{editingQuestionId ? 'Save Changes' : 'Add Question'}</button>
+                {editingQuestionId && <button onClick={resetQuestionForm} style={cancelBtnStyle(c)}>Cancel</button>}
+              </div>
             </>
           )}
         </div>
@@ -766,7 +1120,10 @@ Correct: A`}</pre>
                 {modQuestions.map(q => (
                   <div key={q.id} style={{ background: c.card, padding: '12px 16px', borderRadius: 12, border: `1px solid ${c.border}`, marginBottom: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10 }}>
                     <span style={{ color: c.text, fontWeight: 600, fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{q.question}</span>
-                    <button onClick={() => deleteQuestion(q.id)} aria-label="Delete question" style={{ ...miniBtn, borderColor: '#ef4444', color: '#ef4444', flexShrink: 0 }}>🗑</button>
+                    <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+                      <button onClick={() => editQuestion(q)} aria-label="Edit question" style={{ ...miniBtn, borderColor: '#38bdf8', color: '#38bdf8' }}>✏️</button>
+                      <button onClick={() => deleteQuestion(q.id)} aria-label="Delete question" style={{ ...miniBtn, borderColor: '#ef4444', color: '#ef4444' }}>🗑</button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -777,15 +1134,18 @@ Correct: A`}</pre>
 
       {activeTab === 'summaries' && (
         <div style={{ background: c.card, padding: '20px', borderRadius: '16px', border: `1px solid ${c.border}` }}>
-          <h3 style={{ color: '#38bdf8', marginBottom: 16 }}>➕ Add Summary</h3>
+          <h3 style={{ color: '#38bdf8', marginBottom: 16 }}>{editingSummaryId ? '✏️ Edit Summary' : '➕ Add Summary'}</h3>
           <ModuleSelect value={sumModuleId} onChange={e => setSumModuleId(e.target.value)} />
           <label style={{ color: c.sub, fontSize: 12, display: 'block', marginBottom: 4 }}>Exam Stage</label>
           <select value={sumExamStage} onChange={e => setSumExamStage(e.target.value)} style={inStyle}>
-            {EXAM_STAGES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+            {sumStageOptions.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
           </select>
           <input placeholder="Title (e.g. End Module Exam)" value={sumTitle} onChange={e => setSumTitle(e.target.value)} style={inStyle} />
           <input placeholder="Summary URL" value={sumUrl} onChange={e => setSumUrl(e.target.value)} style={inStyle} />
-          <button onClick={addSummary} style={btnStyle}>Add Summary</button>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button onClick={saveSummary} style={{ ...btnStyle, flex: 1 }}>{editingSummaryId ? 'Save Changes' : 'Add Summary'}</button>
+            {editingSummaryId && <button onClick={resetSummaryForm} style={cancelBtnStyle(c)}>Cancel</button>}
+          </div>
         </div>
       )}
 
@@ -800,7 +1160,10 @@ Correct: A`}</pre>
                 {modSummaries.map(s => (
                   <div key={s.id} style={{ background: c.card, padding: '12px 16px', borderRadius: 12, border: `1px solid ${c.border}`, marginBottom: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span style={{ color: c.text, fontWeight: 600 }}>{s.title}</span>
-                    <button onClick={() => deleteSummary(s.id)} aria-label={`Delete summary: ${s.title}`} style={{ ...miniBtn, borderColor: '#ef4444', color: '#ef4444' }}>🗑</button>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <button onClick={() => editSummary(s)} aria-label={`Edit summary: ${s.title}`} style={{ ...miniBtn, borderColor: '#38bdf8', color: '#38bdf8' }}>✏️</button>
+                      <button onClick={() => deleteSummary(s.id)} aria-label={`Delete summary: ${s.title}`} style={{ ...miniBtn, borderColor: '#ef4444', color: '#ef4444' }}>🗑</button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -808,6 +1171,74 @@ Correct: A`}</pre>
           })}
         </div>
       )}
+
+      {activeTab === 'stages' && (
+        <div>
+          <div style={{ background: c.card, padding: '20px', borderRadius: '16px', border: `1px solid ${c.border}`, marginBottom: 16 }}>
+            <h3 style={{ color: '#38bdf8', marginBottom: 8 }}>🎯 Exam Stages per Module</h3>
+            <p style={{ color: c.sub, fontSize: 13, marginBottom: 16 }}>
+              Every module starts with the same 4 default stages (TBL, End Module, Practical, Final). Pick a module
+              below to rename, add, or remove stages just for that module — everywhere else keeps the defaults
+              until you save changes here.
+            </p>
+            <ModuleSelect value={stageModuleId} onChange={e => setStageModuleId(e.target.value)} />
+          </div>
+
+          {stageModuleId && (
+            <div style={{ background: c.card, padding: '20px', borderRadius: '16px', border: `1px solid ${c.border}` }}>
+              {stagesLoading && <p style={{ color: c.sub, textAlign: 'center' }}>Loading...</p>}
+
+              {!stagesLoading && (
+                <>
+                  <div style={{
+                    fontSize: 12, fontWeight: 700, marginBottom: 16,
+                    color: stagesIsCustom ? '#f59e0b' : c.sub
+                  }}>
+                    {stagesIsCustom ? '⚙️ Custom stages for this module' : '📌 Showing global defaults (not yet customized)'}
+                  </div>
+
+                  {moduleStagesList.map((stage, i) => (
+                    <div key={i} style={{
+                      display: 'grid', gridTemplateColumns: '50px 1fr 70px 1fr auto', gap: 8,
+                      alignItems: 'center', marginBottom: 10
+                    }}>
+                      <input value={stage.emoji} onChange={e => updateStageField(i, 'emoji', e.target.value)}
+                        style={{ ...inStyle, marginTop: 0, textAlign: 'center', padding: '8px 4px' }} />
+                      <input value={stage.title} onChange={e => updateStageField(i, 'title', e.target.value)}
+                        style={{ ...inStyle, marginTop: 0 }} />
+                      <input type="color" value={stage.color} onChange={e => updateStageField(i, 'color', e.target.value)}
+                        style={{ ...inStyle, marginTop: 0, padding: 4, height: 42 }} />
+                      <div style={{ color: c.sub, fontSize: 11, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {stage.value}
+                      </div>
+                      <button onClick={() => removeStageRow(i)} aria-label="Remove stage"
+                        style={{ ...miniBtn, borderColor: '#ef4444', color: '#ef4444' }}>🗑</button>
+                    </div>
+                  ))}
+
+                  <button onClick={addStageRow} style={{
+                    background: 'transparent', border: `1px dashed ${c.border}`, borderRadius: 10,
+                    padding: '10px', width: '100%', cursor: 'pointer', color: c.sub,
+                    fontFamily: 'inherit', fontSize: 13, fontWeight: 700, marginBottom: 16
+                  }}>+ Add Stage</button>
+
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button onClick={saveModuleStages} disabled={stagesSaving} style={{ ...btnStyle, flex: 1 }}>
+                      {stagesSaving ? 'Saving...' : '✅ Save Stages'}
+                    </button>
+                    {stagesIsCustom && (
+                      <button onClick={resetModuleStages} disabled={stagesSaving} style={cancelBtnStyle(c)}>
+                        Reset to Default
+                      </button>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
       {activeTab === 'analytics' && (
         <div>
           <div style={{ background: c.card, padding: '20px', borderRadius: '16px', border: `1px solid ${c.border}`, marginBottom: 16 }}>
@@ -929,3 +1360,4 @@ Correct: A`}</pre>
 
 const btnStyle = { width: '100%', padding: '12px', background: '#38bdf8', border: 'none', borderRadius: '10px', fontWeight: 'bold', cursor: 'pointer', color: '#0f172a', fontFamily: 'inherit', fontSize: 14 }
 const miniBtn = { background: 'transparent', border: '1px solid', padding: '4px 10px', borderRadius: 8, cursor: 'pointer', fontSize: 12, fontWeight: 700 }
+const cancelBtnStyle = (c) => ({ padding: '12px 20px', background: 'transparent', border: `1px solid ${c.border}`, borderRadius: 10, cursor: 'pointer', color: c.sub, fontFamily: 'inherit', fontSize: 14, fontWeight: 700 })

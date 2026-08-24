@@ -4,12 +4,7 @@ import { supabase } from '../supabase'
 import { getTheme, backBtnStyle } from '../theme'
 import ErrorBanner from '../components/ErrorBanner'
 import { useModules } from '../App'
-import { EXAM_STAGES as STAGE_META } from '../lib/examStages'
-
-const EXAM_STAGES = [
-  { value: 'all', label: 'All' },
-  ...STAGE_META.map(s => ({ value: s.value, label: `${s.emoji} ${s.title}` }))
-]
+import { fetchModuleStages } from '../lib/moduleStages'
 
 function SummariesHome({ modules, onSelect, dark }) {
   const c = getTheme(dark)
@@ -82,6 +77,11 @@ function ModuleSummaries({ mod, onBack, dark, initialStage }) {
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState(false)
   const [activeStage, setActiveStage] = useState(initialStage || 'all')
+  const [stages, setStages] = useState([])
+
+  useEffect(() => {
+    fetchModuleStages(mod.id).then(setStages)
+  }, [mod.id])
 
   useEffect(() => {
     supabase.from('summaries')
@@ -126,7 +126,7 @@ function ModuleSummaries({ mod, onBack, dark, initialStage }) {
       {loadError && <ErrorBanner />}
 
       <div style={{ display: 'flex', gap: 8, overflowX: 'auto', marginBottom: 20, paddingBottom: 4 }}>
-        {EXAM_STAGES.map(stage => (
+        {[{ value: 'all', label: 'All' }, ...stages.map(s => ({ value: s.value, label: `${s.emoji} ${s.title}` }))].map(stage => (
           <button key={stage.value} onClick={() => setActiveStage(stage.value)} style={{
             padding: '6px 14px', borderRadius: 20, background: 'transparent',
             border: `1px solid ${activeStage === stage.value ? mod.color : c.border}`,
