@@ -24,6 +24,17 @@ function initialOf(name) {
   return name && name.trim() ? name.trim().charAt(0).toUpperCase() : '?'
 }
 
+// Shared Enter/Space handler for the clickable-div pattern below —
+// matches the existing checklist-row keyboard pattern in Checklist.jsx.
+function onActivateKeyDown(handler) {
+  return (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault()
+      handler()
+    }
+  }
+}
+
 export default function Home({ dark, toggleTheme }) {
   const c = getTheme(dark)
   const navigate = useNavigate()
@@ -180,13 +191,16 @@ export default function Home({ dark, toggleTheme }) {
 
           {/* Profile Bar */}
           {user && profile ? (
-            <div onClick={() => navigate('/profile')} style={{
-              display: 'flex', alignItems: 'center', gap: 10,
-              background: c.card,
-              border: `1px solid ${c.border}`,
-              borderRadius: 20, padding: '8px 16px', cursor: 'pointer',
-              transition: 'all 0.2s'
-            }}
+            <div onClick={() => navigate('/profile')}
+              role="button" tabIndex={0}
+              onKeyDown={onActivateKeyDown(() => navigate('/profile'))}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 10,
+                background: c.card,
+                border: `1px solid ${c.border}`,
+                borderRadius: 20, padding: '8px 16px', cursor: 'pointer',
+                transition: 'all 0.2s'
+              }}
               onMouseEnter={e => e.currentTarget.style.borderColor = '#38bdf8'}
               onMouseLeave={e => e.currentTarget.style.borderColor = c.border}>
               <div style={{
@@ -272,11 +286,14 @@ export default function Home({ dark, toggleTheme }) {
       {/* Continue where you left off */}
       {pausedExam && (
         <div className="page-container" style={{ marginBottom: 24 }}>
-          <div onClick={() => navigate('/mcq')} style={{
-            background: '#e2725b20', border: '2px solid #e2725b60', borderRadius: 16,
-            padding: '16px 20px', cursor: 'pointer', display: 'flex', alignItems: 'center',
-            justifyContent: 'space-between', gap: 12, transition: 'all 0.2s'
-          }}
+          <div onClick={() => navigate('/mcq')}
+            role="button" tabIndex={0}
+            onKeyDown={onActivateKeyDown(() => navigate('/mcq'))}
+            style={{
+              background: '#e2725b20', border: '2px solid #e2725b60', borderRadius: 16,
+              padding: '16px 20px', cursor: 'pointer', display: 'flex', alignItems: 'center',
+              justifyContent: 'space-between', gap: 12, transition: 'all 0.2s'
+            }}
             onMouseEnter={e => e.currentTarget.style.borderColor = '#e2725b'}
             onMouseLeave={e => e.currentTarget.style.borderColor = '#e2725b60'}>
             <div>

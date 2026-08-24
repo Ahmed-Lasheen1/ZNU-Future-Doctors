@@ -3,6 +3,8 @@ import { supabase } from '../supabase'
 import { getTheme } from '../theme'
 import ErrorBanner from '../components/ErrorBanner'
 import ModuleTabs from '../components/ModuleTabs'
+import MediaOverlay from '../components/MediaOverlay'
+import { getDriveOrRawUrl } from '../lib/embedUrl'
 import { useModules } from '../App'
 
 export default function Schedule({ dark }) {
@@ -33,22 +35,6 @@ export default function Schedule({ dark }) {
     fetchData()
   }, [])
 
-  const getPreviewUrl = (url) => {
-    if (!url) return ''
-    try {
-      if (url.includes('drive.google.com')) {
-        const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/)
-        if (match) return `https://drive.google.com/file/d/${match[1]}/preview`
-      }
-      return url
-    } catch {
-      // A malformed admin-entered URL shouldn't crash the viewer —
-      // fall back to the raw value and let the iframe show its own
-      // "can't load" state instead.
-      return url
-    }
-  }
-
   const filtered = schedules.filter(s =>
     s.module_id === activeModule && s.type === activeType
   )
@@ -58,28 +44,14 @@ export default function Schedule({ dark }) {
       {(loadError || modulesError) && <ErrorBanner />}
 
       {viewer && (
-        <div style={{
-          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-          background: 'rgba(0,0,0,0.95)', zIndex: 2000,
-          display: 'flex', flexDirection: 'column'
-        }}>
-          <div style={{
-            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-            padding: '12px 16px', background: '#1e293b', borderBottom: '1px solid #1e3a5f'
-          }}>
-            <span style={{ color: '#a78bfa', fontWeight: 700 }}>📅 {viewer.title}</span>
-            <button onClick={() => setViewer(null)} style={{
-              background: '#ef4444', color: '#fff', border: 'none',
-              borderRadius: 8, padding: '6px 14px', cursor: 'pointer', fontWeight: 700
-            }}>✕ Close</button>
-          </div>
-          <iframe
-            src={getPreviewUrl(viewer.url)}
-            style={{ flex: 1, border: 'none', width: '100%' }}
-            title={viewer.title}
-            allow="autoplay"
-          />
-        </div>
+        <MediaOverlay
+          label={`📅 ${viewer.title}`}
+          labelColor="#a78bfa"
+          onClose={() => setViewer(null)}
+          src={getDriveOrRawUrl(viewer.url)}
+          iframeTitle={viewer.title}
+          allow="autoplay"
+        />
       )}
 
       <h1 style={{ color: '#a78bfa', textAlign: 'center', marginBottom: 20 }}>

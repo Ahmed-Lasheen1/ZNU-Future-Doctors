@@ -5,6 +5,7 @@ import { getTheme, backBtnStyle } from '../theme'
 import ErrorBanner from '../components/ErrorBanner'
 import AnimatedCard from '../components/AnimatedCard'
 import AutoGrid from '../components/AutoGrid'
+import SummaryOverlay from '../components/SummaryOverlay'
 import { useModules } from '../App'
 import { fetchModuleStages, stageMetaFrom } from '../lib/moduleStages'
 import { FILE_CARDS } from '../lib/fileCards'
@@ -62,22 +63,13 @@ export default function StagePage({ dark }) {
   )
 
   if (selectedSummary) return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
-      <div style={{
-        background: 'linear-gradient(135deg, #1a2a4a, #0f1e35)',
-        borderBottom: '2px solid #2a4a7a',
-        padding: '12px 20px',
-        display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0
-      }}>
-        <button onClick={() => setSelectedSummary(null)} style={backBtnStyle()}>← Back</button>
-        <div style={{ flex: 1, textAlign: 'center' }}>
-          <div style={{ fontSize: 11, color: '#7eb8ff', letterSpacing: 2, textTransform: 'uppercase' }}>{module.name} · {meta.title}</div>
-          <div style={{ fontSize: 16, fontWeight: 900, color: module.color }}>{selectedSummary.title}</div>
-        </div>
-        <div style={{ width: 80 }} />
-      </div>
-      <iframe src={selectedSummary.url} style={{ flex: 1, border: 'none', width: '100%' }} title={selectedSummary.title} />
-    </div>
+    <SummaryOverlay
+      onBack={() => setSelectedSummary(null)}
+      eyebrow={`${module.name} · ${meta.title}`}
+      title={selectedSummary.title}
+      titleColor={module.color}
+      url={selectedSummary.url}
+    />
   )
 
   const filteredFileCards = FILE_CARDS.filter(card => presentFileTypes.has(card.type))

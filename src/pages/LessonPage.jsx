@@ -4,6 +4,7 @@ import { supabase } from '../supabase'
 import { getTheme, backBtnStyle } from '../theme'
 import ErrorBanner from '../components/ErrorBanner'
 import AnimatedCard from '../components/AnimatedCard'
+import SummaryOverlay from '../components/SummaryOverlay'
 import { useModules } from '../App'
 
 export default function LessonPage({ dark }) {
@@ -40,18 +41,12 @@ export default function LessonPage({ dark }) {
   )
 
   if (showSummary && lesson?.summary_url) return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
-      <div style={{
-        background: 'linear-gradient(135deg, #1a2a4a, #0f1e35)',
-        borderBottom: '2px solid #2a4a7a', padding: '12px 20px',
-        display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0
-      }}>
-        <button onClick={() => setShowSummary(false)} style={backBtnStyle()}>← Back</button>
-        <div style={{ flex: 1, textAlign: 'center', fontSize: 16, fontWeight: 900, color: '#34d399' }}>{lesson.title}</div>
-        <div style={{ width: 80 }} />
-      </div>
-      <iframe src={lesson.summary_url} style={{ flex: 1, border: 'none', width: '100%' }} title={lesson.title} />
-    </div>
+    <SummaryOverlay
+      onBack={() => setShowSummary(false)}
+      title={lesson.title}
+      titleColor="#34d399"
+      url={lesson.summary_url}
+    />
   )
 
   return (

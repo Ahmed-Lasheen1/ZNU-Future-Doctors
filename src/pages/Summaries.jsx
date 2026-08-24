@@ -3,8 +3,21 @@ import { useLocation } from 'react-router-dom'
 import { supabase } from '../supabase'
 import { getTheme, backBtnStyle } from '../theme'
 import ErrorBanner from '../components/ErrorBanner'
+import SummaryOverlay from '../components/SummaryOverlay'
 import { useModules } from '../App'
 import { fetchModuleStages } from '../lib/moduleStages'
+
+// Shared keyboard handler for the clickable-card pattern below — Tab
+// now reaches these cards and Enter/Space activates them, matching the
+// existing checklist-row pattern in Checklist.jsx.
+function onCardKeyDown(handler) {
+  return (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault()
+      handler()
+    }
+  }
+}
 
 function SummariesHome({ modules, onSelect, dark }) {
   const c = getTheme(dark)
@@ -34,14 +47,16 @@ function SummariesHome({ modules, onSelect, dark }) {
 
       <div style={{ display: 'grid', gridTemplateColumns: sorted.length === 1 ? '1fr' : '1fr 1fr', gap: 16 }}>
         {sorted.map(mod => (
-          <div key={mod.id} onClick={() => onSelect(mod)} style={{
-            background: c.card,
-            border: `2px solid ${mod.status === 'active' ? mod.color : c.border}`,
-            borderRadius: 20, padding: 24,
-            cursor: 'pointer', transition: 'all 0.25s',
-            textAlign: 'center',
-            opacity: mod.status === 'active' ? 1 : 0.7
-          }}
+          <div key={mod.id} onClick={() => onSelect(mod)}
+            role="button" tabIndex={0} onKeyDown={onCardKeyDown(() => onSelect(mod))}
+            style={{
+              background: c.card,
+              border: `2px solid ${mod.status === 'active' ? mod.color : c.border}`,
+              borderRadius: 20, padding: 24,
+              cursor: 'pointer', transition: 'all 0.25s',
+              textAlign: 'center',
+              opacity: mod.status === 'active' ? 1 : 0.7
+            }}
             onMouseEnter={e => {
               e.currentTarget.style.borderColor = mod.color
               e.currentTarget.style.transform = 'translateY(-4px)'
@@ -98,22 +113,13 @@ function ModuleSummaries({ mod, onBack, dark, initialStage }) {
   const filtered = summaries.filter(s => activeStage === 'all' || (s.exam_stage || 'general') === activeStage)
 
   if (selected) return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
-      <div style={{
-        background: 'linear-gradient(135deg, #1a2a4a, #0f1e35)',
-        borderBottom: '2px solid #2a4a7a',
-        padding: '12px 20px',
-        display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0
-      }}>
-        <button onClick={() => setSelected(null)} style={backBtnStyle()}>← Back</button>
-        <div style={{ flex: 1, textAlign: 'center' }}>
-          <div style={{ fontSize: 11, color: '#7eb8ff', letterSpacing: 2, textTransform: 'uppercase' }}>{mod.name}</div>
-          <div style={{ fontSize: 16, fontWeight: 900, color: mod.color }}>{selected.title}</div>
-        </div>
-        <div style={{ width: 80 }} />
-      </div>
-      <iframe src={selected.url} style={{ flex: 1, border: 'none', width: '100%' }} title={selected.title} />
-    </div>
+    <SummaryOverlay
+      onBack={() => setSelected(null)}
+      eyebrow={mod.name}
+      title={selected.title}
+      titleColor={mod.color}
+      url={selected.url}
+    />
   )
 
   return (
@@ -146,13 +152,15 @@ function ModuleSummaries({ mod, onBack, dark, initialStage }) {
 
       <div style={{ display: 'grid', gap: 12 }}>
         {filtered.map(sum => (
-          <div key={sum.id} onClick={() => setSelected(sum)} style={{
-            background: c.card,
-            border: `2px solid ${mod.color}40`,
-            borderRadius: 16, padding: '20px 24px',
-            cursor: 'pointer', transition: 'all 0.2s',
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between'
-          }}
+          <div key={sum.id} onClick={() => setSelected(sum)}
+            role="button" tabIndex={0} onKeyDown={onCardKeyDown(() => setSelected(sum))}
+            style={{
+              background: c.card,
+              border: `2px solid ${mod.color}40`,
+              borderRadius: 16, padding: '20px 24px',
+              cursor: 'pointer', transition: 'all 0.2s',
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between'
+            }}
             onMouseEnter={e => { e.currentTarget.style.borderColor = mod.color; e.currentTarget.style.transform = 'translateY(-2px)' }}
             onMouseLeave={e => { e.currentTarget.style.borderColor = `${mod.color}40`; e.currentTarget.style.transform = 'translateY(0)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>

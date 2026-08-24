@@ -14,8 +14,22 @@ export default function AnimatedCard({ children, delay = 0, onClick, color, dark
     return () => clearTimeout(t)
   }, [delay])
 
+  // Cards were clickable divs with no keyboard path — Tab could reach
+  // them (once given tabIndex below) but neither Enter nor Space would
+  // activate them without this. Matches the pattern already used for
+  // the checklist row toggle in Checklist.jsx.
+  function handleKeyDown(e) {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault()
+      onClick?.()
+    }
+  }
+
   return (
     <div onClick={onClick}
+      role="button"
+      tabIndex={0}
+      onKeyDown={handleKeyDown}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{

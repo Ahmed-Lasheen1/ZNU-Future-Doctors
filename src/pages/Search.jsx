@@ -85,6 +85,15 @@ export default function Search({ dark }) {
     if (r.type === 'schedule') return navigate('/schedule')
   }
 
+  function handleResultKeyDown(r) {
+    return (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault()
+        openResult(r)
+      }
+    }
+  }
+
   const inStyle = {
     width: '100%', padding: '14px 16px', borderRadius: '12px',
     border: `1px solid ${c.border}`, background: c.input, color: c.text,
@@ -124,11 +133,13 @@ export default function Search({ dark }) {
           {results.map(r => {
             const meta = typeMeta[r.type]
             return (
-              <div key={`${r.type}-${r.id}`} onClick={() => openResult(r)} style={{
-                background: c.card, border: `1px solid ${c.border}`,
-                borderRadius: 14, padding: '14px 16px', cursor: 'pointer',
-                display: 'flex', alignItems: 'center', gap: 12, transition: 'all 0.15s'
-              }}
+              <div key={`${r.type}-${r.id}`} onClick={() => openResult(r)}
+                role="button" tabIndex={0} onKeyDown={handleResultKeyDown(r)}
+                style={{
+                  background: c.card, border: `1px solid ${c.border}`,
+                  borderRadius: 14, padding: '14px 16px', cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', gap: 12, transition: 'all 0.15s'
+                }}
                 onMouseEnter={e => e.currentTarget.style.borderColor = meta.color}
                 onMouseLeave={e => e.currentTarget.style.borderColor = c.border}>
                 <div style={{
