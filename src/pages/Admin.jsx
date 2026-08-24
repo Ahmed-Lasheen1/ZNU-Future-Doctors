@@ -69,6 +69,7 @@ export default function Admin({ dark }) {
   const [qSubjectId, setQSubjectId] = useState('')
   const [qExamType, setQExamType] = useState('both')
   const [qExamStage, setQExamStage] = useState('tbl')
+  const [qSource, setQSource] = useState('')
   const [bulkMode, setBulkMode] = useState(false)
   const [bulkText, setBulkText] = useState('')
   const [bulkSaving, setBulkSaving] = useState(false)
@@ -309,7 +310,8 @@ export default function Admin({ dark }) {
     const { error } = await supabase.from('questions').insert([{
       question: qText, option_a: qA, option_b: qB, option_c: qC, option_d: qD,
       correct: qCorrect, explanation: qExplanation, exam_type: qExamType,
-      exam_stage: qExamStage, module_id: qModuleId, subject_id: qSubjectId || null
+      exam_stage: qExamStage, module_id: qModuleId, subject_id: qSubjectId || null,
+      source: qSource || null
     }])
     if (!error) { showMsg('✅ Question added!'); setQText(''); setQA(''); setQB(''); setQC(''); setQD(''); setQExplanation(''); fetchQuestions() }
     else showMsg('❌ ' + error.message)
@@ -379,7 +381,8 @@ export default function Admin({ dark }) {
       exam_type: qExamType,
       exam_stage: qExamStage,
       module_id: qModuleId,
-      subject_id: qSubjectId || null
+      subject_id: qSubjectId || null,
+      source: qSource || null
     }))
     const { error } = await supabase.from('questions').insert(rows)
     setBulkSaving(false)
@@ -686,6 +689,13 @@ export default function Admin({ dark }) {
           <label style={{ color: c.sub, fontSize: 12, display: 'block', marginBottom: 4 }}>Exam Stage</label>
           <select value={qExamStage} onChange={e => setQExamStage(e.target.value)} style={inStyle}>
             {EXAM_STAGES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+          </select>
+          <label style={{ color: c.sub, fontSize: 12, display: 'block', marginBottom: 4 }}>Source (optional)</label>
+          <select value={qSource} onChange={e => setQSource(e.target.value)} style={inStyle}>
+            <option value="">No tag</option>
+            <option value="ai">🤖 AI</option>
+            <option value="courses">📚 Courses</option>
+            <option value="university">🎓 University Doctors</option>
           </select>
 
           {bulkMode ? (

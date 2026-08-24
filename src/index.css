@@ -104,6 +104,31 @@ h1, h2, h3 {
 }
 
 /* ============================================================
+   AutoGrid (src/components/AutoGrid.jsx).
+   Column count comes from the component as a CSS variable based on
+   how many cards are passed in: 1 card = 100% wide, 2 = 50% each,
+   3 = 33.3% each, 4+ wraps at a max of 4 per row on desktop.
+   Mobile always caps at 2 columns regardless of --auto-grid-cols,
+   via min() in the media query below.
+   ============================================================ */
+.auto-grid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(var(--auto-grid-cols, 4), 1fr);
+}
+
+@media (max-width: 640px) {
+  .auto-grid {
+    grid-template-columns: repeat(min(var(--auto-grid-cols, 4), 2), 1fr);
+    gap: 12px;
+  }
+}
+
+@media (min-width: 1100px) {
+  .auto-grid { gap: 20px; }
+}
+
+/* ============================================================
    SmartHeader (the top bar on every page except Home).
    On narrow phones there isn't room for Back + Menu + Search +
    the "ZNU Future Doctors" title + theme toggle + points/sign-in
