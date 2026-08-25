@@ -5,7 +5,6 @@ import { useAuth, useModules } from '../App'
 import { getTheme } from '../theme'
 import { useToast } from '../components/ToastProvider'
 import ErrorBanner from '../components/ErrorBanner'
-import ModuleTabs from '../components/ModuleTabs'
 import QuestionPalette from '../components/QuestionPalette'
 import ScoreRing from '../components/ScoreRing'
 import QuestionSourceBadge from '../components/QuestionSourceBadge'
@@ -54,7 +53,6 @@ export default function MCQ({ dark }) {
   const [results, setResults] = useState({})
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState(false)
-  const [loadErrorMessage, setLoadErrorMessage] = useState('')
   const [timeLeft, setTimeLeft] = useState(0)
   const [flaggedIds, setFlaggedIds] = useState(new Set())
   const [resumeData, setResumeData] = useState(null)
@@ -64,7 +62,7 @@ export default function MCQ({ dark }) {
   const c = getTheme(dark)
 
   useEffect(() => {
-    fetchData()
+    fetchSubjects()
     return () => clearInterval(timerRef.current)
   }, [])
 
@@ -82,6 +80,15 @@ export default function MCQ({ dark }) {
       setActiveModule(active ? active.id : modules[0].id)
     }
   }, [modulesLoaded, modules])
+
+  // Questions are scoped to whichever module is active — there's no
+  // module-switching bar on this page anymore (you always arrive here
+  // already scoped to one module), so we only ever need that module's
+  // questions, fetched fresh whenever it changes rather than loading
+  // the entire question bank for every module up front.
+  useEffect(() => {
+    if (activeModule) fetchQuestionsForModule(activeModule)
+  }, [activeModule])
 
   // ── Retry mode: arriving here from the Review page with a specific
   // set of questions to answer again (real grading, not read-only). ──────
@@ -160,64 +167,57 @@ export default function MCQ({ dark }) {
     fetchModuleStages(activeModule).then(setStages)
   }, [activeModule])
 
-  async function fetchData() {
-    setLoading(true)
-    setLoadError(false)
-    setLoadErrorMessage('')
+  async function fetchSubjects() {
+    const { data, error } = await supabase.from('subjects').select('*').order('name')
+    if (error) {
+      // Offline fallback — reuse the last successfully loaded subjects
+      // list so a student without a connection still sees subject tabs.
+      const cached = localStorage.getItem('mcq_subjects_cache')
+      if (cached) setSubjects(JSON.parse(cached))
+      else setLoadError(true)
+    } else if (data) {
+      setSubjects(data)
+      localStorage.setItem('mcq_subjects_cache', JSON.stringify(data))
+    }
+  }
 
-    const [subRes, qRes] = await Promise.all([
-      supabase.from('subjects').select('*').order('name'),
+  // Scoped to a single module — fetched fresh every time the active
+  // module changes instead of loading the whole question bank once.
+  // Cache-first: any previously-fetched copy of THIS module's
+  // questions renders immediately (no blank/loading flash when
+  // switching modules), then gets replaced as soon as the network
+  // response for that module arrives.
+  async function fetchQuestionsForModule(moduleId) {
+    const cacheKey = `mcq_questions_cache_${moduleId}`
+    const cached = localStorage.getItem(cacheKey)
+    let hadCache = false
+    if (cached) {
+      try {
+        setQuestions(JSON.parse(cached))
+        setUsingCache(true)
+        hadCache = true
+      } catch { /* ignore corrupt cache */ }
+    }
+    setLoading(!hadCache)
+
+    const { data, error } = await supabase
       // Note: deliberately NOT selecting `correct` or `explanation` here —
       // those columns are blocked at the database level for this role
       // anyway (see supabase_secure_mcq.sql). Grading happens server-side
       // via the grade_mcq() function, only after the student submits.
-      supabase.from('questions')
-        .select('id, question, option_a, option_b, option_c, option_d, exam_type, exam_stage, module_id, subject_id, lesson_id, source, created_at')
-        .order('created_at')
-    ])
+      .from('questions')
+      .select('id, question, option_a, option_b, option_c, option_d, exam_type, exam_stage, module_id, subject_id, lesson_id, source, created_at')
+      .eq('module_id', moduleId)
+      .order('created_at')
 
-    if (subRes.error || qRes.error) {
-      const err = subRes.error || qRes.error
-      // Log the real error so it can actually be diagnosed (open the
-      // browser console — F12 → Console — to read it), instead of
-      // silently guessing what went wrong.
-      console.error('[MCQ] Failed to load questions/subjects:', err)
-      // Shown directly on the page (not just the console) so the exact
-      // technical error can be copied and shared for diagnosis without
-      // needing to open developer tools.
-      setLoadErrorMessage(err?.message || String(err))
-
-      // Only treat this as a connectivity problem — and fall back to
-      // the cached question bank — when the browser is actually
-      // offline or the request itself couldn't reach the network.
-      // Any other error (a database/permissions problem, for example)
-      // is a real backend issue and should say so, not blame the
-      // connection.
-      const looksOffline = typeof navigator !== 'undefined' && !navigator.onLine
-      const isNetworkError = /failed to fetch|networkerror|load failed/i.test(err.message || '')
-
-      if (looksOffline || isNetworkError) {
-        // Offline fallback — reuse the last successfully loaded question
-        // bank (cached in localStorage below) so a student without a
-        // connection can still browse/answer questions. Submitting still
-        // needs a connection, since grading happens server-side by design.
-        const cachedSubjects = localStorage.getItem('mcq_subjects_cache')
-        const cachedQuestions = localStorage.getItem('mcq_questions_cache')
-        if (cachedQuestions) {
-          setQuestions(JSON.parse(cachedQuestions))
-          setSubjects(cachedSubjects ? JSON.parse(cachedSubjects) : [])
-          setUsingCache(true)
-        } else {
-          setLoadError(true)
-        }
-      } else {
-        setUsingCache(false)
-        setLoadError(true)
-      }
-    } else {
-      if (subRes.data) { setSubjects(subRes.data); localStorage.setItem('mcq_subjects_cache', JSON.stringify(subRes.data)) }
-      if (qRes.data) { setQuestions(qRes.data); localStorage.setItem('mcq_questions_cache', JSON.stringify(qRes.data)) }
+    if (error) {
+      // Network failed — keep showing the cached copy (if we had one);
+      // otherwise there's genuinely nothing to show, so surface the error.
+      if (!hadCache) setLoadError(true)
+    } else if (data) {
+      setQuestions(data)
       setUsingCache(false)
+      localStorage.setItem(cacheKey, JSON.stringify(data))
     }
     setLoading(false)
   }
@@ -231,6 +231,7 @@ export default function MCQ({ dark }) {
   }
 
   const moduleSubjects = subjects.filter(s => s.module_id === activeModule)
+  const activeModuleObj = modules.find(m => m.id === activeModule)
 
   const getFilteredQuestions = (type) => {
     return questions.filter(q => {
@@ -657,29 +658,7 @@ export default function MCQ({ dark }) {
 
   return (
     <div className="page-container" style={{ padding: '20px' }}>
-      {(loadError || modulesError) && (
-        <div style={{ marginBottom: 16 }}>
-          <ErrorBanner />
-          {loadErrorMessage && (
-            <div style={{
-              background: c.input, border: `1px solid ${c.border}`, borderRadius: 10,
-              padding: '10px 14px', marginTop: 8, fontSize: 12, color: c.sub,
-              fontFamily: 'monospace', wordBreak: 'break-word', textAlign: 'left'
-            }}>
-              <strong style={{ display: 'block', marginBottom: 4, color: c.text, fontFamily: 'inherit' }}>
-                Technical details (copy this and share it for help):
-              </strong>
-              {loadErrorMessage}
-            </div>
-          )}
-          <div style={{ textAlign: 'center', marginTop: 8 }}>
-            <button onClick={fetchData} style={{
-              background: 'transparent', border: `1px solid ${c.border}`, borderRadius: 10,
-              padding: '8px 20px', color: c.sub, cursor: 'pointer', fontFamily: 'inherit', fontSize: 13, fontWeight: 700
-            }}>🔄 Retry</button>
-          </div>
-        </div>
-      )}
+      {(loadError || modulesError) && <ErrorBanner />}
       {usingCache && (
         <div style={{
           background: '#f59e0b20', border: '1px solid #f59e0b40', borderRadius: 12,
@@ -719,12 +698,14 @@ export default function MCQ({ dark }) {
         </div>
       )}
 
-      <ModuleTabs
-        modules={modules}
-        activeModule={activeModule}
-        onSelect={(id) => { setActiveModule(id); setActiveSubject('all') }}
-        dark={dark}
-      />
+      {activeModuleObj && (
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16,
+          color: activeModuleObj.color, fontWeight: 700, fontSize: 14
+        }}>
+          <span style={{ fontSize: 18 }}>{activeModuleObj.icon}</span> {activeModuleObj.name}
+        </div>
+      )}
 
       <div style={{ display: 'flex', gap: 8, overflowX: 'auto', marginBottom: 16, paddingBottom: 4 }}>
         {[{ value: 'all', label: 'All' }, ...stages.map(s => ({ value: s.value, label: `${s.emoji} ${s.title}` }))].map(stage => (

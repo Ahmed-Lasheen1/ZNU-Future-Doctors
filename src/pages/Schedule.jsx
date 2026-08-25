@@ -17,10 +17,13 @@ export default function Schedule({ dark }) {
   const [viewer, setViewer] = useState(null)
   const [loadError, setLoadError] = useState(false)
 
+  // Only active modules are offered here — a schedule for a completed
+  // module isn't something a student needs a tab to keep switching to.
+  const activeModules = modules.filter(m => m.status === 'active')
+
   useEffect(() => {
-    if (modulesLoaded && modules.length > 0 && !activeModule) {
-      const active = modules.find(m => m.status === 'active')
-      setActiveModule(active ? active.id : modules[0].id)
+    if (modulesLoaded && activeModules.length > 0 && !activeModule) {
+      setActiveModule(activeModules[0].id)
     }
   }, [modulesLoaded, modules])
 
@@ -58,7 +61,7 @@ export default function Schedule({ dark }) {
         📅 Schedules
       </h1>
 
-      <ModuleTabs modules={modules} activeModule={activeModule} onSelect={setActiveModule} dark={dark} />
+      <ModuleTabs modules={activeModules} activeModule={activeModule} onSelect={setActiveModule} dark={dark} />
 
       <div style={{ display: 'flex', gap: 10, marginBottom: 24 }}>
         {['study', 'exam'].map(type => (

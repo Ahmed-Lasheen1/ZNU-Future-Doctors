@@ -21,9 +21,13 @@ export default function Checklist({ dark }) {
   const c = getTheme(dark)
   const inStyle = { ...inputStyle(c), padding: '10px 14px', marginBottom: 0 }
 
+  // Only active modules are offered here — checklist items for a
+  // completed module don't need their own tab anymore.
+  const activeModulesList = modules.filter(m => m.status === 'active')
+
   useEffect(() => {
-    if (modulesLoaded && modules.length > 0 && !activeModule) {
-      setActiveModule(modules[0].id)
+    if (modulesLoaded && activeModulesList.length > 0 && !activeModule) {
+      setActiveModule(activeModulesList[0].id)
     }
   }, [modulesLoaded, modules])
   useEffect(() => { if (activeModule) fetchTasks() }, [activeModule, user])
@@ -162,8 +166,8 @@ export default function Checklist({ dark }) {
         </div>
       )}
 
-      {/* Module Tabs */}
-      <ModuleTabs modules={modules} activeModule={activeModule} onSelect={setActiveModule} dark={dark} />
+      {/* Module Tabs — active modules only */}
+      <ModuleTabs modules={activeModulesList} activeModule={activeModule} onSelect={setActiveModule} dark={dark} />
 
       {/* Progress */}
       {totalTasks > 0 && (
