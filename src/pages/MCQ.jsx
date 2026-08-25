@@ -40,6 +40,10 @@ export default function MCQ({ dark }) {
     const params = new URLSearchParams(location.search)
     return params.get('lesson') || null
   })
+  const [subjectFilter] = useState(() => {
+    const params = new URLSearchParams(location.search)
+    return params.get('subject') || null
+  })
   const [quizMode, setQuizMode] = useState(null)
   const [quizQuestions, setQuizQuestions] = useState([])
   const [answers, setAnswers] = useState({})
@@ -100,6 +104,19 @@ export default function MCQ({ dark }) {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lessonFilter, questions])
+
+  // Arriving from SubjectPage with ?subject=<id> (the "All MCQs"
+  // button) — every question tagged to this subject across all its
+  // lessons, regardless of exam_type, same untimed/gradable path as a
+  // lesson-scoped practice quiz. Skipped if a lesson filter is also
+  // present so the two never race each other.
+  useEffect(() => {
+    if (subjectFilter && !lessonFilter && !quizMode && questions.length > 0) {
+      const subjectQs = questions.filter(q => q.subject_id === subjectFilter)
+      startRetryQuiz(subjectQs)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [subjectFilter, lessonFilter, questions])
 
   // ── Paused-exam check (Resume) ─────────────────────────────────────────
   // Runs whenever we're back on the module list (not mid-quiz) or the
