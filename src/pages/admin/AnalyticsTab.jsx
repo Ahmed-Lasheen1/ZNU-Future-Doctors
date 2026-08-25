@@ -30,11 +30,20 @@ export default function AnalyticsTab({ dark, modules }) {
   useEffect(() => { fetchDifficulty() }, [])
   useEffect(() => { fetchOverviewStats() }, [])
 
-  // Live "online now" figure — see src/lib/onlinePresence.js. Updates
-  // automatically as people open/close the site, no refresh needed.
+  // Live "online now" figure — see src/lib/onlinePresence.js. Every
+  // step in there is already defensive, but the call itself is also
+  // wrapped here so this tab can NEVER crash because of it — worst
+  // case the count just stays at 0.
   useEffect(() => {
-    const unwatch = watchOnlineCount(setOnlineCount)
-    return unwatch
+    let unwatch = () => {}
+    try {
+      unwatch = watchOnlineCount(setOnlineCount) || (() => {})
+    } catch (e) {
+      console.warn('[AnalyticsTab] Could not watch online count:', e)
+    }
+    return () => {
+      try { unwatch() } catch { /* noop */ }
+    }
   }, [])
 
   // Aggregate error-rate report across ALL students — see
@@ -43,8 +52,12 @@ export default function AnalyticsTab({ dark, modules }) {
   // make a question look "hard".
   async function fetchDifficulty() {
     setDifficultyLoading(true)
-    const { data, error } = await supabase.rpc('get_question_difficulty', { p_min_attempts: 3 })
-    if (!error && data) setDifficulty(data)
+    try {
+      const { data, error } = await supabase.rpc('get_question_difficulty', { p_min_attempts: 3 })
+      if (!error && data) setDifficulty(data)
+    } catch (e) {
+      console.warn('[AnalyticsTab] Could not load question difficulty:', e)
+    }
     setDifficultyLoading(false)
   }
 
@@ -52,15 +65,22 @@ export default function AnalyticsTab({ dark, modules }) {
   // rows in `push_subscriptions` — this counts DEVICES that turned on
   // notifications, not unique people (someone using their phone and
   // laptop counts as 2), and includes guest devices too (user_id can
-  // be null there).
+  // be null there). Wrapped in try/catch so a missing/misconfigured
+  // table can't take down the whole tab — it just shows 0.
   async function fetchOverviewStats() {
     setStatsLoading(true)
-    const [accountsRes, notifRes] = await Promise.all([
-      supabase.from('profiles').select('*', { count: 'exact', head: true }),
-      supabase.from('push_subscriptions').select('*', { count: 'exact', head: true }),
-    ])
-    setAccountCount(accountsRes.count ?? 0)
-    setNotifCount(notifRes.count ?? 0)
+    try {
+      const [accountsRes, notifRes] = await Promise.all([
+        supabase.from('profiles').select('*', { count: 'exact', head: true }),
+        supabase.from('push_subscriptions').select('*', { count: 'exact', head: true }),
+      ])
+      setAccountCount(accountsRes?.count ?? 0)
+      setNotifCount(notifRes?.count ?? 0)
+    } catch (e) {
+      console.warn('[AnalyticsTab] Could not load overview stats:', e)
+      setAccountCount(0)
+      setNotifCount(0)
+    }
     setStatsLoading(false)
   }
 

@@ -54,6 +54,7 @@ export default function MCQ({ dark }) {
   const [results, setResults] = useState({})
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState(false)
+  const [loadErrorMessage, setLoadErrorMessage] = useState('')
   const [timeLeft, setTimeLeft] = useState(0)
   const [flaggedIds, setFlaggedIds] = useState(new Set())
   const [resumeData, setResumeData] = useState(null)
@@ -162,6 +163,7 @@ export default function MCQ({ dark }) {
   async function fetchData() {
     setLoading(true)
     setLoadError(false)
+    setLoadErrorMessage('')
 
     const [subRes, qRes] = await Promise.all([
       supabase.from('subjects').select('*').order('name'),
@@ -180,6 +182,10 @@ export default function MCQ({ dark }) {
       // browser console — F12 → Console — to read it), instead of
       // silently guessing what went wrong.
       console.error('[MCQ] Failed to load questions/subjects:', err)
+      // Shown directly on the page (not just the console) so the exact
+      // technical error can be copied and shared for diagnosis without
+      // needing to open developer tools.
+      setLoadErrorMessage(err?.message || String(err))
 
       // Only treat this as a connectivity problem — and fall back to
       // the cached question bank — when the browser is actually
@@ -654,6 +660,18 @@ export default function MCQ({ dark }) {
       {(loadError || modulesError) && (
         <div style={{ marginBottom: 16 }}>
           <ErrorBanner />
+          {loadErrorMessage && (
+            <div style={{
+              background: c.input, border: `1px solid ${c.border}`, borderRadius: 10,
+              padding: '10px 14px', marginTop: 8, fontSize: 12, color: c.sub,
+              fontFamily: 'monospace', wordBreak: 'break-word', textAlign: 'left'
+            }}>
+              <strong style={{ display: 'block', marginBottom: 4, color: c.text, fontFamily: 'inherit' }}>
+                Technical details (copy this and share it for help):
+              </strong>
+              {loadErrorMessage}
+            </div>
+          )}
           <div style={{ textAlign: 'center', marginTop: 8 }}>
             <button onClick={fetchData} style={{
               background: 'transparent', border: `1px solid ${c.border}`, borderRadius: 10,
