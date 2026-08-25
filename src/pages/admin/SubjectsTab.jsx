@@ -1,0 +1,93 @@
+import { useState } from 'react'
+import { supabase } from '../../supabase'
+import { getTheme, inputStyle } from '../../theme'
+import InlineMessage from '../../components/InlineMessage'
+import ModuleSelect from './ModuleSelect'
+import { btnStyle, miniBtn, cancelBtnStyle } from './adminStyles'
+
+export default function SubjectsTab({ dark, modules, subjects, fetchSubjects }) {
+  const c = getTheme(dark)
+  const inStyle = inputStyle(c)
+  const [msg, setMsg] = useState('')
+  function showMsg(m) { setMsg(m); setTimeout(() => setMsg(''), 3000) }
+
+  const [editingSubjectId, setEditingSubjectId] = useState(null)
+  const [subName, setSubName] = useState('')
+  const [subModuleId, setSubModuleId] = useState('')
+  const [subType, setSubType] = useState('both')
+
+  function editSubject(sub) {
+    setEditingSubjectId(sub.id)
+    setSubModuleId(sub.module_id); setSubName(sub.name); setSubType(sub.type)
+  }
+  function resetSubjectForm() {
+    setEditingSubjectId(null); setSubName(''); setSubType('both')
+  }
+  async function saveSubject() {
+    if (!subName || !subModuleId) return
+    const existing = subjects.filter(s => s.module_id === subModuleId && s.id !== editingSubjectId)
+    if (existing.some(s => s.name.trim().toLowerCase() === subName.trim().toLowerCase())) {
+      return showMsg('❌ This subject already exists in that module')
+    }
+    if (editingSubjectId) {
+      const { error } = await supabase.from('subjects').update({ name: subName, module_id: subModuleId, type: subType }).eq('id', editingSubjectId)
+      if (!error) { showMsg('✅ Subject updated!'); resetSubjectForm(); fetchSubjects() }
+      else showMsg('❌ ' + error.message)
+    } else {
+      const { error } = await supabase.from('subjects').insert([{ name: subName, module_id: subModuleId, type: subType }])
+      if (!error) { showMsg('✅ Subject added!'); resetSubjectForm(); fetchSubjects() }
+      else showMsg('❌ ' + error.message)
+    }
+  }
+
+  async function deleteSubject(id) {
+    if (!confirm('Delete this subject? Its files, lessons and questions will also be deleted. This cannot be undone.')) return
+    if (editingSubjectId === id) resetSubjectForm()
+    const { error } = await supabase.from('subjects').delete().eq('id', id)
+    showMsg(error ? '❌ ' + error.message : '✅ Subject deleted')
+    fetchSubjects()
+  }
+
+  const filteredSubjects = (moduleId) => subjects.filter(s => s.module_id === moduleId)
+
+  return (
+    <div>
+      <InlineMessage message={msg} />
+      <div style={{ background: c.card, padding: '20px', borderRadius: '16px', border: `1px solid ${c.border}`, marginBottom: 16 }}>
+        <h3 style={{ color: '#38bdf8', marginBottom: 16 }}>{editingSubjectId ? '✏️ Edit Subject' : '➕ Add Subject'}</h3>
+        <ModuleSelect modules={modules} value={subModuleId} onChange={e => setSubModuleId(e.target.value)} inStyle={inStyle} />
+        <input placeholder="Subject name" value={subName} onChange={e => setSubName(e.target.value)} style={inStyle} />
+        <select value={subType} onChange={e => setSubType(e.target.value)} style={inStyle}>
+          <option value="both">Theory + Practical</option>
+          <option value="theory">Theory Only</option>
+          <option value="practical">Practical Only</option>
+        </select>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button onClick={saveSubject} style={{ ...btnStyle, flex: 1 }}>{editingSubjectId ? 'Save Changes' : 'Add Subject'}</button>
+          {editingSubjectId && <button onClick={resetSubjectForm} style={cancelBtnStyle(c)}>Cancel</button>}
+        </div>
+      </div>
+      {modules.map(mod => {
+        const subs = filteredSubjects(mod.id)
+        if (subs.length === 0) return null
+        return (
+          <div key={mod.id} style={{ marginBottom: 16 }}>
+            <h4 style={{ color: mod.color, marginBottom: 8 }}>{mod.icon} {mod.name}</h4>
+            {subs.map(sub => (
+              <div key={sub.id} style={{ background: c.card, padding: '12px 16px', borderRadius: 12, border: `1px solid ${c.border}`, marginBottom: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <span style={{ color: c.text, fontWeight: 600 }}>{sub.name}</span>
+                  <span style={{ color: c.sub, fontSize: 12, marginLeft: 8 }}>· {sub.type}</span>
+                </div>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button onClick={() => editSubject(sub)} aria-label={`Edit subject: ${sub.name}`} style={{ ...miniBtn, borderColor: '#38bdf8', color: '#38bdf8' }}>✏️</button>
+                  <button onClick={() => deleteSubject(sub.id)} aria-label={`Delete subject: ${sub.name}`} style={{ ...miniBtn, borderColor: '#ef4444', color: '#ef4444' }}>🗑</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )
+      })}
+    </div>
+  )
+}
