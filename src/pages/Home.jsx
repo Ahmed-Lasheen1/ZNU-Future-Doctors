@@ -1,31 +1,44 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth, NavMenu, useModules } from '../App'
-import { getTheme } from '../theme'
 import { supabase } from '../supabase'
 import ErrorBanner from '../components/ErrorBanner'
-import AnimatedCard from '../components/AnimatedCard'
-import AutoGrid from '../components/AutoGrid'
 import { computeStreak } from '../lib/streak'
 import { getGuestHistory } from '../lib/reviewStorage'
 import { loadSavedActiveExam } from '../lib/activeExam'
 import NotifyPermissionButton from '../components/NotifyPermissionButton'
 
+// ── Redesign preview: local tokens ──────────────────────────────────
+// Flat surfaces + hairline borders + one deliberate accent, instead of
+// gradients and colored borders everywhere. Scoped to this page for
+// now — once approved, these move into theme.js for a full rollout.
+function tokens(dark) {
+  return {
+    bg: dark ? '#0B0F14' : '#F6F7F9',
+    surface: dark ? '#121821' : '#FFFFFF',
+    line: dark ? '#1E2733' : '#E3E7EC',
+    lineStrong: dark ? '#2A3644' : '#CBD3DC',
+    text: dark ? '#E7ECF2' : '#141A21',
+    sub: dark ? '#8996A6' : '#64748B',
+    accent: '#F2A73B',
+    accentSoft: dark ? '#F2A73B22' : '#F2A73B18',
+    display: "'Manrope', 'Segoe UI', sans-serif",
+    body: "'Inter', 'Segoe UI', sans-serif",
+    mono: "'JetBrains Mono', ui-monospace, monospace",
+  }
+}
+
 const toolCards = [
-  { emoji: '📅', title: 'Schedules', to: '/schedule', color: '#a78bfa' },
-  { emoji: '🎯', title: 'Checklist', to: '/checklist', color: '#f59e0b' },
-  { emoji: '💬', title: 'Anonymous Q&A', to: '/anon-questions', color: '#a78bfa' },
-  { emoji: '🏆', title: 'Leaderboard', to: '/profile?tab=leaderboard', color: '#f59e0b' },
+  { emoji: '📅', title: 'Schedules', to: '/schedule' },
+  { emoji: '🎯', title: 'Checklist', to: '/checklist' },
+  { emoji: '💬', title: 'Anonymous Q&A', to: '/anon-questions' },
+  { emoji: '🏆', title: 'Leaderboard', to: '/profile?tab=leaderboard' },
 ]
 
-// Small helper so a missing/blank name never crashes the avatar badge —
-// falls back to a "?" instead of calling .charAt(0) on an empty string.
 function initialOf(name) {
   return name && name.trim() ? name.trim().charAt(0).toUpperCase() : '?'
 }
 
-// Shared Enter/Space handler for the clickable-div pattern below —
-// matches the existing checklist-row keyboard pattern in Checklist.jsx.
 function onActivateKeyDown(handler) {
   return (e) => {
     if (e.key === 'Enter' || e.key === ' ') {
@@ -35,8 +48,113 @@ function onActivateKeyDown(handler) {
   }
 }
 
+// Signature element — a full-bleed heartbeat trace behind the hero.
+// The spike height is driven by the student's own streak (capped, so
+// it stays a subtle "this is about you" touch rather than a gimmick),
+// draws in once on load, then holds a slow, faint glow pulse. Every
+// other element on the page stays quiet so this one has room to land.
+function pulsePath(amp) {
+  const mid = 90
+  return `M0,${mid} L330,${mid} L352,${mid - amp * 0.22} L374,${mid + amp * 0.12} L396,${mid - amp} L418,${mid + amp * 0.45} L442,${mid} L480,${mid} L1000,${mid}`
+}
+
+function HeroPulse({ t, streak }) {
+  const amp = Math.min(62, 24 + streak * 1.3)
+  const d = pulsePath(amp)
+  return (
+    <div style={{
+      position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)',
+      width: '100vw', height: '100%', overflow: 'hidden', pointerEvents: 'none'
+    }} aria-hidden="true">
+      <svg viewBox="0 0 1000 180" preserveAspectRatio="none" style={{ width: '100%', height: '100%', display: 'block' }}>
+        <defs>
+          <linearGradient id="pulseFade" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stopColor={t.accent} stopOpacity="0" />
+            <stop offset="30%" stopColor={t.accent} stopOpacity="0.9" />
+            <stop offset="70%" stopColor={t.accent} stopOpacity="0.9" />
+            <stop offset="100%" stopColor={t.accent} stopOpacity="0" />
+          </linearGradient>
+          <filter id="pulseGlow" x="-20%" y="-200%" width="140%" height="500%">
+            <feGaussianBlur stdDeviation="6" result="blur" />
+            <feMerge>
+              <feMergeNode in="blur" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+        </defs>
+        <path d={d} fill="none" stroke="url(#pulseFade)" strokeWidth="2.5"
+          strokeLinecap="round" strokeLinejoin="round"
+          filter="url(#pulseGlow)" pathLength="1" className="hero-pulse-draw" />
+      </svg>
+    </div>
+  )
+}
+
+function Vital({ value, label, t, last }) {
+  if (value === null || value === undefined) return null
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+        <span style={{ fontFamily: t.mono, fontSize: 22, fontWeight: 700, color: t.text, letterSpacing: '-0.02em' }}>{value}</span>
+        <span style={{ fontSize: 10.5, fontWeight: 600, letterSpacing: '0.09em', textTransform: 'uppercase', color: t.sub }}>{label}</span>
+      </div>
+      {!last && <span style={{ width: 4, height: 4, borderRadius: '50%', background: t.accent, opacity: 0.6 }} />}
+    </div>
+  )
+}
+
+function ModuleCard({ mod, t, muted, onClick }) {
+  const [hover, setHover] = useState(false)
+  return (
+    <div
+      onClick={onClick} role="button" tabIndex={0}
+      onKeyDown={onActivateKeyDown(onClick)}
+      onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{
+        background: t.surface,
+        border: `1px solid ${hover ? t.accent : t.line}`,
+        borderRadius: 14, padding: '20px 18px', cursor: 'pointer',
+        transform: hover ? 'translateY(-2px)' : 'translateY(0)',
+        transition: 'transform 0.18s ease, border-color 0.18s ease',
+        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, textAlign: 'center',
+        opacity: muted ? 0.6 : 1
+      }}>
+      <span style={{ fontSize: 28, filter: muted ? 'grayscale(0.6)' : 'none' }}>{mod.icon}</span>
+      <div style={{ fontFamily: t.display, fontWeight: 700, fontSize: 15, color: t.text }}>{mod.name}</div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        <span style={{
+          width: 6, height: 6, borderRadius: '50%',
+          background: muted ? t.sub : '#22c55e', flexShrink: 0
+        }} />
+        <span style={{ fontFamily: t.mono, fontSize: 10.5, letterSpacing: '0.06em', textTransform: 'uppercase', color: t.sub }}>
+          {muted ? 'Completed' : 'Active'}
+        </span>
+      </div>
+    </div>
+  )
+}
+
+function ToolChip({ card, t, navigate }) {
+  const [hover, setHover] = useState(false)
+  return (
+    <button
+      onClick={() => navigate(card.to)}
+      onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{
+        display: 'flex', alignItems: 'center', gap: 8,
+        background: 'transparent', border: `1px solid ${hover ? t.accent : t.line}`,
+        borderRadius: 10, padding: '10px 16px', cursor: 'pointer',
+        color: hover ? t.accent : t.text, fontFamily: t.body,
+        fontSize: 13, fontWeight: 600, transition: 'all 0.15s ease'
+      }}>
+      <span style={{ fontSize: 15 }}>{card.emoji}</span>
+      {card.title}
+    </button>
+  )
+}
+
 export default function Home({ dark, toggleTheme }) {
-  const c = getTheme(dark)
+  const t = tokens(dark)
   const navigate = useNavigate()
   const { user, profile } = useAuth()
   const { modules, modulesError } = useModules()
@@ -77,9 +195,8 @@ export default function Home({ dark, toggleTheme }) {
   }, [user])
 
   // Weekly summary — a lightweight, auto-refreshing recap built purely
-  // from exam_history (or its guest-local equivalent), so there's
-  // nothing extra to maintain: questions attempted, accuracy, and the
-  // most-practiced subject over the last 7 days.
+  // from exam_history (or its guest-local equivalent): questions
+  // attempted, accuracy, and the most-practiced subject over 7 days.
   useEffect(() => {
     async function loadWeekly() {
       const weekAgoMs = Date.now() - 7 * 24 * 60 * 60 * 1000
@@ -118,9 +235,7 @@ export default function Home({ dark, toggleTheme }) {
 
   // Upcoming-exam reminder — fires a local notification (only if
   // permission was already granted, at most once per day) when an
-  // admin-set exam date is 0-2 days away. This only triggers while the
-  // app is actually open; a true always-on background push would need
-  // separate push-server infrastructure.
+  // admin-set exam date is 0-2 days away.
   useEffect(() => {
     async function checkExamReminders() {
       if (!('Notification' in window) || Notification.permission !== 'granted') return
@@ -151,230 +266,203 @@ export default function Home({ dark, toggleTheme }) {
   const activeModules = modules.filter(m => m.status === 'active')
   const completedModules = modules.filter(m => m.status === 'completed')
 
+  const vitals = [
+    streak > 0 ? { value: `${streak}d`, label: 'Streak' } : null,
+    user && profile ? { value: profile.points, label: 'Points' } : null,
+    weeklySummary ? { value: `${weeklySummary.accuracy}%`, label: 'Week accuracy' } : null,
+    weeklySummary ? { value: weeklySummary.totalAttempted, label: 'Week questions' } : null,
+    weeklySummary?.topSubjectName ? { value: weeklySummary.topSubjectName, label: 'Most practiced' } : null,
+  ].filter(Boolean)
+
   const sectionTitle = (text) => (
     <h2 style={{
-      color: c.sub,
-      fontSize: 13, fontWeight: 700, letterSpacing: 2,
+      color: t.sub, fontFamily: t.mono, textAlign: 'center',
+      fontSize: 11, fontWeight: 700, letterSpacing: '0.12em',
       marginBottom: 16, textTransform: 'uppercase'
     }}>{text}</h2>
   )
 
   return (
-    <div style={{ padding: '24px 16px 100px' }}>
-      {modulesError && <div className="page-container"><ErrorBanner /></div>}
+    <div style={{ background: t.bg, minHeight: '100vh', fontFamily: t.body }}>
+      <style>{`
+        @keyframes hero-pulse-draw-in {
+          0% { stroke-dashoffset: 1; opacity: 0.9; }
+          70% { stroke-dashoffset: 0; opacity: 0.9; }
+          100% { stroke-dashoffset: 0; opacity: 0.55; }
+        }
+        @keyframes hero-pulse-glow {
+          0%, 100% { opacity: 0.55; }
+          50% { opacity: 0.95; }
+        }
+        .hero-pulse-draw {
+          stroke-dasharray: 1;
+          animation: hero-pulse-draw-in 1.6s cubic-bezier(0.22, 1, 0.36, 1) forwards,
+                     hero-pulse-glow 3.4s ease-in-out 1.6s infinite;
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .hero-pulse-draw { animation: none; stroke-dashoffset: 0; opacity: 0.6; }
+        }
+      `}</style>
 
-      {/* Header */}
-      <div style={{
-        textAlign: 'center', padding: '30px 0 24px',
-        opacity: titleVisible ? 1 : 0,
-        transform: titleVisible ? 'translateY(0)' : 'translateY(-20px)',
-        transition: 'all 0.6s ease'
-      }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-            <button onClick={toggleTheme} style={{
-              background: dark ? 'rgba(56,189,248,0.1)' : '#f1f5f9',
-              color: dark ? '#38bdf8' : '#475569',
-              border: `1px solid ${dark ? 'rgba(56,189,248,0.3)' : '#e2e8f0'}`,
-              padding: '6px 14px', borderRadius: 10,
-              cursor: 'pointer', fontSize: 16, fontWeight: 700
-            }} aria-label={dark ? 'Switch to light mode' : 'Switch to dark mode'}>{dark ? '☀️' : '🌙'}</button>
-            <NavMenu dark={dark} />
-            <button onClick={() => navigate('/search')} aria-label="Search" style={{
-              background: dark ? 'rgba(56,189,248,0.1)' : '#f1f5f9',
-              color: dark ? '#38bdf8' : '#475569',
-              border: `1px solid ${dark ? 'rgba(56,189,248,0.3)' : '#e2e8f0'}`,
-              padding: '6px 14px', borderRadius: 10,
-              cursor: 'pointer', fontSize: 16, fontWeight: 700
-            }}>🔍</button>
+      {/* ── Hero ─────────────────────────────────────────────────── */}
+      <div style={{ position: 'relative', overflow: 'hidden', paddingTop: 28 }}>
+        <HeroPulse t={t} streak={streak} />
+
+        <div className="page-container" style={{ position: 'relative', padding: '0 16px' }}>
+          {modulesError && <ErrorBanner />}
+
+          {/* Top row */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 40 }}>
+            <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+              <button onClick={toggleTheme} aria-label={dark ? 'Switch to light mode' : 'Switch to dark mode'} style={{
+                background: t.bg, color: t.sub, border: `1px solid ${t.line}`,
+                padding: '7px 12px', borderRadius: 9, cursor: 'pointer', fontSize: 15
+              }}>{dark ? '☀️' : '🌙'}</button>
+              <NavMenu dark={dark} />
+              <button onClick={() => navigate('/search')} aria-label="Search" style={{
+                background: t.bg, color: t.sub, border: `1px solid ${t.line}`,
+                padding: '7px 12px', borderRadius: 9, cursor: 'pointer', fontSize: 15
+              }}>🔍</button>
+            </div>
+
+            {user && profile ? (
+              <div onClick={() => navigate('/profile')} role="button" tabIndex={0}
+                onKeyDown={onActivateKeyDown(() => navigate('/profile'))}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 10, background: t.bg,
+                  border: `1px solid ${t.line}`, borderRadius: 20, padding: '6px 14px 6px 6px', cursor: 'pointer'
+                }}>
+                <div style={{
+                  width: 28, height: 28, borderRadius: '50%', background: t.accent,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontFamily: t.display, fontSize: 12, fontWeight: 800, color: '#141A21'
+                }}>{initialOf(profile.name)}</div>
+                <span style={{ color: t.text, fontSize: 13, fontWeight: 600, fontFamily: t.body }}>Dr. {profile.name}</span>
+              </div>
+            ) : (
+              <button onClick={() => navigate('/auth')} style={{
+                background: t.accent, color: '#141A21', border: 'none',
+                padding: '8px 16px', borderRadius: 20, cursor: 'pointer',
+                fontSize: 13, fontWeight: 700, fontFamily: t.body
+              }}>Sign In →</button>
+            )}
           </div>
 
-          {/* Profile Bar */}
-          {user && profile ? (
-            <div onClick={() => navigate('/profile')}
-              role="button" tabIndex={0}
-              onKeyDown={onActivateKeyDown(() => navigate('/profile'))}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 10,
-                background: c.card,
-                border: `1px solid ${c.border}`,
-                borderRadius: 20, padding: '8px 16px', cursor: 'pointer',
-                transition: 'all 0.2s'
-              }}
-              onMouseEnter={e => e.currentTarget.style.borderColor = '#38bdf8'}
-              onMouseLeave={e => e.currentTarget.style.borderColor = c.border}>
-              <div style={{
-                width: 32, height: 32, borderRadius: '50%',
-                background: 'linear-gradient(135deg, #38bdf8, #818cf8)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 14, fontWeight: 900, color: '#fff', flexShrink: 0
-              }}>
-                {initialOf(profile.name)}
-              </div>
-              <div style={{ textAlign: 'left' }}>
-                <div style={{ color: c.text, fontSize: 13, fontWeight: 700 }}>
-                  Dr. {profile.name}
-                </div>
-                <div style={{ color: '#f59e0b', fontSize: 11, fontWeight: 700 }}>
-                  ⭐ {profile.points} points
-                </div>
-              </div>
-            </div>
-          ) : (
-            <button onClick={() => navigate('/auth')} style={{
-              background: '#38bdf820', color: '#38bdf8',
-              border: '1px solid #38bdf840',
-              padding: '8px 16px', borderRadius: 20,
-              cursor: 'pointer', fontSize: 13, fontWeight: 700
-            }}>Sign In →</button>
-          )}
-        </div>
-
-        <img src={dark ? '/icon-512.png' : '/icon-512-light.png'} alt="ZNU Future Doctors" style={{ width: 88, height: 88, marginBottom: 12, borderRadius: '50%', objectFit: 'cover', filter: dark ? 'drop-shadow(0 0 20px rgba(56,189,248,0.5))' : 'drop-shadow(0 2px 10px rgba(14,165,233,0.25))' }} />
-        <h1 style={{
-          fontSize: 28, fontWeight: 900,
-          background: 'linear-gradient(135deg, #38bdf8, #818cf8)',
-          WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-          marginBottom: 8
-        }}>ZNU Future Doctors</h1>
-        <p style={{ color: c.sub, fontSize: 15 }}>
-          Your Integrated Medical Study Platform
-        </p>
-
-        {streak > 0 && (
+          {/* Centered hero content, riding on top of the pulse trace */}
           <div style={{
-            display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 12,
-            background: '#f59e0b20', border: '1px solid #f59e0b40',
-            borderRadius: 20, padding: '6px 16px', color: '#f59e0b', fontSize: 13, fontWeight: 700
+            textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center',
+            padding: '18px 0 8px',
+            opacity: titleVisible ? 1 : 0,
+            transform: titleVisible ? 'translateY(0)' : 'translateY(-10px)',
+            transition: 'all 0.6s ease'
           }}>
-            🔥 {streak}-day study streak
-          </div>
-        )}
-      </div>
+            <img src={dark ? '/icon-512.png' : '/icon-512-light.png'} alt="ZNU Future Doctors"
+              style={{
+                width: 68, height: 68, borderRadius: '50%', objectFit: 'cover',
+                border: `1px solid ${t.line}`, background: t.bg, marginBottom: 20
+              }} />
+            <h1 style={{
+              fontFamily: t.display, fontSize: 'clamp(32px, 5.5vw, 54px)', fontWeight: 800,
+              color: t.text, letterSpacing: '-0.02em', lineHeight: 1.05, marginBottom: 12
+            }}>
+              ZNU Future Doctors
+            </h1>
+            <p style={{ color: t.sub, fontSize: 15, fontFamily: t.body, marginBottom: 30, maxWidth: 420 }}>
+              Your integrated medical study platform
+            </p>
 
-      <div className="page-container">
-        <NotifyPermissionButton dark={dark} label="🔔 Enable exam & deadline reminders" />
-      </div>
-
-      {/* Weekly summary — auto-computed from exam_history, no setup needed */}
-      {weeklySummary && (
-        <div className="page-container" style={{ marginBottom: 24 }}>
-          <div style={{ background: c.card, border: `1px solid ${c.border}`, borderRadius: 16, padding: '18px 20px' }}>
-            <div style={{ color: c.sub, fontSize: 12, fontWeight: 700, letterSpacing: 1, marginBottom: 12, textTransform: 'uppercase' }}>
-              📈 This Week
-            </div>
-            <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
-              <div>
-                <div style={{ color: '#38bdf8', fontWeight: 900, fontSize: 20 }}>{weeklySummary.totalAttempted}</div>
-                <div style={{ color: c.sub, fontSize: 11 }}>Questions</div>
+            {vitals.length > 0 && (
+              <div style={{
+                display: 'flex', gap: 4, flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center',
+                padding: '18px 28px', borderRadius: 16,
+                background: t.surface, border: `1px solid ${t.line}`
+              }}>
+                {vitals.map((v, i) => (
+                  <Vital key={i} t={t} value={v.value} label={v.label} last={i === vitals.length - 1} />
+                ))}
               </div>
-              <div>
-                <div style={{ color: weeklySummary.accuracy >= 60 ? '#22c55e' : '#ef4444', fontWeight: 900, fontSize: 20 }}>{weeklySummary.accuracy}%</div>
-                <div style={{ color: c.sub, fontSize: 11 }}>Accuracy</div>
-              </div>
-              {weeklySummary.topSubjectName && (
-                <div>
-                  <div style={{ color: '#a78bfa', fontWeight: 900, fontSize: 14 }}>{weeklySummary.topSubjectName}</div>
-                  <div style={{ color: c.sub, fontSize: 11 }}>Most practiced</div>
-                </div>
-              )}
-            </div>
+            )}
           </div>
         </div>
-      )}
+      </div>
 
-      {/* Continue where you left off */}
-      {pausedExam && (
-        <div className="page-container" style={{ marginBottom: 24 }}>
-          <div onClick={() => navigate('/mcq')}
-            role="button" tabIndex={0}
+      {/* ── Body ─────────────────────────────────────────────────── */}
+      <div className="page-container" style={{ padding: '40px 16px 100px' }}>
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 24 }}>
+          <NotifyPermissionButton dark={dark} label="🔔 Enable exam & deadline reminders" />
+        </div>
+
+        {/* Continue where you left off */}
+        {pausedExam && (
+          <div onClick={() => navigate('/mcq')} role="button" tabIndex={0}
             onKeyDown={onActivateKeyDown(() => navigate('/mcq'))}
             style={{
-              background: '#e2725b20', border: '2px solid #e2725b60', borderRadius: 16,
-              padding: '16px 20px', cursor: 'pointer', display: 'flex', alignItems: 'center',
-              justifyContent: 'space-between', gap: 12, transition: 'all 0.2s'
-            }}
-            onMouseEnter={e => e.currentTarget.style.borderColor = '#e2725b'}
-            onMouseLeave={e => e.currentTarget.style.borderColor = '#e2725b60'}>
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+              borderLeft: `3px solid ${t.accent}`, background: t.surface,
+              borderRadius: '0 10px 10px 0', padding: '14px 18px', marginBottom: 14, cursor: 'pointer'
+            }}>
             <div>
-              <div style={{ color: '#e2725b', fontWeight: 700, fontSize: 14 }}>⏸ Continue where you left off</div>
-              <div style={{ color: c.sub, fontSize: 12, marginTop: 2 }}>
+              <div style={{ color: t.text, fontWeight: 700, fontSize: 13.5, fontFamily: t.body }}>Continue where you left off</div>
+              <div style={{ color: t.sub, fontSize: 12, marginTop: 2, fontFamily: t.mono }}>
                 {Object.keys(pausedExam.answers || {}).length}/{(pausedExam.quizQuestions || []).length} answered
               </div>
             </div>
-            <div style={{ color: '#e2725b', fontSize: 20 }}>→</div>
+            <span style={{ color: t.accent, fontSize: 18 }}>→</span>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Announcement */}
-      {announcement && (
-        <div className="page-container" style={{ marginBottom: 24 }}>
+        {/* Announcement */}
+        {announcement && (
           <div style={{
-            background: 'linear-gradient(135deg, #38bdf820, #818cf815)',
-            border: '1px solid #38bdf840', borderRadius: 16,
-            padding: '14px 20px', textAlign: 'center',
-            color: c.text, fontSize: 14, fontWeight: 600, lineHeight: 1.6,
-            whiteSpace: 'pre-wrap'
+            borderLeft: `3px solid ${t.accent}`, background: t.surface,
+            borderRadius: '0 10px 10px 0', padding: '14px 18px', marginBottom: 28,
+            color: t.text, fontSize: 13.5, lineHeight: 1.6, whiteSpace: 'pre-wrap', fontFamily: t.body,
+            textAlign: 'center'
           }}>
             {announcement}
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Active Modules */}
-      {activeModules.length > 0 && (
-        <div className="page-container" style={{ marginBottom: 32 }}>
-          {sectionTitle('🟢 Active Modules')}
-          <AutoGrid>
-            {activeModules.map((mod, i) => (
-              <AnimatedCard key={mod.id} delay={200 + i * 80} color={mod.color} dark={dark}
-                onClick={() => navigate(`/module/${mod.id}`)}>
-                <div style={{ fontSize: 'clamp(32px, 3.5vw, 52px)', marginBottom: 8 }}>{mod.icon}</div>
-                <div style={{ color: c.text, fontSize: 'clamp(14px, 1.2vw, 17px)', fontWeight: 700, marginBottom: 8 }}>{mod.name}</div>
-                <div style={{
-                  display: 'inline-block', background: '#22c55e20', color: '#22c55e',
-                  border: '1px solid #22c55e40', borderRadius: 20, padding: '2px 10px', fontSize: 11, fontWeight: 700
-                }}>● Active</div>
-              </AnimatedCard>
+        {/* Active Modules */}
+        {activeModules.length > 0 && (
+          <div style={{ marginBottom: 40 }}>
+            {sectionTitle('Active modules')}
+            <div style={{
+              display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 200px))',
+              gap: 12, justifyContent: 'center'
+            }}>
+              {activeModules.map(mod => (
+                <ModuleCard key={mod.id} mod={mod} t={t} onClick={() => navigate(`/module/${mod.id}`)} />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Tools */}
+        <div style={{ marginBottom: 40 }}>
+          {sectionTitle('Tools')}
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'center' }}>
+            {toolCards.map((card, i) => (
+              <ToolChip key={i} card={card} t={t} navigate={navigate} />
             ))}
-          </AutoGrid>
+          </div>
         </div>
-      )}
 
-      {/* Tools */}
-      <div className="page-container" style={{ marginBottom: 32 }}>
-        {sectionTitle('🛠 Tools')}
-        <AutoGrid>
-          {toolCards.map((card, i) => (
-            <AnimatedCard key={i} delay={400 + i * 80} color={card.color} dark={dark}
-              onClick={() => navigate(card.to)}>
-              <div style={{ fontSize: 'clamp(28px, 3vw, 42px)', marginBottom: 8 }}>{card.emoji}</div>
-              <div style={{ color: c.text, fontSize: 'clamp(13px, 1.1vw, 16px)', fontWeight: 700 }}>{card.title}</div>
-            </AnimatedCard>
-          ))}
-        </AutoGrid>
+        {/* Completed Modules */}
+        {completedModules.length > 0 && (
+          <div>
+            {sectionTitle('Completed modules')}
+            <div style={{
+              display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 200px))',
+              gap: 12, justifyContent: 'center'
+            }}>
+              {completedModules.map(mod => (
+                <ModuleCard key={mod.id} mod={mod} t={t} muted onClick={() => navigate(`/module/${mod.id}`)} />
+              ))}
+            </div>
+          </div>
+        )}
       </div>
-
-      {/* Completed Modules */}
-      {completedModules.length > 0 && (
-        <div className="page-container">
-          {sectionTitle('✅ Completed Modules')}
-          <AutoGrid>
-            {completedModules.map((mod, i) => (
-              <AnimatedCard key={mod.id} delay={i * 80} color='#475569' dark={dark}
-                onClick={() => navigate(`/module/${mod.id}`)}>
-                <div style={{ fontSize: 'clamp(28px, 3vw, 42px)', marginBottom: 8, filter: 'grayscale(0.5)' }}>{mod.icon}</div>
-                <div style={{ color: c.sub, fontSize: 'clamp(13px, 1.1vw, 16px)', fontWeight: 700, marginBottom: 8 }}>{mod.name}</div>
-                <div style={{
-                  display: 'inline-block', background: '#47556920', color: '#64748b',
-                  border: '1px solid #47556940', borderRadius: 20, padding: '2px 10px', fontSize: 11, fontWeight: 700
-                }}>✓ Completed</div>
-              </AnimatedCard>
-            ))}
-          </AutoGrid>
-        </div>
-      )}
     </div>
   )
 }
