@@ -18,6 +18,12 @@ const toolCards = [
   { emoji: '🏆', title: 'Leaderboard', to: '/profile?tab=leaderboard', color: '#f59e0b' },
 ]
 
+// Display face used only for the hero title and section eyebrows on
+// this page — a deliberate step away from the body font (Segoe UI,
+// used everywhere else) so the header reads as designed rather than
+// just "the same text, bigger." Loaded once in index.css.
+const DISPLAY_FONT = "'Space Grotesk', 'Segoe UI', sans-serif"
+
 // Small helper so a missing/blank name never crashes the avatar badge —
 // falls back to a "?" instead of calling .charAt(0) on an empty string.
 function initialOf(name) {
@@ -33,6 +39,41 @@ function onActivateKeyDown(handler) {
       handler()
     }
   }
+}
+
+// The hero's signature moment: a heartbeat-monitor trace that draws
+// itself once the header has faded in, then stays put — a single
+// orchestrated beat rather than a looping animation. Grounded in the
+// app's own subject (future doctors) instead of a generic divider line.
+function EcgDivider({ visible }) {
+  return (
+    <svg
+      viewBox="0 0 300 60" width="200" height="36"
+      style={{ display: 'block', margin: '10px auto 0' }}
+      aria-hidden="true"
+    >
+      <defs>
+        <linearGradient id="ecgGradient" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor="#38bdf8" />
+          <stop offset="100%" stopColor="#818cf8" />
+        </linearGradient>
+      </defs>
+      <path
+        d="M0,30 L58,30 L72,10 L86,50 L100,30 L138,30 L152,16 L164,44 L176,30 L300,30"
+        fill="none"
+        stroke="url(#ecgGradient)"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        pathLength="1"
+        style={{
+          strokeDasharray: 1,
+          strokeDashoffset: visible ? 0 : 1,
+          transition: 'stroke-dashoffset 1.6s cubic-bezier(0.65, 0, 0.35, 1) 0.5s'
+        }}
+      />
+    </svg>
+  )
 }
 
 export default function Home({ dark, toggleTheme }) {
@@ -154,6 +195,7 @@ export default function Home({ dark, toggleTheme }) {
   const sectionTitle = (text) => (
     <h2 style={{
       color: c.sub,
+      fontFamily: DISPLAY_FONT,
       fontSize: 13, fontWeight: 700, letterSpacing: 2,
       marginBottom: 16, textTransform: 'uppercase'
     }}>{text}</h2>
@@ -230,9 +272,30 @@ export default function Home({ dark, toggleTheme }) {
           )}
         </div>
 
-        <img src={dark ? '/icon-512.png' : '/icon-512-light.png'} alt="ZNU Future Doctors" style={{ width: 88, height: 88, marginBottom: 12, borderRadius: '50%', objectFit: 'cover', filter: dark ? 'drop-shadow(0 0 20px rgba(56,189,248,0.5))' : 'drop-shadow(0 2px 10px rgba(14,165,233,0.25))' }} />
+        {/* "Vital Pulse" — the page's signature moment. Three rings
+            sweep outward from the icon once, like a heartbeat monitor,
+            then fade into the icon's existing static glow below. */}
+        <div style={{
+          position: 'relative', width: 88, height: 88, margin: '0 auto 12px',
+          display: 'flex', alignItems: 'center', justifyContent: 'center'
+        }}>
+          <div className="pulse-ring" />
+          <div className="pulse-ring pulse-ring--2" />
+          <div className="pulse-ring pulse-ring--3" />
+          <img
+            src={dark ? '/icon-512.png' : '/icon-512-light.png'}
+            alt="ZNU Future Doctors"
+            style={{
+              position: 'relative', zIndex: 1,
+              width: 88, height: 88, borderRadius: '50%', objectFit: 'cover',
+              filter: dark ? 'drop-shadow(0 0 20px rgba(56,189,248,0.5))' : 'drop-shadow(0 2px 10px rgba(14,165,233,0.25))'
+            }}
+          />
+        </div>
+
         <h1 style={{
-          fontSize: 28, fontWeight: 900,
+          fontFamily: DISPLAY_FONT,
+          fontSize: 28, fontWeight: 900, letterSpacing: '-0.01em',
           background: 'linear-gradient(135deg, #38bdf8, #818cf8)',
           WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
           marginBottom: 8
@@ -241,9 +304,11 @@ export default function Home({ dark, toggleTheme }) {
           Your Integrated Medical Study Platform
         </p>
 
+        <EcgDivider visible={titleVisible} />
+
         {streak > 0 && (
           <div style={{
-            display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 12,
+            display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 16,
             background: '#f59e0b20', border: '1px solid #f59e0b40',
             borderRadius: 20, padding: '6px 16px', color: '#f59e0b', fontSize: 13, fontWeight: 700
           }}>
