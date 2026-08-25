@@ -15,19 +15,29 @@ export default function LessonPage({ dark }) {
   const module = modules.find(m => m.id === moduleId) || null
   const [lesson, setLesson] = useState(null)
   const [questionCount, setQuestionCount] = useState(0)
+  // A lesson can now have more than one summary tagged to it (e.g. one
+  // per exam stage) — same "auto-open if there's only one" pattern
+  // already used on SubjectPage/StagePage.
+  const [summaries, setSummaries] = useState([])
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState(false)
-  const [showSummary, setShowSummary] = useState(false)
+  const [selectedSummary, setSelectedSummary] = useState(null)
+  const [showSummaryPicker, setShowSummaryPicker] = useState(false)
 
   useEffect(() => {
     setLoading(true)
     Promise.all([
       supabase.from('lessons').select('*').eq('id', lessonId).single(),
-      supabase.from('questions').select('id', { count: 'exact', head: true }).eq('lesson_id', lessonId)
-    ]).then(([lessonRes, countRes]) => {
+      supabase.from('questions').select('id', { count: 'exact', head: true }).eq('lesson_id', lessonId),
+      // Summaries are now linked to a lesson via lesson_id (set from
+      // the admin Summaries tab) instead of a summary_url column
+      // stored directly on the lesson.
+      supabase.from('summaries').select('*').eq('lesson_id', lessonId).order('created_at')
+    ]).then(([lessonRes, countRes, summaryRes]) => {
       if (lessonRes.data) setLesson(lessonRes.data)
       if (countRes.count != null) setQuestionCount(countRes.count)
-      if (lessonRes.error) setLoadError(true)
+      if (summaryRes.data) setSummaries(summaryRes.data)
+      if (lessonRes.error || summaryRes.error) setLoadError(true)
       setLoading(false)
     })
   }, [lessonId])
@@ -40,14 +50,25 @@ export default function LessonPage({ dark }) {
     </div>
   )
 
-  if (showSummary && lesson?.summary_url) return (
+  if (selectedSummary) return (
     <SummaryOverlay
-      onBack={() => setShowSummary(false)}
-      title={lesson.title}
+      onBack={() => setSelectedSummary(null)}
+      title={selectedSummary.title}
       titleColor="#34d399"
-      url={lesson.summary_url}
+      url={selectedSummary.url}
     />
   )
+
+  function openSummary() {
+    if (summaries.length === 0) return
+    // One summary → open it directly, no extra click, same convention
+    // used on SubjectPage/StagePage. Several → show the inline picker.
+    if (summaries.length === 1) {
+      setSelectedSummary(summaries[0])
+    } else {
+      setShowSummaryPicker(prev => !prev)
+    }
+  }
 
   return (
     <div className="page-container" style={{ padding: '24px 16px 100px' }}>
@@ -70,14 +91,39 @@ export default function LessonPage({ dark }) {
             <h2 style={{ color: c.sub, fontSize: 13, fontWeight: 700, letterSpacing: 2, marginBottom: 16, textTransform: 'uppercase' }}>
               📝 Summary
             </h2>
-            {lesson.summary_url ? (
-              <AnimatedCard delay={100} color='#34d399' dark={dark} onClick={() => setShowSummary(true)}>
+            {summaries.length > 0 ? (
+              <AnimatedCard delay={100} color='#34d399' dark={dark} onClick={openSummary}>
                 <div style={{ fontSize: 30, marginBottom: 8 }}>📝</div>
-                <div style={{ color: c.text, fontSize: 13, fontWeight: 700 }}>Open Lesson Summary</div>
+                <div style={{ color: c.text, fontSize: 13, fontWeight: 700 }}>
+                  {summaries.length === 1 ? 'Open Lesson Summary' : 'Summaries'}
+                </div>
+                {summaries.length > 1 && (
+                  <div style={{ color: c.sub, fontSize: 12, marginTop: 4 }}>{summaries.length} available</div>
+                )}
               </AnimatedCard>
             ) : (
               <div style={{ background: c.card, border: `1px solid ${c.border}`, borderRadius: 16, padding: 32, textAlign: 'center' }}>
                 <p style={{ color: c.sub, fontSize: 13 }}>No summary added yet 🚧</p>
+              </div>
+            )}
+
+            {showSummaryPicker && summaries.length > 1 && (
+              <div style={{ display: 'grid', gap: 10, marginTop: 12 }}>
+                {summaries.map(s => (
+                  <div key={s.id} onClick={() => setSelectedSummary(s)}
+                    role="button" tabIndex={0}
+                    onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedSummary(s) } }}
+                    style={{
+                      background: c.card, border: '1px solid #34d39940', borderRadius: 12,
+                      padding: '12px 16px', cursor: 'pointer', display: 'flex',
+                      alignItems: 'center', gap: 10, transition: 'all 0.15s'
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.borderColor = '#34d399'}
+                    onMouseLeave={e => e.currentTarget.style.borderColor = '#34d39940'}>
+                    <span style={{ fontSize: 16 }}>📝</span>
+                    <span style={{ color: c.text, fontSize: 13, fontWeight: 600 }}>{s.title}</span>
+                  </div>
+                ))}
               </div>
             )}
           </div>
