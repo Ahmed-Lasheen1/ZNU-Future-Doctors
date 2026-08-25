@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth, NavMenu, useModules } from '../App'
 import { supabase } from '../supabase'
@@ -21,11 +21,14 @@ function tokens(dark) {
     text: dark ? '#EDEFF2' : '#14181D',
     sub: dark ? '#8B93A0' : '#667085',
     accent: '#0EA5A9',
+    shadow: dark ? '0 24px 48px -28px rgba(0,0,0,0.55)' : '0 24px 48px -28px rgba(20,24,29,0.18)',
     display: "'Manrope', 'Segoe UI', sans-serif",
     body: "'Inter', 'Segoe UI', sans-serif",
     mono: "'JetBrains Mono', ui-monospace, monospace",
   }
 }
+
+const EASE = 'cubic-bezier(0.16, 1, 0.3, 1)' // deliberate, weighted settle — no bounce
 
 const toolCards = [
   { emoji: '📅', title: 'Schedules', to: '/schedule' },
@@ -47,25 +50,55 @@ function onActivateKeyDown(handler) {
   }
 }
 
-// Animates a number counting up from 0 once it becomes active — the
-// vitals feel like they're "reading" rather than just appearing.
-function useCountUp(target, active) {
+// Counts a number up once it becomes active, starting after
+// `startDelay` — synced to the moment its container actually becomes
+// visible, so the count is something you watch happen, not a number
+// that's already finished by the time you can see it.
+function useCountUp(target, active, startDelay = 0) {
   const [display, setDisplay] = useState(0)
   useEffect(() => {
     if (!active || typeof target !== 'number' || Number.isNaN(target)) return
     let raf
-    const start = performance.now()
-    const duration = 800
-    function tick(now) {
-      const p = Math.min(1, (now - start) / duration)
-      const eased = 1 - Math.pow(1 - p, 3)
-      setDisplay(Math.round(target * eased))
-      if (p < 1) raf = requestAnimationFrame(tick)
-    }
-    raf = requestAnimationFrame(tick)
-    return () => cancelAnimationFrame(raf)
-  }, [target, active])
+    const timeout = setTimeout(() => {
+      const start = performance.now()
+      const duration = 800
+      function tick(now) {
+        const p = Math.min(1, (now - start) / duration)
+        const eased = 1 - Math.pow(1 - p, 3)
+        setDisplay(Math.round(target * eased))
+        if (p < 1) raf = requestAnimationFrame(tick)
+      }
+      raf = requestAnimationFrame(tick)
+    }, startDelay)
+    return () => { clearTimeout(timeout); cancelAnimationFrame(raf) }
+  }, [target, active, startDelay])
   return display
+}
+
+// Reveals its children once they scroll into view — everything below
+// the hero stays invisible until its moment, then rises into place.
+// One-shot: it doesn't re-hide on scrolling back up.
+function Reveal({ children, delay = 0 }) {
+  const ref = useRef(null)
+  const [visible, setVisible] = useState(false)
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const obs = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) { setVisible(true); obs.disconnect() }
+    }, { threshold: 0.15 })
+    obs.observe(el)
+    return () => obs.disconnect()
+  }, [])
+  return (
+    <div ref={ref} style={{
+      opacity: visible ? 1 : 0,
+      transform: visible ? 'translateY(0)' : 'translateY(18px)',
+      transition: `opacity 0.7s ${EASE} ${delay}ms, transform 0.7s ${EASE} ${delay}ms`
+    }}>
+      {children}
+    </div>
+  )
 }
 
 // Signature element — a full-bleed heartbeat trace behind the hero,
@@ -77,44 +110,54 @@ function pulsePath(amp) {
   return `M0,${mid} L330,${mid} L352,${mid - amp * 0.22} L374,${mid + amp * 0.12} L396,${mid - amp} L418,${mid + amp * 0.45} L442,${mid} L480,${mid} L1000,${mid}`
 }
 
-function HeroPulse({ t, streak }) {
+function PulseSVG({ t, streak }) {
   const amp = Math.min(58, 22 + streak * 1.2)
   const d = pulsePath(amp)
   return (
-    <div style={{
-      position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)',
-      width: '100vw', height: '100%', overflow: 'hidden', pointerEvents: 'none'
-    }} aria-hidden="true">
-      <svg viewBox="0 0 1000 180" preserveAspectRatio="none" style={{ width: '100%', height: '100%', display: 'block' }}>
-        <defs>
-          <linearGradient id="pulseFade" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0%" stopColor={t.accent} stopOpacity="0" />
-            <stop offset="35%" stopColor={t.accent} stopOpacity="0.55" />
-            <stop offset="65%" stopColor={t.accent} stopOpacity="0.55" />
-            <stop offset="100%" stopColor={t.accent} stopOpacity="0" />
-          </linearGradient>
-          <filter id="pulseGlow" x="-20%" y="-200%" width="140%" height="500%">
-            <feGaussianBlur stdDeviation="3" result="blur" />
-            <feMerge>
-              <feMergeNode in="blur" />
-              <feMergeNode in="SourceGraphic" />
-            </feMerge>
-          </filter>
-        </defs>
-        <path d={d} fill="none" stroke="url(#pulseFade)" strokeWidth="1.75"
-          strokeLinecap="round" strokeLinejoin="round"
-          filter="url(#pulseGlow)" pathLength="1" className="hero-pulse-draw" />
-        <circle r="3.5" fill={t.accent} opacity="0.8" filter="url(#pulseGlow)">
-          <animateMotion path={d} dur="4.2s" repeatCount="indefinite" begin="1.2s" />
-        </circle>
-      </svg>
+    <svg viewBox="0 0 1000 180" preserveAspectRatio="none" style={{ width: '100%', height: '100%', display: 'block' }}>
+      <defs>
+        <linearGradient id="pulseFade" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor={t.accent} stopOpacity="0" />
+          <stop offset="35%" stopColor={t.accent} stopOpacity="0.55" />
+          <stop offset="65%" stopColor={t.accent} stopOpacity="0.55" />
+          <stop offset="100%" stopColor={t.accent} stopOpacity="0" />
+        </linearGradient>
+        <filter id="pulseGlow" x="-20%" y="-200%" width="140%" height="500%">
+          <feGaussianBlur stdDeviation="3" result="blur" />
+          <feMerge>
+            <feMergeNode in="blur" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+      </defs>
+      <path d={d} fill="none" stroke="url(#pulseFade)" strokeWidth="1.75"
+        strokeLinecap="round" strokeLinejoin="round"
+        filter="url(#pulseGlow)" pathLength="1" className="hero-pulse-draw" />
+      <circle r="3.5" fill={t.accent} opacity="0.8" filter="url(#pulseGlow)">
+        <animateMotion path={d} dur="4.4s" repeatCount="indefinite" begin="1.8s" />
+      </circle>
+    </svg>
+  )
+}
+
+// A thin ruler of tick marks with a single light scanning across it in
+// discrete mechanical steps (not eased) — a quiet clock/metronome
+// motif under the vitals, distinct from the heartbeat's organic curve.
+function TickRail({ t }) {
+  return (
+    <div aria-hidden="true" style={{
+      position: 'relative', width: '100%', maxWidth: 360, height: 10, margin: '30px auto 0',
+      backgroundImage: `repeating-linear-gradient(90deg, ${t.line} 0 1.5px, transparent 1.5px 12px)`,
+      opacity: 0.9
+    }}>
+      <div className="tick-scan" style={{ position: 'absolute', top: 0, left: 0, width: 10, height: '100%', background: t.accent, borderRadius: 1 }} />
     </div>
   )
 }
 
 function Vital({ raw, suffix, text, label, t, last, delay }) {
   const isNumber = typeof raw === 'number'
-  const count = useCountUp(isNumber ? raw : 0, isNumber)
+  const count = useCountUp(isNumber ? raw : 0, isNumber, delay)
   const shown = isNumber ? `${count}${suffix || ''}` : text
   return (
     <div className="enter-item" style={{ display: 'flex', alignItems: 'center', gap: 24, animationDelay: `${delay}ms` }}>
@@ -127,11 +170,10 @@ function Vital({ raw, suffix, text, label, t, last, delay }) {
   )
 }
 
-function ModuleCard({ mod, t, muted, onClick, delay }) {
+function ModuleCard({ mod, t, muted, onClick }) {
   const [hover, setHover] = useState(false)
   return (
     <div
-      className="enter-item"
       onClick={onClick} role="button" tabIndex={0}
       onKeyDown={onActivateKeyDown(onClick)}
       onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
@@ -139,10 +181,11 @@ function ModuleCard({ mod, t, muted, onClick, delay }) {
         background: t.surface,
         border: `1px solid ${hover ? t.accent : t.line}`,
         borderRadius: 14, padding: '20px 18px', cursor: 'pointer',
-        transform: hover ? 'translateY(-3px)' : 'translateY(0)',
-        transition: 'transform 0.18s ease, border-color 0.18s ease',
+        transform: hover ? 'scale(1.015)' : 'scale(1)',
+        boxShadow: hover ? t.shadow : 'none',
+        transition: `transform 0.3s ${EASE}, border-color 0.3s ${EASE}, box-shadow 0.3s ${EASE}`,
         display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, textAlign: 'center',
-        opacity: muted ? 0.6 : 1, animationDelay: `${delay}ms`
+        opacity: muted ? 0.6 : 1
       }}>
       <span style={{ fontSize: 28, filter: muted ? 'grayscale(0.6)' : 'none' }}>{mod.icon}</span>
       <div style={{ fontFamily: t.display, fontWeight: 700, fontSize: 15, color: t.text }}>{mod.name}</div>
@@ -159,11 +202,10 @@ function ModuleCard({ mod, t, muted, onClick, delay }) {
   )
 }
 
-function ToolChip({ card, t, navigate, delay }) {
+function ToolChip({ card, t, navigate }) {
   const [hover, setHover] = useState(false)
   return (
     <button
-      className="enter-item"
       onClick={() => navigate(card.to)}
       onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
       style={{
@@ -171,9 +213,8 @@ function ToolChip({ card, t, navigate, delay }) {
         background: 'transparent', border: `1px solid ${hover ? t.accent : t.line}`,
         borderRadius: 10, padding: '10px 16px', cursor: 'pointer',
         color: hover ? t.accent : t.text, fontFamily: t.body,
-        fontSize: 13, fontWeight: 600, transition: 'all 0.15s ease',
-        transform: hover ? 'translateY(-2px)' : 'translateY(0)',
-        animationDelay: `${delay}ms`
+        fontSize: 13, fontWeight: 600, transition: `all 0.25s ${EASE}`,
+        transform: hover ? 'translateY(-2px)' : 'translateY(0)'
       }}>
       <span style={{ fontSize: 15 }}>{card.emoji}</span>
       {card.title}
@@ -186,15 +227,11 @@ export default function Home({ dark, toggleTheme }) {
   const navigate = useNavigate()
   const { user, profile } = useAuth()
   const { modules, modulesError } = useModules()
-  const [titleVisible, setTitleVisible] = useState(false)
   const [announcement, setAnnouncement] = useState('')
   const [streak, setStreak] = useState(0)
   const [pausedExam, setPausedExam] = useState(null)
   const [weeklySummary, setWeeklySummary] = useState(null)
-
-  useEffect(() => {
-    setTimeout(() => setTitleVisible(true), 60)
-  }, [])
+  const pulseWrapRef = useRef(null)
 
   useEffect(() => {
     supabase.from('site_settings').select('value').eq('key', 'home_announcement').single()
@@ -291,6 +328,28 @@ export default function Home({ dark, toggleTheme }) {
     checkExamReminders()
   }, [modules])
 
+  // Subtle scroll parallax — the hero pulse recedes and fades slightly
+  // as the page scrolls away from it, like a rack-focus pulling off.
+  // Imperative (ref-driven), not React state, so it never re-renders.
+  useEffect(() => {
+    let ticking = false
+    function onScroll() {
+      if (ticking) return
+      ticking = true
+      requestAnimationFrame(() => {
+        const y = Math.min(60, window.scrollY * 0.15)
+        const fade = Math.max(0.3, 1 - window.scrollY / 480)
+        if (pulseWrapRef.current) {
+          pulseWrapRef.current.style.transform = `translate(-50%, ${-y}px)`
+          pulseWrapRef.current.style.opacity = fade
+        }
+        ticking = false
+      })
+    }
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+
   const activeModules = modules.filter(m => m.status === 'active')
   const completedModules = modules.filter(m => m.status === 'completed')
 
@@ -318,21 +377,39 @@ export default function Home({ dark, toggleTheme }) {
           70% { stroke-dashoffset: 0; opacity: 0.85; }
           100% { stroke-dashoffset: 0; opacity: 0.5; }
         }
-        .hero-pulse-draw { stroke-dasharray: 1; animation: hero-pulse-draw-in 1.5s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+        .hero-pulse-draw { stroke-dasharray: 1; animation: hero-pulse-draw-in 1.4s ${EASE} 0.35s both; }
 
-        @keyframes item-in { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
-        .enter-item { opacity: 0; animation: item-in 0.55s ease forwards; }
+        @keyframes item-in { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+        .enter-item { opacity: 0; animation: item-in 0.8s ${EASE} forwards; }
+
+        @keyframes title-reveal {
+          0% { opacity: 0; letter-spacing: 0.3em; filter: blur(8px); transform: translateY(6px); }
+          100% { opacity: 1; letter-spacing: -0.02em; filter: blur(0); transform: translateY(0); }
+        }
+        .title-reveal { opacity: 0; animation: title-reveal 1.1s ${EASE} 0.5s forwards; }
+
+        @keyframes mark-in { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
+        .mark-in { opacity: 0; animation: mark-in 0.7s ${EASE} 0.1s forwards; }
+
+        @keyframes tick-scan { to { transform: translateX(350px); } }
+        .tick-scan { animation: tick-scan 3.4s steps(28, jump-none) infinite; }
       `}</style>
 
       {/* ── Hero ─────────────────────────────────────────────────── */}
       <div style={{ position: 'relative', overflow: 'hidden', paddingTop: 28 }}>
-        <HeroPulse t={t} streak={streak} />
+        <div ref={pulseWrapRef} style={{
+          position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)',
+          width: '100vw', height: '100%', overflow: 'hidden', pointerEvents: 'none',
+          willChange: 'transform, opacity'
+        }} aria-hidden="true">
+          <PulseSVG t={t} streak={streak} />
+        </div>
 
         <div className="page-container" style={{ position: 'relative', padding: '0 16px' }}>
           {modulesError && <ErrorBanner />}
 
           {/* Top row */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 40 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 44 }}>
             <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
               <button onClick={toggleTheme} aria-label={dark ? 'Switch to light mode' : 'Switch to dark mode'} style={{
                 background: t.bg, color: t.sub, border: `1px solid ${t.line}`,
@@ -368,103 +445,108 @@ export default function Home({ dark, toggleTheme }) {
             )}
           </div>
 
-          {/* Centered hero content, riding on top of the pulse trace */}
-          <div style={{
-            textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center',
-            padding: '18px 0 8px',
-            opacity: titleVisible ? 1 : 0,
-            transform: titleVisible ? 'translateY(0)' : 'translateY(-10px)',
-            transition: 'all 0.6s ease'
-          }}>
+          {/* Centered hero content — choreographed: mark, title, subhead, vitals, ticks */}
+          <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '18px 0 8px' }}>
             <img src={dark ? '/icon-512.png' : '/icon-512-light.png'} alt="ZNU Future Doctors"
+              className="mark-in"
               style={{
                 width: 68, height: 68, borderRadius: '50%', objectFit: 'cover',
-                border: `1px solid ${t.line}`, background: t.bg, marginBottom: 20
+                border: `1px solid ${t.line}`, background: t.bg, marginBottom: 22
               }} />
-            <h1 style={{
+            <h1 className="title-reveal" style={{
               fontFamily: t.display, fontSize: 'clamp(32px, 5.5vw, 54px)', fontWeight: 800,
-              color: t.text, letterSpacing: '-0.02em', lineHeight: 1.05, marginBottom: 12
+              color: t.text, lineHeight: 1.05, marginBottom: 14
             }}>
               ZNU Future Doctors
             </h1>
-            <p style={{ color: t.sub, fontSize: 15, fontFamily: t.body, marginBottom: 30, maxWidth: 420 }}>
+            <p className="enter-item" style={{ color: t.sub, fontSize: 15, fontFamily: t.body, marginBottom: 32, maxWidth: 420, animationDelay: '850ms' }}>
               Your integrated medical study platform
             </p>
 
             {vitals.length > 0 && (
-              <div style={{
+              <div className="enter-item" style={{
                 display: 'flex', gap: 4, flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center',
                 padding: '18px 28px', borderRadius: 16,
-                background: t.surface, border: `1px solid ${t.line}`
+                background: t.surface, border: `1px solid ${t.line}`, animationDelay: '1050ms'
               }}>
                 {vitals.map((v, i) => (
                   <Vital key={i} t={t} raw={v.raw} suffix={v.suffix} text={v.text} label={v.label}
-                    last={i === vitals.length - 1} delay={180 + i * 80} />
+                    last={i === vitals.length - 1} delay={1150 + i * 90} />
                 ))}
               </div>
             )}
+
+            {vitals.length > 0 && <TickRail t={t} />}
           </div>
         </div>
       </div>
 
       {/* ── Body ─────────────────────────────────────────────────── */}
-      <div className="page-container" style={{ padding: '40px 16px 100px' }}>
+      <div className="page-container" style={{ padding: '56px 16px 100px' }}>
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 24 }}>
           <NotifyPermissionButton dark={dark} label="🔔 Enable exam & deadline reminders" />
         </div>
 
         {/* Continue where you left off */}
         {pausedExam && (
-          <div onClick={() => navigate('/mcq')} role="button" tabIndex={0}
-            onKeyDown={onActivateKeyDown(() => navigate('/mcq'))}
-            style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
-              borderLeft: `3px solid ${t.accent}`, background: t.surface,
-              borderRadius: '0 10px 10px 0', padding: '14px 18px', marginBottom: 14, cursor: 'pointer'
-            }}>
-            <div>
-              <div style={{ color: t.text, fontWeight: 700, fontSize: 13.5, fontFamily: t.body }}>Continue where you left off</div>
-              <div style={{ color: t.sub, fontSize: 12, marginTop: 2, fontFamily: t.mono }}>
-                {Object.keys(pausedExam.answers || {}).length}/{(pausedExam.quizQuestions || []).length} answered
+          <Reveal>
+            <div onClick={() => navigate('/mcq')} role="button" tabIndex={0}
+              onKeyDown={onActivateKeyDown(() => navigate('/mcq'))}
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+                borderLeft: `3px solid ${t.accent}`, background: t.surface,
+                borderRadius: '0 10px 10px 0', padding: '14px 18px', marginBottom: 14, cursor: 'pointer'
+              }}>
+              <div>
+                <div style={{ color: t.text, fontWeight: 700, fontSize: 13.5, fontFamily: t.body }}>Continue where you left off</div>
+                <div style={{ color: t.sub, fontSize: 12, marginTop: 2, fontFamily: t.mono }}>
+                  {Object.keys(pausedExam.answers || {}).length}/{(pausedExam.quizQuestions || []).length} answered
+                </div>
               </div>
+              <span style={{ color: t.accent, fontSize: 18 }}>→</span>
             </div>
-            <span style={{ color: t.accent, fontSize: 18 }}>→</span>
-          </div>
+          </Reveal>
         )}
 
         {/* Announcement */}
         {announcement && (
-          <div style={{
-            borderLeft: `3px solid ${t.accent}`, background: t.surface,
-            borderRadius: '0 10px 10px 0', padding: '14px 18px', marginBottom: 28,
-            color: t.text, fontSize: 13.5, lineHeight: 1.6, whiteSpace: 'pre-wrap', fontFamily: t.body,
-            textAlign: 'center'
-          }}>
-            {announcement}
-          </div>
+          <Reveal>
+            <div style={{
+              borderLeft: `3px solid ${t.accent}`, background: t.surface,
+              borderRadius: '0 10px 10px 0', padding: '14px 18px', marginBottom: 28,
+              color: t.text, fontSize: 13.5, lineHeight: 1.6, whiteSpace: 'pre-wrap', fontFamily: t.body,
+              textAlign: 'center'
+            }}>
+              {announcement}
+            </div>
+          </Reveal>
         )}
 
         {/* Active Modules */}
         {activeModules.length > 0 && (
-          <div style={{ marginBottom: 40 }}>
-            {sectionTitle('Active modules')}
+          <div style={{ marginBottom: 44 }}>
+            <Reveal>{sectionTitle('Active modules')}</Reveal>
             <div style={{
               display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 200px))',
               gap: 12, justifyContent: 'center'
             }}>
               {activeModules.map((mod, i) => (
-                <ModuleCard key={mod.id} mod={mod} t={t} onClick={() => navigate(`/module/${mod.id}`)} delay={i * 60} />
+                <Reveal key={mod.id} delay={i * 80}>
+                  <ModuleCard mod={mod} t={t} onClick={() => navigate(`/module/${mod.id}`)} />
+                </Reveal>
               ))}
             </div>
           </div>
         )}
 
         {/* Tools */}
-        <div style={{ marginBottom: 40 }}>
-          {sectionTitle('Tools')}
+        <div style={{ marginBottom: 44 }}>
+          <Reveal>{sectionTitle('Tools')}</Reveal>
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'center' }}>
             {toolCards.map((card, i) => (
-              <ToolChip key={i} card={card} t={t} navigate={navigate} delay={i * 60} />
+              <Reveal key={i} delay={i * 80}>
+                <ToolChip card={card} t={t} navigate={navigate} />
+              </Reveal>
             ))}
           </div>
         </div>
@@ -472,13 +554,15 @@ export default function Home({ dark, toggleTheme }) {
         {/* Completed Modules */}
         {completedModules.length > 0 && (
           <div>
-            {sectionTitle('Completed modules')}
+            <Reveal>{sectionTitle('Completed modules')}</Reveal>
             <div style={{
               display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 200px))',
               gap: 12, justifyContent: 'center'
             }}>
               {completedModules.map((mod, i) => (
-                <ModuleCard key={mod.id} mod={mod} t={t} muted onClick={() => navigate(`/module/${mod.id}`)} delay={i * 60} />
+                <Reveal key={mod.id} delay={i * 80}>
+                  <ModuleCard mod={mod} t={t} muted onClick={() => navigate(`/module/${mod.id}`)} />
+                </Reveal>
               ))}
             </div>
           </div>
