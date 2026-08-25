@@ -651,7 +651,17 @@ export default function MCQ({ dark }) {
 
   return (
     <div className="page-container" style={{ padding: '20px' }}>
-      {(loadError || modulesError) && <ErrorBanner />}
+      {(loadError || modulesError) && (
+        <div style={{ marginBottom: 16 }}>
+          <ErrorBanner />
+          <div style={{ textAlign: 'center', marginTop: 8 }}>
+            <button onClick={fetchData} style={{
+              background: 'transparent', border: `1px solid ${c.border}`, borderRadius: 10,
+              padding: '8px 20px', color: c.sub, cursor: 'pointer', fontFamily: 'inherit', fontSize: 13, fontWeight: 700
+            }}>🔄 Retry</button>
+          </div>
+        </div>
+      )}
       {usingCache && (
         <div style={{
           background: '#f59e0b20', border: '1px solid #f59e0b40', borderRadius: 12,

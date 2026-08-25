@@ -4,6 +4,7 @@ import { supabase } from './supabase'
 import { getTheme } from './theme'
 import { fetchModulesSorted } from './lib/modules'
 import { subscribeOnlinePresence } from './lib/onlinePresence'
+import ErrorBoundary from './components/ErrorBoundary'
 import ToastProvider from './components/ToastProvider'
 import Home from './pages/Home'
 const Checklist = lazy(() => import('./pages/Checklist'))
@@ -256,28 +257,30 @@ export default function App() {
             <ScrollToTop />
             <SmartHeader dark={dark} toggleTheme={() => setDark(!dark)} />
             <div style={{ flex: 1 }}>
-              <Suspense fallback={<PageLoader dark={dark} />}>
-                <Routes>
-                  <Route path="/" element={<Home dark={dark} toggleTheme={() => setDark(!dark)} />} />
-                  <Route path="/module/:moduleId" element={<ModulePage dark={dark} />} />
-                  <Route path="/module/:moduleId/stage/:stage" element={<StagePage dark={dark} />} />
-                  <Route path="/module/:moduleId/subject/:subjectId" element={<SubjectPage dark={dark} />} />
-                  <Route path="/module/:moduleId/subject/:subjectId/lesson/:lessonId" element={<LessonPage dark={dark} />} />
-                  <Route path="/checklist" element={<Checklist dark={dark} />} />
-                  <Route path="/schedule" element={<Schedule dark={dark} />} />
-                  <Route path="/files" element={<FilesPage dark={dark} />} />
-                  <Route path="/summaries" element={<Summaries dark={dark} />} />
-                  <Route path="/admin" element={<Admin dark={dark} />} />
-                  <Route path="/mcq" element={<MCQ dark={dark} />} />
-                  <Route path="/review" element={<Review dark={dark} />} />
-                  <Route path="/auth" element={<Auth dark={dark} />} />
-                  <Route path="/reset-password" element={<ResetPassword dark={dark} />} />
-                  <Route path="/profile" element={<Profile dark={dark} />} />
-                  <Route path="/anon-questions" element={<AnonQuestions dark={dark} />} />
-                  <Route path="/search" element={<Search dark={dark} />} />
-                  <Route path="*" element={<NotFound dark={dark} />} />
-                </Routes>
-              </Suspense>
+              <ErrorBoundary>
+                <Suspense fallback={<PageLoader dark={dark} />}>
+                  <Routes>
+                    <Route path="/" element={<Home dark={dark} toggleTheme={() => setDark(!dark)} />} />
+                    <Route path="/module/:moduleId" element={<ModulePage dark={dark} />} />
+                    <Route path="/module/:moduleId/stage/:stage" element={<StagePage dark={dark} />} />
+                    <Route path="/module/:moduleId/subject/:subjectId" element={<SubjectPage dark={dark} />} />
+                    <Route path="/module/:moduleId/subject/:subjectId/lesson/:lessonId" element={<LessonPage dark={dark} />} />
+                    <Route path="/checklist" element={<Checklist dark={dark} />} />
+                    <Route path="/schedule" element={<Schedule dark={dark} />} />
+                    <Route path="/files" element={<FilesPage dark={dark} />} />
+                    <Route path="/summaries" element={<Summaries dark={dark} />} />
+                    <Route path="/admin" element={<Admin dark={dark} />} />
+                    <Route path="/mcq" element={<MCQ dark={dark} />} />
+                    <Route path="/review" element={<Review dark={dark} />} />
+                    <Route path="/auth" element={<Auth dark={dark} />} />
+                    <Route path="/reset-password" element={<ResetPassword dark={dark} />} />
+                    <Route path="/profile" element={<Profile dark={dark} />} />
+                    <Route path="/anon-questions" element={<AnonQuestions dark={dark} />} />
+                    <Route path="/search" element={<Search dark={dark} />} />
+                    <Route path="*" element={<NotFound dark={dark} />} />
+                  </Routes>
+                </Suspense>
+              </ErrorBoundary>
             </div>
             <Footer dark={dark} />
           </div>
