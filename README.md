@@ -19,14 +19,6 @@ The project aims to provide medical students with a cleaner, faster, and more co
 
 The goal of ZNU Future Doctors is to create a centralized digital hub for medical students — reducing the need to search across multiple platforms for academic information and resources.
 
-## 🛠️ Tech Stack
-
-- **Frontend:** React / Next.js
-- **Styling:** Tailwind CSS
-- **Backend & Database:** Supabase
-- **Authentication:** Supabase Auth
-- **Deployment:** Vercel
-
 ## 📱 Experience
 
 The platform is designed around three main principles:
