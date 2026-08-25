@@ -9,7 +9,7 @@ import { fetchModuleStages } from '../../lib/moduleStages'
 
 const EXAM_STAGES = STAGE_META.map(s => ({ value: s.value, label: `${s.emoji} ${s.title}` }))
 
-export default function FilesTab({ dark, modules, subjects }) {
+export default function FilesTab({ dark, modules, subjects, lessons }) {
   const c = getTheme(dark)
   const inStyle = inputStyle(c)
   const [msg, setMsg] = useState('')
@@ -23,7 +23,10 @@ export default function FilesTab({ dark, modules, subjects }) {
   const [fileFileType, setFileFileType] = useState('pdf')
   const [fileModuleId, setFileModuleId] = useState('')
   const [fileSubjectId, setFileSubjectId] = useState('')
-  const [fileExamStage, setFileExamStage] = useState('tbl')
+  const [fileLessonId, setFileLessonId] = useState('')
+  // Empty string = "no specific stage" — exam stage is entirely
+  // optional now, so a file can be added with just a module.
+  const [fileExamStage, setFileExamStage] = useState('')
   const [fileStageOptions, setFileStageOptions] = useState(EXAM_STAGES)
 
   useEffect(() => { fetchFiles() }, [])
@@ -43,17 +46,24 @@ export default function FilesTab({ dark, modules, subjects }) {
   function editFile(f) {
     setEditingFileId(f.id)
     setFileName(f.name); setFileUrl(f.url); setFileType(f.type); setFileFileType(f.file_type)
-    setFileModuleId(f.module_id); setFileSubjectId(f.subject_id || ''); setFileExamStage(f.exam_stage)
+    setFileModuleId(f.module_id); setFileSubjectId(f.subject_id || ''); setFileLessonId(f.lesson_id || '')
+    setFileExamStage(f.exam_stage || '')
   }
   function resetFileForm() {
     setEditingFileId(null); setFileName(''); setFileUrl('')
+    setFileSubjectId(''); setFileLessonId(''); setFileExamStage('')
   }
   async function saveFile() {
+    // Only name, URL and module are required — subject, lesson and
+    // exam stage are all optional, so a file can be scoped to just a
+    // module and nothing more.
     if (!fileName || !fileUrl || !fileModuleId) return
     const payload = {
       name: fileName, url: fileUrl, type: fileType,
       file_type: fileFileType, module_id: fileModuleId,
-      subject_id: fileSubjectId || null, exam_stage: fileExamStage
+      subject_id: fileSubjectId || null,
+      lesson_id: fileLessonId || null,
+      exam_stage: fileExamStage || null
     }
     if (editingFileId) {
       const { error } = await supabase.from('files').update(payload).eq('id', editingFileId)
@@ -74,6 +84,7 @@ export default function FilesTab({ dark, modules, subjects }) {
   }
 
   const filteredSubjects = (moduleId) => subjects.filter(s => s.module_id === moduleId)
+  const filteredLessons = (subjectId) => lessons.filter(l => l.subject_id === subjectId)
 
   return (
     <div>
@@ -96,20 +107,30 @@ export default function FilesTab({ dark, modules, subjects }) {
           <option value="audio">🎵 Audio</option>
         </select>
         <label style={{ color: c.sub, fontSize: 12, display: 'block', marginBottom: 4 }}>Module</label>
-        <ModuleSelect modules={modules} value={fileModuleId} onChange={e => { setFileModuleId(e.target.value); setFileSubjectId('') }} inStyle={inStyle} />
-        {fileModuleId && (
+        <ModuleSelect modules={modules} value={fileModuleId} onChange={e => { setFileModuleId(e.target.value); setFileSubjectId(''); setFileLessonId('') }} inStyle={inStyle} />
+
+        <label style={{ color: c.sub, fontSize: 12, display: 'block', marginBottom: 4 }}>Subject (optional)</label>
+        <select value={fileSubjectId} onChange={e => { setFileSubjectId(e.target.value); setFileLessonId('') }} style={inStyle} disabled={!fileModuleId}>
+          <option value="">All Subjects</option>
+          {filteredSubjects(fileModuleId).map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+        </select>
+
+        {fileSubjectId && filteredLessons(fileSubjectId).length > 0 && (
           <>
-            <label style={{ color: c.sub, fontSize: 12, display: 'block', marginBottom: 4 }}>Subject (optional)</label>
-            <select value={fileSubjectId} onChange={e => setFileSubjectId(e.target.value)} style={inStyle}>
-              <option value="">All Subjects</option>
-              {filteredSubjects(fileModuleId).map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+            <label style={{ color: c.sub, fontSize: 12, display: 'block', marginBottom: 4 }}>Lesson (optional)</label>
+            <select value={fileLessonId} onChange={e => setFileLessonId(e.target.value)} style={inStyle}>
+              <option value="">No specific lesson</option>
+              {filteredLessons(fileSubjectId).map(l => <option key={l.id} value={l.id}>{l.title}</option>)}
             </select>
           </>
         )}
-        <label style={{ color: c.sub, fontSize: 12, display: 'block', marginBottom: 4 }}>Exam Stage</label>
+
+        <label style={{ color: c.sub, fontSize: 12, display: 'block', marginBottom: 4 }}>Exam Stage (optional)</label>
         <select value={fileExamStage} onChange={e => setFileExamStage(e.target.value)} style={inStyle}>
+          <option value="">No specific stage</option>
           {fileStageOptions.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
         </select>
+
         <div style={{ display: 'flex', gap: 8 }}>
           <button onClick={saveFile} style={{ ...btnStyle, flex: 1 }}>{editingFileId ? 'Save Changes' : 'Add File'}</button>
           {editingFileId && <button onClick={resetFileForm} style={cancelBtnStyle(c)}>Cancel</button>}

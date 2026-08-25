@@ -9,7 +9,7 @@ import { fetchModuleStages } from '../../lib/moduleStages'
 
 const EXAM_STAGES = STAGE_META.map(s => ({ value: s.value, label: `${s.emoji} ${s.title}` }))
 
-export default function SummariesTab({ dark, modules }) {
+export default function SummariesTab({ dark, modules, subjects, lessons }) {
   const c = getTheme(dark)
   const inStyle = inputStyle(c)
   const [msg, setMsg] = useState('')
@@ -20,7 +20,10 @@ export default function SummariesTab({ dark, modules }) {
   const [sumTitle, setSumTitle] = useState('')
   const [sumUrl, setSumUrl] = useState('')
   const [sumModuleId, setSumModuleId] = useState('')
-  const [sumExamStage, setSumExamStage] = useState('tbl')
+  const [sumSubjectId, setSumSubjectId] = useState('')
+  const [sumLessonId, setSumLessonId] = useState('')
+  // Empty string = "no specific stage" — optional, same as subject/lesson.
+  const [sumExamStage, setSumExamStage] = useState('')
   const [sumStageOptions, setSumStageOptions] = useState(EXAM_STAGES)
 
   useEffect(() => { fetchSummaries() }, [])
@@ -35,14 +38,25 @@ export default function SummariesTab({ dark, modules }) {
 
   function editSummary(s) {
     setEditingSummaryId(s.id)
-    setSumTitle(s.title); setSumUrl(s.url); setSumModuleId(s.module_id); setSumExamStage(s.exam_stage)
+    setSumTitle(s.title); setSumUrl(s.url); setSumModuleId(s.module_id)
+    setSumSubjectId(s.subject_id || ''); setSumLessonId(s.lesson_id || '')
+    setSumExamStage(s.exam_stage || '')
   }
   function resetSummaryForm() {
     setEditingSummaryId(null); setSumTitle(''); setSumUrl('')
+    setSumSubjectId(''); setSumLessonId(''); setSumExamStage('')
   }
   async function saveSummary() {
+    // Only title, URL and module are required — subject, lesson and
+    // exam stage are all optional, so a summary can be scoped to just
+    // a module and nothing more.
     if (!sumTitle || !sumUrl || !sumModuleId) return
-    const payload = { title: sumTitle, url: sumUrl, module_id: sumModuleId, exam_stage: sumExamStage }
+    const payload = {
+      title: sumTitle, url: sumUrl, module_id: sumModuleId,
+      subject_id: sumSubjectId || null,
+      lesson_id: sumLessonId || null,
+      exam_stage: sumExamStage || null
+    }
     if (editingSummaryId) {
       const { error } = await supabase.from('summaries').update(payload).eq('id', editingSummaryId)
       if (!error) { showMsg('✅ Summary updated!'); resetSummaryForm(); fetchSummaries() }
@@ -61,16 +75,38 @@ export default function SummariesTab({ dark, modules }) {
     fetchSummaries()
   }
 
+  const filteredSubjects = (moduleId) => subjects.filter(s => s.module_id === moduleId)
+  const filteredLessons = (subjectId) => lessons.filter(l => l.subject_id === subjectId)
+
   return (
     <div>
       <InlineMessage message={msg} />
       <div style={{ background: c.card, padding: '20px', borderRadius: '16px', border: `1px solid ${c.border}` }}>
         <h3 style={{ color: '#38bdf8', marginBottom: 16 }}>{editingSummaryId ? '✏️ Edit Summary' : '➕ Add Summary'}</h3>
-        <ModuleSelect modules={modules} value={sumModuleId} onChange={e => setSumModuleId(e.target.value)} inStyle={inStyle} />
-        <label style={{ color: c.sub, fontSize: 12, display: 'block', marginBottom: 4 }}>Exam Stage</label>
+        <ModuleSelect modules={modules} value={sumModuleId} onChange={e => { setSumModuleId(e.target.value); setSumSubjectId(''); setSumLessonId('') }} inStyle={inStyle} />
+
+        <label style={{ color: c.sub, fontSize: 12, display: 'block', marginBottom: 4 }}>Subject (optional)</label>
+        <select value={sumSubjectId} onChange={e => { setSumSubjectId(e.target.value); setSumLessonId('') }} style={inStyle} disabled={!sumModuleId}>
+          <option value="">All Subjects</option>
+          {filteredSubjects(sumModuleId).map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+        </select>
+
+        {sumSubjectId && filteredLessons(sumSubjectId).length > 0 && (
+          <>
+            <label style={{ color: c.sub, fontSize: 12, display: 'block', marginBottom: 4 }}>Lesson (optional)</label>
+            <select value={sumLessonId} onChange={e => setSumLessonId(e.target.value)} style={inStyle}>
+              <option value="">No specific lesson</option>
+              {filteredLessons(sumSubjectId).map(l => <option key={l.id} value={l.id}>{l.title}</option>)}
+            </select>
+          </>
+        )}
+
+        <label style={{ color: c.sub, fontSize: 12, display: 'block', marginBottom: 4 }}>Exam Stage (optional)</label>
         <select value={sumExamStage} onChange={e => setSumExamStage(e.target.value)} style={inStyle}>
+          <option value="">No specific stage</option>
           {sumStageOptions.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
         </select>
+
         <input placeholder="Title (e.g. End Module Exam)" value={sumTitle} onChange={e => setSumTitle(e.target.value)} style={inStyle} />
         <input placeholder="Summary URL" value={sumUrl} onChange={e => setSumUrl(e.target.value)} style={inStyle} />
         <div style={{ display: 'flex', gap: 8 }}>

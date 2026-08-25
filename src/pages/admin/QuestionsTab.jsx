@@ -28,7 +28,8 @@ export default function QuestionsTab({ dark, modules, subjects, lessons }) {
   const [qSubjectId, setQSubjectId] = useState('')
   const [qLessonId, setQLessonId] = useState('')
   const [qExamType, setQExamType] = useState('both')
-  const [qExamStage, setQExamStage] = useState('tbl')
+  // Empty string = "no specific stage" — optional, same as subject/lesson.
+  const [qExamStage, setQExamStage] = useState('')
   const [qStageOptions, setQStageOptions] = useState(EXAM_STAGES)
   const [qSource, setQSource] = useState('')
   const [bulkMode, setBulkMode] = useState(false)
@@ -61,22 +62,25 @@ export default function QuestionsTab({ dark, modules, subjects, lessons }) {
     setEditingQuestionId(full.id)
     setQText(full.question); setQA(full.option_a); setQB(full.option_b); setQC(full.option_c); setQD(full.option_d)
     setQCorrect(full.correct || 'a'); setQExplanation(full.explanation || '')
-    setQExamType(full.exam_type); setQExamStage(full.exam_stage)
+    setQExamType(full.exam_type); setQExamStage(full.exam_stage || '')
     setQModuleId(full.module_id); setQSubjectId(full.subject_id || '')
     setQLessonId(full.lesson_id || ''); setQSource(full.source || '')
     setBulkMode(false)
   }
   function resetQuestionForm() {
     setEditingQuestionId(null)
-    setQText(''); setQA(''); setQB(''); setQC(''); setQD(''); setQCorrect('a'); setQExplanation(''); setQLessonId('')
+    setQText(''); setQA(''); setQB(''); setQC(''); setQD(''); setQCorrect('a'); setQExplanation('')
+    setQSubjectId(''); setQLessonId(''); setQExamStage('')
   }
   async function saveQuestion() {
+    // Only the question text, its 4 options and the module are
+    // required — subject, lesson and exam stage are all optional.
     if (!qText || !qA || !qB || !qC || !qD || !qModuleId) return
     if (editingQuestionId) {
       const { error } = await supabase.rpc('admin_update_question', {
         p_id: editingQuestionId,
         p_question: qText, p_option_a: qA, p_option_b: qB, p_option_c: qC, p_option_d: qD,
-        p_correct: qCorrect, p_explanation: qExplanation, p_exam_type: qExamType, p_exam_stage: qExamStage,
+        p_correct: qCorrect, p_explanation: qExplanation, p_exam_type: qExamType, p_exam_stage: qExamStage || null,
         p_module_id: qModuleId, p_subject_id: qSubjectId || null, p_lesson_id: qLessonId || null, p_source: qSource || null
       })
       if (!error) { showMsg('✅ Question updated!'); resetQuestionForm(); fetchQuestions() }
@@ -85,7 +89,7 @@ export default function QuestionsTab({ dark, modules, subjects, lessons }) {
       const { error } = await supabase.from('questions').insert([{
         question: qText, option_a: qA, option_b: qB, option_c: qC, option_d: qD,
         correct: qCorrect, explanation: qExplanation, exam_type: qExamType,
-        exam_stage: qExamStage, module_id: qModuleId, subject_id: qSubjectId || null,
+        exam_stage: qExamStage || null, module_id: qModuleId, subject_id: qSubjectId || null,
         lesson_id: qLessonId || null, source: qSource || null
       }])
       if (!error) { showMsg('✅ Question added!'); resetQuestionForm(); fetchQuestions() }
@@ -155,7 +159,7 @@ export default function QuestionsTab({ dark, modules, subjects, lessons }) {
     const rows = parsed.map(q => ({
       ...q,
       exam_type: qExamType,
-      exam_stage: qExamStage,
+      exam_stage: qExamStage || null,
       module_id: qModuleId,
       subject_id: qSubjectId || null,
       lesson_id: qLessonId || null,
@@ -199,12 +203,11 @@ export default function QuestionsTab({ dark, modules, subjects, lessons }) {
         </div>
 
         <ModuleSelect modules={modules} value={qModuleId} onChange={e => { setQModuleId(e.target.value); setQSubjectId(''); setQLessonId('') }} inStyle={inStyle} />
-        {qModuleId && (
-          <select value={qSubjectId} onChange={e => { setQSubjectId(e.target.value); setQLessonId('') }} style={inStyle}>
-            <option value="">All Subjects</option>
-            {filteredSubjects(qModuleId).map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-          </select>
-        )}
+        <label style={{ color: c.sub, fontSize: 12, display: 'block', marginBottom: 4 }}>Subject (optional)</label>
+        <select value={qSubjectId} onChange={e => { setQSubjectId(e.target.value); setQLessonId('') }} style={inStyle} disabled={!qModuleId}>
+          <option value="">All Subjects</option>
+          {filteredSubjects(qModuleId).map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+        </select>
         {qSubjectId && filteredLessons(qSubjectId).length > 0 && (
           <>
             <label style={{ color: c.sub, fontSize: 12, display: 'block', marginBottom: 4 }}>Lesson (optional)</label>
@@ -220,8 +223,9 @@ export default function QuestionsTab({ dark, modules, subjects, lessons }) {
           <option value="practice">Practice Only</option>
           <option value="mock">Mock Exam Only</option>
         </select>
-        <label style={{ color: c.sub, fontSize: 12, display: 'block', marginBottom: 4 }}>Exam Stage</label>
+        <label style={{ color: c.sub, fontSize: 12, display: 'block', marginBottom: 4 }}>Exam Stage (optional)</label>
         <select value={qExamStage} onChange={e => setQExamStage(e.target.value)} style={inStyle}>
+          <option value="">No specific stage</option>
           {qStageOptions.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
         </select>
         <label style={{ color: c.sub, fontSize: 12, display: 'block', marginBottom: 4 }}>Source (optional)</label>

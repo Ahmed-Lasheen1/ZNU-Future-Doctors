@@ -15,19 +15,21 @@ export default function LessonsTab({ dark, modules, subjects, lessons, fetchLess
   const [lessonModuleId, setLessonModuleId] = useState('')
   const [lessonSubjectId, setLessonSubjectId] = useState('')
   const [lessonTitle, setLessonTitle] = useState('')
-  const [lessonSummaryUrl, setLessonSummaryUrl] = useState('')
 
   function editLesson(l) {
     setEditingLessonId(l.id)
     setLessonModuleId(l.module_id); setLessonSubjectId(l.subject_id)
-    setLessonTitle(l.title); setLessonSummaryUrl(l.summary_url || '')
+    setLessonTitle(l.title)
   }
   function resetLessonForm() {
-    setEditingLessonId(null); setLessonTitle(''); setLessonSummaryUrl('')
+    setEditingLessonId(null); setLessonTitle('')
   }
   async function saveLesson() {
     if (!lessonTitle || !lessonSubjectId || !lessonModuleId) return showMsg('❌ Pick a module, subject, and title first')
-    const payload = { title: lessonTitle, summary_url: lessonSummaryUrl || null, subject_id: lessonSubjectId, module_id: lessonModuleId }
+    // Summaries are now managed entirely from the Summaries tab (which
+    // can link a summary to this lesson) rather than from a URL field
+    // stored directly on the lesson.
+    const payload = { title: lessonTitle, subject_id: lessonSubjectId, module_id: lessonModuleId }
     if (editingLessonId) {
       const { error } = await supabase.from('lessons').update(payload).eq('id', editingLessonId)
       if (!error) { showMsg('✅ Lesson updated!'); resetLessonForm(); fetchLessons() }
@@ -54,8 +56,8 @@ export default function LessonsTab({ dark, modules, subjects, lessons, fetchLess
       <div style={{ background: c.card, padding: '20px', borderRadius: '16px', border: `1px solid ${c.border}`, marginBottom: 16 }}>
         <h3 style={{ color: '#38bdf8', marginBottom: 8 }}>{editingLessonId ? '✏️ Edit Lesson' : '➕ Add Lesson'}</h3>
         <p style={{ color: c.sub, fontSize: 13, marginBottom: 16 }}>
-          A lesson lives under a subject and shows two things to students: a summary link and its own tagged
-          question set (tag questions to a lesson from the Questions tab).
+          A lesson lives under a subject and shows its own tagged question set (tag questions to a lesson from
+          the Questions tab). Add a summary for it from the Summaries tab.
         </p>
         <ModuleSelect modules={modules} value={lessonModuleId} onChange={e => { setLessonModuleId(e.target.value); setLessonSubjectId('') }} inStyle={inStyle} />
         {lessonModuleId && (
@@ -65,7 +67,6 @@ export default function LessonsTab({ dark, modules, subjects, lessons, fetchLess
           </select>
         )}
         <input placeholder="Lesson title" value={lessonTitle} onChange={e => setLessonTitle(e.target.value)} style={inStyle} />
-        <input placeholder="Summary URL (optional)" value={lessonSummaryUrl} onChange={e => setLessonSummaryUrl(e.target.value)} style={inStyle} />
         <div style={{ display: 'flex', gap: 8 }}>
           <button onClick={saveLesson} style={{ ...btnStyle, flex: 1 }}>{editingLessonId ? 'Save Changes' : 'Add Lesson'}</button>
           {editingLessonId && <button onClick={resetLessonForm} style={cancelBtnStyle(c)}>Cancel</button>}

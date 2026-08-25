@@ -39,6 +39,11 @@ export default function FilesPage({ dark }) {
   const fileType = params.get('type')
   const moduleParam = params.get('module')
 
+  // Only active modules show up in the tab bar — a completed module's
+  // files are still reachable via a direct link (e.g. ?module=...),
+  // just not offered as a tab to switch to.
+  const activeModules = modules.filter(m => m.status === 'active')
+
   const titles = {
     sharah: '📖 Explanation Files',
     questions: '❓ Question Files',
@@ -61,9 +66,8 @@ export default function FilesPage({ dark }) {
   useEffect(() => {
     if (moduleParam) {
       setActiveModule(moduleParam)
-    } else if (modulesLoaded && modules.length > 0 && !activeModule) {
-      const active = modules.find(m => m.status === 'active')
-      setActiveModule(active ? active.id : modules[0].id)
+    } else if (modulesLoaded && activeModules.length > 0 && !activeModule) {
+      setActiveModule(activeModules[0].id)
     }
   }, [modulesLoaded, modules, moduleParam])
 
@@ -116,7 +120,7 @@ export default function FilesPage({ dark }) {
       <h1 style={{ color: '#38bdf8', textAlign: 'center', marginBottom: 20 }}>{titles[fileType]}</h1>
 
       <ModuleTabs
-        modules={modules}
+        modules={activeModules}
         activeModule={activeModule}
         onSelect={(id) => { setActiveModule(id); setActiveSubject('all') }}
         dark={dark}
