@@ -1,5 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700;900&display=swap');
-
 * {
   margin: 0;
   padding: 0;
@@ -141,48 +139,4 @@ h1, h2, h3 {
   .smart-header-title {
     display: none;
   }
-}
-
-/* ============================================================
-   Home hero — "Vital Pulse" signature (see Home.jsx).
-   Three concentric rings behind the app icon expand and fade
-   once on load, like a heartbeat-monitor sweep, then settle into
-   the icon's existing static glow (unchanged, in Home.jsx). Each
-   ring is delayed slightly so they read as a single pulse moving
-   outward, not three things happening at once.
-   Reduced-motion visitors skip straight to the settled state —
-   no rings, no distraction, same final look.
-   ============================================================ */
-.pulse-ring {
-  position: absolute;
-  inset: 0;
-  border-radius: 50%;
-  border: 1.5px solid rgba(56, 189, 248, 0.55);
-  opacity: 0;
-  pointer-events: none;
-  animation: pulse-ring-expand 2.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-.pulse-ring--2 { animation-delay: 0.35s; }
-.pulse-ring--3 { animation-delay: 0.7s; }
-
-@keyframes pulse-ring-expand {
-  0%   { opacity: 0.55; transform: scale(0.75); }
-  100% { opacity: 0;    transform: scale(1.9); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .pulse-ring { animation: none; opacity: 0; }
-}
-
-/* Slow drifting dot-grid used behind the Home hero panel (see
-   HudGridBackdrop in Home.jsx) — reinforces the "instrument panel"
-   framing without ever drawing attention to itself. */
-@keyframes hud-grid-drift {
-  from { background-position: 0 0; }
-  to   { background-position: 48px 48px; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  [aria-hidden="true"] { animation: none !important; }
 }
