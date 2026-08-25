@@ -96,7 +96,9 @@ export default function ModulePage({ dark }) {
       </div>
 
       {/* Study by Lesson — subject cards, mirroring the Exam Stage
-          layout. Only shown once the module actually has subjects. */}
+          layout. Only shown once the module actually has subjects.
+          Each subject now uses its own admin-set icon/color (falling
+          back to the old teal book icon if one hasn't been set yet). */}
       {subjects.length > 0 && (
         <div style={{ marginBottom: 32 }}>
           <h2 style={{ color: c.sub, fontSize: 13, fontWeight: 700, letterSpacing: 2, marginBottom: 16, textTransform: 'uppercase' }}>
@@ -104,9 +106,9 @@ export default function ModulePage({ dark }) {
           </h2>
           <AutoGrid>
             {subjects.map((sub, i) => (
-              <AnimatedCard key={sub.id} delay={i * 80} color='#34d399' dark={dark}
+              <AnimatedCard key={sub.id} delay={i * 80} color={sub.color || '#34d399'} dark={dark}
                 onClick={() => navigate(`/module/${moduleId}/subject/${sub.id}`)}>
-                <div style={{ fontSize: 'clamp(28px, 3vw, 42px)', marginBottom: 8 }}>📖</div>
+                <div style={{ fontSize: 'clamp(28px, 3vw, 42px)', marginBottom: 8 }}>{sub.icon || '📖'}</div>
                 <div style={{ color: c.text, fontSize: 'clamp(13px, 1.1vw, 16px)', fontWeight: 700 }}>{sub.name}</div>
               </AnimatedCard>
             ))}

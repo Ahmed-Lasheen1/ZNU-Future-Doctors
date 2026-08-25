@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation } from
 import { supabase } from './supabase'
 import { getTheme } from './theme'
 import { fetchModulesSorted } from './lib/modules'
+import { subscribeOnlinePresence } from './lib/onlinePresence'
 import ToastProvider from './components/ToastProvider'
 import Home from './pages/Home'
 const Checklist = lazy(() => import('./pages/Checklist'))
@@ -189,6 +190,15 @@ export default function App() {
   }
 
   useEffect(() => { loadModules() }, [])
+
+  // Marks this tab/device as "online" for the Admin Analytics tab's
+  // live counter (see src/lib/onlinePresence.js). Runs for every
+  // visitor — signed in or guest — since anyone using the site should
+  // count toward "online now".
+  useEffect(() => {
+    const unsubscribe = subscribeOnlinePresence()
+    return unsubscribe
+  }, [])
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {

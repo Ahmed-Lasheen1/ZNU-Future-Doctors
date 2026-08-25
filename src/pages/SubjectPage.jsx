@@ -83,8 +83,8 @@ export default function SubjectPage({ dark }) {
       </div>
 
       <div style={{ textAlign: 'center', padding: '10px 0 30px' }}>
-        <div style={{ fontSize: 44, marginBottom: 8 }}>📖</div>
-        <h1 style={{ color: '#34d399', fontSize: 24, fontWeight: 900, marginBottom: 6 }}>{subject ? subject.name : ''}</h1>
+        <div style={{ fontSize: 44, marginBottom: 8 }}>{subject?.icon || '📖'}</div>
+        <h1 style={{ color: subject?.color || '#34d399', fontSize: 24, fontWeight: 900, marginBottom: 6 }}>{subject ? subject.name : ''}</h1>
         <div style={{ color: c.sub, fontSize: 13 }}>{module.icon} {module.name}</div>
       </div>
 

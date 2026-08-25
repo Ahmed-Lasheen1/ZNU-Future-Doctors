@@ -161,6 +161,8 @@ export default function MCQ({ dark }) {
 
   async function fetchData() {
     setLoading(true)
+    setLoadError(false)
+
     const [subRes, qRes] = await Promise.all([
       supabase.from('subjects').select('*').order('name'),
       // Note: deliberately NOT selecting `correct` or `explanation` here —
@@ -173,17 +175,37 @@ export default function MCQ({ dark }) {
     ])
 
     if (subRes.error || qRes.error) {
-      // Offline fallback — reuse the last successfully loaded question
-      // bank (cached in localStorage below) so a student without a
-      // connection can still browse/answer questions. Submitting still
-      // needs a connection, since grading happens server-side by design.
-      const cachedSubjects = localStorage.getItem('mcq_subjects_cache')
-      const cachedQuestions = localStorage.getItem('mcq_questions_cache')
-      if (cachedQuestions) {
-        setQuestions(JSON.parse(cachedQuestions))
-        setSubjects(cachedSubjects ? JSON.parse(cachedSubjects) : [])
-        setUsingCache(true)
+      const err = subRes.error || qRes.error
+      // Log the real error so it can actually be diagnosed (open the
+      // browser console — F12 → Console — to read it), instead of
+      // silently guessing what went wrong.
+      console.error('[MCQ] Failed to load questions/subjects:', err)
+
+      // Only treat this as a connectivity problem — and fall back to
+      // the cached question bank — when the browser is actually
+      // offline or the request itself couldn't reach the network.
+      // Any other error (a database/permissions problem, for example)
+      // is a real backend issue and should say so, not blame the
+      // connection.
+      const looksOffline = typeof navigator !== 'undefined' && !navigator.onLine
+      const isNetworkError = /failed to fetch|networkerror|load failed/i.test(err.message || '')
+
+      if (looksOffline || isNetworkError) {
+        // Offline fallback — reuse the last successfully loaded question
+        // bank (cached in localStorage below) so a student without a
+        // connection can still browse/answer questions. Submitting still
+        // needs a connection, since grading happens server-side by design.
+        const cachedSubjects = localStorage.getItem('mcq_subjects_cache')
+        const cachedQuestions = localStorage.getItem('mcq_questions_cache')
+        if (cachedQuestions) {
+          setQuestions(JSON.parse(cachedQuestions))
+          setSubjects(cachedSubjects ? JSON.parse(cachedSubjects) : [])
+          setUsingCache(true)
+        } else {
+          setLoadError(true)
+        }
       } else {
+        setUsingCache(false)
         setLoadError(true)
       }
     } else {
