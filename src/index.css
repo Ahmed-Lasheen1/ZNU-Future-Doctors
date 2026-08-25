@@ -174,3 +174,15 @@ h1, h2, h3 {
 @media (prefers-reduced-motion: reduce) {
   .pulse-ring { animation: none; opacity: 0; }
 }
+
+/* Slow drifting dot-grid used behind the Home hero panel (see
+   HudGridBackdrop in Home.jsx) — reinforces the "instrument panel"
+   framing without ever drawing attention to itself. */
+@keyframes hud-grid-drift {
+  from { background-position: 0 0; }
+  to   { background-position: 48px 48px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [aria-hidden="true"] { animation: none !important; }
+}
