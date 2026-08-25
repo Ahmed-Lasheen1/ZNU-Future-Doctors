@@ -4,6 +4,7 @@ import { supabase } from '../supabase'
 import { useAuth, useModules } from '../App'
 import { getTheme } from '../theme'
 import { fetchModulesSorted } from '../lib/modules'
+import NotFound from './NotFound'
 
 import ModulesTab from './admin/ModulesTab'
 import SubjectsTab from './admin/SubjectsTab'
@@ -24,7 +25,7 @@ const LESSONS_LIST_LIMIT = 200
 const TABS = ['modules', 'subjects', 'lessons', 'files', 'schedules', 'questions', 'summaries', 'stages', 'analytics', 'settings']
 
 export default function Admin({ dark }) {
-  const { user, profile } = useAuth()
+  const { user, profile, authLoaded } = useAuth()
   const { refreshModules } = useModules()
   const navigate = useNavigate()
   const isAuth = profile?.role === 'admin'
@@ -61,25 +62,29 @@ export default function Admin({ dark }) {
     if (data) setLessons(data)
   }
 
-  if (!isAuth) return (
-    <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
-      <div style={{ background: c.card, padding: 30, borderRadius: 20, width: '90%', maxWidth: 400, border: `1px solid ${c.border}`, textAlign: 'center' }}>
-        <h3 style={{ color: '#38bdf8', marginBottom: 12 }}>🔐 Admin Panel</h3>
-        <p style={{ color: c.sub, fontSize: 13, marginBottom: 20 }}>
-          {user
-            ? "Your account doesn't have admin access."
-            : 'Sign in with your admin account to continue.'}
-        </p>
-        <button onClick={() => navigate(user ? '/' : '/auth')} style={{
-          width: '100%', padding: '12px', background: '#38bdf8', border: 'none',
-          borderRadius: '10px', fontWeight: 'bold', cursor: 'pointer',
-          color: '#0f172a', fontFamily: 'inherit', fontSize: 14
-        }}>
-          {user ? '← Back to Home' : 'Sign In'}
-        </button>
+  // Security-through-obscurity note: this only hides that an admin
+  // panel exists from casual visitors/curious students. It is NOT a
+  // substitute for real access control — the actual protection is (and
+  // must remain) Supabase's row-level security policies, which already
+  // gate every read/write an admin-only action performs. This just
+  // stops /admin from advertising itself to someone without access.
+  //
+  // While the session/profile is still loading, we don't know yet
+  // whether this person is an admin — show a blank loading state
+  // instead of flashing the 404 page for a moment on every visit
+  // (including the real admin's own visits).
+  if (!authLoaded) {
+    return (
+      <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ color: c.sub, fontSize: 14, fontWeight: 600 }}>Loading...</div>
       </div>
-    </div>
-  )
+    )
+  }
+
+  // Not an admin (whether signed out entirely or signed in with a
+  // regular account) — render the exact same "page not found" page any
+  // unknown URL gets, so /admin looks like it simply doesn't exist.
+  if (!isAuth) return <NotFound dark={dark} />
 
   const tabProps = { dark, modules, subjects, lessons, fetchModules, fetchSubjects, fetchLessons }
 

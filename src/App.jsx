@@ -178,6 +178,11 @@ export default function App() {
 
   const [user, setUser] = useState(null)
   const [profile, setProfile] = useState(null)
+  // Tracks whether the initial Supabase session check has finished.
+  // Used by Admin.jsx to avoid flashing the 404 page for a moment on
+  // every visit (including the real admin's own) before we actually
+  // know if this person is signed in and what their role is.
+  const [authLoaded, setAuthLoaded] = useState(false)
   const [modules, setModules] = useState([])
   const [modulesLoaded, setModulesLoaded] = useState(false)
   const [modulesError, setModulesError] = useState(false)
@@ -201,10 +206,18 @@ export default function App() {
   }, [])
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    async function initSession() {
+      const { data: { session } } = await supabase.auth.getSession()
       setUser(session?.user ?? null)
-      if (session?.user) fetchProfile(session.user.id)
-    })
+      // Wait for the profile (which carries the admin role) to resolve
+      // before marking auth as loaded, so authLoaded=true always means
+      // "we know, for sure, whether this person is an admin" — not
+      // just "we know if they're signed in".
+      if (session?.user) await fetchProfile(session.user.id)
+      setAuthLoaded(true)
+    }
+    initSession()
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null)
       if (session?.user) fetchProfile(session.user.id)
@@ -230,7 +243,7 @@ export default function App() {
 
   return (
     <ThemeContext.Provider value={{ dark }}>
-      <AuthContext.Provider value={{ user, signOut, profile, fetchProfile }}>
+      <AuthContext.Provider value={{ user, signOut, profile, fetchProfile, authLoaded }}>
         <ModulesContext.Provider value={{ modules, modulesLoaded, modulesError, refreshModules: loadModules }}>
         <ToastProvider>
         <Router>
