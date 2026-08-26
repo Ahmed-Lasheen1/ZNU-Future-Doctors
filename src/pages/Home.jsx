@@ -108,12 +108,12 @@ function ZnuPulseBrand({ dark, pt }) {
         }
       `}</style>
 
-      <div style={{
-        width: 44, height: 44, borderRadius: 12, flexShrink: 0,
+           <div style={{
+        width: 58, height: 58, borderRadius: 14, flexShrink: 0,
         background: pt.surfaceFlat, border: `1px solid ${pt.cobaltBorder}`,
         display: 'flex', alignItems: 'center', justifyContent: 'center'
       }}>
-        <svg width="26" height="26" viewBox="0 0 320 72">
+        <svg width="40" height="40" viewBox="0 0 320 72">
           <path d={ECG_PATH} fill="none" stroke={pt.ecgBase} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" opacity="0.55" />
           <path className="znu-ecg-static" d={ECG_PATH} fill="none" stroke={pt.ecgLine} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" opacity="0" />
           <path className="znu-ecg-sweep-a" pathLength="1" d={ECG_PATH} fill="none" stroke={pt.ecgLine} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
