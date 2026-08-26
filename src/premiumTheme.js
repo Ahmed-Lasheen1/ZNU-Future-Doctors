@@ -76,4 +76,35 @@ export function getPulseTheme(dark) {
         ecgLine: '#1E3F91',
         ecgGlow: '#2A5CD8',
       }
+
+// Liquid-glass card treatment — layered highlight/shadow for a
+// heavier, "physical" surface, adapted from a frosted-glass shadow
+// recipe down to card scale. Used only by the ZNU Pulse Home redesign
+// test (Home.jsx + src/components/pulse/*) — no other page opts in.
+export function pulseGlass(dark) {
+  return dark
+    ? {
+        background: 'linear-gradient(160deg, rgba(38,57,83,0.72), rgba(24,38,58,0.68))',
+        backdropFilter: 'blur(18px)',
+        WebkitBackdropFilter: 'blur(18px)',
+        border: '1px solid rgba(255,255,255,0.08)',
+        boxShadow: [
+          '0 1px 0 rgba(255,255,255,0.06) inset',
+          '0 -1px 0 rgba(0,0,0,0.35) inset',
+          '0 18px 40px -12px rgba(0,0,0,0.55)',
+          '0 2px 8px rgba(0,0,0,0.3)',
+        ].join(', '),
+      }
+    : {
+        background: 'linear-gradient(160deg, rgba(255,255,255,0.85), rgba(247,249,252,0.75))',
+        backdropFilter: 'blur(18px)',
+        WebkitBackdropFilter: 'blur(18px)',
+        border: '1px solid rgba(255,255,255,0.6)',
+        boxShadow: [
+          '0 1px 0 rgba(255,255,255,0.8) inset',
+          '0 -1px 0 rgba(184,197,216,0.4) inset',
+          '0 18px 40px -16px rgba(37,60,97,0.22)',
+          '0 2px 6px rgba(37,60,97,0.08)',
+        ].join(', '),
+      }
 }
