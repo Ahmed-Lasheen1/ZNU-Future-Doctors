@@ -76,6 +76,7 @@ export function getPulseTheme(dark) {
         ecgLine: '#1E3F91',
         ecgGlow: '#2A5CD8',
       }
+}
 
 // Liquid-glass card treatment — layered highlight/shadow for a
 // heavier, "physical" surface, adapted from a frosted-glass shadow
