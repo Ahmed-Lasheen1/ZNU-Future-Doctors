@@ -1,64 +1,111 @@
-// premiumTheme.js — additive design tokens for the "ZNU Pulse" Home page
-// redesign. Lives alongside src/theme.js (never replaces it) and is only
-// ever imported by src/pages/Home.jsx, so every other page is completely
-// unaffected by anything in this file.
+// ZNU Pulse — additive design tokens for the Home page redesign only.
+// This file does NOT replace src/theme.js — every other page in the
+// app keeps using getTheme() from theme.js exactly as before. Only
+// Home.jsx imports from here.
+//
+// Palette rules baked into these tokens (per design brief):
+//  - No near-black dark mode / no near-white light mode — richer
+//    middle-tone navy-slate (dark) and cool soft-gray (light) canvases
+//    with a clearly separated raised-surface tone.
+//  - No green/emerald/mint/lime/teal-green anywhere. Accent system is
+//    cobalt blue (primary), indigo/violet (secondary), terracotta or
+//    controlled amber (warm emphasis), blue-slate (neutral).
 
-export function pulseTheme(dark) {
-  return {
-    // Full-bleed page backdrop behind the whole dashboard — deliberately
-    // moodier/deeper than the app's default gradient (see App.jsx) to give
-    // Home its own sense of "weight" as a standalone landing surface.
-    pageBg: dark
-      ? 'radial-gradient(circle at 12% -10%, rgba(56,189,248,0.16), transparent 42%), ' +
-        'radial-gradient(circle at 88% 0%, rgba(129,140,248,0.12), transparent 40%), ' +
-        'radial-gradient(circle at 50% 120%, rgba(56,189,248,0.08), transparent 55%), #060b16'
-      : 'radial-gradient(circle at 12% -10%, rgba(56,189,248,0.12), transparent 42%), ' +
-        'radial-gradient(circle at 88% 0%, rgba(129,140,248,0.10), transparent 40%), #eef3f9',
-
-    // The big rounded panel that holds Weekly Report / Pulse / Active Modules.
-    shellBg: dark
-      ? 'linear-gradient(180deg, rgba(17,26,46,0.92), rgba(7,13,26,0.96))'
-      : 'linear-gradient(180deg, rgba(255,255,255,0.92), rgba(244,248,252,0.96))',
-    shellBorder: dark ? 'rgba(148,197,253,0.14)' : 'rgba(15,23,42,0.08)',
-    shellShadow: dark
-      ? '0 50px 120px -35px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.04)'
-      : '0 35px 90px -35px rgba(30,41,59,0.22), inset 0 1px 0 rgba(255,255,255,0.8)',
-
-    // "Liquid glass" card treatment reused for every card on the page —
-    // translucent, blurred, with a soft inner highlight border.
-    glassBg: dark
-      ? 'linear-gradient(160deg, rgba(30,41,59,0.55), rgba(15,23,42,0.45))'
-      : 'linear-gradient(160deg, rgba(255,255,255,0.8), rgba(255,255,255,0.5))',
-    glassBorder: dark ? 'rgba(148,197,253,0.16)' : 'rgba(148,163,184,0.28)',
-    glassHoverBorder: dark ? 'rgba(56,189,248,0.45)' : 'rgba(14,165,233,0.35)',
-    glassShadow: dark ? '0 18px 40px -20px rgba(0,0,0,0.55)' : '0 18px 40px -22px rgba(30,41,59,0.18)',
-
-    ecgLine: dark ? 'rgba(56,189,248,0.55)' : 'rgba(14,165,233,0.45)',
-    ecgSpark: dark ? '#eafcff' : '#0ea5e9',
-    gridLine: dark ? 'rgba(56,189,248,0.10)' : 'rgba(14,165,233,0.12)',
-
-    eyebrow: dark ? '#7dd3fc' : '#0284c7',
-    sub: dark ? '#93a5c4' : '#5b6b85',
-  }
+export const pulseFonts = {
+  display: "'Plus Jakarta Sans', 'Segoe UI', sans-serif",
+  body: "'Inter', 'Segoe UI', sans-serif",
 }
 
-// Turns a module's own admin-set color (Admin → Modules) into a two-stop
-// gradient for its icon square, so icon squares stay in sync with
-// per-module colors instead of a hardcoded palette.
-export function iconSquareGradient(hex) {
-  return `linear-gradient(135deg, ${hex}, ${hex}99)`
+export function getPulseTheme(dark) {
+  return dark
+    ? {
+        // Canvas / surfaces
+        canvas: '#18263A',
+        canvasAlt: '#162238',
+        surface: 'linear-gradient(160deg, #263953, #21324A)',
+        surfaceFlat: '#263953',
+        surfaceRaised: '#2E4262',
+        border: '#3A527A66',
+        borderStrong: '#4A6690',
+
+        // Text
+        text: '#E8EEF7',
+        sub: '#AEBBD0',
+        faint: '#8496B2',
+
+        // Accents — no green anywhere
+        cobalt: '#4C86FF',
+        cobaltSoft: 'rgba(76,134,255,0.16)',
+        cobaltBorder: 'rgba(76,134,255,0.4)',
+        indigo: '#8E7CF6',
+        indigoSoft: 'rgba(142,124,246,0.16)',
+        terracotta: '#E2725B',
+        terracottaSoft: 'rgba(226,114,91,0.16)',
+        amber: '#D6A24A',
+        danger: '#EF6B57',
+
+        // ECG mark
+        ecgBase: '#3A5170',
+        ecgLine: '#7FB0FF',
+        ecgGlow: '#4C86FF',
+      }
+    : {
+        canvas: '#E9EEF5',
+        canvasAlt: '#E6ECF4',
+        surface: 'linear-gradient(160deg, #FFFFFF, #F7F9FC)',
+        surfaceFlat: '#F7F9FC',
+        surfaceRaised: '#FFFFFF',
+        border: '#C7D3E3',
+        borderStrong: '#AFC0D6',
+
+        text: '#15243A',
+        sub: '#52637A',
+        faint: '#6C7B93',
+
+        cobalt: '#2A5CD8',
+        cobaltSoft: 'rgba(42,92,216,0.10)',
+        cobaltBorder: 'rgba(42,92,216,0.35)',
+        indigo: '#6C5CE3',
+        indigoSoft: 'rgba(108,92,227,0.10)',
+        terracotta: '#C85D46',
+        terracottaSoft: 'rgba(200,93,70,0.12)',
+        amber: '#B9812E',
+        danger: '#D6543F',
+
+        ecgBase: '#C7D3E3',
+        ecgLine: '#1E3F91',
+        ecgGlow: '#2A5CD8',
+      }
 }
 
-// Shared "liquid glass" card style — used for the Weekly Report card, the
-// Active Modules card, and every Tool card, per the design brief.
-export function glassCardStyle(t, extra = {}) {
-  return {
-    background: t.glassBg,
-    border: `1px solid ${t.glassBorder}`,
-    borderRadius: 20,
-    boxShadow: t.glassShadow,
-    backdropFilter: 'blur(18px)',
-    WebkitBackdropFilter: 'blur(18px)',
-    ...extra,
-  }
+// Liquid-glass card treatment — layered highlight/shadow for a
+// heavier, "physical" surface, adapted from a frosted-glass shadow
+// recipe down to card scale. Used only by the ZNU Pulse Home redesign
+// test (Home.jsx + src/components/pulse/*) — no other page opts in.
+export function pulseGlass(dark) {
+  return dark
+    ? {
+        background: 'linear-gradient(160deg, rgba(38,57,83,0.72), rgba(24,38,58,0.68))',
+        backdropFilter: 'blur(18px)',
+        WebkitBackdropFilter: 'blur(18px)',
+        border: '1px solid rgba(255,255,255,0.08)',
+        boxShadow: [
+          '0 1px 0 rgba(255,255,255,0.06) inset',
+          '0 -1px 0 rgba(0,0,0,0.35) inset',
+          '0 18px 40px -12px rgba(0,0,0,0.55)',
+          '0 2px 8px rgba(0,0,0,0.3)',
+        ].join(', '),
+      }
+    : {
+        background: 'linear-gradient(160deg, rgba(255,255,255,0.85), rgba(247,249,252,0.75))',
+        backdropFilter: 'blur(18px)',
+        WebkitBackdropFilter: 'blur(18px)',
+        border: '1px solid rgba(255,255,255,0.6)',
+        boxShadow: [
+          '0 1px 0 rgba(255,255,255,0.8) inset',
+          '0 -1px 0 rgba(184,197,216,0.4) inset',
+          '0 18px 40px -16px rgba(37,60,97,0.22)',
+          '0 2px 6px rgba(37,60,97,0.08)',
+        ].join(', '),
+      }
 }
