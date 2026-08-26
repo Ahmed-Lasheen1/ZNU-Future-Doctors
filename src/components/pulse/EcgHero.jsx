@@ -54,6 +54,13 @@ export default function EcgHero({ pt, height = 220 }) {
           56%  { stroke-dashoffset: -0.4; opacity: 0; }
           100% { stroke-dashoffset: -0.4; opacity: 0; }
         }
+        @keyframes pulseHeroSweepB {
+          0%   { stroke-dashoffset: 1; opacity: 0; }
+          6%   { opacity: 1; }
+          46%  { opacity: 1; }
+          56%  { stroke-dashoffset: -0.4; opacity: 0; }
+          100% { stroke-dashoffset: -0.4; opacity: 0; }
+        }
         .pulse-hero-sweep-a {
           stroke-dasharray: 0.14 1;
           animation: pulseHeroSweepA 5.2s ease-in-out infinite;
