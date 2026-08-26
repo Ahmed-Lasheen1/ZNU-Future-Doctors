@@ -1,21 +1,23 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth, NavMenu, useModules } from '../App'
-import { getTheme } from '../theme'
 import { supabase } from '../supabase'
 import ErrorBanner from '../components/ErrorBanner'
-import AnimatedCard from '../components/AnimatedCard'
-import AutoGrid from '../components/AutoGrid'
 import { computeStreak } from '../lib/streak'
 import { getGuestHistory } from '../lib/reviewStorage'
 import { loadSavedActiveExam } from '../lib/activeExam'
 import NotifyPermissionButton from '../components/NotifyPermissionButton'
+import { getPremiumTheme } from '../premiumTheme'
 
-const toolCards = [
-  { emoji: '📅', title: 'Schedules', to: '/schedule', color: '#a78bfa' },
-  { emoji: '🎯', title: 'Checklist', to: '/checklist', color: '#f59e0b' },
-  { emoji: '💬', title: 'Anonymous Q&A', to: '/anon-questions', color: '#a78bfa' },
-  { emoji: '🏆', title: 'Leaderboard', to: '/profile?tab=leaderboard', color: '#f59e0b' },
+// Flat, scannable link list — replaces the old 4-up colorful "Tools"
+// card grid. Same destinations as before, just presented with
+// typography + dividers instead of identical boxes (see design
+// direction §5/§20: cards only when they genuinely help grouping).
+const exploreLinks = [
+  { title: 'Schedules', description: 'Study & exam calendars', to: '/schedule' },
+  { title: 'Checklist', description: 'Your study plan', to: '/checklist' },
+  { title: 'Anonymous Q&A', description: 'Ask without a name attached', to: '/anon-questions' },
+  { title: 'Leaderboard', description: 'See where you stand', to: '/profile?tab=leaderboard' },
 ]
 
 // Small helper so a missing/blank name never crashes the avatar badge —
@@ -35,8 +37,41 @@ function onActivateKeyDown(handler) {
   }
 }
 
+function timeGreeting() {
+  const h = new Date().getHours()
+  if (h < 5) return 'Good night'
+  if (h < 12) return 'Good morning'
+  if (h < 18) return 'Good afternoon'
+  return 'Good evening'
+}
+
+// The one literal "medical" motif on the page — a faint ECG-style
+// pulse used once as a section divider, not sprinkled everywhere
+// (design direction §2: subtle, not stethoscope-and-pill clichés).
+function PulseDivider({ color }) {
+  return (
+    <svg viewBox="0 0 400 24" preserveAspectRatio="none" aria-hidden="true"
+      style={{ width: '100%', height: 20, display: 'block' }}>
+      <polyline
+        points="0,12 130,12 145,3 158,21 172,12 400,12"
+        fill="none" stroke={color} strokeWidth="1.5"
+        strokeLinecap="round" strokeLinejoin="round" opacity="0.55"
+      />
+    </svg>
+  )
+}
+
+function iconBtn(t) {
+  return {
+    background: 'transparent', border: `1px solid ${t.border}`, color: t.text,
+    width: 34, height: 34, borderRadius: 8, cursor: 'pointer', fontSize: 15,
+    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+    fontFamily: t.fontSans,
+  }
+}
+
 export default function Home({ dark, toggleTheme }) {
-  const c = getTheme(dark)
+  const t = getPremiumTheme(dark)
   const navigate = useNavigate()
   const { user, profile } = useAuth()
   const { modules, modulesError } = useModules()
@@ -77,9 +112,8 @@ export default function Home({ dark, toggleTheme }) {
   }, [user])
 
   // Weekly summary — a lightweight, auto-refreshing recap built purely
-  // from exam_history (or its guest-local equivalent), so there's
-  // nothing extra to maintain: questions attempted, accuracy, and the
-  // most-practiced subject over the last 7 days.
+  // from exam_history (or its guest-local equivalent): questions
+  // attempted, accuracy, and the most-practiced subject over 7 days.
   useEffect(() => {
     async function loadWeekly() {
       const weekAgoMs = Date.now() - 7 * 24 * 60 * 60 * 1000
@@ -118,9 +152,7 @@ export default function Home({ dark, toggleTheme }) {
 
   // Upcoming-exam reminder — fires a local notification (only if
   // permission was already granted, at most once per day) when an
-  // admin-set exam date is 0-2 days away. This only triggers while the
-  // app is actually open; a true always-on background push would need
-  // separate push-server infrastructure.
+  // admin-set exam date is 0-2 days away.
   useEffect(() => {
     async function checkExamReminders() {
       if (!('Notification' in window) || Notification.permission !== 'granted') return
@@ -150,232 +182,234 @@ export default function Home({ dark, toggleTheme }) {
 
   const activeModules = modules.filter(m => m.status === 'active')
   const completedModules = modules.filter(m => m.status === 'completed')
+  const nextModule = activeModules[0] || null
 
-  const sectionTitle = (text) => (
-    <h2 style={{
-      color: c.sub,
-      fontSize: 13, fontWeight: 700, letterSpacing: 2,
-      marginBottom: 16, textTransform: 'uppercase'
-    }}>{text}</h2>
+  const sectionLabel = (text) => (
+    <div style={{
+      color: t.textFaint, fontSize: 11, fontWeight: 700, letterSpacing: '0.14em',
+      textTransform: 'uppercase', marginBottom: 14, fontFamily: t.fontSans
+    }}>{text}</div>
   )
 
   return (
-    <div style={{ padding: '24px 16px 100px' }}>
-      {modulesError && <div className="page-container"><ErrorBanner /></div>}
+    <div style={{ background: t.bg, minHeight: '100vh', fontFamily: t.fontSans, color: t.text }}>
+      <div style={{ maxWidth: 780, margin: '0 auto', padding: '0 20px 100px' }}>
 
-      {/* Header */}
-      <div style={{
-        textAlign: 'center', padding: '30px 0 24px',
-        opacity: titleVisible ? 1 : 0,
-        transform: titleVisible ? 'translateY(0)' : 'translateY(-20px)',
-        transition: 'all 0.6s ease'
-      }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+        {/* Top bar — same controls/behavior as before, flat styling */}
+        <div style={{
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          padding: '20px 0', borderBottom: `1px solid ${t.border}`, marginBottom: 40
+        }}>
           <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-            <button onClick={toggleTheme} style={{
-              background: dark ? 'rgba(56,189,248,0.1)' : '#f1f5f9',
-              color: dark ? '#38bdf8' : '#475569',
-              border: `1px solid ${dark ? 'rgba(56,189,248,0.3)' : '#e2e8f0'}`,
-              padding: '6px 14px', borderRadius: 10,
-              cursor: 'pointer', fontSize: 16, fontWeight: 700
-            }} aria-label={dark ? 'Switch to light mode' : 'Switch to dark mode'}>{dark ? '☀️' : '🌙'}</button>
+            <button onClick={toggleTheme} style={iconBtn(t)}
+              aria-label={dark ? 'Switch to light mode' : 'Switch to dark mode'}>
+              {dark ? '☀' : '☾'}
+            </button>
             <NavMenu dark={dark} />
-            <button onClick={() => navigate('/search')} aria-label="Search" style={{
-              background: dark ? 'rgba(56,189,248,0.1)' : '#f1f5f9',
-              color: dark ? '#38bdf8' : '#475569',
-              border: `1px solid ${dark ? 'rgba(56,189,248,0.3)' : '#e2e8f0'}`,
-              padding: '6px 14px', borderRadius: 10,
-              cursor: 'pointer', fontSize: 16, fontWeight: 700
-            }}>🔍</button>
+            <button onClick={() => navigate('/search')} aria-label="Search" style={iconBtn(t)}>⌕</button>
           </div>
 
-          {/* Profile Bar */}
           {user && profile ? (
             <div onClick={() => navigate('/profile')}
               role="button" tabIndex={0}
               onKeyDown={onActivateKeyDown(() => navigate('/profile'))}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 10,
-                background: c.card,
-                border: `1px solid ${c.border}`,
-                borderRadius: 20, padding: '8px 16px', cursor: 'pointer',
-                transition: 'all 0.2s'
-              }}
-              onMouseEnter={e => e.currentTarget.style.borderColor = '#38bdf8'}
-              onMouseLeave={e => e.currentTarget.style.borderColor = c.border}>
+              style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
+              <div style={{ textAlign: 'right' }}>
+                <div style={{ fontSize: 13, fontWeight: 700 }}>Dr. {profile.name}</div>
+                <div style={{ fontSize: 11, color: t.textSub }}>{profile.points} points</div>
+              </div>
               <div style={{
-                width: 32, height: 32, borderRadius: '50%',
-                background: 'linear-gradient(135deg, #38bdf8, #818cf8)',
+                width: 34, height: 34, borderRadius: '50%', background: t.primary,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 14, fontWeight: 900, color: '#fff', flexShrink: 0
-              }}>
-                {initialOf(profile.name)}
-              </div>
-              <div style={{ textAlign: 'left' }}>
-                <div style={{ color: c.text, fontSize: 13, fontWeight: 700 }}>
-                  Dr. {profile.name}
-                </div>
-                <div style={{ color: '#f59e0b', fontSize: 11, fontWeight: 700 }}>
-                  ⭐ {profile.points} points
-                </div>
-              </div>
+                fontSize: 13, fontWeight: 800, color: dark ? '#0B0F17' : '#fff', flexShrink: 0
+              }}>{initialOf(profile.name)}</div>
             </div>
           ) : (
             <button onClick={() => navigate('/auth')} style={{
-              background: '#38bdf820', color: '#38bdf8',
-              border: '1px solid #38bdf840',
-              padding: '8px 16px', borderRadius: 20,
-              cursor: 'pointer', fontSize: 13, fontWeight: 700
-            }}>Sign In →</button>
+              background: 'transparent', color: t.primary, border: `1px solid ${t.primary}`,
+              padding: '7px 16px', borderRadius: 8, cursor: 'pointer', fontSize: 13, fontWeight: 700,
+              fontFamily: t.fontSans
+            }}>Sign In</button>
           )}
         </div>
 
-        <img src={dark ? '/icon-512.png' : '/icon-512-light.png'} alt="ZNU Future Doctors" style={{ width: 88, height: 88, marginBottom: 12, borderRadius: '50%', objectFit: 'cover', filter: dark ? 'drop-shadow(0 0 20px rgba(56,189,248,0.5))' : 'drop-shadow(0 2px 10px rgba(14,165,233,0.25))' }} />
-        <h1 style={{
-          fontSize: 28, fontWeight: 900,
-          background: 'linear-gradient(135deg, #38bdf8, #818cf8)',
-          WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-          marginBottom: 8
-        }}>ZNU Future Doctors</h1>
-        <p style={{ color: c.sub, fontSize: 15 }}>
-          Your Integrated Medical Study Platform
-        </p>
+        {modulesError && <ErrorBanner />}
 
-        {streak > 0 && (
-          <div style={{
-            display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 12,
-            background: '#f59e0b20', border: '1px solid #f59e0b40',
-            borderRadius: 20, padding: '6px 16px', color: '#f59e0b', fontSize: 13, fontWeight: 700
-          }}>
-            🔥 {streak}-day study streak
+        {/* Hero */}
+        <div style={{
+          opacity: titleVisible ? 1 : 0, transform: titleVisible ? 'translateY(0)' : 'translateY(-10px)',
+          transition: 'all 0.5s ease', marginBottom: 36
+        }}>
+          <div style={{ color: t.textSub, fontSize: 15, marginBottom: 6 }}>
+            {timeGreeting()}{user && profile ? `, ${profile.name.split(' ')[0]}` : ''}.
           </div>
-        )}
-      </div>
-
-      <div className="page-container">
-        <NotifyPermissionButton dark={dark} label="🔔 Enable exam & deadline reminders" />
-      </div>
-
-      {/* Weekly summary — auto-computed from exam_history, no setup needed */}
-      {weeklySummary && (
-        <div className="page-container" style={{ marginBottom: 24 }}>
-          <div style={{ background: c.card, border: `1px solid ${c.border}`, borderRadius: 16, padding: '18px 20px' }}>
-            <div style={{ color: c.sub, fontSize: 12, fontWeight: 700, letterSpacing: 1, marginBottom: 12, textTransform: 'uppercase' }}>
-              📈 This Week
+          <h1 style={{
+            fontFamily: t.fontDisplay, fontWeight: 800, fontSize: 'clamp(30px, 4.4vw, 44px)',
+            lineHeight: 1.1, letterSpacing: '-0.02em', margin: 0, color: t.text
+          }}>
+            Your medical journey<br />continues.
+          </h1>
+          {streak > 0 && (
+            <div style={{ marginTop: 14, color: t.accent, fontSize: 13, fontWeight: 700 }}>
+              {streak}-day study streak
             </div>
-            <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
+          )}
+        </div>
+
+        <PulseDivider color={t.border} />
+
+        {/* Next step */}
+        <div style={{ margin: '36px 0' }}>
+          {sectionLabel('Next Step')}
+          {pausedExam ? (
+            <div onClick={() => navigate('/mcq')} role="button" tabIndex={0}
+              onKeyDown={onActivateKeyDown(() => navigate('/mcq'))}
+              style={{
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                gap: 16, cursor: 'pointer', padding: '18px 0', borderTop: `1px solid ${t.border}`
+              }}>
               <div>
-                <div style={{ color: '#38bdf8', fontWeight: 900, fontSize: 20 }}>{weeklySummary.totalAttempted}</div>
-                <div style={{ color: c.sub, fontSize: 11 }}>Questions</div>
+                <div style={{ fontSize: 19, fontWeight: 700, marginBottom: 4 }}>Continue your paused quiz</div>
+                <div style={{ fontSize: 13, color: t.textSub }}>
+                  {Object.keys(pausedExam.answers || {}).length} of {(pausedExam.quizQuestions || []).length} answered
+                </div>
+              </div>
+              <span style={{ color: t.primary, fontSize: 14, fontWeight: 700, whiteSpace: 'nowrap' }}>Continue →</span>
+            </div>
+          ) : nextModule ? (
+            <div onClick={() => navigate(`/module/${nextModule.id}`)} role="button" tabIndex={0}
+              onKeyDown={onActivateKeyDown(() => navigate(`/module/${nextModule.id}`))}
+              style={{
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                gap: 16, cursor: 'pointer', padding: '18px 0', borderTop: `1px solid ${t.border}`
+              }}>
+              <div>
+                <div style={{ fontSize: 19, fontWeight: 700, marginBottom: 4 }}>Continue {nextModule.name}</div>
+                <div style={{ fontSize: 13, color: t.textSub }}>Pick up where your active module leaves off</div>
+              </div>
+              <span style={{ color: t.primary, fontSize: 14, fontWeight: 700, whiteSpace: 'nowrap' }}>Continue →</span>
+            </div>
+          ) : (
+            <div style={{ padding: '18px 0', borderTop: `1px solid ${t.border}`, color: t.textSub, fontSize: 14 }}>
+              No active module yet — check back once one is added.
+            </div>
+          )}
+        </div>
+
+        <div style={{ marginBottom: 36 }}>
+          <NotifyPermissionButton dark={dark} label="Enable exam & deadline reminders" />
+        </div>
+
+        {/* Weekly progress */}
+        {weeklySummary && (
+          <div style={{ marginBottom: 40 }}>
+            {sectionLabel('Your Progress — This Week')}
+            <div style={{ display: 'flex', gap: 36, flexWrap: 'wrap', borderTop: `1px solid ${t.border}`, paddingTop: 18 }}>
+              <div>
+                <div style={{ fontFamily: t.fontDisplay, fontWeight: 800, fontSize: 28 }}>{weeklySummary.totalAttempted}</div>
+                <div style={{ color: t.textSub, fontSize: 12 }}>Questions answered</div>
               </div>
               <div>
-                <div style={{ color: weeklySummary.accuracy >= 60 ? '#22c55e' : '#ef4444', fontWeight: 900, fontSize: 20 }}>{weeklySummary.accuracy}%</div>
-                <div style={{ color: c.sub, fontSize: 11 }}>Accuracy</div>
+                <div style={{ fontFamily: t.fontDisplay, fontWeight: 800, fontSize: 28, color: weeklySummary.accuracy >= 60 ? t.success : t.danger }}>
+                  {weeklySummary.accuracy}%
+                </div>
+                <div style={{ color: t.textSub, fontSize: 12 }}>Accuracy</div>
               </div>
               {weeklySummary.topSubjectName && (
                 <div>
-                  <div style={{ color: '#a78bfa', fontWeight: 900, fontSize: 14 }}>{weeklySummary.topSubjectName}</div>
-                  <div style={{ color: c.sub, fontSize: 11 }}>Most practiced</div>
+                  <div style={{ fontFamily: t.fontDisplay, fontWeight: 800, fontSize: 20 }}>{weeklySummary.topSubjectName}</div>
+                  <div style={{ color: t.textSub, fontSize: 12 }}>Most practiced</div>
                 </div>
               )}
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Continue where you left off */}
-      {pausedExam && (
-        <div className="page-container" style={{ marginBottom: 24 }}>
-          <div onClick={() => navigate('/mcq')}
-            role="button" tabIndex={0}
-            onKeyDown={onActivateKeyDown(() => navigate('/mcq'))}
-            style={{
-              background: '#e2725b20', border: '2px solid #e2725b60', borderRadius: 16,
-              padding: '16px 20px', cursor: 'pointer', display: 'flex', alignItems: 'center',
-              justifyContent: 'space-between', gap: 12, transition: 'all 0.2s'
-            }}
-            onMouseEnter={e => e.currentTarget.style.borderColor = '#e2725b'}
-            onMouseLeave={e => e.currentTarget.style.borderColor = '#e2725b60'}>
-            <div>
-              <div style={{ color: '#e2725b', fontWeight: 700, fontSize: 14 }}>⏸ Continue where you left off</div>
-              <div style={{ color: c.sub, fontSize: 12, marginTop: 2 }}>
-                {Object.keys(pausedExam.answers || {}).length}/{(pausedExam.quizQuestions || []).length} answered
-              </div>
-            </div>
-            <div style={{ color: '#e2725b', fontSize: 20 }}>→</div>
-          </div>
-        </div>
-      )}
-
-      {/* Announcement */}
-      {announcement && (
-        <div className="page-container" style={{ marginBottom: 24 }}>
+        {/* Announcement */}
+        {announcement && (
           <div style={{
-            background: 'linear-gradient(135deg, #38bdf820, #818cf815)',
-            border: '1px solid #38bdf840', borderRadius: 16,
-            padding: '14px 20px', textAlign: 'center',
-            color: c.text, fontSize: 14, fontWeight: 600, lineHeight: 1.6,
-            whiteSpace: 'pre-wrap'
+            marginBottom: 40, padding: '16px 18px', borderRadius: 10,
+            border: `1px solid ${t.border}`, background: t.surfaceRaised,
+            color: t.text, fontSize: 14, lineHeight: 1.6, whiteSpace: 'pre-wrap'
           }}>
             {announcement}
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Active Modules */}
-      {activeModules.length > 0 && (
-        <div className="page-container" style={{ marginBottom: 32 }}>
-          {sectionTitle('🟢 Active Modules')}
-          <AutoGrid>
-            {activeModules.map((mod, i) => (
-              <AnimatedCard key={mod.id} delay={200 + i * 80} color={mod.color} dark={dark}
-                onClick={() => navigate(`/module/${mod.id}`)}>
-                <div style={{ fontSize: 'clamp(32px, 3.5vw, 52px)', marginBottom: 8 }}>{mod.icon}</div>
-                <div style={{ color: c.text, fontSize: 'clamp(14px, 1.2vw, 17px)', fontWeight: 700, marginBottom: 8 }}>{mod.name}</div>
-                <div style={{
-                  display: 'inline-block', background: '#22c55e20', color: '#22c55e',
-                  border: '1px solid #22c55e40', borderRadius: 20, padding: '2px 10px', fontSize: 11, fontWeight: 700
-                }}>● Active</div>
-              </AnimatedCard>
+        {/* Modules — editorial rows instead of a colorful card grid */}
+        {activeModules.length > 0 && (
+          <div style={{ marginBottom: 40 }}>
+            {sectionLabel('Modules')}
+            <div>
+              {activeModules.map((mod, i) => (
+                <div key={mod.id} onClick={() => navigate(`/module/${mod.id}`)}
+                  role="button" tabIndex={0}
+                  onKeyDown={onActivateKeyDown(() => navigate(`/module/${mod.id}`))}
+                  style={{
+                    borderTop: `1px solid ${t.border}`, padding: '20px 0',
+                    cursor: 'pointer', display: 'flex', justifyContent: 'space-between',
+                    alignItems: 'center', gap: 16
+                  }}>
+                  <div>
+                    <div style={{ color: t.textFaint, fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', marginBottom: 6 }}>
+                      MODULE {String(i + 1).padStart(2, '0')}
+                    </div>
+                    <div style={{ fontFamily: t.fontDisplay, fontSize: 21, fontWeight: 700 }}>{mod.name}</div>
+                    <div style={{ color: t.accent, fontSize: 12, fontWeight: 700, marginTop: 6 }}>● Active</div>
+                  </div>
+                  <span style={{ color: t.primary, fontSize: 14, fontWeight: 700, whiteSpace: 'nowrap' }}>Continue →</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {completedModules.length > 0 && (
+          <div style={{ marginBottom: 40 }}>
+            {sectionLabel('Completed Modules')}
+            <div>
+              {completedModules.map(mod => (
+                <div key={mod.id} onClick={() => navigate(`/module/${mod.id}`)}
+                  role="button" tabIndex={0}
+                  onKeyDown={onActivateKeyDown(() => navigate(`/module/${mod.id}`))}
+                  style={{
+                    borderTop: `1px solid ${t.border}`, padding: '16px 0',
+                    cursor: 'pointer', display: 'flex', justifyContent: 'space-between',
+                    alignItems: 'center', gap: 16, color: t.textSub
+                  }}>
+                  <div style={{ fontSize: 15, fontWeight: 600 }}>{mod.name}</div>
+                  <span style={{ fontSize: 12, fontWeight: 700 }}>✓ Completed</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Explore — flat link list, replaces the old Tools card grid */}
+        <div style={{ marginBottom: 20 }}>
+          {sectionLabel('Explore')}
+          <div>
+            {exploreLinks.map((link, i) => (
+              <div key={i} onClick={() => navigate(link.to)}
+                role="button" tabIndex={0}
+                onKeyDown={onActivateKeyDown(() => navigate(link.to))}
+                style={{
+                  borderTop: `1px solid ${t.border}`,
+                  borderBottom: i === exploreLinks.length - 1 ? `1px solid ${t.border}` : 'none',
+                  padding: '16px 0', cursor: 'pointer',
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16
+                }}>
+                <div>
+                  <div style={{ fontSize: 15, fontWeight: 700 }}>{link.title}</div>
+                  <div style={{ fontSize: 12, color: t.textSub, marginTop: 2 }}>{link.description}</div>
+                </div>
+                <span style={{ color: t.textFaint, fontSize: 16 }}>→</span>
+              </div>
             ))}
-          </AutoGrid>
+          </div>
         </div>
-      )}
 
-      {/* Tools */}
-      <div className="page-container" style={{ marginBottom: 32 }}>
-        {sectionTitle('🛠 Tools')}
-        <AutoGrid>
-          {toolCards.map((card, i) => (
-            <AnimatedCard key={i} delay={400 + i * 80} color={card.color} dark={dark}
-              onClick={() => navigate(card.to)}>
-              <div style={{ fontSize: 'clamp(28px, 3vw, 42px)', marginBottom: 8 }}>{card.emoji}</div>
-              <div style={{ color: c.text, fontSize: 'clamp(13px, 1.1vw, 16px)', fontWeight: 700 }}>{card.title}</div>
-            </AnimatedCard>
-          ))}
-        </AutoGrid>
       </div>
-
-      {/* Completed Modules */}
-      {completedModules.length > 0 && (
-        <div className="page-container">
-          {sectionTitle('✅ Completed Modules')}
-          <AutoGrid>
-            {completedModules.map((mod, i) => (
-              <AnimatedCard key={mod.id} delay={i * 80} color='#475569' dark={dark}
-                onClick={() => navigate(`/module/${mod.id}`)}>
-                <div style={{ fontSize: 'clamp(28px, 3vw, 42px)', marginBottom: 8, filter: 'grayscale(0.5)' }}>{mod.icon}</div>
-                <div style={{ color: c.sub, fontSize: 'clamp(13px, 1.1vw, 16px)', fontWeight: 700, marginBottom: 8 }}>{mod.name}</div>
-                <div style={{
-                  display: 'inline-block', background: '#47556920', color: '#64748b',
-                  border: '1px solid #47556940', borderRadius: 20, padding: '2px 10px', fontSize: 11, fontWeight: 700
-                }}>✓ Completed</div>
-              </AnimatedCard>
-            ))}
-          </AutoGrid>
-        </div>
-      )}
     </div>
   )
 }
-
