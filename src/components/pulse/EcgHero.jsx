@@ -1,9 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 
-// Big center-stage ECG visualization for the ZNU Pulse Home redesign
-// test — a heavier, hero-scale companion to the small header brand
-// mark. A bright traveling segment traces the EXACT shape of the path
-// (via animated stroke-dashoffset on the path itself, not a moving
+// Big center-stage ECG visualization for the ZNU Pulse Home redesign.
+// A bright traveling segment traces the EXACT shape of the path (via
+// animated stroke-dashoffset on the path itself, not a moving
 // rectangular mask) — so the light visibly runs up and down through
 // the peaks and troughs of the line, not just left-to-right over it.
 // Two staggered traces keep the line lit continuously with no visible
@@ -11,6 +10,10 @@ import { useEffect, useMemo, useState } from 'react'
 // line never fully disappears between passes. A soft perspective grid
 // + drifting particles sit behind it for depth. Freezes to a fully-lit
 // static line and motionless grid/particles under prefers-reduced-motion.
+//
+// `logoSrc` (optional) renders the ZNU Pulse mark on the left, beating
+// in time with the sweep — the same 5.2s cycle the line itself runs
+// on, so the logo and the traveling light feel like one heartbeat.
 const ECG_PATH = 'M0,140 L160,140 C172,140 176,118 190,118 C204,118 208,140 226,140 L240,140 L248,140 L258,190 L268,20 L278,205 L288,140 L306,140 C330,140 338,96 358,96 C378,96 386,140 410,140 L900,140'
 
 function usePrefersReducedMotion() {
@@ -25,7 +28,7 @@ function usePrefersReducedMotion() {
   return reduced
 }
 
-export default function EcgHero({ pt, height = 220 }) {
+export default function EcgHero({ pt, height = 220, logoSrc }) {
   const reduced = usePrefersReducedMotion()
 
   // Stable random particle field — generated once, not on every render.
@@ -47,7 +50,13 @@ export default function EcgHero({ pt, height = 220 }) {
           0%, 100% { opacity: 0.15; transform: scale(1); }
           50% { opacity: 0.9; transform: scale(1.4); }
         }
-        @keyframes pulseHeroSweepB {
+        /* FIX: this keyframe set was previously declared twice under the
+           name "pulseHeroSweepB" — "pulseHeroSweepA" (the name
+           .pulse-hero-sweep-a actually references below) never existed,
+           so that trace sat frozen as a static partial dash instead of
+           sweeping. Restored as its own named animation, running with
+           no delay so it leads the second (delayed) trace. */
+        @keyframes pulseHeroSweepA {
           0%   { stroke-dashoffset: 1; opacity: 0; }
           6%   { opacity: 1; }
           46%  { opacity: 1; }
@@ -70,10 +79,34 @@ export default function EcgHero({ pt, height = 220 }) {
           animation: pulseHeroSweepB 5.2s ease-in-out infinite;
           animation-delay: 2.6s;
         }
+        /* Logo "heartbeat" — a lub-dub double-thump synced to the same
+           5.2s cycle as the traveling light, so the mark and the line
+           read as one pulse instead of two unrelated animations. */
+        @keyframes pulseLogoBeat {
+          0%   { transform: scale(1); }
+          8%   { transform: scale(1.09); }
+          16%  { transform: scale(1); }
+          24%  { transform: scale(1.05); }
+          32%  { transform: scale(1); }
+          100% { transform: scale(1); }
+        }
+        @keyframes pulseLogoGlow {
+          0%, 100% { opacity: 0.35; transform: scale(1); }
+          16% { opacity: 0.9; transform: scale(1.25); }
+          32% { opacity: 0.55; transform: scale(1.1); }
+          48% { opacity: 0.35; transform: scale(1); }
+        }
+        .pulse-hero-logo {
+          animation: pulseLogoBeat 5.2s ease-in-out infinite;
+        }
+        .pulse-hero-logo-glow {
+          animation: pulseLogoGlow 5.2s ease-in-out infinite;
+        }
         @media (prefers-reduced-motion: reduce) {
           .pulse-particle { animation: none !important; opacity: 0.35 !important; }
           .pulse-hero-sweep-a, .pulse-hero-sweep-b { animation: none !important; opacity: 0 !important; }
           .pulse-hero-static { opacity: 1 !important; }
+          .pulse-hero-logo, .pulse-hero-logo-glow { animation: none !important; }
         }
       `}</style>
 
@@ -99,6 +132,29 @@ export default function EcgHero({ pt, height = 220 }) {
           opacity: 0.35,
         }} />
       ))}
+
+      {/* ZNU Pulse logo mark — beats in time with the sweeping line */}
+      {logoSrc && (
+        <div style={{
+          position: 'absolute', left: 'clamp(4px, 2vw, 20px)', top: '50%',
+          transform: 'translateY(-50%)', zIndex: 2,
+          width: 'clamp(44px, 7vw, 64px)', height: 'clamp(44px, 7vw, 64px)',
+        }}>
+          <div className="pulse-hero-logo-glow" style={{
+            position: 'absolute', inset: -6, borderRadius: '50%',
+            background: `radial-gradient(circle, ${pt.ecgGlow}55, transparent 70%)`,
+            pointerEvents: 'none',
+          }} />
+          <div className="pulse-hero-logo" style={{
+            position: 'relative', width: '100%', height: '100%',
+            borderRadius: 14, overflow: 'hidden',
+            border: `1px solid ${pt.borderStrong}`,
+            boxShadow: '0 8px 24px rgba(0,0,0,0.35)',
+          }}>
+            <img src={logoSrc} alt="ZNU Pulse" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+          </div>
+        </div>
+      )}
 
       {/* The ECG line itself */}
       <svg width="100%" height="100%" viewBox="0 0 900 280" preserveAspectRatio="xMidYMid meet"
