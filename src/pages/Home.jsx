@@ -4,18 +4,17 @@ import { useAuth, NavMenu, useModules } from '../App'
 import { getTheme } from '../theme'
 import { supabase } from '../supabase'
 import ErrorBanner from '../components/ErrorBanner'
-import AnimatedCard from '../components/AnimatedCard'
-import AutoGrid from '../components/AutoGrid'
 import { computeStreak } from '../lib/streak'
 import { getGuestHistory } from '../lib/reviewStorage'
 import { loadSavedActiveExam } from '../lib/activeExam'
 import NotifyPermissionButton from '../components/NotifyPermissionButton'
+import ZNUPulse from '../components/ZNUPulse'
 
 const toolCards = [
-  { emoji: '📅', title: 'Schedules', to: '/schedule', color: '#a78bfa' },
-  { emoji: '🎯', title: 'Checklist', to: '/checklist', color: '#f59e0b' },
-  { emoji: '💬', title: 'Anonymous Q&A', to: '/anon-questions', color: '#a78bfa' },
-  { emoji: '🏆', title: 'Leaderboard', to: '/profile?tab=leaderboard', color: '#f59e0b' },
+  { emoji: '📅', title: 'Schedules', to: '/schedule' },
+  { emoji: '🎯', title: 'Checklist', to: '/checklist' },
+  { emoji: '💬', title: 'Anonymous Q&A', to: '/anon-questions' },
+  { emoji: '🏆', title: 'Leaderboard', to: '/profile?tab=leaderboard' },
 ]
 
 // Small helper so a missing/blank name never crashes the avatar badge —
@@ -151,170 +150,115 @@ export default function Home({ dark, toggleTheme }) {
   const activeModules = modules.filter(m => m.status === 'active')
   const completedModules = modules.filter(m => m.status === 'completed')
 
-  const sectionTitle = (text) => (
-    <h2 style={{
-      color: c.sub,
-      fontSize: 13, fontWeight: 700, letterSpacing: 2,
-      marginBottom: 16, textTransform: 'uppercase'
-    }}>{text}</h2>
-  )
+  // "Your Next Move" — a single, best-guess highlighted action. Paused
+  // exam wins (most time-sensitive); otherwise the first active module.
+  const nextMoveModule = activeModules[0] || null
+
+  const pad2 = (n) => String(n).padStart(2, '0')
+
+  const kickerStyle = {
+    color: c.sub, fontSize: 11, fontWeight: 800, letterSpacing: 3,
+    textTransform: 'uppercase', marginBottom: 14
+  }
 
   return (
-    <div style={{ padding: '24px 16px 100px' }}>
-      {modulesError && <div className="page-container"><ErrorBanner /></div>}
+    <div style={{ paddingBottom: 100 }}>
+      {modulesError && <div className="page-container" style={{ paddingTop: 20 }}><ErrorBanner /></div>}
 
-      {/* Header */}
-      <div style={{
-        textAlign: 'center', padding: '30px 0 24px',
-        opacity: titleVisible ? 1 : 0,
-        transform: titleVisible ? 'translateY(0)' : 'translateY(-20px)',
-        transition: 'all 0.6s ease'
-      }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-            <button onClick={toggleTheme} style={{
-              background: dark ? 'rgba(56,189,248,0.1)' : '#f1f5f9',
-              color: dark ? '#38bdf8' : '#475569',
-              border: `1px solid ${dark ? 'rgba(56,189,248,0.3)' : '#e2e8f0'}`,
-              padding: '6px 14px', borderRadius: 10,
-              cursor: 'pointer', fontSize: 16, fontWeight: 700
-            }} aria-label={dark ? 'Switch to light mode' : 'Switch to dark mode'}>{dark ? '☀️' : '🌙'}</button>
-            <NavMenu dark={dark} />
-            <button onClick={() => navigate('/search')} aria-label="Search" style={{
-              background: dark ? 'rgba(56,189,248,0.1)' : '#f1f5f9',
-              color: dark ? '#38bdf8' : '#475569',
-              border: `1px solid ${dark ? 'rgba(56,189,248,0.3)' : '#e2e8f0'}`,
-              padding: '6px 14px', borderRadius: 10,
-              cursor: 'pointer', fontSize: 16, fontWeight: 700
-            }}>🔍</button>
-          </div>
-
-          {/* Profile Bar */}
-          {user && profile ? (
-            <div onClick={() => navigate('/profile')}
-              role="button" tabIndex={0}
-              onKeyDown={onActivateKeyDown(() => navigate('/profile'))}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 10,
-                background: c.card,
-                border: `1px solid ${c.border}`,
-                borderRadius: 20, padding: '8px 16px', cursor: 'pointer',
-                transition: 'all 0.2s'
-              }}
-              onMouseEnter={e => e.currentTarget.style.borderColor = '#38bdf8'}
-              onMouseLeave={e => e.currentTarget.style.borderColor = c.border}>
-              <div style={{
-                width: 32, height: 32, borderRadius: '50%',
-                background: 'linear-gradient(135deg, #38bdf8, #818cf8)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 14, fontWeight: 900, color: '#fff', flexShrink: 0
-              }}>
-                {initialOf(profile.name)}
-              </div>
-              <div style={{ textAlign: 'left' }}>
-                <div style={{ color: c.text, fontSize: 13, fontWeight: 700 }}>
-                  Dr. {profile.name}
-                </div>
-                <div style={{ color: '#f59e0b', fontSize: 11, fontWeight: 700 }}>
-                  ⭐ {profile.points} points
-                </div>
-              </div>
-            </div>
-          ) : (
-            <button onClick={() => navigate('/auth')} style={{
-              background: '#38bdf820', color: '#38bdf8',
-              border: '1px solid #38bdf840',
-              padding: '8px 16px', borderRadius: 20,
-              cursor: 'pointer', fontSize: 13, fontWeight: 700
-            }}>Sign In →</button>
-          )}
-        </div>
-
-        <img src={dark ? '/icon-512.png' : '/icon-512-light.png'} alt="ZNU Future Doctors" style={{ width: 88, height: 88, marginBottom: 12, borderRadius: '50%', objectFit: 'cover', filter: dark ? 'drop-shadow(0 0 20px rgba(56,189,248,0.5))' : 'drop-shadow(0 2px 10px rgba(14,165,233,0.25))' }} />
-        <h1 style={{
-          fontSize: 28, fontWeight: 900,
-          background: 'linear-gradient(135deg, #38bdf8, #818cf8)',
-          WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-          marginBottom: 8
-        }}>ZNU Future Doctors</h1>
-        <p style={{ color: c.sub, fontSize: 15 }}>
-          Your Integrated Medical Study Platform
-        </p>
-
-        {streak > 0 && (
+      {/* ── TOP BAR ─────────────────────────────────────────────── */}
+      <div className="page-container" style={{ padding: '20px 16px 0' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div style={{
-            display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 12,
-            background: '#f59e0b20', border: '1px solid #f59e0b40',
-            borderRadius: 20, padding: '6px 16px', color: '#f59e0b', fontSize: 13, fontWeight: 700
+            fontWeight: 900, fontSize: 15, letterSpacing: 1,
+            color: dark ? '#e2e8f0' : '#1e293b'
           }}>
-            🔥 {streak}-day study streak
+            ZNU<span style={{ color: '#38bdf8' }}>.</span>FD
           </div>
-        )}
+
+          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+            <button onClick={toggleTheme} style={iconBtn(dark)} aria-label={dark ? 'Switch to light mode' : 'Switch to dark mode'}>
+              {dark ? '☀️' : '🌙'}
+            </button>
+            <NavMenu dark={dark} />
+            <button onClick={() => navigate('/search')} aria-label="Search" style={iconBtn(dark)}>🔍</button>
+
+            {user && profile ? (
+              <div onClick={() => navigate('/profile')}
+                role="button" tabIndex={0}
+                onKeyDown={onActivateKeyDown(() => navigate('/profile'))}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer',
+                  marginLeft: 4, padding: '4px 10px 4px 4px', borderRadius: 20,
+                  border: `1px solid ${c.border}`
+                }}>
+                <div style={{
+                  width: 26, height: 26, borderRadius: '50%',
+                  background: 'linear-gradient(135deg, #38bdf8, #818cf8)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 11, fontWeight: 900, color: '#fff', flexShrink: 0
+                }}>{initialOf(profile.name)}</div>
+                <span style={{ color: '#f59e0b', fontSize: 11, fontWeight: 800 }}>⭐ {profile.points}</span>
+              </div>
+            ) : (
+              <button onClick={() => navigate('/auth')} style={{
+                background: 'transparent', color: '#38bdf8', border: '1px solid #38bdf860',
+                padding: '6px 14px', borderRadius: 20, cursor: 'pointer', fontSize: 12, fontWeight: 800,
+                marginLeft: 4
+              }}>Sign In</button>
+            )}
+          </div>
+        </div>
       </div>
 
-      <div className="page-container">
+      {/* ── HERO ────────────────────────────────────────────────── */}
+      <div style={{
+        opacity: titleVisible ? 1 : 0,
+        transform: titleVisible ? 'translateY(0)' : 'translateY(-16px)',
+        transition: 'all 0.7s ease',
+      }}>
+        <div className="page-container" style={{ padding: '48px 16px 8px' }}>
+          <div style={kickerStyle}>ZNU FUTURE DOCTORS</div>
+          <h1 style={{
+            fontSize: 'clamp(40px, 8vw, 84px)', fontWeight: 900, lineHeight: 0.98,
+            letterSpacing: -1.5, margin: 0, color: dark ? '#f1f5f9' : '#0f172a'
+          }}>
+            Your medical<br />
+            journey,<br />
+            <span style={{
+              background: 'linear-gradient(135deg, #38bdf8, #818cf8)',
+              WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent'
+            }}>mapped.</span>
+          </h1>
+
+          <div style={{ marginTop: 28, marginBottom: 8, maxWidth: 520 }}>
+            <ZNUPulse color={dark ? '#38bdf8' : '#0ea5e9'} />
+          </div>
+
+          <div style={{ display: 'flex', gap: 18, alignItems: 'center', flexWrap: 'wrap', marginTop: 8 }}>
+            <span style={{ color: c.sub, fontSize: 12, fontWeight: 700, letterSpacing: 1 }}>
+              {activeModules.length} ACTIVE MODULE{activeModules.length === 1 ? '' : 'S'}
+            </span>
+            {streak > 0 && (
+              <span style={{
+                display: 'inline-flex', alignItems: 'center', gap: 6,
+                color: '#f59e0b', fontSize: 12, fontWeight: 800
+              }}>
+                🔥 {streak}-DAY STREAK
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="page-container" style={{ padding: '4px 16px 0' }}>
         <NotifyPermissionButton dark={dark} label="🔔 Enable exam & deadline reminders" />
       </div>
 
-      {/* Weekly summary — auto-computed from exam_history, no setup needed */}
-      {weeklySummary && (
-        <div className="page-container" style={{ marginBottom: 24 }}>
-          <div style={{ background: c.card, border: `1px solid ${c.border}`, borderRadius: 16, padding: '18px 20px' }}>
-            <div style={{ color: c.sub, fontSize: 12, fontWeight: 700, letterSpacing: 1, marginBottom: 12, textTransform: 'uppercase' }}>
-              📈 This Week
-            </div>
-            <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
-              <div>
-                <div style={{ color: '#38bdf8', fontWeight: 900, fontSize: 20 }}>{weeklySummary.totalAttempted}</div>
-                <div style={{ color: c.sub, fontSize: 11 }}>Questions</div>
-              </div>
-              <div>
-                <div style={{ color: weeklySummary.accuracy >= 60 ? '#22c55e' : '#ef4444', fontWeight: 900, fontSize: 20 }}>{weeklySummary.accuracy}%</div>
-                <div style={{ color: c.sub, fontSize: 11 }}>Accuracy</div>
-              </div>
-              {weeklySummary.topSubjectName && (
-                <div>
-                  <div style={{ color: '#a78bfa', fontWeight: 900, fontSize: 14 }}>{weeklySummary.topSubjectName}</div>
-                  <div style={{ color: c.sub, fontSize: 11 }}>Most practiced</div>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Continue where you left off */}
-      {pausedExam && (
-        <div className="page-container" style={{ marginBottom: 24 }}>
-          <div onClick={() => navigate('/mcq')}
-            role="button" tabIndex={0}
-            onKeyDown={onActivateKeyDown(() => navigate('/mcq'))}
-            style={{
-              background: '#e2725b20', border: '2px solid #e2725b60', borderRadius: 16,
-              padding: '16px 20px', cursor: 'pointer', display: 'flex', alignItems: 'center',
-              justifyContent: 'space-between', gap: 12, transition: 'all 0.2s'
-            }}
-            onMouseEnter={e => e.currentTarget.style.borderColor = '#e2725b'}
-            onMouseLeave={e => e.currentTarget.style.borderColor = '#e2725b60'}>
-            <div>
-              <div style={{ color: '#e2725b', fontWeight: 700, fontSize: 14 }}>⏸ Continue where you left off</div>
-              <div style={{ color: c.sub, fontSize: 12, marginTop: 2 }}>
-                {Object.keys(pausedExam.answers || {}).length}/{(pausedExam.quizQuestions || []).length} answered
-              </div>
-            </div>
-            <div style={{ color: '#e2725b', fontSize: 20 }}>→</div>
-          </div>
-        </div>
-      )}
-
-      {/* Announcement */}
       {announcement && (
-        <div className="page-container" style={{ marginBottom: 24 }}>
+        <div className="page-container" style={{ padding: '0 16px', marginBottom: 8 }}>
           <div style={{
-            background: 'linear-gradient(135deg, #38bdf820, #818cf815)',
-            border: '1px solid #38bdf840', borderRadius: 16,
-            padding: '14px 20px', textAlign: 'center',
-            color: c.text, fontSize: 14, fontWeight: 600, lineHeight: 1.6,
+            borderLeft: '3px solid #38bdf8', paddingLeft: 16,
+            color: c.text, fontSize: 13, fontWeight: 600, lineHeight: 1.6,
             whiteSpace: 'pre-wrap'
           }}>
             {announcement}
@@ -322,59 +266,191 @@ export default function Home({ dark, toggleTheme }) {
         </div>
       )}
 
-      {/* Active Modules */}
+      {/* ── YOUR MEDICAL MAP (active modules as chapters) ──────────── */}
       {activeModules.length > 0 && (
-        <div className="page-container" style={{ marginBottom: 32 }}>
-          {sectionTitle('🟢 Active Modules')}
-          <AutoGrid>
+        <div className="page-container" style={{ padding: '56px 16px 8px' }}>
+          <div style={kickerStyle}>Your Medical Map</div>
+          <div>
             {activeModules.map((mod, i) => (
-              <AnimatedCard key={mod.id} delay={200 + i * 80} color={mod.color} dark={dark}
-                onClick={() => navigate(`/module/${mod.id}`)}>
-                <div style={{ fontSize: 'clamp(32px, 3.5vw, 52px)', marginBottom: 8 }}>{mod.icon}</div>
-                <div style={{ color: c.text, fontSize: 'clamp(14px, 1.2vw, 17px)', fontWeight: 700, marginBottom: 8 }}>{mod.name}</div>
+              <div
+                key={mod.id}
+                role="button" tabIndex={0}
+                onClick={() => navigate(`/module/${mod.id}`)}
+                onKeyDown={onActivateKeyDown(() => navigate(`/module/${mod.id}`))}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 20,
+                  padding: '22px 4px', cursor: 'pointer',
+                  borderBottom: `1px solid ${c.border}`,
+                  borderLeft: '3px solid transparent',
+                  paddingLeft: 16, transition: 'all 0.2s'
+                }}
+                onMouseEnter={e => { e.currentTarget.style.borderLeftColor = mod.color; e.currentTarget.style.background = `${mod.color}08` }}
+                onMouseLeave={e => { e.currentTarget.style.borderLeftColor = 'transparent'; e.currentTarget.style.background = 'transparent' }}
+              >
                 <div style={{
-                  display: 'inline-block', background: '#22c55e20', color: '#22c55e',
-                  border: '1px solid #22c55e40', borderRadius: 20, padding: '2px 10px', fontSize: 11, fontWeight: 700
-                }}>● Active</div>
-              </AnimatedCard>
+                  fontSize: 'clamp(28px, 4vw, 44px)', fontWeight: 900,
+                  color: c.border, minWidth: 60, flexShrink: 0
+                }}>{pad2(i + 1)}</div>
+
+                <div style={{ fontSize: 26, flexShrink: 0 }}>{mod.icon}</div>
+
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{
+                    fontSize: 'clamp(16px, 1.6vw, 22px)', fontWeight: 800,
+                    color: mod.color, letterSpacing: -0.3
+                  }}>{mod.name}</div>
+                  <div style={{ color: c.sub, fontSize: 11, fontWeight: 700, letterSpacing: 1, marginTop: 4 }}>
+                    ● ACTIVE
+                  </div>
+                </div>
+
+                <div style={{
+                  color: mod.color, fontWeight: 800, fontSize: 13,
+                  whiteSpace: 'nowrap', flexShrink: 0, letterSpacing: 0.5
+                }}>
+                  CONTINUE →
+                </div>
+              </div>
             ))}
-          </AutoGrid>
+          </div>
         </div>
       )}
 
-      {/* Tools */}
-      <div className="page-container" style={{ marginBottom: 32 }}>
-        {sectionTitle('🛠 Tools')}
-        <AutoGrid>
+      {/* ── WHERE YOU ARE NOW (weekly summary, big numbers) ────────── */}
+      {weeklySummary && (
+        <div className="page-container" style={{ padding: '56px 16px 8px' }}>
+          <div style={kickerStyle}>Where You Are Now</div>
+          <div style={{ display: 'flex', gap: 'clamp(24px, 6vw, 64px)', flexWrap: 'wrap', alignItems: 'baseline' }}>
+            <div>
+              <div style={{ fontSize: 'clamp(44px, 7vw, 72px)', fontWeight: 900, color: dark ? '#f1f5f9' : '#0f172a', lineHeight: 1 }}>
+                {weeklySummary.totalAttempted}
+              </div>
+              <div style={{ color: c.sub, fontSize: 11, fontWeight: 700, letterSpacing: 1, marginTop: 6 }}>QUESTIONS THIS WEEK</div>
+            </div>
+            <div>
+              <div style={{
+                fontSize: 'clamp(44px, 7vw, 72px)', fontWeight: 900, lineHeight: 1,
+                color: weeklySummary.accuracy >= 60 ? '#22c55e' : '#ef4444'
+              }}>
+                {weeklySummary.accuracy}%
+              </div>
+              <div style={{ color: c.sub, fontSize: 11, fontWeight: 700, letterSpacing: 1, marginTop: 6 }}>ACCURACY</div>
+            </div>
+            {weeklySummary.topSubjectName && (
+              <div>
+                <div style={{ fontSize: 'clamp(20px, 2.4vw, 28px)', fontWeight: 800, color: '#a78bfa', lineHeight: 1.2 }}>
+                  {weeklySummary.topSubjectName}
+                </div>
+                <div style={{ color: c.sub, fontSize: 11, fontWeight: 700, letterSpacing: 1, marginTop: 6 }}>MOST PRACTICED</div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── YOUR NEXT MOVE (single highlighted action) ─────────────── */}
+      {(pausedExam || nextMoveModule) && (
+        <div className="page-container" style={{ padding: '56px 16px 8px' }}>
+          <div style={kickerStyle}>Your Next Move</div>
+
+          {pausedExam ? (
+            <div
+              role="button" tabIndex={0}
+              onClick={() => navigate('/mcq')}
+              onKeyDown={onActivateKeyDown(() => navigate('/mcq'))}
+              style={{
+                background: dark ? 'linear-gradient(135deg, #7c2d1230, #7c2d1210)' : '#fff7ed',
+                border: '2px solid #e2725b', borderRadius: 4,
+                padding: '28px 24px', cursor: 'pointer', display: 'flex',
+                justifyContent: 'space-between', alignItems: 'center', gap: 16, flexWrap: 'wrap'
+              }}>
+              <div>
+                <div style={{ color: '#e2725b', fontWeight: 900, fontSize: 'clamp(18px, 2vw, 24px)', marginBottom: 6 }}>
+                  ⏸ CONTINUE WHERE YOU LEFT OFF
+                </div>
+                <div style={{ color: c.sub, fontSize: 13 }}>
+                  {Object.keys(pausedExam.answers || {}).length}/{(pausedExam.quizQuestions || []).length} answered
+                </div>
+              </div>
+              <div style={{ color: '#e2725b', fontSize: 28, fontWeight: 900 }}>→</div>
+            </div>
+          ) : nextMoveModule && (
+            <div
+              role="button" tabIndex={0}
+              onClick={() => navigate(`/mcq?module=${nextMoveModule.id}`)}
+              onKeyDown={onActivateKeyDown(() => navigate(`/mcq?module=${nextMoveModule.id}`))}
+              style={{
+                background: dark ? `${nextMoveModule.color}12` : `${nextMoveModule.color}0c`,
+                border: `2px solid ${nextMoveModule.color}`, borderRadius: 4,
+                padding: '28px 24px', cursor: 'pointer', display: 'flex',
+                justifyContent: 'space-between', alignItems: 'center', gap: 16, flexWrap: 'wrap'
+              }}>
+              <div>
+                <div style={{ color: nextMoveModule.color, fontWeight: 900, fontSize: 'clamp(18px, 2vw, 24px)', marginBottom: 6 }}>
+                  {nextMoveModule.icon} PRACTICE {nextMoveModule.name.toUpperCase()}
+                </div>
+                <div style={{ color: c.sub, fontSize: 13 }}>Pick up your MCQ bank right where it matters most</div>
+              </div>
+              <div style={{ color: nextMoveModule.color, fontSize: 28, fontWeight: 900 }}>→</div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── KEEP GOING (tools + completed modules) ─────────────────── */}
+      <div className="page-container" style={{ padding: '56px 16px 8px' }}>
+        <div style={kickerStyle}>Keep Going</div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px 28px', marginBottom: completedModules.length > 0 ? 40 : 0 }}>
           {toolCards.map((card, i) => (
-            <AnimatedCard key={i} delay={400 + i * 80} color={card.color} dark={dark}
-              onClick={() => navigate(card.to)}>
-              <div style={{ fontSize: 'clamp(28px, 3vw, 42px)', marginBottom: 8 }}>{card.emoji}</div>
-              <div style={{ color: c.text, fontSize: 'clamp(13px, 1.1vw, 16px)', fontWeight: 700 }}>{card.title}</div>
-            </AnimatedCard>
+            <div
+              key={i} role="button" tabIndex={0}
+              onClick={() => navigate(card.to)}
+              onKeyDown={onActivateKeyDown(() => navigate(card.to))}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer',
+                padding: '10px 4px', borderBottom: '2px solid transparent'
+              }}
+              onMouseEnter={e => e.currentTarget.style.borderBottomColor = '#38bdf8'}
+              onMouseLeave={e => e.currentTarget.style.borderBottomColor = 'transparent'}
+            >
+              <span style={{ fontSize: 18 }}>{card.emoji}</span>
+              <span style={{ color: c.text, fontWeight: 700, fontSize: 14 }}>{card.title}</span>
+            </div>
           ))}
-        </AutoGrid>
-      </div>
-
-      {/* Completed Modules */}
-      {completedModules.length > 0 && (
-        <div className="page-container">
-          {sectionTitle('✅ Completed Modules')}
-          <AutoGrid>
-            {completedModules.map((mod, i) => (
-              <AnimatedCard key={mod.id} delay={i * 80} color='#475569' dark={dark}
-                onClick={() => navigate(`/module/${mod.id}`)}>
-                <div style={{ fontSize: 'clamp(28px, 3vw, 42px)', marginBottom: 8, filter: 'grayscale(0.5)' }}>{mod.icon}</div>
-                <div style={{ color: c.sub, fontSize: 'clamp(13px, 1.1vw, 16px)', fontWeight: 700, marginBottom: 8 }}>{mod.name}</div>
-                <div style={{
-                  display: 'inline-block', background: '#47556920', color: '#64748b',
-                  border: '1px solid #47556940', borderRadius: 20, padding: '2px 10px', fontSize: 11, fontWeight: 700
-                }}>✓ Completed</div>
-              </AnimatedCard>
-            ))}
-          </AutoGrid>
         </div>
-      )}
+
+        {completedModules.length > 0 && (
+          <div>
+            <div style={{ color: c.sub, fontSize: 11, fontWeight: 700, letterSpacing: 1, marginBottom: 12 }}>
+              ✓ COMPLETED MODULES
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px 20px' }}>
+              {completedModules.map(mod => (
+                <div
+                  key={mod.id} role="button" tabIndex={0}
+                  onClick={() => navigate(`/module/${mod.id}`)}
+                  onKeyDown={onActivateKeyDown(() => navigate(`/module/${mod.id}`))}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer',
+                    padding: '6px 0', opacity: 0.65
+                  }}
+                >
+                  <span style={{ fontSize: 15, filter: 'grayscale(0.5)' }}>{mod.icon}</span>
+                  <span style={{ color: c.sub, fontWeight: 600, fontSize: 13 }}>{mod.name}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   )
 }
+
+const iconBtn = (dark) => ({
+  background: dark ? 'rgba(56,189,248,0.1)' : '#f1f5f9',
+  color: dark ? '#38bdf8' : '#475569',
+  border: `1px solid ${dark ? 'rgba(56,189,248,0.3)' : '#e2e8f0'}`,
+  padding: '6px 12px', borderRadius: 10,
+  cursor: 'pointer', fontSize: 15, fontWeight: 700
+})
