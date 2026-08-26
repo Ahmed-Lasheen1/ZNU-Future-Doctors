@@ -1,35 +1,31 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth, NavMenu, useModules } from '../App'
+import { getTheme } from '../theme'
 import { supabase } from '../supabase'
 import ErrorBanner from '../components/ErrorBanner'
+import AnimatedCard from '../components/AnimatedCard'
+import AutoGrid from '../components/AutoGrid'
 import { computeStreak } from '../lib/streak'
 import { getGuestHistory } from '../lib/reviewStorage'
 import { loadSavedActiveExam } from '../lib/activeExam'
 import NotifyPermissionButton from '../components/NotifyPermissionButton'
-import { getPremiumTheme } from '../premiumTheme'
 
-// Numbered "sections" for the distinctive top nav — same destinations
-// the app already has, just presented as an editorial index instead of
-// a generic navbar list.
-const primaryNav = [
-  { n: '01', label: 'Explore', to: '/' },
-  { n: '02', label: 'Practice', to: '/mcq' },
-  { n: '03', label: 'Review', to: '/review' },
-  { n: '04', label: 'Progress', to: '/profile?tab=history' },
+const toolCards = [
+  { emoji: '📅', title: 'Schedules', to: '/schedule', color: '#a78bfa' },
+  { emoji: '🎯', title: 'Checklist', to: '/checklist', color: '#f59e0b' },
+  { emoji: '💬', title: 'Anonymous Q&A', to: '/anon-questions', color: '#a78bfa' },
+  { emoji: '🏆', title: 'Leaderboard', to: '/profile?tab=leaderboard', color: '#f59e0b' },
 ]
 
-const exploreLinks = [
-  { title: 'Schedules', description: 'Study & exam calendars', to: '/schedule' },
-  { title: 'Checklist', description: 'Your study plan', to: '/checklist' },
-  { title: 'Anonymous Q&A', description: 'Ask without a name attached', to: '/anon-questions' },
-  { title: 'Leaderboard', description: 'See where you stand', to: '/profile?tab=leaderboard' },
-]
-
+// Small helper so a missing/blank name never crashes the avatar badge —
+// falls back to a "?" instead of calling .charAt(0) on an empty string.
 function initialOf(name) {
   return name && name.trim() ? name.trim().charAt(0).toUpperCase() : '?'
 }
 
+// Shared Enter/Space handler for the clickable-div pattern below —
+// matches the existing checklist-row keyboard pattern in Checklist.jsx.
 function onActivateKeyDown(handler) {
   return (e) => {
     if (e.key === 'Enter' || e.key === ' ') {
@@ -39,229 +35,19 @@ function onActivateKeyDown(handler) {
   }
 }
 
-function timeGreeting() {
-  const h = new Date().getHours()
-  if (h < 5) return 'Good night'
-  if (h < 12) return 'Good morning'
-  if (h < 18) return 'Good afternoon'
-  return 'Good evening'
-}
-
-// ─────────────────────────────────────────────────────────────────
-// Motion helpers — self-contained, respect prefers-reduced-motion.
-// ─────────────────────────────────────────────────────────────────
-
-function usePrefersReducedMotion() {
-  const [reduced, setReduced] = useState(false)
-  useEffect(() => {
-    if (!window.matchMedia) return
-    const mq = window.matchMedia('(prefers-reduced-motion: reduce)')
-    setReduced(mq.matches)
-    const handler = (e) => setReduced(e.matches)
-    mq.addEventListener?.('change', handler)
-    return () => mq.removeEventListener?.('change', handler)
-  }, [])
-  return reduced
-}
-
-function useReveal(reducedMotion) {
-  const ref = useRef(null)
-  const [visible, setVisible] = useState(false)
-  useEffect(() => {
-    if (reducedMotion) { setVisible(true); return }
-    const el = ref.current
-    if (!el || typeof IntersectionObserver === 'undefined') { setVisible(true); return }
-    const obs = new IntersectionObserver(([entry]) => {
-      if (entry.isIntersecting) { setVisible(true); obs.unobserve(el) }
-    }, { threshold: 0.18 })
-    obs.observe(el)
-    return () => obs.disconnect()
-  }, [reducedMotion])
-  return [ref, visible]
-}
-
-function CountUp({ value, active, duration = 1000, suffix = '' }) {
-  const [display, setDisplay] = useState(0)
-  useEffect(() => {
-    if (!active) return
-    let raf
-    const startTime = performance.now()
-    function tick(now) {
-      const p = Math.min(1, (now - startTime) / duration)
-      const eased = 1 - Math.pow(1 - p, 3)
-      setDisplay(Math.round(value * eased))
-      if (p < 1) raf = requestAnimationFrame(tick)
-      else setDisplay(value)
-    }
-    raf = requestAnimationFrame(tick)
-    return () => cancelAnimationFrame(raf)
-  }, [active, value, duration])
-  return <>{active ? display : 0}{suffix}</>
-}
-
-// ─────────────────────────────────────────────────────────────────
-// The ZNU Pulse — the recurring brand line. One shared path drawn in
-// three contexts on this page: the hero (horizontal, once), the
-// Medical Map (vertical spine connecting modules), and each module's
-// own progress indicator (a short segment that fills as a pulse).
-// Deliberately the same visual grammar everywhere so it reads as one
-// signature rather than three different ECG decorations.
-// ─────────────────────────────────────────────────────────────────
-
-function HeroPulse({ color, glow, reducedMotion }) {
-  const d = 'M0,60 L120,60 L144,20 L168,98 L190,42 L212,60 L380,60 L404,30 L428,74 L452,60 L640,60 L664,14 L688,102 L710,38 L732,60 L900,60'
-  return (
-    <svg viewBox="0 0 900 120" preserveAspectRatio="none" aria-hidden="true"
-      style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }}>
-      <path d={d} fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"
-        style={{
-          opacity: 0.5,
-          strokeDasharray: 1700,
-          strokeDashoffset: reducedMotion ? 0 : 1700,
-          animation: reducedMotion ? 'none' : 'znuDraw 2.6s cubic-bezier(0.65,0,0.35,1) 0.2s forwards',
-        }} />
-      {!reducedMotion && (
-        <circle r="4" fill={glow} opacity="0.9">
-          <animateMotion dur="7.5s" begin="2.8s" repeatCount="indefinite" path={d} />
-          <animate attributeName="opacity" values="0.9;0.25;0.9" dur="2s" repeatCount="indefinite" />
-        </circle>
-      )}
-    </svg>
-  )
-}
-
-// Vertical spine that runs behind the Medical Map, with a small pulse
-// kink at each module's node.
-function MapSpine({ color, height, nodeCount }) {
-  const segment = nodeCount > 1 ? height / (nodeCount - 1) : height
-  let d = `M1,0 `
-  for (let i = 1; i < nodeCount; i++) {
-    const y = i * segment
-    d += `L1,${y - 10} L7,${y - 4} L1,${y + 4} L1,${y} `
-  }
-  d += `L1,${height}`
-  return (
-    <svg width="8" height={height} style={{ position: 'absolute', left: 0, top: 0, overflow: 'visible' }} aria-hidden="true">
-      <path d={d} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" opacity="0.5" />
-    </svg>
-  )
-}
-
-function FloatingOrbs({ colorA, colorB, reducedMotion }) {
-  return (
-    <div aria-hidden="true" style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none' }}>
-      <div style={{
-        position: 'absolute', width: 340, height: 340, borderRadius: '50%',
-        top: -130, right: -90, background: colorA, filter: 'blur(75px)',
-        animation: reducedMotion ? 'none' : 'znuFloatA 17s ease-in-out infinite',
-      }} />
-      <div style={{
-        position: 'absolute', width: 280, height: 280, borderRadius: '50%',
-        top: 60, left: -110, background: colorB, filter: 'blur(65px)',
-        animation: reducedMotion ? 'none' : 'znuFloatB 19s ease-in-out infinite',
-      }} />
-    </div>
-  )
-}
-
-// A faint, elegant branching motif (abstract vessel/neural line) used
-// once per module row, mirrored on alternating rows — the "subtle
-// scientific visualization beside the content" the brief asks for,
-// without inventing per-specialty iconography we can't derive from data.
-function BranchMotif({ color, flip }) {
-  return (
-    <svg viewBox="0 0 200 200" aria-hidden="true" style={{
-      position: 'absolute', top: '50%', [flip ? 'left' : 'right']: -20,
-      transform: `translateY(-50%) ${flip ? 'scaleX(-1)' : ''}`,
-      width: 160, height: 160, opacity: 0.16, pointerEvents: 'none'
-    }}>
-      <path d="M10,100 C50,100 40,40 90,40 C120,40 110,20 150,20 M90,40 C110,40 100,80 140,80 M10,100 C50,100 40,160 90,160 C120,160 110,180 150,180 M90,160 C110,160 100,120 140,120"
-        fill="none" stroke={color} strokeWidth="1.4" strokeLinecap="round" />
-      <circle cx="150" cy="20" r="3" fill={color} />
-      <circle cx="140" cy="80" r="3" fill={color} />
-      <circle cx="150" cy="180" r="3" fill={color} />
-      <circle cx="140" cy="120" r="3" fill={color} />
-    </svg>
-  )
-}
-
-// A short pulse-styled progress fill — same grammar as HeroPulse/
-// MapSpine, scaled down to sit under a module's stats line.
-function PulseProgress({ percent, color, track, active }) {
-  return (
-    <div style={{ position: 'relative', height: 3, background: track, borderRadius: 3, marginTop: 14, maxWidth: 220 }}>
-      <div style={{
-        position: 'absolute', left: 0, top: 0, bottom: 0, borderRadius: 3, background: color,
-        width: active ? `${percent}%` : '0%', transition: 'width 1s cubic-bezier(0.16,1,0.3,1) 0.15s',
-      }} />
-      <div style={{
-        position: 'absolute', top: '50%', width: 7, height: 7, borderRadius: '50%', background: color,
-        left: active ? `${percent}%` : '0%', transform: 'translate(-50%, -50%)',
-        transition: 'left 1s cubic-bezier(0.16,1,0.3,1) 0.15s',
-      }} />
-    </div>
-  )
-}
-
-// The one "magnetic" interaction on the page — reserved for the single
-// most useful action, per the brief's "Next Move" concept.
-function TiltBand({ children, onClick, style, reducedMotion }) {
-  const ref = useRef(null)
-  const [transform, setTransform] = useState('perspective(900px) rotateX(0deg) rotateY(0deg)')
-  function handleMove(e) {
-    if (reducedMotion || !ref.current) return
-    const rect = ref.current.getBoundingClientRect()
-    const relX = (e.clientX - rect.left) / rect.width - 0.5
-    const relY = (e.clientY - rect.top) / rect.height - 0.5
-    setTransform(`perspective(900px) rotateX(${(-relY * 2.5).toFixed(2)}deg) rotateY(${(relX * 2.5).toFixed(2)}deg)`)
-  }
-  function reset() { setTransform('perspective(900px) rotateX(0deg) rotateY(0deg)') }
-  return (
-    <div ref={ref} onMouseMove={handleMove} onMouseLeave={reset} onClick={onClick}
-      role="button" tabIndex={0} onKeyDown={onActivateKeyDown(onClick)}
-      style={{ transition: 'transform 0.35s cubic-bezier(0.16,1,0.3,1)', transform, ...style }}>
-      {children}
-    </div>
-  )
-}
-
-function iconBtn(t) {
-  return {
-    background: 'transparent', border: `1px solid ${t.border}`, color: t.text,
-    width: 34, height: 34, borderRadius: 8, cursor: 'pointer', fontSize: 15,
-    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-    fontFamily: t.fontSans,
-  }
-}
-
 export default function Home({ dark, toggleTheme }) {
-  const t = getPremiumTheme(dark)
-  const reducedMotion = usePrefersReducedMotion()
+  const c = getTheme(dark)
   const navigate = useNavigate()
   const { user, profile } = useAuth()
   const { modules, modulesError } = useModules()
-
-  const [barVisible, setBarVisible] = useState(false)
+  const [titleVisible, setTitleVisible] = useState(false)
   const [announcement, setAnnouncement] = useState('')
   const [streak, setStreak] = useState(0)
   const [pausedExam, setPausedExam] = useState(null)
   const [weeklySummary, setWeeklySummary] = useState(null)
-  const [upcomingExams, setUpcomingExams] = useState([])
-
-  // Real (non-fabricated) per-module counts, computed from the same
-  // tables the rest of the app already uses — three lightweight,
-  // read-only queries (id + module_id columns only), fetched once.
-  const [moduleStats, setModuleStats] = useState(null)
-  const [answeredCounts, setAnsweredCounts] = useState({})
-
-  const [heroRef, heroVisible] = useReveal(reducedMotion)
-  const [mapRef, mapVisible] = useReveal(reducedMotion)
-  const [statsRef, statsVisible] = useReveal(reducedMotion)
-  const [nextRef, nextVisible] = useReveal(reducedMotion)
-  const [keepGoingRef, keepGoingVisible] = useReveal(reducedMotion)
 
   useEffect(() => {
-    setTimeout(() => setBarVisible(true), 60)
+    setTimeout(() => setTitleVisible(true), 100)
   }, [])
 
   useEffect(() => {
@@ -269,7 +55,8 @@ export default function Home({ dark, toggleTheme }) {
       .then(({ data }) => { if (data?.value) setAnnouncement(data.value) })
   }, [])
 
-  // Study streak — consecutive days with at least one quiz attempt.
+  // Study streak — consecutive days with at least one quiz attempt,
+  // computed from exam_history (or the guest-local equivalent).
   useEffect(() => {
     async function loadStreak() {
       if (user) {
@@ -282,13 +69,17 @@ export default function Home({ dark, toggleTheme }) {
     loadStreak()
   }, [user])
 
-  // "Continue where you left off" — a paused mock/practice exam.
+  // "Continue where you left off" — a paused mock/practice exam saved
+  // from MCQ.jsx. Clicking it just opens the MCQ page, which shows the
+  // same resume banner and does the actual restoring.
   useEffect(() => {
     loadSavedActiveExam(user).then(setPausedExam)
   }, [user])
 
-  // Weekly summary — questions attempted, accuracy, most-practiced
-  // subject over the last 7 days.
+  // Weekly summary — a lightweight, auto-refreshing recap built purely
+  // from exam_history (or its guest-local equivalent), so there's
+  // nothing extra to maintain: questions attempted, accuracy, and the
+  // most-practiced subject over the last 7 days.
   useEffect(() => {
     async function loadWeekly() {
       const weekAgoMs = Date.now() - 7 * 24 * 60 * 60 * 1000
@@ -325,23 +116,24 @@ export default function Home({ dark, toggleTheme }) {
     loadWeekly()
   }, [user])
 
-  // Upcoming-exam reminder — fires a local notification (unchanged
-  // behavior) AND now also keeps the list in state so "Keep Going"
-  // can surface it, reusing the same fetch instead of a second query.
+  // Upcoming-exam reminder — fires a local notification (only if
+  // permission was already granted, at most once per day) when an
+  // admin-set exam date is 0-2 days away. This only triggers while the
+  // app is actually open; a true always-on background push would need
+  // separate push-server infrastructure.
   useEffect(() => {
     async function checkExamReminders() {
+      if (!('Notification' in window) || Notification.permission !== 'granted') return
       const { data } = await supabase.from('schedules').select('title, date, module_id').eq('type', 'exam').not('date', 'is', null)
-      if (!data || data.length === 0) { setUpcomingExams([]); return }
+      if (!data || data.length === 0) return
 
       const today = new Date(); today.setHours(0, 0, 0, 0)
       const upcoming = data.filter(s => {
         const diffDays = Math.round((new Date(s.date) - today) / (24 * 60 * 60 * 1000))
         return diffDays >= 0 && diffDays <= 2
       })
-      setUpcomingExams(upcoming)
       if (upcoming.length === 0) return
 
-      if (!('Notification' in window) || Notification.permission !== 'granted') return
       const todayStr = today.toDateString()
       if (localStorage.getItem('exam_reminder_last_notify') === todayStr) return
 
@@ -356,442 +148,233 @@ export default function Home({ dark, toggleTheme }) {
     checkExamReminders()
   }, [modules])
 
-  // Real per-module stats — subjects / lessons / questions counted
-  // from the actual rows (id + module_id only), not fabricated.
-  useEffect(() => {
-    async function loadModuleStats() {
-      const [subjectsRes, lessonsRes, questionsRes] = await Promise.all([
-        supabase.from('subjects').select('id, module_id'),
-        supabase.from('lessons').select('id, module_id'),
-        supabase.from('questions').select('id, module_id'),
-      ])
-      const countBy = (rows) => {
-        const map = {}
-        ;(rows || []).forEach(r => { if (r.module_id) map[r.module_id] = (map[r.module_id] || 0) + 1 })
-        return map
-      }
-      const questionModuleMap = {}
-      ;(questionsRes.data || []).forEach(q => { questionModuleMap[q.id] = q.module_id })
-
-      setModuleStats({
-        subjects: countBy(subjectsRes.data),
-        lessons: countBy(lessonsRes.data),
-        questions: countBy(questionsRes.data),
-        questionModuleMap,
-      })
-    }
-    loadModuleStats()
-  }, [])
-
-  // Per-module "answered" progress — only meaningful for signed-in
-  // users, since guest history doesn't track individual question ids
-  // per module. Signed-out visitors simply see modules without a
-  // progress fill rather than an invented number.
-  useEffect(() => {
-    if (!user || !moduleStats) return
-    supabase.from('answered_questions').select('question_id').eq('user_id', user.id)
-      .then(({ data }) => {
-        const map = {}
-        ;(data || []).forEach(r => {
-          const modId = moduleStats.questionModuleMap[r.question_id]
-          if (modId) map[modId] = (map[modId] || 0) + 1
-        })
-        setAnsweredCounts(map)
-      })
-  }, [user, moduleStats])
-
   const activeModules = modules.filter(m => m.status === 'active')
   const completedModules = modules.filter(m => m.status === 'completed')
-  const nextModule = activeModules[0] || null
-  const mapModules = activeModules.slice(0, 6)
 
-  const kicker = (text) => (
-    <div style={{
-      color: t.textFaint, fontSize: 11, fontWeight: 700, letterSpacing: '0.16em',
-      textTransform: 'uppercase', fontFamily: t.fontSans
-    }}>{text}</div>
+  const sectionTitle = (text) => (
+    <h2 style={{
+      color: c.sub,
+      fontSize: 13, fontWeight: 700, letterSpacing: 2,
+      marginBottom: 16, textTransform: 'uppercase'
+    }}>{text}</h2>
   )
 
-  const reveal = (visible, delay = 0, axis = 'y') => ({
-    opacity: visible ? 1 : 0,
-    transform: visible ? 'translate(0,0)' : axis === 'y' ? 'translateY(24px)' : `translateX(${axis === 'left' ? '-' : ''}24px)`,
-    transition: `opacity 0.7s ease ${delay}ms, transform 0.7s cubic-bezier(0.16,1,0.3,1) ${delay}ms`,
-  })
-
   return (
-    <div style={{ background: t.bg, minHeight: '100vh', fontFamily: t.fontSans, color: t.text, position: 'relative' }}>
-      <style>{`
-        @keyframes znuDraw { to { stroke-dashoffset: 0; } }
-        @keyframes znuFloatA { 0%, 100% { transform: translate(0,0); } 50% { transform: translate(-26px, 28px); } }
-        @keyframes znuFloatB { 0%, 100% { transform: translate(0,0); } 50% { transform: translate(24px, -22px); } }
-        @keyframes znuBreathe { 0%, 100% { transform: scale(1); opacity: 0.9; } 50% { transform: scale(1.8); opacity: 0.25; } }
-        .znu-row { position: relative; }
-        .znu-row::before {
-          content: ''; position: absolute; left: -16px; top: 8px; bottom: 8px; width: 2px;
-          background: ${t.accent}; transform: scaleY(0); transform-origin: center;
-          transition: transform 0.3s ease;
-        }
-        .znu-row:hover::before, .znu-row:focus-visible::before { transform: scaleY(1); }
-        .znu-row:hover .znu-arrow, .znu-row:focus-visible .znu-arrow { transform: translateX(4px); opacity: 1; }
-        .znu-arrow { display: inline-block; transition: transform 0.25s ease, opacity 0.25s ease; opacity: 0.7; }
-        .znu-navlink { position: relative; }
-        .znu-navlink::after {
-          content: ''; position: absolute; left: 0; bottom: -3px; height: 1px; width: 100%;
-          background: currentColor; transform: scaleX(0); transform-origin: left; transition: transform 0.25s ease;
-        }
-        .znu-navlink:hover::after, .znu-navlink:focus-visible::after { transform: scaleX(1); }
-      `}</style>
+    <div style={{ padding: '24px 16px 100px' }}>
+      {modulesError && <div className="page-container"><ErrorBanner /></div>}
 
-      {/* Faint scientific grid — fixed so it reads as page atmosphere,
-          not a per-section decoration. */}
-      <div aria-hidden="true" style={{
-        position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0,
-        backgroundImage: `linear-gradient(${t.gridLine} 1px, transparent 1px), linear-gradient(90deg, ${t.gridLine} 1px, transparent 1px)`,
-        backgroundSize: '56px 56px',
-      }} />
-
-      <div style={{ position: 'relative', zIndex: 1, maxWidth: 880, margin: '0 auto', padding: '0 20px 110px' }}>
-
-        {/* Top bar — wordmark + numbered index nav, plus the app's real controls */}
-        <div style={{
-          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-          padding: '22px 0', borderBottom: `1px solid ${t.border}`, marginBottom: 8, flexWrap: 'wrap', gap: 12,
-          opacity: barVisible ? 1 : 0, transform: barVisible ? 'translateY(0)' : 'translateY(-8px)',
-          transition: 'opacity 0.5s ease, transform 0.5s ease',
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 28 }}>
-            <div style={{ fontFamily: t.fontDisplay, fontWeight: 800, fontSize: 16, letterSpacing: '0.02em' }}>
-              ZNU<span style={{ color: t.accent }}>.</span>FD
-            </div>
-            <nav style={{ display: 'flex', gap: 20 }} className="znu-desktop-nav">
-              {primaryNav.map(item => (
-                <span key={item.n} className="znu-navlink" onClick={() => navigate(item.to)}
-                  role="button" tabIndex={0} onKeyDown={onActivateKeyDown(() => navigate(item.to))}
-                  style={{
-                    cursor: 'pointer', fontSize: 12, fontWeight: 700, letterSpacing: '0.04em',
-                    color: item.n === '01' ? t.text : t.textSub, display: 'none'
-                  }}>
-                  <span style={{ color: t.textFaint, marginRight: 6 }}>{item.n}</span>{item.label.toUpperCase()}
-                </span>
-              ))}
-            </nav>
-          </div>
-
+      {/* Header */}
+      <div style={{
+        textAlign: 'center', padding: '30px 0 24px',
+        opacity: titleVisible ? 1 : 0,
+        transform: titleVisible ? 'translateY(0)' : 'translateY(-20px)',
+        transition: 'all 0.6s ease'
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
           <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-            <button onClick={toggleTheme} style={iconBtn(t)}
-              aria-label={dark ? 'Switch to light mode' : 'Switch to dark mode'}>
-              {dark ? '☀' : '☾'}
-            </button>
+            <button onClick={toggleTheme} style={{
+              background: dark ? 'rgba(56,189,248,0.1)' : '#f1f5f9',
+              color: dark ? '#38bdf8' : '#475569',
+              border: `1px solid ${dark ? 'rgba(56,189,248,0.3)' : '#e2e8f0'}`,
+              padding: '6px 14px', borderRadius: 10,
+              cursor: 'pointer', fontSize: 16, fontWeight: 700
+            }} aria-label={dark ? 'Switch to light mode' : 'Switch to dark mode'}>{dark ? '☀️' : '🌙'}</button>
             <NavMenu dark={dark} />
-            <button onClick={() => navigate('/search')} aria-label="Search" style={iconBtn(t)}>⌕</button>
-
-            {user && profile ? (
-              <div onClick={() => navigate('/profile')}
-                role="button" tabIndex={0}
-                onKeyDown={onActivateKeyDown(() => navigate('/profile'))}
-                style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', marginLeft: 6 }}>
-                <div style={{
-                  width: 34, height: 34, borderRadius: '50%', background: t.primary,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 13, fontWeight: 800, color: dark ? '#0B0F17' : '#fff', flexShrink: 0
-                }}>{initialOf(profile.name)}</div>
-              </div>
-            ) : (
-              <button onClick={() => navigate('/auth')} style={{
-                background: 'transparent', color: t.primary, border: `1px solid ${t.primary}`,
-                padding: '7px 14px', borderRadius: 8, cursor: 'pointer', fontSize: 12, fontWeight: 700,
-                fontFamily: t.fontSans, marginLeft: 4
-              }}>Sign In</button>
-            )}
+            <button onClick={() => navigate('/search')} aria-label="Search" style={{
+              background: dark ? 'rgba(56,189,248,0.1)' : '#f1f5f9',
+              color: dark ? '#38bdf8' : '#475569',
+              border: `1px solid ${dark ? 'rgba(56,189,248,0.3)' : '#e2e8f0'}`,
+              padding: '6px 14px', borderRadius: 10,
+              cursor: 'pointer', fontSize: 16, fontWeight: 700
+            }}>🔍</button>
           </div>
+
+          {/* Profile Bar */}
+          {user && profile ? (
+            <div onClick={() => navigate('/profile')}
+              role="button" tabIndex={0}
+              onKeyDown={onActivateKeyDown(() => navigate('/profile'))}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 10,
+                background: c.card,
+                border: `1px solid ${c.border}`,
+                borderRadius: 20, padding: '8px 16px', cursor: 'pointer',
+                transition: 'all 0.2s'
+              }}
+              onMouseEnter={e => e.currentTarget.style.borderColor = '#38bdf8'}
+              onMouseLeave={e => e.currentTarget.style.borderColor = c.border}>
+              <div style={{
+                width: 32, height: 32, borderRadius: '50%',
+                background: 'linear-gradient(135deg, #38bdf8, #818cf8)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 14, fontWeight: 900, color: '#fff', flexShrink: 0
+              }}>
+                {initialOf(profile.name)}
+              </div>
+              <div style={{ textAlign: 'left' }}>
+                <div style={{ color: c.text, fontSize: 13, fontWeight: 700 }}>
+                  Dr. {profile.name}
+                </div>
+                <div style={{ color: '#f59e0b', fontSize: 11, fontWeight: 700 }}>
+                  ⭐ {profile.points} points
+                </div>
+              </div>
+            </div>
+          ) : (
+            <button onClick={() => navigate('/auth')} style={{
+              background: '#38bdf820', color: '#38bdf8',
+              border: '1px solid #38bdf840',
+              padding: '8px 16px', borderRadius: 20,
+              cursor: 'pointer', fontSize: 13, fontWeight: 700
+            }}>Sign In →</button>
+          )}
         </div>
 
-        {modulesError && <div style={{ marginTop: 16 }}><ErrorBanner /></div>}
+        <img src={dark ? '/icon-512.png' : '/icon-512-light.png'} alt="ZNU Future Doctors" style={{ width: 88, height: 88, marginBottom: 12, borderRadius: '50%', objectFit: 'cover', filter: dark ? 'drop-shadow(0 0 20px rgba(56,189,248,0.5))' : 'drop-shadow(0 2px 10px rgba(14,165,233,0.25))' }} />
+        <h1 style={{
+          fontSize: 28, fontWeight: 900,
+          background: 'linear-gradient(135deg, #38bdf8, #818cf8)',
+          WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+          marginBottom: 8
+        }}>ZNU Future Doctors</h1>
+        <p style={{ color: c.sub, fontSize: 15 }}>
+          Your Integrated Medical Study Platform
+        </p>
 
-        {/* ── HERO — the wow moment ─────────────────────────────── */}
-        <div ref={heroRef} style={{ position: 'relative', padding: '64px 0 46px', overflow: 'hidden' }}>
-          <FloatingOrbs colorA={t.glowA} colorB={t.glowB} reducedMotion={reducedMotion} />
-          <div style={{ position: 'absolute', left: 0, right: 0, bottom: 10, height: 70 }}>
-            {heroVisible && <HeroPulse color={t.border} glow={t.accent} reducedMotion={reducedMotion} />}
-          </div>
-
-          <div style={{ position: 'relative', ...reveal(heroVisible) }}>
-            <div style={{
-              color: t.textFaint, fontSize: 12, fontWeight: 700, letterSpacing: '0.22em',
-              marginBottom: 20, textTransform: 'uppercase'
-            }}>ZNU · Future Doctors</div>
-
-            <h1 style={{ margin: 0, fontFamily: t.fontDisplay, letterSpacing: '-0.02em' }}>
-              <span style={{ display: 'block', fontWeight: 600, fontSize: 'clamp(20px, 3vw, 28px)', color: t.textSub, marginBottom: 2 }}>
-                Your medical
-              </span>
-              <span style={{
-                display: 'block', fontWeight: 800, fontSize: 'clamp(48px, 8.5vw, 92px)', lineHeight: 0.98,
-                background: `linear-gradient(90deg, ${t.text}, ${t.primary})`,
-                WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text',
-              }}>journey,</span>
-              <span style={{ display: 'block', fontWeight: 800, fontSize: 'clamp(32px, 5.5vw, 56px)', color: t.accent }}>
-                mapped.
-              </span>
-            </h1>
-
-            <div style={{ marginTop: 26, display: 'flex', alignItems: 'center', gap: 18, flexWrap: 'wrap' }}>
-              <span style={{ color: t.textSub, fontSize: 14 }}>
-                {timeGreeting()}{user && profile ? `, ${profile.name.split(' ')[0]}` : ''} — {activeModules.length} active module{activeModules.length === 1 ? '' : 's'} waiting.
-              </span>
-              {streak > 0 && (
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, color: t.accent, fontSize: 13, fontWeight: 700 }}>
-                  <span style={{ position: 'relative', width: 8, height: 8 }}>
-                    <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: t.accent }} />
-                    {!reducedMotion && (
-                      <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: t.accent, animation: 'znuBreathe 2.2s ease-in-out infinite' }} />
-                    )}
-                  </span>
-                  <CountUp value={streak} active={heroVisible} suffix="-day streak" />
-                </span>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* ── YOUR MEDICAL MAP ──────────────────────────────────── */}
-        {mapModules.length > 0 && (
-          <div ref={mapRef} style={{ margin: '60px 0 8px' }}>
-            {kicker('Your Medical Map')}
-            <div style={{ position: 'relative', marginTop: 30, paddingLeft: 28 }}>
-              {mapVisible && <MapSpine color={t.accent} height={mapModules.length * 168} nodeCount={mapModules.length} />}
-
-              {mapModules.map((mod, i) => {
-                const subjects = moduleStats?.subjects[mod.id] || 0
-                const lessons = moduleStats?.lessons[mod.id] || 0
-                const questions = moduleStats?.questions[mod.id] || 0
-                const answered = answeredCounts[mod.id] || 0
-                const hasProgress = !!user && questions > 0
-                const percent = hasProgress ? Math.min(100, Math.round((answered / questions) * 100)) : 0
-                const flip = i % 2 === 1
-
-                return (
-                  <div key={mod.id} onClick={() => navigate(`/module/${mod.id}`)}
-                    role="button" tabIndex={0}
-                    onKeyDown={onActivateKeyDown(() => navigate(`/module/${mod.id}`))}
-                    style={{
-                      position: 'relative', minHeight: 140, padding: '10px 0 10px 30px',
-                      cursor: 'pointer', overflow: 'hidden',
-                      ...reveal(mapVisible, i * 100, flip ? 'left' : 'x'),
-                    }}>
-                    <BranchMotif color={t.accent} flip={flip} />
-                    <div style={{ display: 'flex', alignItems: 'baseline', gap: 18 }}>
-                      <div style={{
-                        fontFamily: t.fontDisplay, fontWeight: 800, fontSize: 'clamp(36px, 5vw, 54px)',
-                        color: t.textFaint, lineHeight: 1, WebkitTextStroke: `1px ${t.textFaint}`,
-                      }}>{String(i + 1).padStart(2, '0')}</div>
-                      <div style={{ minWidth: 0 }}>
-                        <div style={{ fontFamily: t.fontDisplay, fontWeight: 800, fontSize: 'clamp(20px, 2.6vw, 28px)', letterSpacing: '-0.01em' }}>
-                          {mod.name}
-                        </div>
-                        <div style={{ color: t.textSub, fontSize: 12, fontWeight: 600, marginTop: 6, letterSpacing: '0.02em' }}>
-                          {subjects} subject{subjects === 1 ? '' : 's'} · {lessons} lesson{lessons === 1 ? '' : 's'} · {questions} question{questions === 1 ? '' : 's'}
-                        </div>
-                        {hasProgress && (
-                          <>
-                            <PulseProgress percent={percent} color={t.accent} track={t.border} active={mapVisible} />
-                            <div style={{ color: t.accent, fontSize: 12, fontWeight: 700, marginTop: 6 }}>
-                              <CountUp value={percent} active={mapVisible} suffix="% complete" />
-                            </div>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                    <span className="znu-arrow" style={{
-                      position: 'absolute', right: 0, bottom: 14, color: t.primary, fontSize: 13, fontWeight: 700
-                    }}>Continue →</span>
-                  </div>
-                )
-              })}
-            </div>
+        {streak > 0 && (
+          <div style={{
+            display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 12,
+            background: '#f59e0b20', border: '1px solid #f59e0b40',
+            borderRadius: 20, padding: '6px 16px', color: '#f59e0b', fontSize: 13, fontWeight: 700
+          }}>
+            🔥 {streak}-day study streak
           </div>
         )}
+      </div>
 
-        {!mapModules.length && (
-          <div style={{ padding: '18px 0', borderTop: `1px solid ${t.border}`, color: t.textSub, fontSize: 14, marginTop: 40 }}>
-            No active module yet — check back once one is added.
-          </div>
-        )}
+      <div className="page-container">
+        <NotifyPermissionButton dark={dark} label="🔔 Enable exam & deadline reminders" />
+      </div>
 
-        {/* ── WHERE YOU ARE NOW ─────────────────────────────────── */}
-        {weeklySummary && (
-          <div ref={statsRef} style={{ margin: '56px 0', ...reveal(statsVisible) }}>
-            {kicker('Where You Are Now')}
-            <div style={{ display: 'flex', gap: 48, flexWrap: 'wrap', marginTop: 22 }}>
+      {/* Weekly summary — auto-computed from exam_history, no setup needed */}
+      {weeklySummary && (
+        <div className="page-container" style={{ marginBottom: 24 }}>
+          <div style={{ background: c.card, border: `1px solid ${c.border}`, borderRadius: 16, padding: '18px 20px' }}>
+            <div style={{ color: c.sub, fontSize: 12, fontWeight: 700, letterSpacing: 1, marginBottom: 12, textTransform: 'uppercase' }}>
+              📈 This Week
+            </div>
+            <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
               <div>
-                <div style={{ fontFamily: t.fontDisplay, fontWeight: 800, fontSize: 'clamp(40px, 6vw, 64px)', lineHeight: 1 }}>
-                  <CountUp value={weeklySummary.totalAttempted} active={statsVisible} />
-                </div>
-                <div style={{ color: t.textSub, fontSize: 12, fontWeight: 600, marginTop: 6, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Questions this week</div>
+                <div style={{ color: '#38bdf8', fontWeight: 900, fontSize: 20 }}>{weeklySummary.totalAttempted}</div>
+                <div style={{ color: c.sub, fontSize: 11 }}>Questions</div>
               </div>
               <div>
-                <div style={{
-                  fontFamily: t.fontDisplay, fontWeight: 800, fontSize: 'clamp(40px, 6vw, 64px)', lineHeight: 1,
-                  color: weeklySummary.accuracy >= 60 ? t.success : t.danger
-                }}>
-                  <CountUp value={weeklySummary.accuracy} active={statsVisible} suffix="%" />
-                </div>
-                <div style={{ color: t.textSub, fontSize: 12, fontWeight: 600, marginTop: 6, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Accuracy</div>
+                <div style={{ color: weeklySummary.accuracy >= 60 ? '#22c55e' : '#ef4444', fontWeight: 900, fontSize: 20 }}>{weeklySummary.accuracy}%</div>
+                <div style={{ color: c.sub, fontSize: 11 }}>Accuracy</div>
               </div>
               {weeklySummary.topSubjectName && (
-                <div style={{ alignSelf: 'flex-end' }}>
-                  <div style={{ fontFamily: t.fontDisplay, fontWeight: 700, fontSize: 20 }}>{weeklySummary.topSubjectName}</div>
-                  <div style={{ color: t.textSub, fontSize: 12, fontWeight: 600, marginTop: 4, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Most practiced</div>
+                <div>
+                  <div style={{ color: '#a78bfa', fontWeight: 900, fontSize: 14 }}>{weeklySummary.topSubjectName}</div>
+                  <div style={{ color: c.sub, fontSize: 11 }}>Most practiced</div>
                 </div>
               )}
             </div>
           </div>
-        )}
+        </div>
+      )}
 
-        {/* Announcement */}
-        {announcement && (
+      {/* Continue where you left off */}
+      {pausedExam && (
+        <div className="page-container" style={{ marginBottom: 24 }}>
+          <div onClick={() => navigate('/mcq')}
+            role="button" tabIndex={0}
+            onKeyDown={onActivateKeyDown(() => navigate('/mcq'))}
+            style={{
+              background: '#e2725b20', border: '2px solid #e2725b60', borderRadius: 16,
+              padding: '16px 20px', cursor: 'pointer', display: 'flex', alignItems: 'center',
+              justifyContent: 'space-between', gap: 12, transition: 'all 0.2s'
+            }}
+            onMouseEnter={e => e.currentTarget.style.borderColor = '#e2725b'}
+            onMouseLeave={e => e.currentTarget.style.borderColor = '#e2725b60'}>
+            <div>
+              <div style={{ color: '#e2725b', fontWeight: 700, fontSize: 14 }}>⏸ Continue where you left off</div>
+              <div style={{ color: c.sub, fontSize: 12, marginTop: 2 }}>
+                {Object.keys(pausedExam.answers || {}).length}/{(pausedExam.quizQuestions || []).length} answered
+              </div>
+            </div>
+            <div style={{ color: '#e2725b', fontSize: 20 }}>→</div>
+          </div>
+        </div>
+      )}
+
+      {/* Announcement */}
+      {announcement && (
+        <div className="page-container" style={{ marginBottom: 24 }}>
           <div style={{
-            margin: '0 0 48px', padding: '16px 18px', borderRadius: 10,
-            border: `1px solid ${t.border}`, background: t.surfaceRaised,
-            color: t.text, fontSize: 14, lineHeight: 1.6, whiteSpace: 'pre-wrap'
+            background: 'linear-gradient(135deg, #38bdf820, #818cf815)',
+            border: '1px solid #38bdf840', borderRadius: 16,
+            padding: '14px 20px', textAlign: 'center',
+            color: c.text, fontSize: 14, fontWeight: 600, lineHeight: 1.6,
+            whiteSpace: 'pre-wrap'
           }}>
             {announcement}
           </div>
-        )}
-
-        {/* ── YOUR NEXT MOVE ────────────────────────────────────── */}
-        <div ref={nextRef} style={{ margin: '0 0 56px', ...reveal(nextVisible) }}>
-          {kicker('Your Next Move')}
-          <div style={{ marginTop: 18 }}>
-            {pausedExam ? (
-              <TiltBand reducedMotion={reducedMotion} onClick={() => navigate('/mcq')} style={{
-                background: t.bandBg, color: t.bandText, borderRadius: 18, padding: '30px 28px',
-                cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 20,
-              }}>
-                <div>
-                  <div style={{ fontSize: 'clamp(20px, 3vw, 28px)', fontWeight: 800, marginBottom: 6, fontFamily: t.fontDisplay }}>
-                    Continue your paused quiz
-                  </div>
-                  <div style={{ fontSize: 13, opacity: 0.75 }}>
-                    {Object.keys(pausedExam.answers || {}).length} of {(pausedExam.quizQuestions || []).length} answered
-                  </div>
-                </div>
-                <span className="znu-arrow" style={{ fontSize: 22, fontWeight: 700 }}>→</span>
-              </TiltBand>
-            ) : nextModule ? (
-              <TiltBand reducedMotion={reducedMotion} onClick={() => navigate(`/module/${nextModule.id}`)} style={{
-                background: t.bandBg, color: t.bandText, borderRadius: 18, padding: '30px 28px',
-                cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 20,
-              }}>
-                <div>
-                  <div style={{ fontSize: 'clamp(20px, 3vw, 28px)', fontWeight: 800, marginBottom: 6, fontFamily: t.fontDisplay }}>
-                    Continue {nextModule.name}
-                  </div>
-                  <div style={{ fontSize: 13, opacity: 0.75 }}>Pick up where your active module leaves off</div>
-                </div>
-                <span className="znu-arrow" style={{ fontSize: 22, fontWeight: 700 }}>→</span>
-              </TiltBand>
-            ) : (
-              <div style={{ color: t.textSub, fontSize: 14 }}>Nothing in progress yet — pick a module above to begin.</div>
-            )}
-          </div>
-          <div style={{ marginTop: 20 }}>
-            <NotifyPermissionButton dark={dark} label="Enable exam & deadline reminders" />
-          </div>
         </div>
+      )}
 
-        {/* ── KEEP GOING ────────────────────────────────────────── */}
-        <div ref={keepGoingRef} style={{ marginBottom: 20 }}>
-          {kicker('Keep Going')}
-          <div style={{ marginTop: 6 }}>
-            <div className="znu-row" onClick={() => navigate('/review')}
-              role="button" tabIndex={0} onKeyDown={onActivateKeyDown(() => navigate('/review'))}
-              style={{
-                borderTop: `1px solid ${t.border}`, padding: '16px 0', cursor: 'pointer',
-                display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16,
-                ...reveal(keepGoingVisible, 0),
-              }}>
-              <div>
-                <div style={{ fontSize: 15, fontWeight: 700 }}>Flagged & incorrect questions</div>
-                <div style={{ fontSize: 12, color: t.textSub, marginTop: 2 }}>Everything worth another look</div>
-              </div>
-              <span className="znu-arrow" style={{ color: t.textFaint, fontSize: 16 }}>→</span>
-            </div>
-
-            {upcomingExams.map((exam, i) => {
-              const mod = modules.find(m => m.id === exam.module_id)
-              return (
-                <div key={i} className="znu-row" onClick={() => navigate('/schedule')}
-                  role="button" tabIndex={0} onKeyDown={onActivateKeyDown(() => navigate('/schedule'))}
-                  style={{
-                    borderTop: `1px solid ${t.border}`, padding: '16px 0', cursor: 'pointer',
-                    display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16,
-                    ...reveal(keepGoingVisible, (i + 1) * 50),
-                  }}>
-                  <div>
-                    <div style={{ fontSize: 15, fontWeight: 700, color: t.warning }}>
-                      {mod ? `${mod.name} — ` : ''}{exam.title}
-                    </div>
-                    <div style={{ fontSize: 12, color: t.textSub, marginTop: 2 }}>
-                      Exam on {new Date(exam.date).toLocaleDateString()}
-                    </div>
-                  </div>
-                  <span className="znu-arrow" style={{ color: t.textFaint, fontSize: 16 }}>→</span>
-                </div>
-              )
-            })}
-
-            {exploreLinks.map((link, i) => (
-              <div key={link.to} className="znu-row" onClick={() => navigate(link.to)}
-                role="button" tabIndex={0} onKeyDown={onActivateKeyDown(() => navigate(link.to))}
-                style={{
-                  borderTop: `1px solid ${t.border}`,
-                  borderBottom: i === exploreLinks.length - 1 ? `1px solid ${t.border}` : 'none',
-                  padding: '16px 0', cursor: 'pointer',
-                  display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16,
-                  ...reveal(keepGoingVisible, (i + upcomingExams.length + 1) * 50),
-                }}>
-                <div>
-                  <div style={{ fontSize: 15, fontWeight: 700 }}>{link.title}</div>
-                  <div style={{ fontSize: 12, color: t.textSub, marginTop: 2 }}>{link.description}</div>
-                </div>
-                <span className="znu-arrow" style={{ color: t.textFaint, fontSize: 16 }}>→</span>
-              </div>
+      {/* Active Modules */}
+      {activeModules.length > 0 && (
+        <div className="page-container" style={{ marginBottom: 32 }}>
+          {sectionTitle('🟢 Active Modules')}
+          <AutoGrid>
+            {activeModules.map((mod, i) => (
+              <AnimatedCard key={mod.id} delay={200 + i * 80} color={mod.color} dark={dark}
+                onClick={() => navigate(`/module/${mod.id}`)}>
+                <div style={{ fontSize: 'clamp(32px, 3.5vw, 52px)', marginBottom: 8 }}>{mod.icon}</div>
+                <div style={{ color: c.text, fontSize: 'clamp(14px, 1.2vw, 17px)', fontWeight: 700, marginBottom: 8 }}>{mod.name}</div>
+                <div style={{
+                  display: 'inline-block', background: '#22c55e20', color: '#22c55e',
+                  border: '1px solid #22c55e40', borderRadius: 20, padding: '2px 10px', fontSize: 11, fontWeight: 700
+                }}>● Active</div>
+              </AnimatedCard>
             ))}
-          </div>
+          </AutoGrid>
         </div>
+      )}
 
-        {completedModules.length > 0 && (
-          <div style={{ marginTop: 12 }}>
-            {kicker('Completed')}
-            <div style={{ marginTop: 6 }}>
-              {completedModules.map(mod => (
-                <div key={mod.id} className="znu-row" onClick={() => navigate(`/module/${mod.id}`)}
-                  role="button" tabIndex={0}
-                  onKeyDown={onActivateKeyDown(() => navigate(`/module/${mod.id}`))}
-                  style={{
-                    borderTop: `1px solid ${t.border}`, padding: '14px 0',
-                    cursor: 'pointer', display: 'flex', justifyContent: 'space-between',
-                    alignItems: 'center', gap: 16, color: t.textSub
-                  }}>
-                  <div style={{ fontSize: 14, fontWeight: 600 }}>{mod.name}</div>
-                  <span style={{ fontSize: 12, fontWeight: 700 }}>✓</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
+      {/* Tools */}
+      <div className="page-container" style={{ marginBottom: 32 }}>
+        {sectionTitle('🛠 Tools')}
+        <AutoGrid>
+          {toolCards.map((card, i) => (
+            <AnimatedCard key={i} delay={400 + i * 80} color={card.color} dark={dark}
+              onClick={() => navigate(card.to)}>
+              <div style={{ fontSize: 'clamp(28px, 3vw, 42px)', marginBottom: 8 }}>{card.emoji}</div>
+              <div style={{ color: c.text, fontSize: 'clamp(13px, 1.1vw, 16px)', fontWeight: 700 }}>{card.title}</div>
+            </AnimatedCard>
+          ))}
+        </AutoGrid>
       </div>
 
-      {/* Desktop nav becomes visible at wider widths — mobile keeps
-          the hamburger (NavMenu) as the single, purpose-built entry
-          point instead of a shrunk desktop bar. */}
-      <style>{`
-        @media (min-width: 720px) {
-          nav span[role="button"] { display: inline-flex !important; align-items: center; }
-        }
-      `}</style>
+      {/* Completed Modules */}
+      {completedModules.length > 0 && (
+        <div className="page-container">
+          {sectionTitle('✅ Completed Modules')}
+          <AutoGrid>
+            {completedModules.map((mod, i) => (
+              <AnimatedCard key={mod.id} delay={i * 80} color='#475569' dark={dark}
+                onClick={() => navigate(`/module/${mod.id}`)}>
+                <div style={{ fontSize: 'clamp(28px, 3vw, 42px)', marginBottom: 8, filter: 'grayscale(0.5)' }}>{mod.icon}</div>
+                <div style={{ color: c.sub, fontSize: 'clamp(13px, 1.1vw, 16px)', fontWeight: 700, marginBottom: 8 }}>{mod.name}</div>
+                <div style={{
+                  display: 'inline-block', background: '#47556920', color: '#64748b',
+                  border: '1px solid #47556940', borderRadius: 20, padding: '2px 10px', fontSize: 11, fontWeight: 700
+                }}>✓ Completed</div>
+              </AnimatedCard>
+            ))}
+          </AutoGrid>
+        </div>
+      )}
     </div>
   )
 }
