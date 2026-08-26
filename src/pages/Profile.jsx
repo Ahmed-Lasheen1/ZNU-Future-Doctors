@@ -122,9 +122,12 @@ export default function Profile({ dark }) {
       const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single()
       if (data) setProfile(data)
     }
+    // Note: university_code is deliberately NOT selected here — the
+    // leaderboard is visible to every student, and a student's
+    // university code is semi-private, unlike their name and points.
     const { data: lb } = await supabase
       .from('profiles')
-      .select('name, points, university_code')
+      .select('name, points')
       .order('points', { ascending: false })
       .limit(10)
     if (lb) setLeaderboard(lb)
@@ -310,9 +313,6 @@ export default function Profile({ dark }) {
               <div style={{ flex: 1 }}>
                 <div style={{ color: c.text, fontWeight: 700, fontSize: 15 }}>
                   Dr. {student.name}
-                </div>
-                <div style={{ color: c.sub, fontSize: 12 }}>
-                  {student.university_code}
                 </div>
               </div>
               <div style={{
