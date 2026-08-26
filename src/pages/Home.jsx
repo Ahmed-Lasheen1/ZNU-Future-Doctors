@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth, NavMenu, useModules } from '../App'
+import { getTheme } from '../theme'
 import { supabase } from '../supabase'
 import ErrorBanner from '../components/ErrorBanner'
 import AnimatedCard from '../components/AnimatedCard'
@@ -9,19 +10,12 @@ import { computeStreak } from '../lib/streak'
 import { getGuestHistory } from '../lib/reviewStorage'
 import { loadSavedActiveExam } from '../lib/activeExam'
 import NotifyPermissionButton from '../components/NotifyPermissionButton'
-import PulseLogo from '../components/pulse/PulseLogo'
-import { getPulseTokens } from '../lib/pulseTheme'
 
-// Order intentionally fixed to: Schedules, Checklist, Anonymous Q&A,
-// Leaderboard (see New Design Template.md). Colors are assigned at
-// render time from the ZNU PULSE token set (see the `toolColors`
-// array below) instead of being hardcoded here, since tokens depend
-// on dark/light mode.
 const toolCards = [
-  { emoji: '📅', title: 'Schedules', to: '/schedule' },
-  { emoji: '🎯', title: 'Checklist', to: '/checklist' },
-  { emoji: '💬', title: 'Anonymous Q&A', to: '/anon-questions' },
-  { emoji: '🏆', title: 'Leaderboard', to: '/profile?tab=leaderboard' },
+  { emoji: '📅', title: 'Schedules', to: '/schedule', color: '#a78bfa' },
+  { emoji: '🎯', title: 'Checklist', to: '/checklist', color: '#f59e0b' },
+  { emoji: '💬', title: 'Anonymous Q&A', to: '/anon-questions', color: '#a78bfa' },
+  { emoji: '🏆', title: 'Leaderboard', to: '/profile?tab=leaderboard', color: '#f59e0b' },
 ]
 
 // Small helper so a missing/blank name never crashes the avatar badge —
@@ -41,21 +35,8 @@ function onActivateKeyDown(handler) {
   }
 }
 
-// Small uppercase section label with a colored accent dot instead of
-// an emoji — keeps every section marker on the same restrained,
-// "precise instrument" visual language and avoids emoji glyphs that
-// render as green on some platforms (checkmarks, green circles).
-function SectionLabel({ text, color, t }) {
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-      <span style={{ width: 6, height: 6, borderRadius: 2, background: color, display: 'inline-block', flexShrink: 0 }} />
-      <span style={{ color: t.textSub, fontSize: 12, fontWeight: 800, letterSpacing: 2, textTransform: 'uppercase' }}>{text}</span>
-    </div>
-  )
-}
-
 export default function Home({ dark, toggleTheme }) {
-  const t = getPulseTokens(dark)
+  const c = getTheme(dark)
   const navigate = useNavigate()
   const { user, profile } = useAuth()
   const { modules, modulesError } = useModules()
@@ -170,60 +151,39 @@ export default function Home({ dark, toggleTheme }) {
   const activeModules = modules.filter(m => m.status === 'active')
   const completedModules = modules.filter(m => m.status === 'completed')
 
-  // Tool card accent colors, assigned in the fixed display order
-  // (Schedules, Checklist, Anonymous Q&A, Leaderboard) from the ZNU
-  // PULSE accent set — no green anywhere in the set.
-  const toolColors = [t.indigo, t.amber, t.cobalt, t.terracotta]
-
-  // Weekly-report stats, built as a simple ordered list so typography
-  // can scale by importance (largest = the most meaningful active
-  // value) rather than four identical stat cards. When there's no
-  // weekly activity but a streak still exists, the streak becomes the
-  // headline value instead of being squeezed in as an afterthought.
-  const weeklyStats = []
-  if (weeklySummary) {
-    weeklyStats.push({
-      key: 'accuracy', label: 'Accuracy', size: 40,
-      color: weeklySummary.accuracy >= 60 ? t.cobalt : t.terracotta,
-      value: `${weeklySummary.accuracy}%`
-    })
-    weeklyStats.push({ key: 'questions', label: 'Questions', size: 22, color: t.textStrong, value: weeklySummary.totalAttempted })
-    if (weeklySummary.topSubjectName) {
-      weeklyStats.push({ key: 'subject', label: 'Most practiced', size: 15, color: t.indigo, value: weeklySummary.topSubjectName })
-    }
-  }
-  if (streak > 0) {
-    weeklyStats.push({
-      key: 'streak', label: 'Study streak', color: t.amber,
-      size: weeklySummary ? 20 : 36,
-      value: `${streak} day${streak === 1 ? '' : 's'}`
-    })
-  }
-  const showWeekly = weeklyStats.length > 0
-  const weeklyTitle = weeklySummary ? 'This Week' : 'Study Streak'
+  const sectionTitle = (text) => (
+    <h2 style={{
+      color: c.sub,
+      fontSize: 13, fontWeight: 700, letterSpacing: 2,
+      marginBottom: 16, textTransform: 'uppercase'
+    }}>{text}</h2>
+  )
 
   return (
-    <div style={{ background: t.canvas, minHeight: '100vh', padding: '0 0 100px', transition: 'background 0.3s ease' }}>
-      {modulesError && <div className="page-container" style={{ paddingTop: 20 }}><ErrorBanner /></div>}
+    <div style={{ padding: '24px 16px 100px' }}>
+      {modulesError && <div className="page-container"><ErrorBanner /></div>}
 
-      {/* Compact header: utility controls + the ZNU PULSE ECG brand mark.
-          Deliberately NOT a tall hero — see New Design Template.md. */}
-      <div className="page-container" style={{
-        padding: '20px 16px 22px',
+      {/* Header */}
+      <div style={{
+        textAlign: 'center', padding: '30px 0 24px',
         opacity: titleVisible ? 1 : 0,
-        transform: titleVisible ? 'translateY(0)' : 'translateY(-12px)',
-        transition: 'all 0.5s ease'
+        transform: titleVisible ? 'translateY(0)' : 'translateY(-20px)',
+        transition: 'all 0.6s ease'
       }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 22 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
           <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
             <button onClick={toggleTheme} style={{
-              background: t.surface, color: t.cobalt, border: `1px solid ${t.border}`,
+              background: dark ? 'rgba(56,189,248,0.1)' : '#f1f5f9',
+              color: dark ? '#38bdf8' : '#475569',
+              border: `1px solid ${dark ? 'rgba(56,189,248,0.3)' : '#e2e8f0'}`,
               padding: '6px 14px', borderRadius: 10,
               cursor: 'pointer', fontSize: 16, fontWeight: 700
             }} aria-label={dark ? 'Switch to light mode' : 'Switch to dark mode'}>{dark ? '☀️' : '🌙'}</button>
             <NavMenu dark={dark} />
             <button onClick={() => navigate('/search')} aria-label="Search" style={{
-              background: t.surface, color: t.cobalt, border: `1px solid ${t.border}`,
+              background: dark ? 'rgba(56,189,248,0.1)' : '#f1f5f9',
+              color: dark ? '#38bdf8' : '#475569',
+              border: `1px solid ${dark ? 'rgba(56,189,248,0.3)' : '#e2e8f0'}`,
               padding: '6px 14px', borderRadius: 10,
               cursor: 'pointer', fontSize: 16, fontWeight: 700
             }}>🔍</button>
@@ -236,73 +196,88 @@ export default function Home({ dark, toggleTheme }) {
               onKeyDown={onActivateKeyDown(() => navigate('/profile'))}
               style={{
                 display: 'flex', alignItems: 'center', gap: 10,
-                background: t.surface,
-                border: `1px solid ${t.border}`,
+                background: c.card,
+                border: `1px solid ${c.border}`,
                 borderRadius: 20, padding: '8px 16px', cursor: 'pointer',
                 transition: 'all 0.2s'
               }}
-              onMouseEnter={e => e.currentTarget.style.borderColor = t.cobalt}
-              onMouseLeave={e => e.currentTarget.style.borderColor = t.border}>
+              onMouseEnter={e => e.currentTarget.style.borderColor = '#38bdf8'}
+              onMouseLeave={e => e.currentTarget.style.borderColor = c.border}>
               <div style={{
                 width: 32, height: 32, borderRadius: '50%',
-                background: `linear-gradient(135deg, ${t.cobalt}, ${t.indigo})`,
+                background: 'linear-gradient(135deg, #38bdf8, #818cf8)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 fontSize: 14, fontWeight: 900, color: '#fff', flexShrink: 0
               }}>
                 {initialOf(profile.name)}
               </div>
               <div style={{ textAlign: 'left' }}>
-                <div style={{ color: t.textStrong, fontSize: 13, fontWeight: 700 }}>
+                <div style={{ color: c.text, fontSize: 13, fontWeight: 700 }}>
                   Dr. {profile.name}
                 </div>
-                <div style={{ color: t.amber, fontSize: 11, fontWeight: 700 }}>
+                <div style={{ color: '#f59e0b', fontSize: 11, fontWeight: 700 }}>
                   ⭐ {profile.points} points
                 </div>
               </div>
             </div>
           ) : (
             <button onClick={() => navigate('/auth')} style={{
-              background: `${t.cobalt}20`, color: t.cobalt,
-              border: `1px solid ${t.cobalt}40`,
+              background: '#38bdf820', color: '#38bdf8',
+              border: '1px solid #38bdf840',
               padding: '8px 16px', borderRadius: 20,
               cursor: 'pointer', fontSize: 13, fontWeight: 700
             }}>Sign In →</button>
           )}
         </div>
 
-        {/* ZNU PULSE brand mark: ECG logo + wordmark, compact single unit */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 14 }}>
-          <PulseLogo dark={dark} size={34} />
-          <div style={{ textAlign: 'left' }}>
-            <div style={{ fontSize: 21, fontWeight: 900, letterSpacing: 2, color: t.textStrong, lineHeight: 1.1 }}>
-              ZNU <span style={{ color: t.cobalt }}>PULSE</span>
-            </div>
-            <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: 3, color: t.textSub, textTransform: 'uppercase', marginTop: 4 }}>
-              For Future Doctors
-            </div>
+        <img src={dark ? '/icon-512.png' : '/icon-512-light.png'} alt="ZNU Future Doctors" style={{ width: 88, height: 88, marginBottom: 12, borderRadius: '50%', objectFit: 'cover', filter: dark ? 'drop-shadow(0 0 20px rgba(56,189,248,0.5))' : 'drop-shadow(0 2px 10px rgba(14,165,233,0.25))' }} />
+        <h1 style={{
+          fontSize: 28, fontWeight: 900,
+          background: 'linear-gradient(135deg, #38bdf8, #818cf8)',
+          WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+          marginBottom: 8
+        }}>ZNU Future Doctors</h1>
+        <p style={{ color: c.sub, fontSize: 15 }}>
+          Your Integrated Medical Study Platform
+        </p>
+
+        {streak > 0 && (
+          <div style={{
+            display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 12,
+            background: '#f59e0b20', border: '1px solid #f59e0b40',
+            borderRadius: 20, padding: '6px 16px', color: '#f59e0b', fontSize: 13, fontWeight: 700
+          }}>
+            🔥 {streak}-day study streak
           </div>
-        </div>
+        )}
       </div>
 
       <div className="page-container">
         <NotifyPermissionButton dark={dark} label="🔔 Enable exam & deadline reminders" />
       </div>
 
-      {/* Weekly report — now also the home of the study streak. Typography
-          scales by importance instead of four identical stat cards. */}
-      {showWeekly && (
+      {/* Weekly summary — auto-computed from exam_history, no setup needed */}
+      {weeklySummary && (
         <div className="page-container" style={{ marginBottom: 24 }}>
-          <div style={{ background: t.surface, border: `1px solid ${t.border}`, borderRadius: 18, padding: '20px 22px' }}>
-            <div style={{ color: t.textSub, fontSize: 11, fontWeight: 800, letterSpacing: 2, marginBottom: 16, textTransform: 'uppercase' }}>
-              {weeklyTitle}
+          <div style={{ background: c.card, border: `1px solid ${c.border}`, borderRadius: 16, padding: '18px 20px' }}>
+            <div style={{ color: c.sub, fontSize: 12, fontWeight: 700, letterSpacing: 1, marginBottom: 12, textTransform: 'uppercase' }}>
+              📈 This Week
             </div>
-            <div style={{ display: 'flex', gap: 28, flexWrap: 'wrap', alignItems: 'baseline' }}>
-              {weeklyStats.map(stat => (
-                <div key={stat.key}>
-                  <div style={{ color: stat.color, fontWeight: 900, fontSize: stat.size, lineHeight: 1 }}>{stat.value}</div>
-                  <div style={{ color: t.textSub, fontSize: 11, marginTop: 6, fontWeight: 600 }}>{stat.label}</div>
+            <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
+              <div>
+                <div style={{ color: '#38bdf8', fontWeight: 900, fontSize: 20 }}>{weeklySummary.totalAttempted}</div>
+                <div style={{ color: c.sub, fontSize: 11 }}>Questions</div>
+              </div>
+              <div>
+                <div style={{ color: weeklySummary.accuracy >= 60 ? '#22c55e' : '#ef4444', fontWeight: 900, fontSize: 20 }}>{weeklySummary.accuracy}%</div>
+                <div style={{ color: c.sub, fontSize: 11 }}>Accuracy</div>
+              </div>
+              {weeklySummary.topSubjectName && (
+                <div>
+                  <div style={{ color: '#a78bfa', fontWeight: 900, fontSize: 14 }}>{weeklySummary.topSubjectName}</div>
+                  <div style={{ color: c.sub, fontSize: 11 }}>Most practiced</div>
                 </div>
-              ))}
+              )}
             </div>
           </div>
         </div>
@@ -315,19 +290,19 @@ export default function Home({ dark, toggleTheme }) {
             role="button" tabIndex={0}
             onKeyDown={onActivateKeyDown(() => navigate('/mcq'))}
             style={{
-              background: `${t.terracotta}20`, border: `2px solid ${t.terracotta}60`, borderRadius: 16,
+              background: '#e2725b20', border: '2px solid #e2725b60', borderRadius: 16,
               padding: '16px 20px', cursor: 'pointer', display: 'flex', alignItems: 'center',
               justifyContent: 'space-between', gap: 12, transition: 'all 0.2s'
             }}
-            onMouseEnter={e => e.currentTarget.style.borderColor = t.terracotta}
-            onMouseLeave={e => e.currentTarget.style.borderColor = `${t.terracotta}60`}>
+            onMouseEnter={e => e.currentTarget.style.borderColor = '#e2725b'}
+            onMouseLeave={e => e.currentTarget.style.borderColor = '#e2725b60'}>
             <div>
-              <div style={{ color: t.terracotta, fontWeight: 700, fontSize: 14 }}>⏸ Continue where you left off</div>
-              <div style={{ color: t.textSub, fontSize: 12, marginTop: 2 }}>
+              <div style={{ color: '#e2725b', fontWeight: 700, fontSize: 14 }}>⏸ Continue where you left off</div>
+              <div style={{ color: c.sub, fontSize: 12, marginTop: 2 }}>
                 {Object.keys(pausedExam.answers || {}).length}/{(pausedExam.quizQuestions || []).length} answered
               </div>
             </div>
-            <div style={{ color: t.terracotta, fontSize: 20 }}>→</div>
+            <div style={{ color: '#e2725b', fontSize: 20 }}>→</div>
           </div>
         </div>
       )}
@@ -336,10 +311,10 @@ export default function Home({ dark, toggleTheme }) {
       {announcement && (
         <div className="page-container" style={{ marginBottom: 24 }}>
           <div style={{
-            background: `linear-gradient(135deg, ${t.cobalt}20, ${t.indigo}15)`,
-            border: `1px solid ${t.cobalt}40`, borderRadius: 16,
+            background: 'linear-gradient(135deg, #38bdf820, #818cf815)',
+            border: '1px solid #38bdf840', borderRadius: 16,
             padding: '14px 20px', textAlign: 'center',
-            color: t.textStrong, fontSize: 14, fontWeight: 600, lineHeight: 1.6,
+            color: c.text, fontSize: 14, fontWeight: 600, lineHeight: 1.6,
             whiteSpace: 'pre-wrap'
           }}>
             {announcement}
@@ -350,16 +325,16 @@ export default function Home({ dark, toggleTheme }) {
       {/* Active Modules */}
       {activeModules.length > 0 && (
         <div className="page-container" style={{ marginBottom: 32 }}>
-          <SectionLabel text="Active Modules" color={t.cobalt} t={t} />
+          {sectionTitle('🟢 Active Modules')}
           <AutoGrid>
             {activeModules.map((mod, i) => (
               <AnimatedCard key={mod.id} delay={200 + i * 80} color={mod.color} dark={dark}
                 onClick={() => navigate(`/module/${mod.id}`)}>
                 <div style={{ fontSize: 'clamp(32px, 3.5vw, 52px)', marginBottom: 8 }}>{mod.icon}</div>
-                <div style={{ color: t.textStrong, fontSize: 'clamp(14px, 1.2vw, 17px)', fontWeight: 700, marginBottom: 8 }}>{mod.name}</div>
+                <div style={{ color: c.text, fontSize: 'clamp(14px, 1.2vw, 17px)', fontWeight: 700, marginBottom: 8 }}>{mod.name}</div>
                 <div style={{
-                  display: 'inline-block', background: `${t.cobalt}20`, color: t.cobalt,
-                  border: `1px solid ${t.cobalt}40`, borderRadius: 20, padding: '2px 10px', fontSize: 11, fontWeight: 700
+                  display: 'inline-block', background: '#22c55e20', color: '#22c55e',
+                  border: '1px solid #22c55e40', borderRadius: 20, padding: '2px 10px', fontSize: 11, fontWeight: 700
                 }}>● Active</div>
               </AnimatedCard>
             ))}
@@ -369,13 +344,13 @@ export default function Home({ dark, toggleTheme }) {
 
       {/* Tools */}
       <div className="page-container" style={{ marginBottom: 32 }}>
-        <SectionLabel text="Tools" color={t.indigo} t={t} />
+        {sectionTitle('🛠 Tools')}
         <AutoGrid>
           {toolCards.map((card, i) => (
-            <AnimatedCard key={i} delay={400 + i * 80} color={toolColors[i]} dark={dark}
+            <AnimatedCard key={i} delay={400 + i * 80} color={card.color} dark={dark}
               onClick={() => navigate(card.to)}>
               <div style={{ fontSize: 'clamp(28px, 3vw, 42px)', marginBottom: 8 }}>{card.emoji}</div>
-              <div style={{ color: t.textStrong, fontSize: 'clamp(13px, 1.1vw, 16px)', fontWeight: 700 }}>{card.title}</div>
+              <div style={{ color: c.text, fontSize: 'clamp(13px, 1.1vw, 16px)', fontWeight: 700 }}>{card.title}</div>
             </AnimatedCard>
           ))}
         </AutoGrid>
@@ -384,16 +359,16 @@ export default function Home({ dark, toggleTheme }) {
       {/* Completed Modules */}
       {completedModules.length > 0 && (
         <div className="page-container">
-          <SectionLabel text="Completed Modules" color={t.slate} t={t} />
+          {sectionTitle('✅ Completed Modules')}
           <AutoGrid>
             {completedModules.map((mod, i) => (
-              <AnimatedCard key={mod.id} delay={i * 80} color={t.slate} dark={dark}
+              <AnimatedCard key={mod.id} delay={i * 80} color='#475569' dark={dark}
                 onClick={() => navigate(`/module/${mod.id}`)}>
                 <div style={{ fontSize: 'clamp(28px, 3vw, 42px)', marginBottom: 8, filter: 'grayscale(0.5)' }}>{mod.icon}</div>
-                <div style={{ color: t.textSub, fontSize: 'clamp(13px, 1.1vw, 16px)', fontWeight: 700, marginBottom: 8 }}>{mod.name}</div>
+                <div style={{ color: c.sub, fontSize: 'clamp(13px, 1.1vw, 16px)', fontWeight: 700, marginBottom: 8 }}>{mod.name}</div>
                 <div style={{
-                  display: 'inline-block', background: `${t.slate}20`, color: t.slate,
-                  border: `1px solid ${t.slate}40`, borderRadius: 20, padding: '2px 10px', fontSize: 11, fontWeight: 700
+                  display: 'inline-block', background: '#47556920', color: '#64748b',
+                  border: '1px solid #47556940', borderRadius: 20, padding: '2px 10px', fontSize: 11, fontWeight: 700
                 }}>✓ Completed</div>
               </AnimatedCard>
             ))}
