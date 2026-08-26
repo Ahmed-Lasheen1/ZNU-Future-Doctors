@@ -11,10 +11,27 @@ jobs:
   ping-database:
     runs-on: ubuntu-latest
     steps:
+      - name: Check required secrets are set
+        run: |
+          if [ -z "${{ secrets.SUPABASE_URL }}" ]; then
+            echo "❌ Missing repo secret: SUPABASE_URL — add it in Settings → Secrets and variables → Actions"
+            exit 1
+          fi
+          if [ -z "${{ secrets.SUPABASE_ANON_KEY }}" ]; then
+            echo "❌ Missing repo secret: SUPABASE_ANON_KEY — add it in Settings → Secrets and variables → Actions"
+            exit 1
+          fi
+          echo "✅ Required secrets are present"
+
       - name: Ping Supabase API
         run: |
-          curl -s -o /dev/null -w "%{http_code}" \
-          -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
-          -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
-          "${{ secrets.SUPABASE_URL }}/rest/v1/?limit=1"
+          status=$(curl -s -o /dev/null -w "%{http_code}" \
+            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
+            "${{ secrets.SUPABASE_URL }}/rest/v1/?limit=1")
+          echo "HTTP status: $status"
+          if [ "$status" = "000" ]; then
+            echo "❌ Could not reach Supabase at all — check that SUPABASE_URL is correct and reachable"
+            exit 1
+          fi
           
