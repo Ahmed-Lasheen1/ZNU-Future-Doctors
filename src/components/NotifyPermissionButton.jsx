@@ -6,30 +6,52 @@ import { useToast } from './ToastProvider'
 
 // Small reusable "🔔 Enable notifications" button. Shows a helpful
 // status instead of just vanishing whenever notifications aren't
-// available or already denied — a silently-disappearing button gives
-// the student and the admin zero information about why push isn't
-// working, which made this genuinely impossible to debug before.
+// available or already denied.
+//
+// Important: having a LOCAL push subscription (from the browser's
+// pushManager) does NOT guarantee it was ever successfully saved to
+// the push_subscriptions table — an earlier insert could have failed
+// silently. So whenever permission is already granted, this
+// component re-syncs with the server in the background on every page
+// load, instead of trusting the local subscription alone.
 export default function NotifyPermissionButton({ dark, label = '🔔 Enable notifications' }) {
   const { user } = useAuth()
   const showToast = useToast()
   const c = getTheme(dark)
   const [busy, setBusy] = useState(false)
-  const [hasActiveSubscription, setHasActiveSubscription] = useState(null) // null = unknown yet
+  const [needsAction, setNeedsAction] = useState(false) // show the button?
+  const [checked, setChecked] = useState(false) // finished the initial silent check?
 
   const supported = typeof window !== 'undefined' && 'Notification' in window && 'serviceWorker' in navigator && 'PushManager' in window
   const permission = supported ? Notification.permission : null
 
-  // Even if permission is already "granted", the actual push
-  // subscription might not exist (e.g. it failed to save earlier).
-  // Check the real subscription, not just the permission flag, so we
-  // know whether to offer a "re-enable" action.
+  // Runs on every mount. If permission was never asked, show the
+  // button. If permission is already granted, silently (re)confirm
+  // the subscription is saved server-side — this is what fixes the
+  // "browser has a subscription but the DB row never made it" case
+  // without needing the person to do anything.
   useEffect(() => {
-    if (!supported || permission !== 'granted') { setHasActiveSubscription(false); return }
-    navigator.serviceWorker.ready
-      .then(reg => reg.pushManager.getSubscription())
-      .then(sub => setHasActiveSubscription(!!sub))
-      .catch(() => setHasActiveSubscription(false))
-  }, [supported, permission])
+    if (!supported) { setChecked(true); return }
+
+    if (permission === 'default') {
+      setNeedsAction(true)
+      setChecked(true)
+      return
+    }
+
+    if (permission === 'granted') {
+      subscribeToPush(user?.id).then(result => {
+        // Only surface a visible button if the silent resync failed —
+        // otherwise this stays invisible, which is the whole point.
+        setNeedsAction(!result.success)
+        setChecked(true)
+      })
+      return
+    }
+
+    // denied
+    setChecked(true)
+  }, [supported, permission, user?.id])
 
   async function handleClick() {
     setBusy(true)
@@ -48,7 +70,7 @@ export default function NotifyPermissionButton({ dark, label = '🔔 Enable noti
     setBusy(false)
 
     if (result.success) {
-      setHasActiveSubscription(true)
+      setNeedsAction(false)
       showToast('✅ Notifications enabled!')
       return
     }
@@ -62,7 +84,8 @@ export default function NotifyPermissionButton({ dark, label = '🔔 Enable noti
     showToast(messages[result.reason] || '❌ Could not enable notifications', 'error')
   }
 
-  // Not supported at all — tell the student why instead of nothing.
+  if (!checked) return null // avoid a flash of the button while the silent check runs
+
   if (!supported) {
     return (
       <div style={{
@@ -75,8 +98,6 @@ export default function NotifyPermissionButton({ dark, label = '🔔 Enable noti
     )
   }
 
-  // Denied — the browser will never show its own prompt again; the
-  // student has to fix this from browser settings themselves.
   if (permission === 'denied') {
     return (
       <div style={{
@@ -88,12 +109,8 @@ export default function NotifyPermissionButton({ dark, label = '🔔 Enable noti
     )
   }
 
-  // Already granted AND a real subscription exists — nothing to do.
-  if (permission === 'granted' && hasActiveSubscription) return null
+  if (!needsAction) return null
 
-  // Covers: permission === 'default' (never asked), OR
-  // permission === 'granted' but subscription is missing/broken
-  // (previous attempt silently failed) — offer a way to (re)try.
   return (
     <button onClick={handleClick} disabled={busy} style={{
       background: 'transparent', border: `1px solid ${c.border}`, borderRadius: 20,
