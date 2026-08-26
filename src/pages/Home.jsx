@@ -2,22 +2,21 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth, NavMenu, useModules } from '../App'
 import { getTheme } from '../theme'
-import { getPulseTheme, pulseFont, pulseIconBtn, pulseEyebrow } from '../premiumTheme'
+import { getPulseTheme, pulseFonts } from '../premiumTheme'
 import { supabase } from '../supabase'
 import ErrorBanner from '../components/ErrorBanner'
-import EcgPulse from '../components/EcgPulse'
+import AnimatedCard from '../components/AnimatedCard'
+import AutoGrid from '../components/AutoGrid'
 import { computeStreak } from '../lib/streak'
 import { getGuestHistory } from '../lib/reviewStorage'
 import { loadSavedActiveExam } from '../lib/activeExam'
 import NotifyPermissionButton from '../components/NotifyPermissionButton'
 
-// Exact same four tools, exact same order — Schedules, Checklist,
-// Anonymous Q&A, Leaderboard. Only the visual treatment below changes.
 const toolCards = [
-  { emoji: '📅', title: 'Schedules', to: '/schedule' },
-  { emoji: '🎯', title: 'Checklist', to: '/checklist' },
-  { emoji: '💬', title: 'Anonymous Q&A', to: '/anon-questions' },
-  { emoji: '🏆', title: 'Leaderboard', to: '/profile?tab=leaderboard' },
+  { emoji: '📅', title: 'Schedules', to: '/schedule', accent: 'indigo' },
+  { emoji: '🎯', title: 'Checklist', to: '/checklist', accent: 'amber' },
+  { emoji: '💬', title: 'Anonymous Q&A', to: '/anon-questions', accent: 'indigo' },
+  { emoji: '🏆', title: 'Leaderboard', to: '/profile?tab=leaderboard', accent: 'amber' },
 ]
 
 // Small helper so a missing/blank name never crashes the avatar badge —
@@ -37,129 +36,76 @@ function onActivateKeyDown(handler) {
   }
 }
 
-// One row in the editorial Active/Completed Modules list — a quiet,
-// numbered, chapter-like row instead of a rounded card grid. Keeps the
-// exact same click behavior, keyboard activation, module data (name,
-// icon, color, status) as the previous card version.
-function ModuleRow({ index, mod, onClick, p, quiet }) {
-  const [hovered, setHovered] = useState(false)
-  const accent = quiet ? p.textFaint : mod.color
+// ── ZNU PULSE brand mark ──────────────────────────────────────────
+// One readable ECG cycle (subtle P, focused QRS, T wave) with wide
+// calm flat intervals before and after. The line reads as though it's
+// being drawn with light: a narrow luminous core sweeps the path on a
+// loop. Two staggered sweeps mask any hard "reset" moment. Respects
+// prefers-reduced-motion by disabling the sweep and showing a fully
+// lit static line instead.
+const ECG_PATH = 'M0,36 L104,36 C110,36 112,28 118,28 C124,28 126,36 134,36 L140,36 L144,36 L148,54 L152,8 L156,58 L160,36 L168,36 C179,36 183,19 192,19 C201,19 205,36 216,36 L320,36'
 
+function ZnuPulseBrand({ dark, pt }) {
   return (
     <div
-      role="button"
-      tabIndex={0}
-      onClick={onClick}
-      onKeyDown={onActivateKeyDown(onClick)}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 20,
-        padding: '18px 4px',
-        borderBottom: `1px solid ${p.line}`,
-        cursor: 'pointer',
-        outline: 'none',
-        transition: 'padding-left 0.25s ease',
-        paddingLeft: hovered ? 10 : 4,
-      }}
+      style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap', '--znu-ecg-glow': pt.ecgGlow }}
     >
-      <div
-        style={{
-          fontSize: 13,
-          fontWeight: 700,
-          fontVariantNumeric: 'tabular-nums',
-          color: hovered ? accent : p.textFaint,
-          width: 28,
-          flexShrink: 0,
-          transition: 'color 0.2s ease',
-        }}
-      >
-        {String(index + 1).padStart(2, '0')}
-      </div>
+      <style>{`
+        @keyframes znuPulseSweepA {
+          0%   { stroke-dashoffset: 1; opacity: 0; }
+          8%   { opacity: 1; }
+          46%  { opacity: 1; }
+          58%  { stroke-dashoffset: -0.55; opacity: 0; }
+          100% { stroke-dashoffset: -0.55; opacity: 0; }
+        }
+        @keyframes znuPulseSweepB {
+          0%   { stroke-dashoffset: 1; opacity: 0; }
+          8%   { opacity: 1; }
+          46%  { opacity: 1; }
+          58%  { stroke-dashoffset: -0.55; opacity: 0; }
+          100% { stroke-dashoffset: -0.55; opacity: 0; }
+        }
+        .znu-ecg-sweep-a {
+          stroke-dasharray: 0.16 1;
+          animation: znuPulseSweepA 5.2s ease-in-out infinite;
+          filter: drop-shadow(0 0 2px var(--znu-ecg-glow)) drop-shadow(0 0 6px var(--znu-ecg-glow));
+        }
+        .znu-ecg-sweep-b {
+          stroke-dasharray: 0.1 1;
+          animation: znuPulseSweepB 5.2s ease-in-out infinite;
+          animation-delay: 2.6s;
+          filter: drop-shadow(0 0 2px var(--znu-ecg-glow)) drop-shadow(0 0 5px var(--znu-ecg-glow));
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .znu-ecg-sweep-a, .znu-ecg-sweep-b { animation: none; opacity: 0; }
+          .znu-ecg-static { opacity: 1 !important; }
+        }
+      `}</style>
 
-      <div style={{ fontSize: quiet ? 20 : 24, flexShrink: 0, filter: quiet ? 'grayscale(0.6)' : 'none', opacity: quiet ? 0.75 : 1 }}>
-        {mod.icon}
-      </div>
+      <svg width="112" height="30" viewBox="0 0 320 72" style={{ flexShrink: 0 }}>
+        <path d={ECG_PATH} fill="none" stroke={pt.ecgBase} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" opacity="0.55" />
+        <path className="znu-ecg-static" d={ECG_PATH} fill="none" stroke={pt.ecgLine} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" opacity="0" />
+        <path className="znu-ecg-sweep-a" pathLength="1" d={ECG_PATH} fill="none" stroke={pt.ecgLine} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+        <path className="znu-ecg-sweep-b" pathLength="1" d={ECG_PATH} fill="none" stroke={pt.ecgLine} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
 
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div
-          style={{
-            fontSize: quiet ? 16 : 19,
-            fontWeight: 700,
-            color: quiet ? p.textMuted : p.text,
-            letterSpacing: '-0.01em',
-          }}
-        >
-          {mod.name}
-        </div>
+      <div>
+        <div style={{
+          fontFamily: pulseFonts.display, fontWeight: 800, fontSize: 22, letterSpacing: 1.5,
+          color: pt.text, lineHeight: 1
+        }}>ZNU PULSE</div>
+        <div style={{
+          fontFamily: pulseFonts.body, fontWeight: 700, fontSize: 10, letterSpacing: 3,
+          color: pt.faint, marginTop: 5, textTransform: 'uppercase'
+        }}>For Future Doctors</div>
       </div>
-
-      <div
-        style={{
-          fontSize: 11,
-          fontWeight: 700,
-          letterSpacing: '0.08em',
-          textTransform: 'uppercase',
-          color: mod.status === 'active' ? accent : p.textFaint,
-          flexShrink: 0,
-          display: 'flex',
-          alignItems: 'center',
-          gap: 6,
-        }}
-      >
-        {mod.status === 'active' ? (
-          <>
-            <span style={{ width: 6, height: 6, borderRadius: '50%', background: accent, display: 'inline-block' }} />
-            Active
-          </>
-        ) : (
-          'Completed'
-        )}
-      </div>
-
-      <div style={{ color: hovered ? accent : p.textFaint, fontSize: 16, transition: 'all 0.2s ease', transform: hovered ? 'translateX(2px)' : 'none' }}>
-        →
-      </div>
-    </div>
-  )
-}
-
-// One entry in the Tools section — compact and refined rather than a
-// rounded pill/card, but still clearly a distinct, tappable target.
-function ToolItem({ card, onClick, p }) {
-  const [hovered, setHovered] = useState(false)
-  return (
-    <div
-      role="button"
-      tabIndex={0}
-      onClick={onClick}
-      onKeyDown={onActivateKeyDown(onClick)}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 14,
-        padding: '16px 16px',
-        border: `1px solid ${hovered ? p.lineStrong : p.line}`,
-        borderRadius: 10,
-        cursor: 'pointer',
-        outline: 'none',
-        background: hovered ? p.surfaceRaised : 'transparent',
-        transition: 'all 0.2s ease',
-      }}
-    >
-      <div style={{ fontSize: 20, opacity: 0.9 }}>{card.emoji}</div>
-      <div style={{ fontSize: 14, fontWeight: 700, color: p.text }}>{card.title}</div>
     </div>
   )
 }
 
 export default function Home({ dark, toggleTheme }) {
   const c = getTheme(dark)
-  const p = getPulseTheme(dark)
+  const pt = getPulseTheme(dark)
   const navigate = useNavigate()
   const { user, profile } = useAuth()
   const { modules, modulesError } = useModules()
@@ -274,207 +220,251 @@ export default function Home({ dark, toggleTheme }) {
   const activeModules = modules.filter(m => m.status === 'active')
   const completedModules = modules.filter(m => m.status === 'completed')
 
-  return (
-    <div style={{ fontFamily: pulseFont, background: p.bg, minHeight: '100vh' }}>
-      {modulesError && (
-        <div className="page-container" style={{ padding: '16px 16px 0' }}>
-          <ErrorBanner />
-        </div>
-      )}
+  const sectionTitle = (text) => (
+    <h2 style={{
+      color: pt.faint,
+      fontSize: 12, fontWeight: 700, letterSpacing: 2.5,
+      marginBottom: 16, textTransform: 'uppercase',
+      fontFamily: pulseFonts.body
+    }}>{text}</h2>
+  )
 
-      {/* ── Header / Hero ─────────────────────────────────────────── */}
-      <header style={{ padding: '26px 16px 0' }}>
-        <div className="page-container" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 40 }}>
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            <button onClick={toggleTheme} style={pulseIconBtn(p)} aria-label={dark ? 'Switch to light mode' : 'Switch to dark mode'}>
-              {dark ? '☀️' : '🌙'}
-            </button>
+  const utilityBtnStyle = {
+    background: pt.surfaceFlat,
+    color: pt.cobalt,
+    border: `1px solid ${pt.border}`,
+    padding: '6px 14px', borderRadius: 10,
+    cursor: 'pointer', fontSize: 16, fontWeight: 700
+  }
+
+  const showWeeklyPanel = !!weeklySummary || streak > 0
+
+  return (
+    <div style={{
+      padding: '20px 16px 100px',
+      background: dark
+        ? `linear-gradient(180deg, ${pt.canvasAlt}, ${pt.canvas})`
+        : `linear-gradient(180deg, ${pt.canvas}, ${pt.canvasAlt})`,
+      minHeight: '100vh',
+      fontFamily: pulseFonts.body
+    }}>
+      {modulesError && <div className="page-container"><ErrorBanner /></div>}
+
+      {/* Compact header — utilities row + ZNU PULSE brand identity */}
+      <div className="page-container" style={{
+        padding: '10px 0 22px',
+        opacity: titleVisible ? 1 : 0,
+        transform: titleVisible ? 'translateY(0)' : 'translateY(-14px)',
+        transition: 'all 0.55s ease'
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, gap: 12, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+            <button onClick={toggleTheme} style={utilityBtnStyle} aria-label={dark ? 'Switch to light mode' : 'Switch to dark mode'}>{dark ? '☀️' : '🌙'}</button>
             <NavMenu dark={dark} />
-            <button onClick={() => navigate('/search')} aria-label="Search" style={pulseIconBtn(p)}>🔍</button>
+            <button onClick={() => navigate('/search')} aria-label="Search" style={utilityBtnStyle}>🔍</button>
           </div>
 
+          {/* Profile Bar */}
           {user && profile ? (
-            <div
-              onClick={() => navigate('/profile')}
+            <div onClick={() => navigate('/profile')}
               role="button" tabIndex={0}
               onKeyDown={onActivateKeyDown(() => navigate('/profile'))}
               style={{
                 display: 'flex', alignItems: 'center', gap: 10,
-                cursor: 'pointer', padding: '4px 4px 4px 4px',
+                background: pt.surfaceFlat,
+                border: `1px solid ${pt.border}`,
+                borderRadius: 20, padding: '8px 16px', cursor: 'pointer',
+                transition: 'all 0.2s'
               }}
-            >
+              onMouseEnter={e => e.currentTarget.style.borderColor = pt.cobaltBorder}
+              onMouseLeave={e => e.currentTarget.style.borderColor = pt.border}>
               <div style={{
-                width: 30, height: 30, borderRadius: '50%',
-                border: `1px solid ${p.lineStrong}`,
+                width: 32, height: 32, borderRadius: '50%',
+                background: `linear-gradient(135deg, ${pt.cobalt}, ${pt.indigo})`,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 12, fontWeight: 800, color: p.accent, flexShrink: 0
+                fontSize: 14, fontWeight: 900, color: '#fff', flexShrink: 0
               }}>
                 {initialOf(profile.name)}
               </div>
               <div style={{ textAlign: 'left' }}>
-                <div style={{ color: p.text, fontSize: 13, fontWeight: 700, lineHeight: 1.2 }}>Dr. {profile.name}</div>
-                <div style={{ color: p.textFaint, fontSize: 11, fontWeight: 600 }}>{profile.points} pts</div>
+                <div style={{ color: pt.text, fontSize: 13, fontWeight: 700 }}>
+                  Dr. {profile.name}
+                </div>
+                <div style={{ color: pt.amber, fontSize: 11, fontWeight: 700 }}>
+                  ⭐ {profile.points} points
+                </div>
               </div>
             </div>
           ) : (
             <button onClick={() => navigate('/auth')} style={{
-              background: 'transparent', color: p.accent,
-              border: `1px solid ${p.lineStrong}`, borderRadius: 8,
-              padding: '8px 16px', cursor: 'pointer', fontSize: 13, fontWeight: 700,
-              fontFamily: pulseFont,
+              background: pt.cobaltSoft, color: pt.cobalt,
+              border: `1px solid ${pt.cobaltBorder}`,
+              padding: '8px 16px', borderRadius: 20,
+              cursor: 'pointer', fontSize: 13, fontWeight: 700
             }}>Sign In →</button>
           )}
         </div>
 
-        <div className="page-container" style={{
-          opacity: titleVisible ? 1 : 0,
-          transform: titleVisible ? 'translateY(0)' : 'translateY(-14px)',
-          transition: 'all 0.7s ease',
-          paddingBottom: 6,
-        }}>
-          <div style={pulseEyebrow(p)}>FOR FUTURE DOCTORS</div>
-          <h1 style={{
-            fontSize: 'clamp(42px, 7.5vw, 76px)',
-            fontWeight: 800,
-            letterSpacing: '-0.03em',
-            lineHeight: 1.0,
-            color: p.text,
-            margin: 0,
+        <ZnuPulseBrand dark={dark} pt={pt} />
+      </div>
+
+      <div className="page-container">
+        <NotifyPermissionButton dark={dark} label="🔔 Enable exam & deadline reminders" />
+      </div>
+
+      {/* Weekly report — accuracy, questions, top subject, and the
+          study streak all live here now, sized by importance rather
+          than as four identical stat cards. */}
+      {showWeeklyPanel && (
+        <div className="page-container" style={{ marginBottom: 24 }}>
+          <div style={{
+            background: pt.surface, border: `1px solid ${pt.border}`, borderRadius: 18,
+            padding: '20px 22px 22px'
           }}>
-            ZNU <span style={{ color: p.accent }}>PULSE</span>
-          </h1>
-
-          {streak > 0 && (
             <div style={{
-              display: 'inline-flex', alignItems: 'center', gap: 8, marginTop: 18,
-              color: p.warn, fontSize: 13, fontWeight: 700,
-            }}>
-              <span style={{ width: 6, height: 6, borderRadius: '50%', background: p.warn, display: 'inline-block' }} />
-              {streak}-day study streak
-            </div>
-          )}
-        </div>
+              color: pt.faint, fontSize: 11, fontWeight: 700, letterSpacing: 2.5,
+              marginBottom: 16, textTransform: 'uppercase'
+            }}>📈 Weekly Report</div>
 
-        <div className="page-container" style={{ marginTop: 26 }}>
-          <EcgPulse color={p.accent} height={92} />
-        </div>
-
-        <div className="page-container">
-          <div style={{ borderTop: `1px solid ${p.line}`, marginTop: 18 }} />
-        </div>
-      </header>
-
-      <div className="page-container" style={{ padding: '24px 16px 100px' }}>
-        {/* ── Notification permission ───────────────────────────────── */}
-        <div style={{ marginBottom: 8 }}>
-          <NotifyPermissionButton dark={dark} label="🔔 Enable exam & deadline reminders" />
-        </div>
-
-        {/* ── Weekly summary — compact analytical readout ───────────── */}
-        {weeklySummary && (
-          <div style={{ margin: '28px 0', paddingTop: 4 }}>
-            <div style={pulseEyebrow(p)}>This Week</div>
-            <div style={{ display: 'flex', gap: 'clamp(28px, 6vw, 56px)', flexWrap: 'wrap', alignItems: 'baseline' }}>
-              <div>
-                <div style={{ fontSize: 34, fontWeight: 800, color: p.text, letterSpacing: '-0.02em', lineHeight: 1 }}>
-                  {weeklySummary.totalAttempted}
-                </div>
-                <div style={{ color: p.textFaint, fontSize: 12, marginTop: 6, fontWeight: 600 }}>Questions attempted</div>
-              </div>
-              <div>
-                <div style={{ fontSize: 34, fontWeight: 800, color: weeklySummary.accuracy >= 60 ? p.accent : p.danger, letterSpacing: '-0.02em', lineHeight: 1 }}>
-                  {weeklySummary.accuracy}%
-                </div>
-                <div style={{ color: p.textFaint, fontSize: 12, marginTop: 6, fontWeight: 600 }}>Accuracy</div>
-              </div>
-              {weeklySummary.topSubjectName && (
+            {weeklySummary ? (
+              <div style={{ display: 'flex', alignItems: 'flex-end', gap: 30, flexWrap: 'wrap' }}>
                 <div>
-                  <div style={{ fontSize: 20, fontWeight: 800, color: p.text, letterSpacing: '-0.01em', lineHeight: 1.3 }}>
-                    {weeklySummary.topSubjectName}
-                  </div>
-                  <div style={{ color: p.textFaint, fontSize: 12, marginTop: 6, fontWeight: 600 }}>Most practiced</div>
+                  <div style={{
+                    fontFamily: pulseFonts.display, fontWeight: 800, fontSize: 42, lineHeight: 1,
+                    color: weeklySummary.accuracy >= 60 ? pt.cobalt : pt.danger
+                  }}>{weeklySummary.accuracy}%</div>
+                  <div style={{ color: pt.sub, fontSize: 12, marginTop: 6 }}>Accuracy this week</div>
                 </div>
-              )}
-            </div>
-          </div>
-        )}
 
-        {/* ── Continue where you left off ───────────────────────────── */}
-        {pausedExam && (
-          <div
-            onClick={() => navigate('/mcq')}
+                <div>
+                  <div style={{ fontFamily: pulseFonts.display, fontWeight: 700, fontSize: 22, color: pt.text }}>{weeklySummary.totalAttempted}</div>
+                  <div style={{ color: pt.sub, fontSize: 11, marginTop: 4 }}>Questions attempted</div>
+                </div>
+
+                {weeklySummary.topSubjectName && (
+                  <div>
+                    <div style={{ fontFamily: pulseFonts.display, fontWeight: 700, fontSize: 16, color: pt.indigo }}>{weeklySummary.topSubjectName}</div>
+                    <div style={{ color: pt.sub, fontSize: 11, marginTop: 4 }}>Most practiced</div>
+                  </div>
+                )}
+
+                {streak > 0 && (
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'baseline', gap: 5, color: pt.terracotta }}>
+                      <span style={{ fontSize: 15 }}>🔥</span>
+                      <span style={{ fontFamily: pulseFonts.display, fontWeight: 700, fontSize: 20 }}>{streak}</span>
+                    </div>
+                    <div style={{ color: pt.sub, fontSize: 11, marginTop: 4 }}>Day streak</div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, color: pt.terracotta }}>
+                  <span style={{ fontSize: 20 }}>🔥</span>
+                  <span style={{ fontFamily: pulseFonts.display, fontWeight: 800, fontSize: 34 }}>{streak}</span>
+                </div>
+                <div style={{ color: pt.sub, fontSize: 13 }}>
+                  day streak — keep it going. No questions logged yet this week.
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Continue where you left off */}
+      {pausedExam && (
+        <div className="page-container" style={{ marginBottom: 24 }}>
+          <div onClick={() => navigate('/mcq')}
             role="button" tabIndex={0}
             onKeyDown={onActivateKeyDown(() => navigate('/mcq'))}
             style={{
-              margin: '28px 0', padding: '20px 22px',
-              border: `1px solid ${p.lineStrong}`, borderLeft: `3px solid ${p.accent}`,
-              borderRadius: 4, cursor: 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 14,
-              transition: 'background 0.2s ease',
+              background: pt.terracottaSoft, border: `2px solid ${pt.terracotta}60`, borderRadius: 16,
+              padding: '16px 20px', cursor: 'pointer', display: 'flex', alignItems: 'center',
+              justifyContent: 'space-between', gap: 12, transition: 'all 0.2s'
             }}
-            onMouseEnter={e => e.currentTarget.style.background = p.surfaceRaised}
-            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-          >
+            onMouseEnter={e => e.currentTarget.style.borderColor = pt.terracotta}
+            onMouseLeave={e => e.currentTarget.style.borderColor = `${pt.terracotta}60`}>
             <div>
-              <div style={{ color: p.text, fontWeight: 700, fontSize: 15 }}>Continue where you left off</div>
-              <div style={{ color: p.textFaint, fontSize: 12, marginTop: 4, fontWeight: 600 }}>
+              <div style={{ color: pt.terracotta, fontWeight: 700, fontSize: 14 }}>⏸ Continue where you left off</div>
+              <div style={{ color: pt.sub, fontSize: 12, marginTop: 2 }}>
                 {Object.keys(pausedExam.answers || {}).length}/{(pausedExam.quizQuestions || []).length} answered
               </div>
             </div>
-            <div style={{ color: p.accent, fontSize: 20 }}>→</div>
+            <div style={{ color: pt.terracotta, fontSize: 20 }}>→</div>
           </div>
-        )}
+        </div>
+      )}
 
-        {/* ── Announcement — quiet notice, not a hero banner ────────── */}
-        {announcement && (
+      {/* Announcement */}
+      {announcement && (
+        <div className="page-container" style={{ marginBottom: 24 }}>
           <div style={{
-            margin: '28px 0', padding: '16px 20px',
-            borderLeft: `2px solid ${p.accent}`,
-            color: p.textMuted, fontSize: 14, fontWeight: 500, lineHeight: 1.7,
-            whiteSpace: 'pre-wrap',
+            background: `linear-gradient(135deg, ${pt.cobaltSoft}, ${pt.indigoSoft})`,
+            border: `1px solid ${pt.cobaltBorder}`, borderRadius: 16,
+            padding: '14px 20px', textAlign: 'center',
+            color: pt.text, fontSize: 14, fontWeight: 600, lineHeight: 1.6,
+            whiteSpace: 'pre-wrap'
           }}>
             {announcement}
           </div>
-        )}
-
-        {/* ── Active Modules — editorial chapter list ───────────────── */}
-        {activeModules.length > 0 && (
-          <div style={{ margin: '40px 0 8px' }}>
-            <div style={pulseEyebrow(p)}>Active Modules</div>
-            <div>
-              {activeModules.map((mod, i) => (
-                <ModuleRow key={mod.id} index={i} mod={mod} p={p} onClick={() => navigate(`/module/${mod.id}`)} />
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* ── Tools — always shown, in this exact order ─────────────── */}
-        <div style={{ margin: '40px 0 8px' }}>
-          <div style={pulseEyebrow(p)}>Tools</div>
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))',
-            gap: 10,
-          }}>
-            {toolCards.map((card, i) => (
-              <ToolItem key={i} card={card} p={p} onClick={() => navigate(card.to)} />
-            ))}
-          </div>
         </div>
+      )}
 
-        {/* ── Completed Modules — quieter than Active ───────────────── */}
-        {completedModules.length > 0 && (
-          <div style={{ margin: '40px 0 0' }}>
-            <div style={pulseEyebrow(p)}>Completed Modules</div>
-            <div>
-              {completedModules.map((mod, i) => (
-                <ModuleRow key={mod.id} index={i} mod={mod} p={p} quiet onClick={() => navigate(`/module/${mod.id}`)} />
-              ))}
-            </div>
-          </div>
-        )}
+      {/* Active Modules */}
+      {activeModules.length > 0 && (
+        <div className="page-container" style={{ marginBottom: 32 }}>
+          {sectionTitle('🟦 Active Modules')}
+          <AutoGrid>
+            {activeModules.map((mod, i) => (
+              <AnimatedCard key={mod.id} delay={200 + i * 80} color={mod.color} dark={dark}
+                onClick={() => navigate(`/module/${mod.id}`)}>
+                <div style={{ fontSize: 'clamp(32px, 3.5vw, 52px)', marginBottom: 8 }}>{mod.icon}</div>
+                <div style={{ color: c.text, fontSize: 'clamp(14px, 1.2vw, 17px)', fontWeight: 700, marginBottom: 8 }}>{mod.name}</div>
+                <div style={{
+                  display: 'inline-block', background: pt.cobaltSoft, color: pt.cobalt,
+                  border: `1px solid ${pt.cobaltBorder}`, borderRadius: 20, padding: '2px 10px', fontSize: 11, fontWeight: 700
+                }}>● Active</div>
+              </AnimatedCard>
+            ))}
+          </AutoGrid>
+        </div>
+      )}
+
+      {/* Tools — Schedules, Checklist, Anonymous Q&A, Leaderboard */}
+      <div className="page-container" style={{ marginBottom: 32 }}>
+        {sectionTitle('🛠 Tools')}
+        <AutoGrid>
+          {toolCards.map((card, i) => (
+            <AnimatedCard key={i} delay={400 + i * 80} color={card.accent === 'amber' ? pt.amber : pt.indigo} dark={dark}
+              onClick={() => navigate(card.to)}>
+              <div style={{ fontSize: 'clamp(28px, 3vw, 42px)', marginBottom: 8 }}>{card.emoji}</div>
+              <div style={{ color: c.text, fontSize: 'clamp(13px, 1.1vw, 16px)', fontWeight: 700 }}>{card.title}</div>
+            </AnimatedCard>
+          ))}
+        </AutoGrid>
       </div>
+
+      {/* Completed Modules */}
+      {completedModules.length > 0 && (
+        <div className="page-container">
+          {sectionTitle('✓ Completed Modules')}
+          <AutoGrid>
+            {completedModules.map((mod, i) => (
+              <AnimatedCard key={mod.id} delay={i * 80} color={pt.faint} dark={dark}
+                onClick={() => navigate(`/module/${mod.id}`)}>
+                <div style={{ fontSize: 'clamp(28px, 3vw, 42px)', marginBottom: 8, filter: 'grayscale(0.5)' }}>{mod.icon}</div>
+                <div style={{ color: c.sub, fontSize: 'clamp(13px, 1.1vw, 16px)', fontWeight: 700, marginBottom: 8 }}>{mod.name}</div>
+                <div style={{
+                  display: 'inline-block', background: `${pt.faint}20`, color: pt.faint,
+                  border: `1px solid ${pt.faint}40`, borderRadius: 20, padding: '2px 10px', fontSize: 11, fontWeight: 700
+                }}>✓ Completed</div>
+              </AnimatedCard>
+            ))}
+          </AutoGrid>
+        </div>
+      )}
     </div>
   )
 }
