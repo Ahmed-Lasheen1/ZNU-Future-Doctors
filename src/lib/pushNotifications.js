@@ -17,11 +17,20 @@ function urlBase64ToUint8Array(base64String) {
 // existing subscription if the browser already has one; otherwise
 // creates one and saves it. A duplicate insert (same endpoint) is
 // silently ignored — the unique constraint on `endpoint` handles it.
+//
+// Returns { success: boolean, reason?: string } instead of failing
+// silently, so the caller (NotifyPermissionButton) can actually tell
+// the student what went wrong instead of nothing happening with no
+// explanation.
 export async function subscribeToPush(userId) {
-  if (!('serviceWorker' in navigator) || !('PushManager' in window)) return
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+    console.warn('[push] Push not supported in this browser.')
+    return { success: false, reason: 'unsupported' }
+  }
+
   if (!VAPID_PUBLIC_KEY) {
-    console.warn('[push] Missing VITE_VAPID_PUBLIC_KEY — cannot subscribe.')
-    return
+    console.error('[push] Missing VITE_VAPID_PUBLIC_KEY — check Vercel env vars and redeploy.')
+    return { success: false, reason: 'missing_vapid_key' }
   }
 
   try {
@@ -41,11 +50,16 @@ export async function subscribeToPush(userId) {
       p256dh: subJson.keys.p256dh,
       auth: subJson.keys.auth
     })
+
     // 23505 = unique_violation — already subscribed with this endpoint, fine.
     if (error && error.code !== '23505') {
-      console.warn('[push] Could not save subscription:', error)
+      console.error('[push] Could not save subscription to Supabase:', error)
+      return { success: false, reason: 'db_insert_failed', error }
     }
+
+    return { success: true }
   } catch (e) {
-    console.warn('[push] Subscription failed:', e)
+    console.error('[push] Subscription failed:', e)
+    return { success: false, reason: 'subscribe_exception', error: e }
   }
 }
