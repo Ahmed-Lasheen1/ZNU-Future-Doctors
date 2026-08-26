@@ -23,6 +23,11 @@ export default function StagePage({ dark }) {
   const [selectedSummary, setSelectedSummary] = useState(null)
   const [loadError, setLoadError] = useState(false)
   const [driveUrl, setDriveUrl] = useState('')
+  // Subjects aren't tagged to a specific exam stage in the schema (only
+  // questions/files/summaries are) — so "Study by Lesson" here shows
+  // the module's full subject list, same as ModulePage, rather than a
+  // stage-filtered subset that the data can't actually support yet.
+  const [subjects, setSubjects] = useState([])
 
   useEffect(() => {
     fetchModuleStages(moduleId).then(setStages)
@@ -48,6 +53,11 @@ export default function StagePage({ dark }) {
     supabase.from('summaries').select('*').eq('module_id', moduleId).eq('exam_stage', stage).order('created_at')
       .then(({ data, error }) => {
         if (data) setSummaries(data)
+        if (error) setLoadError(true)
+      })
+    supabase.from('subjects').select('*').eq('module_id', moduleId).order('name')
+      .then(({ data, error }) => {
+        if (data) setSubjects(data)
         if (error) setLoadError(true)
       })
   }, [moduleId, stage])
@@ -137,6 +147,27 @@ export default function StagePage({ dark }) {
               </div>
             </a>
           )}
+        </div>
+      )}
+
+      {/* Study by Lesson — same subject cards as ModulePage. Subjects
+          aren't stage-specific in the schema, so this always shows the
+          module's full subject list regardless of which stage page
+          you're on; only shown once the module actually has subjects. */}
+      {subjects.length > 0 && (
+        <div style={{ marginBottom: 32 }}>
+          <h2 style={{ color: c.sub, fontSize: 13, fontWeight: 700, letterSpacing: 2, marginBottom: 16, textTransform: 'uppercase' }}>
+            📖 Study by Lesson
+          </h2>
+          <AutoGrid>
+            {subjects.map((sub, i) => (
+              <AnimatedCard key={sub.id} delay={i * 80} color={sub.color || '#34d399'} dark={dark}
+                onClick={() => navigate(`/module/${moduleId}/subject/${sub.id}`)}>
+                <div style={{ fontSize: 'clamp(28px, 3vw, 42px)', marginBottom: 8 }}>{sub.icon || '📖'}</div>
+                <div style={{ color: c.text, fontSize: 'clamp(13px, 1.1vw, 16px)', fontWeight: 700 }}>{sub.name}</div>
+              </AnimatedCard>
+            ))}
+          </AutoGrid>
         </div>
       )}
 
