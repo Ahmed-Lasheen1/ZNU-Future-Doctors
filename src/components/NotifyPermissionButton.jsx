@@ -4,32 +4,28 @@ import { useAuth } from '../App'
 import { subscribeToPush } from '../lib/pushNotifications'
 import { useToast } from './ToastProvider'
 
-// Small reusable "🔔 Enable notifications" button. Shows a helpful
-// status instead of just vanishing whenever notifications aren't
-// available or already denied.
+// Small reusable "🔔 Enable notifications" button.
 //
-// Important: having a LOCAL push subscription (from the browser's
-// pushManager) does NOT guarantee it was ever successfully saved to
-// the push_subscriptions table — an earlier insert could have failed
-// silently. So whenever permission is already granted, this
-// component re-syncs with the server in the background on every page
-// load, instead of trusting the local subscription alone.
+// Caches the last successfully-synced endpoint in localStorage so a
+// normal page refresh doesn't re-hit the network/DB every single time
+// (which was flashing the button back on if that resync call ever
+// hiccuped). Only actually calls subscribeToPush again when the local
+// push subscription's endpoint has changed, or when it's never been
+// confirmed successfully before — otherwise it trusts the cached
+// confirmation and stays invisible, as intended.
+const SYNCED_ENDPOINT_KEY = 'push_synced_endpoint'
+
 export default function NotifyPermissionButton({ dark, label = '🔔 Enable notifications' }) {
   const { user } = useAuth()
   const showToast = useToast()
   const c = getTheme(dark)
   const [busy, setBusy] = useState(false)
-  const [needsAction, setNeedsAction] = useState(false) // show the button?
-  const [checked, setChecked] = useState(false) // finished the initial silent check?
+  const [needsAction, setNeedsAction] = useState(false)
+  const [checked, setChecked] = useState(false)
 
   const supported = typeof window !== 'undefined' && 'Notification' in window && 'serviceWorker' in navigator && 'PushManager' in window
   const permission = supported ? Notification.permission : null
 
-  // Runs on every mount. If permission was never asked, show the
-  // button. If permission is already granted, silently (re)confirm
-  // the subscription is saved server-side — this is what fixes the
-  // "browser has a subscription but the DB row never made it" case
-  // without needing the person to do anything.
   useEffect(() => {
     if (!supported) { setChecked(true); return }
 
@@ -40,12 +36,32 @@ export default function NotifyPermissionButton({ dark, label = '🔔 Enable noti
     }
 
     if (permission === 'granted') {
-      subscribeToPush(user?.id).then(result => {
-        // Only surface a visible button if the silent resync failed —
-        // otherwise this stays invisible, which is the whole point.
-        setNeedsAction(!result.success)
-        setChecked(true)
-      })
+      navigator.serviceWorker.ready
+        .then(reg => reg.pushManager.getSubscription())
+        .then(async (sub) => {
+          const cachedEndpoint = localStorage.getItem(SYNCED_ENDPOINT_KEY)
+
+          // Already confirmed with the server for this exact endpoint —
+          // no need to hit the network again on every page load.
+          if (sub && cachedEndpoint === sub.endpoint) {
+            setNeedsAction(false)
+            setChecked(true)
+            return
+          }
+
+          // No local subscription, or it's a new/unconfirmed one —
+          // (re)sync it with the server now.
+          const result = await subscribeToPush(user?.id)
+          if (result.success) {
+            localStorage.setItem(SYNCED_ENDPOINT_KEY, result.endpoint)
+          }
+          setNeedsAction(!result.success)
+          setChecked(true)
+        })
+        .catch(() => {
+          setNeedsAction(true)
+          setChecked(true)
+        })
       return
     }
 
@@ -70,6 +86,7 @@ export default function NotifyPermissionButton({ dark, label = '🔔 Enable noti
     setBusy(false)
 
     if (result.success) {
+      localStorage.setItem(SYNCED_ENDPOINT_KEY, result.endpoint)
       setNeedsAction(false)
       showToast('✅ Notifications enabled!')
       return
@@ -84,7 +101,7 @@ export default function NotifyPermissionButton({ dark, label = '🔔 Enable noti
     showToast(messages[result.reason] || '❌ Could not enable notifications', 'error')
   }
 
-  if (!checked) return null // avoid a flash of the button while the silent check runs
+  if (!checked) return null
 
   if (!supported) {
     return (

@@ -13,15 +13,20 @@ function urlBase64ToUint8Array(base64String) {
   return Uint8Array.from([...rawData].map((c) => c.charCodeAt(0)))
 }
 
-// Call this right after Notification permission is granted. Reuses an
-// existing subscription if the browser already has one; otherwise
-// creates one and saves it. A duplicate insert (same endpoint) is
-// silently ignored — the unique constraint on `endpoint` handles it.
+// Call this right after Notification permission is granted, and also
+// silently on every page load (see NotifyPermissionButton) to keep the
+// server-side record in sync. Reuses an existing subscription if the
+// browser already has one; otherwise creates one and saves it.
 //
-// Returns { success: boolean, reason?: string } instead of failing
-// silently, so the caller (NotifyPermissionButton) can actually tell
-// the student what went wrong instead of nothing happening with no
-// explanation.
+// Uses `upsert` keyed on `endpoint` instead of a plain `insert` — this
+// makes the call safely repeatable: calling it again with the same
+// endpoint just re-confirms the row (and re-attaches it to the correct
+// user_id if the person has since signed in) instead of throwing a
+// unique-constraint error that a caller might mishandle.
+//
+// Returns { success: boolean, reason?: string } so the caller can
+// actually tell the student what went wrong instead of nothing
+// happening with no explanation.
 export async function subscribeToPush(userId) {
   if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
     console.warn('[push] Push not supported in this browser.')
@@ -44,20 +49,24 @@ export async function subscribeToPush(userId) {
     }
 
     const subJson = sub.toJSON()
-    const { error } = await supabase.from('push_subscriptions').insert({
-      user_id: userId || null,
-      endpoint: subJson.endpoint,
-      p256dh: subJson.keys.p256dh,
-      auth: subJson.keys.auth
-    })
+    const { error } = await supabase
+      .from('push_subscriptions')
+      .upsert(
+        {
+          user_id: userId || null,
+          endpoint: subJson.endpoint,
+          p256dh: subJson.keys.p256dh,
+          auth: subJson.keys.auth
+        },
+        { onConflict: 'endpoint' }
+      )
 
-    // 23505 = unique_violation — already subscribed with this endpoint, fine.
-    if (error && error.code !== '23505') {
+    if (error) {
       console.error('[push] Could not save subscription to Supabase:', error)
       return { success: false, reason: 'db_insert_failed', error }
     }
 
-    return { success: true }
+    return { success: true, endpoint: subJson.endpoint }
   } catch (e) {
     console.error('[push] Subscription failed:', e)
     return { success: false, reason: 'subscribe_exception', error: e }
