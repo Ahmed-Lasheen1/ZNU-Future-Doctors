@@ -3,49 +3,26 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth, NavMenu, useModules } from '../App'
 import { supabase } from '../supabase'
 import ErrorBanner from '../components/ErrorBanner'
+import AnimatedCard from '../components/AnimatedCard'
+import AutoGrid from '../components/AutoGrid'
 import { computeStreak } from '../lib/streak'
 import { getGuestHistory } from '../lib/reviewStorage'
 import { loadSavedActiveExam } from '../lib/activeExam'
 import NotifyPermissionButton from '../components/NotifyPermissionButton'
-import ZNUPulse from '../components/ZNUPulse'
+import PulseLogo from '../components/pulse/PulseLogo'
+import { getPulseTokens } from '../lib/pulseTheme'
 
+// Order intentionally fixed to: Schedules, Checklist, Anonymous Q&A,
+// Leaderboard (see New Design Template.md). Colors are assigned at
+// render time from the ZNU PULSE token set (see the `toolColors`
+// array below) instead of being hardcoded here, since tokens depend
+// on dark/light mode.
 const toolCards = [
   { emoji: '📅', title: 'Schedules', to: '/schedule' },
   { emoji: '🎯', title: 'Checklist', to: '/checklist' },
   { emoji: '💬', title: 'Anonymous Q&A', to: '/anon-questions' },
   { emoji: '🏆', title: 'Leaderboard', to: '/profile?tab=leaderboard' },
 ]
-
-// ── Home-page-only color system ───────────────────────────────────────
-// Deliberately separate from theme.js: this redesign is scoped to Home
-// alone (per request) and specifically bans green/near-black/near-white,
-// which the app-wide theme doesn't guarantee. Every other page keeps
-// using theme.js untouched.
-function homeTheme(dark) {
-  return dark ? {
-    canvas: '#18263A',
-    surface: '#233650',
-    surfaceRaised: '#263953',
-    textStrong: '#E8EEF7',
-    textSub: '#AEBBD0',
-    border: '#33486A',
-    cobalt: '#5B8DEF',
-    indigo: '#9A90F0',
-    terracotta: '#E2725B',
-    amber: '#F0B84B',
-  } : {
-    canvas: '#E9EEF5',
-    surface: '#F7F9FC',
-    surfaceRaised: '#FFFFFF',
-    textStrong: '#15243A',
-    textSub: '#52637A',
-    border: '#C7D2E3',
-    cobalt: '#2F6FED',
-    indigo: '#6C5FCF',
-    terracotta: '#D9634B',
-    amber: '#B9791F',
-  }
-}
 
 // Small helper so a missing/blank name never crashes the avatar badge —
 // falls back to a "?" instead of calling .charAt(0) on an empty string.
@@ -64,15 +41,33 @@ function onActivateKeyDown(handler) {
   }
 }
 
+// Small uppercase section label with a colored accent dot instead of
+// an emoji — keeps every section marker on the same restrained,
+// "precise instrument" visual language and avoids emoji glyphs that
+// render as green on some platforms (checkmarks, green circles).
+function SectionLabel({ text, color, t }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+      <span style={{ width: 6, height: 6, borderRadius: 2, background: color, display: 'inline-block', flexShrink: 0 }} />
+      <span style={{ color: t.textSub, fontSize: 12, fontWeight: 800, letterSpacing: 2, textTransform: 'uppercase' }}>{text}</span>
+    </div>
+  )
+}
+
 export default function Home({ dark, toggleTheme }) {
-  const t = homeTheme(dark)
+  const t = getPulseTokens(dark)
   const navigate = useNavigate()
   const { user, profile } = useAuth()
   const { modules, modulesError } = useModules()
+  const [titleVisible, setTitleVisible] = useState(false)
   const [announcement, setAnnouncement] = useState('')
   const [streak, setStreak] = useState(0)
   const [pausedExam, setPausedExam] = useState(null)
   const [weeklySummary, setWeeklySummary] = useState(null)
+
+  useEffect(() => {
+    setTimeout(() => setTitleVisible(true), 100)
+  }, [])
 
   useEffect(() => {
     supabase.from('site_settings').select('value').eq('key', 'home_announcement').single()
@@ -174,177 +169,177 @@ export default function Home({ dark, toggleTheme }) {
 
   const activeModules = modules.filter(m => m.status === 'active')
   const completedModules = modules.filter(m => m.status === 'completed')
-  const showWeeklyReport = !!weeklySummary || streak > 0
 
-  const pad2 = (n) => String(n).padStart(2, '0')
+  // Tool card accent colors, assigned in the fixed display order
+  // (Schedules, Checklist, Anonymous Q&A, Leaderboard) from the ZNU
+  // PULSE accent set — no green anywhere in the set.
+  const toolColors = [t.indigo, t.amber, t.cobalt, t.terracotta]
 
-  const kickerStyle = {
-    color: t.textSub, fontSize: 11, fontWeight: 800, letterSpacing: 3,
-    textTransform: 'uppercase', marginBottom: 16
+  // Weekly-report stats, built as a simple ordered list so typography
+  // can scale by importance (largest = the most meaningful active
+  // value) rather than four identical stat cards. When there's no
+  // weekly activity but a streak still exists, the streak becomes the
+  // headline value instead of being squeezed in as an afterthought.
+  const weeklyStats = []
+  if (weeklySummary) {
+    weeklyStats.push({
+      key: 'accuracy', label: 'Accuracy', size: 40,
+      color: weeklySummary.accuracy >= 60 ? t.cobalt : t.terracotta,
+      value: `${weeklySummary.accuracy}%`
+    })
+    weeklyStats.push({ key: 'questions', label: 'Questions', size: 22, color: t.textStrong, value: weeklySummary.totalAttempted })
+    if (weeklySummary.topSubjectName) {
+      weeklyStats.push({ key: 'subject', label: 'Most practiced', size: 15, color: t.indigo, value: weeklySummary.topSubjectName })
+    }
   }
+  if (streak > 0) {
+    weeklyStats.push({
+      key: 'streak', label: 'Study streak', color: t.amber,
+      size: weeklySummary ? 20 : 36,
+      value: `${streak} day${streak === 1 ? '' : 's'}`
+    })
+  }
+  const showWeekly = weeklyStats.length > 0
+  const weeklyTitle = weeklySummary ? 'This Week' : 'Study Streak'
 
   return (
-    <div style={{ background: t.canvas, minHeight: '100vh', paddingBottom: 100 }}>
-
-      {/* 1 — modules-loading error */}
+    <div style={{ background: t.canvas, minHeight: '100vh', padding: '0 0 100px', transition: 'background 0.3s ease' }}>
       {modulesError && <div className="page-container" style={{ paddingTop: 20 }}><ErrorBanner /></div>}
 
-      {/* 2 — compact header / ZNU PULSE brand area */}
-      <div className="page-container" style={{ padding: '20px 16px 8px' }}>
-        <div style={{
-          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-          flexWrap: 'wrap', gap: 12
-        }}>
-          {/* Brand mark: ECG + wordmark */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <ZNUPulse color={t.cobalt} />
-            <div>
-              <div style={{
-                fontSize: 19, fontWeight: 900, letterSpacing: 1,
-                color: t.textStrong, lineHeight: 1.1
-              }}>
-                ZNU <span style={{ color: t.cobalt }}>PULSE</span>
-              </div>
-              <div style={{
-                fontSize: 10, fontWeight: 700, letterSpacing: 2,
-                color: t.textSub, textTransform: 'uppercase', marginTop: 1
-              }}>
-                For Future Doctors
-              </div>
-            </div>
+      {/* Compact header: utility controls + the ZNU PULSE ECG brand mark.
+          Deliberately NOT a tall hero — see New Design Template.md. */}
+      <div className="page-container" style={{
+        padding: '20px 16px 22px',
+        opacity: titleVisible ? 1 : 0,
+        transform: titleVisible ? 'translateY(0)' : 'translateY(-12px)',
+        transition: 'all 0.5s ease'
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 22 }}>
+          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+            <button onClick={toggleTheme} style={{
+              background: t.surface, color: t.cobalt, border: `1px solid ${t.border}`,
+              padding: '6px 14px', borderRadius: 10,
+              cursor: 'pointer', fontSize: 16, fontWeight: 700
+            }} aria-label={dark ? 'Switch to light mode' : 'Switch to dark mode'}>{dark ? '☀️' : '🌙'}</button>
+            <NavMenu dark={dark} />
+            <button onClick={() => navigate('/search')} aria-label="Search" style={{
+              background: t.surface, color: t.cobalt, border: `1px solid ${t.border}`,
+              padding: '6px 14px', borderRadius: 10,
+              cursor: 'pointer', fontSize: 16, fontWeight: 700
+            }}>🔍</button>
           </div>
 
-          {/* Utility controls */}
-          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-            <button onClick={toggleTheme} style={iconBtn(t)} aria-label={dark ? 'Switch to light mode' : 'Switch to dark mode'}>
-              {dark ? '☀️' : '🌙'}
-            </button>
-            <NavMenu dark={dark} />
-            <button onClick={() => navigate('/search')} aria-label="Search" style={iconBtn(t)}>🔍</button>
-
-            {user && profile ? (
-              <div onClick={() => navigate('/profile')}
-                role="button" tabIndex={0}
-                onKeyDown={onActivateKeyDown(() => navigate('/profile'))}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer',
-                  marginLeft: 4, padding: '4px 10px 4px 4px', borderRadius: 20,
-                  border: `1px solid ${t.border}`, background: t.surface
-                }}>
-                <div style={{
-                  width: 26, height: 26, borderRadius: '50%',
-                  background: `linear-gradient(135deg, ${t.cobalt}, ${t.indigo})`,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 11, fontWeight: 900, color: '#fff', flexShrink: 0
-                }}>{initialOf(profile.name)}</div>
-                <span style={{ color: t.amber, fontSize: 11, fontWeight: 800 }}>⭐ {profile.points}</span>
+          {/* Profile Bar */}
+          {user && profile ? (
+            <div onClick={() => navigate('/profile')}
+              role="button" tabIndex={0}
+              onKeyDown={onActivateKeyDown(() => navigate('/profile'))}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 10,
+                background: t.surface,
+                border: `1px solid ${t.border}`,
+                borderRadius: 20, padding: '8px 16px', cursor: 'pointer',
+                transition: 'all 0.2s'
+              }}
+              onMouseEnter={e => e.currentTarget.style.borderColor = t.cobalt}
+              onMouseLeave={e => e.currentTarget.style.borderColor = t.border}>
+              <div style={{
+                width: 32, height: 32, borderRadius: '50%',
+                background: `linear-gradient(135deg, ${t.cobalt}, ${t.indigo})`,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 14, fontWeight: 900, color: '#fff', flexShrink: 0
+              }}>
+                {initialOf(profile.name)}
               </div>
-            ) : (
-              <button onClick={() => navigate('/auth')} style={{
-                background: 'transparent', color: t.cobalt, border: `1px solid ${t.cobalt}80`,
-                padding: '6px 14px', borderRadius: 20, cursor: 'pointer', fontSize: 12, fontWeight: 800,
-                marginLeft: 4
-              }}>Sign In</button>
-            )}
+              <div style={{ textAlign: 'left' }}>
+                <div style={{ color: t.textStrong, fontSize: 13, fontWeight: 700 }}>
+                  Dr. {profile.name}
+                </div>
+                <div style={{ color: t.amber, fontSize: 11, fontWeight: 700 }}>
+                  ⭐ {profile.points} points
+                </div>
+              </div>
+            </div>
+          ) : (
+            <button onClick={() => navigate('/auth')} style={{
+              background: `${t.cobalt}20`, color: t.cobalt,
+              border: `1px solid ${t.cobalt}40`,
+              padding: '8px 16px', borderRadius: 20,
+              cursor: 'pointer', fontSize: 13, fontWeight: 700
+            }}>Sign In →</button>
+          )}
+        </div>
+
+        {/* ZNU PULSE brand mark: ECG logo + wordmark, compact single unit */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 14 }}>
+          <PulseLogo dark={dark} size={34} />
+          <div style={{ textAlign: 'left' }}>
+            <div style={{ fontSize: 21, fontWeight: 900, letterSpacing: 2, color: t.textStrong, lineHeight: 1.1 }}>
+              ZNU <span style={{ color: t.cobalt }}>PULSE</span>
+            </div>
+            <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: 3, color: t.textSub, textTransform: 'uppercase', marginTop: 4 }}>
+              For Future Doctors
+            </div>
           </div>
         </div>
       </div>
 
-      {/* 3 — notification permission control */}
-      <div className="page-container" style={{ padding: '10px 16px 0' }}>
+      <div className="page-container">
         <NotifyPermissionButton dark={dark} label="🔔 Enable exam & deadline reminders" />
       </div>
 
-      {/* 4 — weekly report, including study streak */}
-      {showWeeklyReport && (
-        <div className="page-container" style={{ padding: '32px 16px 8px' }}>
-          <div style={kickerStyle}>This Week</div>
-          <div style={{
-            background: t.surface, border: `1px solid ${t.border}`, borderRadius: 4,
-            padding: '28px 24px', display: 'flex', flexWrap: 'wrap',
-            alignItems: 'baseline', gap: 'clamp(24px, 6vw, 56px)'
-          }}>
-            {weeklySummary && (
-              <div>
-                <div style={{
-                  fontSize: 'clamp(48px, 7vw, 76px)', fontWeight: 900, lineHeight: 1,
-                  color: weeklySummary.accuracy >= 60 ? t.cobalt : t.terracotta
-                }}>
-                  {weeklySummary.accuracy}%
+      {/* Weekly report — now also the home of the study streak. Typography
+          scales by importance instead of four identical stat cards. */}
+      {showWeekly && (
+        <div className="page-container" style={{ marginBottom: 24 }}>
+          <div style={{ background: t.surface, border: `1px solid ${t.border}`, borderRadius: 18, padding: '20px 22px' }}>
+            <div style={{ color: t.textSub, fontSize: 11, fontWeight: 800, letterSpacing: 2, marginBottom: 16, textTransform: 'uppercase' }}>
+              {weeklyTitle}
+            </div>
+            <div style={{ display: 'flex', gap: 28, flexWrap: 'wrap', alignItems: 'baseline' }}>
+              {weeklyStats.map(stat => (
+                <div key={stat.key}>
+                  <div style={{ color: stat.color, fontWeight: 900, fontSize: stat.size, lineHeight: 1 }}>{stat.value}</div>
+                  <div style={{ color: t.textSub, fontSize: 11, marginTop: 6, fontWeight: 600 }}>{stat.label}</div>
                 </div>
-                <div style={{ color: t.textSub, fontSize: 11, fontWeight: 700, letterSpacing: 1, marginTop: 6 }}>
-                  ACCURACY
-                </div>
-              </div>
-            )}
-
-            {weeklySummary && (
-              <div>
-                <div style={{ fontSize: 'clamp(24px, 3vw, 34px)', fontWeight: 800, color: t.textStrong, lineHeight: 1 }}>
-                  {weeklySummary.totalAttempted}
-                </div>
-                <div style={{ color: t.textSub, fontSize: 11, fontWeight: 700, letterSpacing: 1, marginTop: 6 }}>
-                  QUESTIONS ATTEMPTED
-                </div>
-              </div>
-            )}
-
-            {weeklySummary?.topSubjectName && (
-              <div>
-                <div style={{ fontSize: 16, fontWeight: 700, color: t.indigo, lineHeight: 1.3 }}>
-                  {weeklySummary.topSubjectName}
-                </div>
-                <div style={{ color: t.textSub, fontSize: 11, fontWeight: 700, letterSpacing: 1, marginTop: 6 }}>
-                  MOST PRACTICED
-                </div>
-              </div>
-            )}
-
-            {streak > 0 && (
-              <div>
-                <div style={{ fontSize: 15, fontWeight: 700, color: t.textStrong }}>
-                  {streak}-day streak
-                </div>
-                <div style={{ color: t.textSub, fontSize: 11, fontWeight: 600, marginTop: 4 }}>
-                  of continuous practice
-                </div>
-              </div>
-            )}
+              ))}
+            </div>
           </div>
         </div>
       )}
 
-      {/* 5 — resume paused exam */}
+      {/* Continue where you left off */}
       {pausedExam && (
-        <div className="page-container" style={{ padding: '32px 16px 8px' }}>
-          <div
+        <div className="page-container" style={{ marginBottom: 24 }}>
+          <div onClick={() => navigate('/mcq')}
             role="button" tabIndex={0}
-            onClick={() => navigate('/mcq')}
             onKeyDown={onActivateKeyDown(() => navigate('/mcq'))}
             style={{
-              background: t.surface, border: `2px solid ${t.terracotta}`, borderRadius: 4,
-              padding: '24px 24px', cursor: 'pointer', display: 'flex',
-              justifyContent: 'space-between', alignItems: 'center', gap: 16, flexWrap: 'wrap'
-            }}>
+              background: `${t.terracotta}20`, border: `2px solid ${t.terracotta}60`, borderRadius: 16,
+              padding: '16px 20px', cursor: 'pointer', display: 'flex', alignItems: 'center',
+              justifyContent: 'space-between', gap: 12, transition: 'all 0.2s'
+            }}
+            onMouseEnter={e => e.currentTarget.style.borderColor = t.terracotta}
+            onMouseLeave={e => e.currentTarget.style.borderColor = `${t.terracotta}60`}>
             <div>
-              <div style={{ color: t.terracotta, fontWeight: 900, fontSize: 'clamp(16px, 2vw, 20px)', marginBottom: 6 }}>
-                ⏸ CONTINUE WHERE YOU LEFT OFF
-              </div>
-              <div style={{ color: t.textSub, fontSize: 13 }}>
+              <div style={{ color: t.terracotta, fontWeight: 700, fontSize: 14 }}>⏸ Continue where you left off</div>
+              <div style={{ color: t.textSub, fontSize: 12, marginTop: 2 }}>
                 {Object.keys(pausedExam.answers || {}).length}/{(pausedExam.quizQuestions || []).length} answered
               </div>
             </div>
-            <div style={{ color: t.terracotta, fontSize: 26, fontWeight: 900 }}>→</div>
+            <div style={{ color: t.terracotta, fontSize: 20 }}>→</div>
           </div>
         </div>
       )}
 
-      {/* 6 — admin announcement */}
+      {/* Announcement */}
       {announcement && (
-        <div className="page-container" style={{ padding: '32px 16px 0' }}>
+        <div className="page-container" style={{ marginBottom: 24 }}>
           <div style={{
-            borderLeft: `3px solid ${t.cobalt}`, paddingLeft: 16,
-            color: t.textStrong, fontSize: 13, fontWeight: 600, lineHeight: 1.6,
+            background: `linear-gradient(135deg, ${t.cobalt}20, ${t.indigo}15)`,
+            border: `1px solid ${t.cobalt}40`, borderRadius: 16,
+            padding: '14px 20px', textAlign: 'center',
+            color: t.textStrong, fontSize: 14, fontWeight: 600, lineHeight: 1.6,
             whiteSpace: 'pre-wrap'
           }}>
             {announcement}
@@ -352,113 +347,59 @@ export default function Home({ dark, toggleTheme }) {
         </div>
       )}
 
-      {/* 7 — active modules */}
+      {/* Active Modules */}
       {activeModules.length > 0 && (
-        <div className="page-container" style={{ padding: '40px 16px 8px' }}>
-          <div style={kickerStyle}>Active Modules</div>
-          <div>
+        <div className="page-container" style={{ marginBottom: 32 }}>
+          <SectionLabel text="Active Modules" color={t.cobalt} t={t} />
+          <AutoGrid>
             {activeModules.map((mod, i) => (
-              <div
-                key={mod.id}
-                role="button" tabIndex={0}
-                onClick={() => navigate(`/module/${mod.id}`)}
-                onKeyDown={onActivateKeyDown(() => navigate(`/module/${mod.id}`))}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 20,
-                  padding: '22px 4px', cursor: 'pointer',
-                  borderBottom: `1px solid ${t.border}`,
-                  borderLeft: '3px solid transparent',
-                  paddingLeft: 16, transition: 'all 0.2s'
-                }}
-                onMouseEnter={e => { e.currentTarget.style.borderLeftColor = t.cobalt; e.currentTarget.style.background = t.surface }}
-                onMouseLeave={e => { e.currentTarget.style.borderLeftColor = 'transparent'; e.currentTarget.style.background = 'transparent' }}
-              >
+              <AnimatedCard key={mod.id} delay={200 + i * 80} color={mod.color} dark={dark}
+                onClick={() => navigate(`/module/${mod.id}`)}>
+                <div style={{ fontSize: 'clamp(32px, 3.5vw, 52px)', marginBottom: 8 }}>{mod.icon}</div>
+                <div style={{ color: t.textStrong, fontSize: 'clamp(14px, 1.2vw, 17px)', fontWeight: 700, marginBottom: 8 }}>{mod.name}</div>
                 <div style={{
-                  fontSize: 'clamp(28px, 4vw, 44px)', fontWeight: 900,
-                  color: t.border, minWidth: 60, flexShrink: 0
-                }}>{pad2(i + 1)}</div>
-
-                <div style={{ fontSize: 26, flexShrink: 0 }}>{mod.icon}</div>
-
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{
-                    fontSize: 'clamp(16px, 1.6vw, 22px)', fontWeight: 800,
-                    color: t.textStrong, letterSpacing: -0.3
-                  }}>{mod.name}</div>
-                  <div style={{ color: t.cobalt, fontSize: 11, fontWeight: 700, letterSpacing: 1, marginTop: 4 }}>
-                    ● ACTIVE
-                  </div>
-                </div>
-
-                <div style={{
-                  color: t.cobalt, fontWeight: 800, fontSize: 13,
-                  whiteSpace: 'nowrap', flexShrink: 0, letterSpacing: 0.5
-                }}>
-                  CONTINUE →
-                </div>
-              </div>
+                  display: 'inline-block', background: `${t.cobalt}20`, color: t.cobalt,
+                  border: `1px solid ${t.cobalt}40`, borderRadius: 20, padding: '2px 10px', fontSize: 11, fontWeight: 700
+                }}>● Active</div>
+              </AnimatedCard>
             ))}
-          </div>
+          </AutoGrid>
         </div>
       )}
 
-      {/* 8 — tools: Schedules, Checklist, Anonymous Q&A, Leaderboard */}
-      <div className="page-container" style={{ padding: '40px 16px 8px' }}>
-        <div style={kickerStyle}>Tools</div>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px 28px' }}>
+      {/* Tools */}
+      <div className="page-container" style={{ marginBottom: 32 }}>
+        <SectionLabel text="Tools" color={t.indigo} t={t} />
+        <AutoGrid>
           {toolCards.map((card, i) => (
-            <div
-              key={i} role="button" tabIndex={0}
-              onClick={() => navigate(card.to)}
-              onKeyDown={onActivateKeyDown(() => navigate(card.to))}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer',
-                padding: '10px 4px', borderBottom: '2px solid transparent'
-              }}
-              onMouseEnter={e => e.currentTarget.style.borderBottomColor = t.cobalt}
-              onMouseLeave={e => e.currentTarget.style.borderBottomColor = 'transparent'}
-            >
-              <span style={{ fontSize: 18 }}>{card.emoji}</span>
-              <span style={{ color: t.textStrong, fontWeight: 700, fontSize: 14 }}>{card.title}</span>
-            </div>
+            <AnimatedCard key={i} delay={400 + i * 80} color={toolColors[i]} dark={dark}
+              onClick={() => navigate(card.to)}>
+              <div style={{ fontSize: 'clamp(28px, 3vw, 42px)', marginBottom: 8 }}>{card.emoji}</div>
+              <div style={{ color: t.textStrong, fontSize: 'clamp(13px, 1.1vw, 16px)', fontWeight: 700 }}>{card.title}</div>
+            </AnimatedCard>
           ))}
-        </div>
+        </AutoGrid>
       </div>
 
-      {/* 9 — completed modules */}
+      {/* Completed Modules */}
       {completedModules.length > 0 && (
-        <div className="page-container" style={{ padding: '32px 16px 0' }}>
-          <div style={{ color: t.textSub, fontSize: 11, fontWeight: 700, letterSpacing: 1, marginBottom: 12 }}>
-            ✓ COMPLETED MODULES
-          </div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px 20px' }}>
-            {completedModules.map(mod => (
-              <div
-                key={mod.id} role="button" tabIndex={0}
-                onClick={() => navigate(`/module/${mod.id}`)}
-                onKeyDown={onActivateKeyDown(() => navigate(`/module/${mod.id}`))}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer',
-                  padding: '6px 0', opacity: 0.7
-                }}
-              >
-                <span style={{ fontSize: 15, filter: 'grayscale(0.4)' }}>{mod.icon}</span>
-                <span style={{ color: t.textSub, fontWeight: 600, fontSize: 13 }}>{mod.name}</span>
-              </div>
+        <div className="page-container">
+          <SectionLabel text="Completed Modules" color={t.slate} t={t} />
+          <AutoGrid>
+            {completedModules.map((mod, i) => (
+              <AnimatedCard key={mod.id} delay={i * 80} color={t.slate} dark={dark}
+                onClick={() => navigate(`/module/${mod.id}`)}>
+                <div style={{ fontSize: 'clamp(28px, 3vw, 42px)', marginBottom: 8, filter: 'grayscale(0.5)' }}>{mod.icon}</div>
+                <div style={{ color: t.textSub, fontSize: 'clamp(13px, 1.1vw, 16px)', fontWeight: 700, marginBottom: 8 }}>{mod.name}</div>
+                <div style={{
+                  display: 'inline-block', background: `${t.slate}20`, color: t.slate,
+                  border: `1px solid ${t.slate}40`, borderRadius: 20, padding: '2px 10px', fontSize: 11, fontWeight: 700
+                }}>✓ Completed</div>
+              </AnimatedCard>
             ))}
-          </div>
+          </AutoGrid>
         </div>
       )}
-
-      {/* 10 — Footer is rendered globally in App.jsx, unchanged */}
     </div>
   )
 }
-
-const iconBtn = (t) => ({
-  background: t.surface,
-  color: t.cobalt,
-  border: `1px solid ${t.border}`,
-  padding: '6px 12px', borderRadius: 10,
-  cursor: 'pointer', fontSize: 15, fontWeight: 700
-})
