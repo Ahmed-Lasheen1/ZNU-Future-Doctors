@@ -2,9 +2,7 @@
 // direction (see New Full Design System.md). This is deliberately a
 // SEPARATE file from src/theme.js: nothing here replaces or mutates
 // the existing design system, so every page other than Home keeps
-// using the current cyan-heavy look unchanged. Once this direction is
-// approved, its tokens can be merged into theme.js and rolled out
-// page by page.
+// using the current cyan-heavy look unchanged.
 
 export const fontSans =
   "'Inter', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
@@ -28,6 +26,8 @@ export function getPremiumTheme(dark) {
         success: '#4ADE80',
         warning: '#F5B759',
         danger: '#F0776B',
+        glowA: 'rgba(108,147,232,0.16)',
+        glowB: 'rgba(79,184,169,0.14)',
         fontSans,
         fontDisplay,
       }
@@ -46,6 +46,8 @@ export function getPremiumTheme(dark) {
         success: '#1E9E5A',
         warning: '#B9760A',
         danger: '#C0392B',
+        glowA: 'rgba(36,64,122,0.10)',
+        glowB: 'rgba(47,122,115,0.10)',
         fontSans,
         fontDisplay,
       }
