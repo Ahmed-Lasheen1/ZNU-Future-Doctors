@@ -2,19 +2,17 @@ import { useState, useEffect } from 'react'
 import { getTheme } from '../theme'
 import { useAuth } from '../App'
 import { subscribeToPush } from '../lib/pushNotifications'
+import { supabase } from '../supabase'
 import { useToast } from './ToastProvider'
 
 // Small reusable "🔔 Enable notifications" button.
 //
-// Caches the last successfully-synced endpoint in localStorage so a
-// normal page refresh doesn't re-hit the network/DB every single time
-// (which was flashing the button back on if that resync call ever
-// hiccuped). Only actually calls subscribeToPush again when the local
-// push subscription's endpoint has changed, or when it's never been
-// confirmed successfully before — otherwise it trusts the cached
-// confirmation and stays invisible, as intended.
-const SYNCED_ENDPOINT_KEY = 'push_synced_endpoint'
-
+// Does NOT rely on localStorage to remember "already synced" — iOS
+// can clear a Home Screen PWA's storage between launches, which was
+// making this button reappear even though the subscription was fine.
+// Instead, on every mount it asks Supabase directly whether THIS
+// device's current push endpoint is already saved, which is the only
+// source of truth that actually matters.
 export default function NotifyPermissionButton({ dark, label = '🔔 Enable notifications' }) {
   const { user } = useAuth()
   const showToast = useToast()
@@ -27,46 +25,60 @@ export default function NotifyPermissionButton({ dark, label = '🔔 Enable noti
   const permission = supported ? Notification.permission : null
 
   useEffect(() => {
-    if (!supported) { setChecked(true); return }
+    let cancelled = false
 
-    if (permission === 'default') {
-      setNeedsAction(true)
-      setChecked(true)
-      return
-    }
+    async function check() {
+      if (!supported) { if (!cancelled) setChecked(true); return }
 
-    if (permission === 'granted') {
-      navigator.serviceWorker.ready
-        .then(reg => reg.pushManager.getSubscription())
-        .then(async (sub) => {
-          const cachedEndpoint = localStorage.getItem(SYNCED_ENDPOINT_KEY)
+      if (permission === 'default') {
+        if (!cancelled) { setNeedsAction(true); setChecked(true) }
+        return
+      }
 
-          // Already confirmed with the server for this exact endpoint —
-          // no need to hit the network again on every page load.
-          if (sub && cachedEndpoint === sub.endpoint) {
-            setNeedsAction(false)
-            setChecked(true)
-            return
-          }
+      if (permission === 'denied') {
+        if (!cancelled) setChecked(true)
+        return
+      }
 
-          // No local subscription, or it's a new/unconfirmed one —
-          // (re)sync it with the server now.
+      // permission === 'granted' — verify against the server, not a
+      // local flag, since local storage isn't reliable on iOS PWAs.
+      try {
+        const reg = await navigator.serviceWorker.ready
+        const sub = await reg.pushManager.getSubscription()
+
+        if (!sub) {
+          // Browser says granted but has no actual subscription object
+          // (can happen after iOS clears things) — needs a fresh one.
+          if (!cancelled) { setNeedsAction(true); setChecked(true) }
+          return
+        }
+
+        const { data, error } = await supabase
+          .from('push_subscriptions')
+          .select('id')
+          .eq('endpoint', sub.endpoint)
+          .maybeSingle()
+
+        if (cancelled) return
+
+        if (!error && data) {
+          // Confirmed present on the server — nothing to do.
+          setNeedsAction(false)
+        } else {
+          // Either the row genuinely isn't there, or the lookup itself
+          // failed (e.g. RLS blocking a plain select) — try to
+          // (re)save it silently once before bothering the student.
           const result = await subscribeToPush(user?.id)
-          if (result.success) {
-            localStorage.setItem(SYNCED_ENDPOINT_KEY, result.endpoint)
-          }
           setNeedsAction(!result.success)
-          setChecked(true)
-        })
-        .catch(() => {
-          setNeedsAction(true)
-          setChecked(true)
-        })
-      return
+        }
+        setChecked(true)
+      } catch {
+        if (!cancelled) { setNeedsAction(true); setChecked(true) }
+      }
     }
 
-    // denied
-    setChecked(true)
+    check()
+    return () => { cancelled = true }
   }, [supported, permission, user?.id])
 
   async function handleClick() {
@@ -86,7 +98,6 @@ export default function NotifyPermissionButton({ dark, label = '🔔 Enable noti
     setBusy(false)
 
     if (result.success) {
-      localStorage.setItem(SYNCED_ENDPOINT_KEY, result.endpoint)
       setNeedsAction(false)
       showToast('✅ Notifications enabled!')
       return
