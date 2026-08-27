@@ -18,7 +18,7 @@ type TiltProps = {
   rotationFactor?: number;
   isRevese?: boolean;
   springOptions?: SpringOptions;
-};
+} & Omit<React.HTMLAttributes<HTMLDivElement>, 'style' | 'className' | 'children'>;
 
 export function Tilt({
   children,
@@ -27,6 +27,9 @@ export function Tilt({
   rotationFactor = 15,
   isRevese = false,
   springOptions,
+  onMouseEnter,
+  onMouseLeave,
+  ...rest
 }: TiltProps) {
   const ref = useRef<HTMLDivElement>(null);
 
@@ -69,9 +72,14 @@ export function Tilt({
     y.set(yPos);
   };
 
-  const handleMouseLeave = () => {
+  // Still resets the tilt on mouse-leave, but also forwards to any
+  // onMouseLeave the caller passed in (e.g. to clear a `hovered` state) —
+  // this is what lets callers skip wrapping Tilt in an extra div just to
+  // listen for hover/click/keyboard.
+  const handleMouseLeave = (e: React.MouseEvent<HTMLDivElement>) => {
     x.set(0);
     y.set(0);
+    onMouseLeave?.(e);
   };
 
   return (
@@ -85,6 +93,8 @@ export function Tilt({
       }}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
+      onMouseEnter={onMouseEnter}
+      {...rest}
     >
       {children}
     </motion.div>
