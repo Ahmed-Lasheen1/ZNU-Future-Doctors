@@ -409,7 +409,7 @@ export default function Home({ dark, toggleTheme }) {
               ) : null}
 
               <div style={{ marginTop: 22 }}>
-                <EcgHero pt={pt} height={220} logoSrc={LOGO_SRC} />
+                <EcgHero pt={pt} height={220} />
               </div>
             </div>
 
