@@ -34,11 +34,22 @@ interface AuthComponentProps {
   onContinueAsGuest: () => void
 }
 
-// Diagonal gradient matching the ZNU Pulse app icon (deep navy sliding
-// into the app's brand blue, #38bdf8) — same direction/family the
-// logo artwork uses, instead of the previous purple/orange blob mix.
+// Exact gradient sampled from the ZNU Pulse logo artwork itself
+// (icon-192.png / favicon.svg) — a clean vertical (top → bottom)
+// blend from light sky-blue down to deep navy, reproduced here stop
+// for stop rather than approximated.
 const PAGE_BG = {
-  background: "linear-gradient(135deg, #060a14 0%, #0a1830 30%, #123b72 60%, #1668c9 82%, #38bdf8 100%)",
+  background: [
+    "linear-gradient(180deg,",
+    "#a6d2ef 0%,",
+    "#97bcd7 15%,",
+    "#81a6c3 30%,",
+    "#6c8fad 45%,",
+    "#497194 60%,",
+    "#274e79 75%,",
+    "#042a59 90%,",
+    "#010c4a 100%)",
+  ].join(" "),
 }
 
 function BlurFade({ children, delay = 0, className }: { children: React.ReactNode; delay?: number; className?: string }) {
@@ -86,16 +97,6 @@ function GhostButton({ children, onClick, className }: { children: React.ReactNo
       "backdrop-blur-xl border border-white/10 bg-white/5 hover:bg-white/10 transition-colors",
       className
     )}>{children}</button>
-  )
-}
-
-function GradientBlobs() {
-  return (
-    <div aria-hidden className="fixed inset-0 overflow-hidden pointer-events-none z-0">
-      <div className="absolute -top-32 -left-24 w-[560px] h-[560px] rounded-full bg-sky-400/25 blur-[110px]" />
-      <div className="absolute -bottom-40 -right-24 w-[520px] h-[520px] rounded-full bg-blue-600/30 blur-[110px]" />
-      <div className="absolute top-1/3 right-[10%] w-[420px] h-[420px] rounded-full bg-cyan-300/15 blur-[120px]" />
-    </div>
   )
 }
 
@@ -147,8 +148,6 @@ export function AuthComponent(props: AuthComponentProps) {
 
   return (
     <div className="fixed inset-0 overflow-y-auto flex items-center justify-center" style={PAGE_BG}>
-      <GradientBlobs />
-
       {/* Two-column on large/landscape screens: big branding on the
           left takes advantage of the extra width, form stays a
           comfortable fixed width on the right. Single column on
