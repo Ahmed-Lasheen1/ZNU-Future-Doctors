@@ -3,12 +3,12 @@
 import React, { useRef } from 'react';
 import {
   motion,
+  useMotionTemplate,
   useMotionValue,
   useSpring,
   useTransform,
   MotionStyle,
   SpringOptions,
-  HTMLMotionProps,
 } from 'framer-motion';
 
 type TiltProps = {
@@ -16,25 +16,22 @@ type TiltProps = {
   className?: string;
   style?: MotionStyle;
   rotationFactor?: number;
-  isReverse?: boolean;
   isRevese?: boolean;
   springOptions?: SpringOptions;
-} & Omit<HTMLMotionProps<'div'>, 'style' | 'className' | 'children'>;
+} & Omit<React.HTMLAttributes<HTMLDivElement>, 'style' | 'className' | 'children'>;
 
 export function Tilt({
   children,
   className,
   style,
   rotationFactor = 15,
-  isReverse = false,
-  isRevese,
-  springOptions = { stiffness: 150, damping: 15 },
+  isRevese = false,
+  springOptions,
   onMouseEnter,
   onMouseLeave,
   ...rest
 }: TiltProps) {
   const ref = useRef<HTMLDivElement>(null);
-  const reverse = isRevese ?? isReverse;
 
   const x = useMotionValue(0);
   const y = useMotionValue(0);
@@ -45,24 +42,40 @@ export function Tilt({
   const rotateX = useTransform(
     ySpring,
     [-0.5, 0.5],
-    reverse ? [rotationFactor, -rotationFactor] : [-rotationFactor, rotationFactor]
+    isRevese
+      ? [rotationFactor, -rotationFactor]
+      : [-rotationFactor, rotationFactor]
   );
-
   const rotateY = useTransform(
     xSpring,
     [-0.5, 0.5],
-    reverse ? [-rotationFactor, rotationFactor] : [rotationFactor, -rotationFactor]
+    isRevese
+      ? [-rotationFactor, rotationFactor]
+      : [rotationFactor, -rotationFactor]
   );
+
+  const transform = useMotionTemplate`perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!ref.current) return;
-    const rect = ref.current.getBoundingClientRect();
-    if (!rect.width || !rect.height) return;
 
-    x.set((e.clientX - rect.left) / rect.width - 0.5);
-    y.set((e.clientY - rect.top) / rect.height - 0.5);
+    const rect = ref.current.getBoundingClientRect();
+    const width = rect.width;
+    const height = rect.height;
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+
+    const xPos = mouseX / width - 0.5;
+    const yPos = mouseY / height - 0.5;
+
+    x.set(xPos);
+    y.set(yPos);
   };
 
+  // Still resets the tilt on mouse-leave, but also forwards to any
+  // onMouseLeave the caller passed in (e.g. to clear a `hovered` state) —
+  // this is what lets callers skip wrapping Tilt in an extra div just to
+  // listen for hover/click/keyboard.
   const handleMouseLeave = (e: React.MouseEvent<HTMLDivElement>) => {
     x.set(0);
     y.set(0);
@@ -75,11 +88,8 @@ export function Tilt({
       className={className}
       style={{
         transformStyle: 'preserve-3d',
-        transformTemplate: ({ rotateX, rotateY }) =>
-          `perspective(1000px) rotateX(${rotateX}) rotateY(${rotateY})`,
-        rotateX,
-        rotateY,
         ...style,
+        transform,
       }}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
