@@ -14,6 +14,12 @@ import PulseCard from '../components/pulse/PulseCard'
 import EcgHero from '../components/pulse/EcgHero'
 import ScrollReveal from '../components/pulse/ScrollReveal'
 
+// The ZNU Pulse mark — same file used for the PWA/manifest icons (see
+// public/manifest.json), so there's only one logo asset to keep in
+// sync. Reused here at header scale and again (larger) inside the
+// hero, both beating in time with the ECG sweep.
+const LOGO_SRC = '/icon-192.png'
+
 const toolCards = [
   { emoji: '📅', title: 'Schedules', sub: 'Plan your study time', to: '/schedule', accent: 'indigo' },
   { emoji: '🎯', title: 'Checklist', sub: 'Track your progress', to: '/checklist', accent: 'amber' },
@@ -71,54 +77,48 @@ function onActivateKeyDown(handler) {
 }
 
 // ── ZNU PULSE brand mark (header) ──────────────────────────────────
-const ECG_PATH = 'M0,36 L104,36 C110,36 112,28 118,28 C124,28 126,36 134,36 L140,36 L144,36 L148,54 L152,8 L156,58 L160,36 L168,36 C179,36 183,19 192,19 C201,19 205,36 216,36 L320,36'
-
+// Now the real logo artwork instead of a hand-drawn SVG trace — it
+// beats with the same lub-dub rhythm as the big hero mark below it
+// (see .znu-logo-beat / .znu-logo-glow), so the small header mark and
+// the large hero mark read as one heartbeat at two different scales.
 function ZnuPulseBrand({ dark, pt }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 14, '--znu-ecg-glow': pt.ecgGlow }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
       <style>{`
-        @keyframes znuPulseSweepA {
-          0%   { stroke-dashoffset: 1; opacity: 0; }
-          8%   { opacity: 1; }
-          46%  { opacity: 1; }
-          58%  { stroke-dashoffset: -0.55; opacity: 0; }
-          100% { stroke-dashoffset: -0.55; opacity: 0; }
+        @keyframes znuLogoBeat {
+          0%   { transform: scale(1); }
+          8%   { transform: scale(1.09); }
+          16%  { transform: scale(1); }
+          24%  { transform: scale(1.05); }
+          32%  { transform: scale(1); }
+          100% { transform: scale(1); }
         }
-        @keyframes znuPulseSweepB {
-          0%   { stroke-dashoffset: 1; opacity: 0; }
-          8%   { opacity: 1; }
-          46%  { opacity: 1; }
-          58%  { stroke-dashoffset: -0.55; opacity: 0; }
-          100% { stroke-dashoffset: -0.55; opacity: 0; }
+        @keyframes znuLogoGlow {
+          0%, 100% { opacity: 0.3; transform: scale(1); }
+          16% { opacity: 0.85; transform: scale(1.3); }
+          32% { opacity: 0.5; transform: scale(1.12); }
+          48% { opacity: 0.3; transform: scale(1); }
         }
-        .znu-ecg-sweep-a {
-          stroke-dasharray: 0.16 1;
-          animation: znuPulseSweepA 5.2s ease-in-out infinite;
-          filter: drop-shadow(0 0 2px var(--znu-ecg-glow)) drop-shadow(0 0 6px var(--znu-ecg-glow));
-        }
-        .znu-ecg-sweep-b {
-          stroke-dasharray: 0.1 1;
-          animation: znuPulseSweepB 5.2s ease-in-out infinite;
-          animation-delay: 2.6s;
-          filter: drop-shadow(0 0 2px var(--znu-ecg-glow)) drop-shadow(0 0 5px var(--znu-ecg-glow));
-        }
+        .znu-logo-beat { animation: znuLogoBeat 5.2s ease-in-out infinite; }
+        .znu-logo-glow { animation: znuLogoGlow 5.2s ease-in-out infinite; }
         @media (prefers-reduced-motion: reduce) {
-          .znu-ecg-sweep-a, .znu-ecg-sweep-b { animation: none; opacity: 0; }
-          .znu-ecg-static { opacity: 1 !important; }
+          .znu-logo-beat, .znu-logo-glow { animation: none !important; }
         }
       `}</style>
 
-      <div style={{
-        width: 44, height: 44, borderRadius: 12, flexShrink: 0,
-        background: pt.surfaceFlat, border: `1px solid ${pt.cobaltBorder}`,
-        display: 'flex', alignItems: 'center', justifyContent: 'center'
-      }}>
-        <svg width="26" height="26" viewBox="0 0 320 72">
-          <path d={ECG_PATH} fill="none" stroke={pt.ecgBase} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" opacity="0.55" />
-          <path className="znu-ecg-static" d={ECG_PATH} fill="none" stroke={pt.ecgLine} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" opacity="0" />
-          <path className="znu-ecg-sweep-a" pathLength="1" d={ECG_PATH} fill="none" stroke={pt.ecgLine} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-          <path className="znu-ecg-sweep-b" pathLength="1" d={ECG_PATH} fill="none" stroke={pt.ecgLine} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
+      <div style={{ position: 'relative', width: 44, height: 44, flexShrink: 0 }}>
+        <div className="znu-logo-glow" style={{
+          position: 'absolute', inset: -5, borderRadius: '50%',
+          background: `radial-gradient(circle, ${pt.ecgGlow}55, transparent 70%)`,
+          pointerEvents: 'none',
+        }} />
+        <div className="znu-logo-beat" style={{
+          position: 'relative', width: '100%', height: '100%',
+          borderRadius: 12, overflow: 'hidden',
+          background: pt.surfaceFlat, border: `1px solid ${pt.cobaltBorder}`,
+        }}>
+          <img src={LOGO_SRC} alt="ZNU Pulse" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+        </div>
       </div>
 
       <div>
@@ -409,7 +409,7 @@ export default function Home({ dark, toggleTheme }) {
               ) : null}
 
               <div style={{ marginTop: 22 }}>
-                <EcgHero pt={pt} height={220} />
+                <EcgHero pt={pt} height={220} logoSrc={LOGO_SRC} />
               </div>
             </div>
 
@@ -480,9 +480,7 @@ export default function Home({ dark, toggleTheme }) {
       <div className="page-container" style={{ display: 'flex', alignItems: 'center', gap: 14, justifyContent: 'center', margin: '8px 0 40px' }}>
         <div style={{ height: 1, background: pt.border, flex: 1, maxWidth: 120 }} />
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: pt.faint, fontSize: 13, fontWeight: 600 }}>
-          <svg width="18" height="14" viewBox="0 0 320 72">
-            <path d={ECG_PATH} fill="none" stroke={pt.ecgLine} strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
+          <img src={LOGO_SRC} alt="" style={{ width: 18, height: 18, borderRadius: 4, objectFit: 'cover' }} />
           Keep the pulse. Shape the future.
         </div>
         <div style={{ height: 1, background: pt.border, flex: 1, maxWidth: 120 }} />
