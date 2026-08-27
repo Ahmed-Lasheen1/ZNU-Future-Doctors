@@ -8,7 +8,7 @@ import "../styles/shadcn-theme.css"
 export default function Auth() {
   const navigate = useNavigate()
   const [mode, setMode] = useState<AuthMode>("signin")
-  const [step, setStep] = useState<AuthStep>("email")
+  const [step, setStep] = useState<AuthStep>("form")
   const [accountType, setAccountType] = useState<AccountType>("university")
 
   const [name, setName] = useState("")
@@ -25,41 +25,36 @@ export default function Auth() {
       ? extractCode(email) : null
 
   function resetAll() {
-    setStep("email"); setName(""); setEmail(""); setPassword(""); setConfirmPassword(""); setOtp(""); setMessage("")
+    setStep("form"); setName(""); setEmail(""); setPassword(""); setConfirmPassword(""); setOtp(""); setMessage("")
   }
 
-  function handleEmailStep() {
+  // Sign-in: one screen, one submit — validates and calls
+  // supabase.auth.signInWithPassword() directly.
+  async function handleSignInSubmit() {
     setMessage("")
-    if (mode === "signup") {
-      const valid = accountType === "university"
-        ? email.includes("@med.znu.edu.eg")
-        : /^[^\s@]+@gmail\.com$/i.test(email)
-      if (!valid) return setMessage(accountType === "university" ? "❌ Please use your ZNU email (@med.znu.edu.eg)" : "❌ Please enter a valid Gmail address")
-      if (!name.trim()) return setMessage("❌ Please enter your name")
-      if (containsProfanity(name)) return setMessage("❌ Please choose an appropriate name")
-      if (containsProfanity(email.split("@")[0])) return setMessage("❌ The email contains inappropriate words")
-    } else if (!email.trim()) {
-      return setMessage("❌ Please enter your email")
-    }
-    setStep("password")
-  }
-
-  async function handlePasswordStep() {
-    setMessage("")
+    if (!email.trim()) return setMessage("❌ Please enter your email")
     if (!password || password.length < 6) return setMessage("❌ Password must be at least 6 characters")
-    if (mode === "signin") {
-      setLoading(true)
-      const { error } = await supabase.auth.signInWithPassword({ email, password })
-      setLoading(false)
-      if (error) setMessage("❌ " + error.message)
-      else navigate("/")
-      return
-    }
-    setStep("confirm")
+    setLoading(true)
+    const { error } = await supabase.auth.signInWithPassword({ email, password })
+    setLoading(false)
+    if (error) setMessage("❌ " + error.message)
+    else navigate("/")
   }
 
-  async function handleConfirmStep() {
+  // Sign-up: also one screen, one submit — every field (account type,
+  // name, email, password, confirm password) lives on the same page,
+  // so all validation + account creation happens in a single combined
+  // handler instead of being spread across separate step handlers.
+  async function handleSignupSubmit() {
     setMessage("")
+    const valid = accountType === "university"
+      ? email.includes("@med.znu.edu.eg")
+      : /^[^\s@]+@gmail\.com$/i.test(email)
+    if (!valid) return setMessage(accountType === "university" ? "❌ Please use your ZNU email (@med.znu.edu.eg)" : "❌ Please enter a valid Gmail address")
+    if (!name.trim()) return setMessage("❌ Please enter your name")
+    if (containsProfanity(name)) return setMessage("❌ Please choose an appropriate name")
+    if (containsProfanity(email.split("@")[0])) return setMessage("❌ The email contains inappropriate words")
+    if (!password || password.length < 6) return setMessage("❌ Password must be at least 6 characters")
     if (!confirmPassword || confirmPassword.length < 6) return setMessage("❌ Please confirm your password")
     if (password !== confirmPassword) return setMessage("❌ Passwords do not match")
 
@@ -127,9 +122,8 @@ export default function Auth() {
       loading={loading}
       message={message}
       universityCodePreview={universityCodePreview}
-      onSubmitEmailStep={handleEmailStep}
-      onSubmitPasswordStep={handlePasswordStep}
-      onSubmitConfirmStep={handleConfirmStep}
+      onSubmitSignIn={handleSignInSubmit}
+      onSubmitSignup={handleSignupSubmit}
       onSubmitVerify={handleVerify}
       onResendCode={handleResend}
       onForgotPassword={handleForgotPassword}

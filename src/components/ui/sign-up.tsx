@@ -1,12 +1,16 @@
 import { cn } from "@/lib/utils"
 import { useState, useRef, useEffect } from "react"
-import { ArrowRight, Lock, Eye, EyeOff, ArrowLeft, GraduationCap, Mail } from "lucide-react"
-import { AnimatePresence, motion } from "framer-motion"
+import { Lock, Eye, EyeOff, ArrowLeft, GraduationCap, Mail } from "lucide-react"
+import { motion } from "framer-motion"
 import confetti from "canvas-confetti"
 
 export type AccountType = "university" | "personal"
 export type AuthMode = "signin" | "signup"
-export type AuthStep = "email" | "password" | "confirm" | "verify"
+// "form" = the single combined screen (email+password for sign-in;
+// account type/name/email/password/confirm for sign-up). "verify" is
+// the only other screen that can ever show, and only for sign-up,
+// since it depends on a code the server sends after account creation.
+export type AuthStep = "form" | "verify"
 
 interface AuthComponentProps {
   brandName?: string
@@ -25,9 +29,8 @@ interface AuthComponentProps {
   loading: boolean
   message: string
   universityCodePreview?: string | null
-  onSubmitEmailStep: () => void
-  onSubmitPasswordStep: () => void
-  onSubmitConfirmStep: () => void
+  onSubmitSignIn: () => void
+  onSubmitSignup: () => void
   onSubmitVerify: () => void
   onResendCode: () => void
   onForgotPassword: () => void
@@ -52,6 +55,23 @@ const PAGE_BG = {
   ].join(" "),
 }
 
+// This app runs with Tailwind's preflight/base reset turned OFF
+// (tailwind.config.js → corePlugins.preflight: false), and
+// src/index.css separately sets a global `input, textarea, select {
+// border: 1px solid ...; padding: 10px; margin-top: 8px }` rule for
+// the rest of the app. Neither is scoped to this page, so every raw
+// <input>/<button> here needs an explicit reset or it silently
+// inherits that global box model / the browser's native button chrome
+// — that's what was showing up as a black rectangle inside each pill
+// and a plain gray system button around "Continue without account".
+const RESET_INPUT = "appearance-none border-0 outline-none bg-transparent p-0 m-0 rounded-none"
+const RESET_BTN = "appearance-none border-0 bg-transparent p-0 m-0 cursor-pointer"
+
+// A soft dark drop-shadow keeps plain text links legible against both
+// the light top and dark bottom of the gradient, without boxing them
+// in a pill — stays a flat "text link" rather than another glass card.
+const TEXT_LEGIBLE = "drop-shadow-[0_1px_3px_rgba(0,0,20,0.55)]"
+
 function BlurFade({ children, delay = 0, className }: { children: React.ReactNode; delay?: number; className?: string }) {
   return (
     <motion.div
@@ -63,28 +83,32 @@ function BlurFade({ children, delay = 0, className }: { children: React.ReactNod
   )
 }
 
+// Darker, more opaque glass than before — a near-transparent white
+// pill reads fine on the shadcn dark background it was designed for,
+// but this page's gradient runs light-blue at the top, so every glass
+// surface needs its own reliable dark tint to stay readable no matter
+// what part of the gradient sits behind it.
 function GlassPill({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
     <div className={cn(
-      "relative rounded-full backdrop-blur-xl border border-white/10",
-      "bg-white/5 shadow-[inset_0_1px_1px_rgba(255,255,255,0.06)]",
+      "relative rounded-full backdrop-blur-xl border border-white/15",
+      "bg-slate-950/30 shadow-[inset_0_1px_1px_rgba(255,255,255,0.08)]",
       className
     )}>{children}</div>
   )
 }
 
-// Primary action button — fully glass now (no solid gradient fill),
-// same translucent/blurred language as every other control on the page.
 function GlassButton({ children, onClick, type = "button", disabled, className }: {
   children: React.ReactNode; onClick?: () => void; type?: "button" | "submit"; disabled?: boolean; className?: string
 }) {
   return (
     <button type={type} onClick={onClick} disabled={disabled} className={cn(
-      "w-full rounded-full py-3.5 font-semibold text-sm transition-all",
+      RESET_BTN,
+      "w-full rounded-full py-3.5 font-semibold text-sm transition-all text-center",
       "backdrop-blur-xl border",
       disabled
-        ? "bg-white/5 border-white/10 text-muted-foreground cursor-not-allowed"
-        : "bg-white/10 border-white/25 text-foreground hover:bg-white/15 hover:scale-[0.98] shadow-[0_8px_28px_-8px_rgba(56,189,248,0.45)]",
+        ? "bg-slate-950/20 border-white/10 text-white/40 cursor-not-allowed"
+        : "bg-slate-950/35 border-white/25 text-white hover:bg-slate-950/45 hover:scale-[0.98] shadow-[0_8px_28px_-8px_rgba(0,0,20,0.55)]",
       className
     )}>{children}</button>
   )
@@ -93,9 +117,22 @@ function GlassButton({ children, onClick, type = "button", disabled, className }
 function GhostButton({ children, onClick, className }: { children: React.ReactNode; onClick?: () => void; className?: string }) {
   return (
     <button type="button" onClick={onClick} className={cn(
-      "w-full rounded-full py-2.5 text-xs font-semibold text-muted-foreground",
-      "backdrop-blur-xl border border-white/10 bg-white/5 hover:bg-white/10 transition-colors",
+      RESET_BTN,
+      "w-full rounded-full py-2.5 text-xs font-semibold text-white/85 text-center",
+      "backdrop-blur-xl border border-white/15 bg-slate-950/25 hover:bg-slate-950/35 transition-colors",
       className
+    )}>{children}</button>
+  )
+}
+
+// Plain, unboxed text link — used for "Forgot password?", "Go back",
+// "Continue without account". Explicitly reset since a bare <button>
+// otherwise renders as the browser's native gray button (see note on
+// RESET_BTN above).
+function TextLink({ children, onClick, className }: { children: React.ReactNode; onClick?: () => void; className?: string }) {
+  return (
+    <button type="button" onClick={onClick} className={cn(
+      RESET_BTN, "text-xs text-white/85 hover:text-white transition-colors", TEXT_LEGIBLE, className
     )}>{children}</button>
   )
 }
@@ -113,19 +150,16 @@ export function AuthComponent(props: AuthComponentProps) {
     name, onNameChange, email, onEmailChange,
     password, onPasswordChange, confirmPassword, onConfirmPasswordChange,
     otp, onOtpChange, loading, message, universityCodePreview,
-    onSubmitEmailStep, onSubmitPasswordStep, onSubmitConfirmStep, onSubmitVerify,
+    onSubmitSignIn, onSubmitSignup, onSubmitVerify,
     onResendCode, onForgotPassword, onContinueAsGuest,
   } = props
 
   const [showPw, setShowPw] = useState(false)
   const [showConfirmPw, setShowConfirmPw] = useState(false)
-  const passwordRef = useRef<HTMLInputElement>(null)
-  const confirmRef = useRef<HTMLInputElement>(null)
   const otpRef = useRef<HTMLInputElement>(null)
   const celebratedRef = useRef(false)
 
   useEffect(() => {
-    if (step === "confirm") setTimeout(() => confirmRef.current?.focus(), 300)
     if (step === "verify") setTimeout(() => otpRef.current?.focus(), 300)
   }, [step])
 
@@ -137,14 +171,7 @@ export function AuthComponent(props: AuthComponentProps) {
   }, [message])
 
   const isSuccess = message.includes("✅")
-
-  // Sign-in submits with whatever is currently in email/password — no
-  // separate "continue" step, so Enter in either field (or the button)
-  // just goes straight to onSubmitPasswordStep, which is what actually
-  // performs supabase.auth.signInWithPassword() for mode === "signin".
-  function handleSignInSubmit() {
-    onSubmitPasswordStep()
-  }
+  const handleSubmit = mode === "signin" ? onSubmitSignIn : onSubmitSignup
 
   return (
     <div className="fixed inset-0 overflow-y-auto flex items-center justify-center" style={PAGE_BG}>
@@ -156,14 +183,14 @@ export function AuthComponent(props: AuthComponentProps) {
 
         {/* Large-screen branding panel */}
         <div className="hidden lg:flex flex-col items-start gap-5 flex-1 max-w-lg">
-          <div className="w-20 h-20 rounded-3xl overflow-hidden border border-white/25 shadow-[0_8px_30px_-8px_rgba(56,189,248,0.5)]">
+          <div className="w-20 h-20 rounded-3xl overflow-hidden border border-white/25 shadow-[0_8px_30px_-8px_rgba(0,0,20,0.6)]">
             <img src={logoSrc} alt={brandName} className="w-full h-full object-cover" />
           </div>
-          <h1 className="text-6xl xl:text-7xl font-extrabold tracking-tight text-white leading-[1.05]">
-            ZNU <span className="text-sky-300">PULSE</span>
+          <h1 className={cn("text-6xl xl:text-7xl font-extrabold tracking-tight text-white leading-[1.05]", TEXT_LEGIBLE)}>
+            ZNU <span className="text-sky-200">PULSE</span>
           </h1>
-          <p className="text-sm uppercase tracking-[0.35em] text-white/60 font-bold">For Future Doctors</p>
-          <p className="text-white/70 text-lg leading-relaxed max-w-md">
+          <p className={cn("text-sm uppercase tracking-[0.35em] text-white/80 font-bold", TEXT_LEGIBLE)}>For Future Doctors</p>
+          <p className={cn("text-white/85 text-lg leading-relaxed max-w-md", TEXT_LEGIBLE)}>
             Your integrated medical study companion — schedules, checklists, MCQ banks, and smart summaries, all in one place.
           </p>
         </div>
@@ -174,199 +201,180 @@ export function AuthComponent(props: AuthComponentProps) {
           {/* Compact header — mobile/portrait only, large screens get
               the branding panel above instead. */}
           <BlurFade className="flex lg:hidden flex-col items-center gap-2 mb-8">
-            <div className="w-16 h-16 rounded-2xl overflow-hidden border border-white/25 shadow-[0_8px_30px_-8px_rgba(56,189,248,0.5)]">
+            <div className="w-16 h-16 rounded-2xl overflow-hidden border border-white/25 shadow-[0_8px_30px_-8px_rgba(0,0,20,0.6)]">
               <img src={logoSrc} alt={brandName} className="w-full h-full object-cover" />
             </div>
-            <div className="font-extrabold text-2xl tracking-tight text-white">
-              ZNU <span className="text-sky-300">PULSE</span>
+            <div className={cn("font-extrabold text-2xl tracking-tight text-white", TEXT_LEGIBLE)}>
+              ZNU <span className="text-sky-200">PULSE</span>
             </div>
-            <p className="text-xs uppercase tracking-[0.2em] text-white/60 font-bold">For Future Doctors</p>
+            <p className={cn("text-xs uppercase tracking-[0.2em] text-white/80 font-bold", TEXT_LEGIBLE)}>For Future Doctors</p>
           </BlurFade>
 
           {message && (
             <div className={cn(
               "text-center text-xs font-semibold rounded-xl py-2.5 px-4 mb-4 border backdrop-blur-xl",
-              isSuccess ? "bg-primary/10 border-primary/30 text-primary" : "bg-destructive/10 border-destructive/30 text-destructive"
+              isSuccess ? "bg-emerald-950/40 border-emerald-300/30 text-emerald-200" : "bg-red-950/40 border-red-300/30 text-red-200"
             )}>{message}</div>
           )}
 
-          {mode === "signin" ? (
-            // ── Sign in: email + password together, one submit, no
-            // intermediate "Continue" step. ─────────────────────────
+          {step === "verify" ? (
+            // ── OTP verify — only reachable after a successful sign-up
+            // submit, since the code doesn't exist until then. ────────
+            <motion.div key="verify" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
+              <p className={cn("text-center text-xs text-white/85", TEXT_LEGIBLE)}>
+                We sent a 6-digit code to <strong className="text-white">{email}</strong>
+              </p>
+              <GlassPill className="flex items-center justify-center px-5 py-3.5">
+                <input ref={otpRef} inputMode="numeric" maxLength={6} value={otp}
+                  onChange={e => onOtpChange(e.target.value.replace(/\D/g, ""))}
+                  onKeyDown={e => e.key === "Enter" && onSubmitVerify()}
+                  placeholder="123456"
+                  name="otp" id="otp" autoComplete="one-time-code"
+                  className={cn(RESET_INPUT, "w-full text-center text-xl font-bold tracking-[0.5em] text-white placeholder:text-white/40")} />
+              </GlassPill>
+              <GlassButton onClick={onSubmitVerify} disabled={loading}>{loading ? "Verifying..." : "Verify & Continue"}</GlassButton>
+              <GhostButton onClick={onResendCode}>Resend code</GhostButton>
+              <div className="text-center">
+                <TextLink onClick={() => props.onStepChange("form")}>
+                  <span className="inline-flex items-center gap-1.5"><ArrowLeft className="w-3.5 h-3.5" /> Go back</span>
+                </TextLink>
+              </div>
+            </motion.div>
+          ) : mode === "signin" ? (
+            // ── Sign in: email + password together, one submit. ─────
             <motion.div key="signin" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
               <BlurFade className="text-center lg:text-left">
-                <p className="font-light text-2xl lg:text-3xl text-white">Welcome back</p>
+                <p className={cn("font-light text-2xl lg:text-3xl text-white", TEXT_LEGIBLE)}>Welcome back</p>
               </BlurFade>
 
               <BlurFade delay={0.08}>
                 <GlassPill className="flex items-center px-5 py-3.5">
                   <input type="email" value={email} onChange={e => onEmailChange(e.target.value)}
-                    onKeyDown={e => e.key === "Enter" && handleSignInSubmit()}
+                    onKeyDown={e => e.key === "Enter" && handleSubmit()}
                     placeholder="Email address"
                     name="email" id="email" autoComplete="username" inputMode="email"
-                    className="flex-1 bg-transparent outline-none text-sm text-white placeholder:text-white/50" />
+                    className={cn(RESET_INPUT, "flex-1 text-sm text-white placeholder:text-white/50")} />
                 </GlassPill>
               </BlurFade>
 
               <BlurFade delay={0.14}>
                 <GlassPill className="flex items-center px-5 py-3.5 gap-2">
-                  <Lock className="w-4 h-4 text-white/50 flex-shrink-0" />
-                  <input ref={passwordRef} type={showPw ? "text" : "password"} value={password}
+                  <Lock className="w-4 h-4 text-white/60 flex-shrink-0" />
+                  <input type={showPw ? "text" : "password"} value={password}
                     onChange={e => onPasswordChange(e.target.value)}
-                    onKeyDown={e => e.key === "Enter" && handleSignInSubmit()}
+                    onKeyDown={e => e.key === "Enter" && handleSubmit()}
                     placeholder="Password"
                     name="password" id="password" autoComplete="current-password"
-                    className="flex-1 bg-transparent outline-none text-sm text-white placeholder:text-white/50" />
-                  <button type="button" onClick={() => setShowPw(!showPw)} className="text-white/50">
+                    className={cn(RESET_INPUT, "flex-1 text-sm text-white placeholder:text-white/50")} />
+                  <button type="button" onClick={() => setShowPw(!showPw)} className={cn(RESET_BTN, "text-white/70 hover:text-white flex-shrink-0")}>
                     {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </GlassPill>
               </BlurFade>
 
-              <button onClick={onForgotPassword} className="block ml-auto text-xs text-sky-300 underline">Forgot password?</button>
+              <div className="text-right">
+                <TextLink onClick={onForgotPassword}>Forgot password?</TextLink>
+              </div>
 
               <BlurFade delay={0.2}>
-                <GlassButton onClick={handleSignInSubmit} disabled={loading}>
+                <GlassButton onClick={handleSubmit} disabled={loading}>
                   {loading ? "Signing in..." : "Sign In"}
                 </GlassButton>
               </BlurFade>
 
               <div className="space-y-2 pt-1">
                 <GhostButton onClick={onToggleMode}>Don't have an account? Sign Up</GhostButton>
-                <button onClick={onContinueAsGuest} className="block w-full text-center text-xs text-white/50 py-1">
-                  Continue without account →
-                </button>
+                <div className="text-center pt-1">
+                  <TextLink onClick={onContinueAsGuest} className="text-white/70">Continue without account →</TextLink>
+                </div>
               </div>
             </motion.div>
           ) : (
-            // ── Sign up: unchanged multi-step flow (account type, name,
-            // email, password, confirm, verify) — more fields genuinely
-            // benefit from being split up. ────────────────────────────
-            <AnimatePresence mode="wait">
-              {step === "email" && (
-                <motion.div key="email" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-4">
-                  <BlurFade className="text-center lg:text-left">
-                    <p className="font-light text-2xl lg:text-3xl text-white">Create your account</p>
-                  </BlurFade>
+            // ── Sign up: account type, name, email, password, confirm
+            // password — all on one screen, one submit. ──────────────
+            <motion.div key="signup" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
+              <BlurFade className="text-center lg:text-left">
+                <p className={cn("font-light text-2xl lg:text-3xl text-white", TEXT_LEGIBLE)}>Create your account</p>
+              </BlurFade>
 
-                  <BlurFade delay={0.05} className="flex gap-2">
-                    <button onClick={() => onAccountTypeChange("university")} className={cn(
-                      "flex-1 flex items-center justify-center gap-1.5 rounded-full py-2 text-xs font-bold border backdrop-blur-xl transition-colors",
-                      accountType === "university" ? "border-sky-300/60 bg-white/15 text-sky-200" : "border-white/10 bg-white/5 text-white/60"
-                    )}><GraduationCap className="w-3.5 h-3.5" /> University</button>
-                    <button onClick={() => onAccountTypeChange("personal")} className={cn(
-                      "flex-1 flex items-center justify-center gap-1.5 rounded-full py-2 text-xs font-bold border backdrop-blur-xl transition-colors",
-                      accountType === "personal" ? "border-sky-300/60 bg-white/15 text-sky-200" : "border-white/10 bg-white/5 text-white/60"
-                    )}><Mail className="w-3.5 h-3.5" /> Personal Gmail</button>
-                  </BlurFade>
+              <BlurFade delay={0.05} className="flex gap-2">
+                <button onClick={() => onAccountTypeChange("university")} className={cn(
+                  RESET_BTN,
+                  "flex-1 flex items-center justify-center gap-1.5 rounded-full py-2 text-xs font-bold border backdrop-blur-xl transition-colors",
+                  accountType === "university" ? "border-sky-200/70 bg-slate-950/40 text-sky-100" : "border-white/15 bg-slate-950/20 text-white/70"
+                )}><GraduationCap className="w-3.5 h-3.5" /> University</button>
+                <button onClick={() => onAccountTypeChange("personal")} className={cn(
+                  RESET_BTN,
+                  "flex-1 flex items-center justify-center gap-1.5 rounded-full py-2 text-xs font-bold border backdrop-blur-xl transition-colors",
+                  accountType === "personal" ? "border-sky-200/70 bg-slate-950/40 text-sky-100" : "border-white/15 bg-slate-950/20 text-white/70"
+                )}><Mail className="w-3.5 h-3.5" /> Personal Gmail</button>
+              </BlurFade>
 
-                  <BlurFade delay={0.1}>
-                    <GlassPill className="flex items-center px-5 py-3.5">
-                      <input value={name} onChange={e => onNameChange(e.target.value)} placeholder="Your name"
-                        name="name" id="name" autoComplete="name"
-                        className="flex-1 bg-transparent outline-none text-sm text-white placeholder:text-white/50" />
-                    </GlassPill>
-                  </BlurFade>
+              <BlurFade delay={0.08}>
+                <GlassPill className="flex items-center px-5 py-3.5">
+                  <input value={name} onChange={e => onNameChange(e.target.value)} placeholder="Your name"
+                    name="name" id="name" autoComplete="name"
+                    className={cn(RESET_INPUT, "flex-1 text-sm text-white placeholder:text-white/50")} />
+                </GlassPill>
+              </BlurFade>
 
-                  <BlurFade delay={0.15}>
-                    <GlassPill className="flex items-center px-5 py-3.5">
-                      <input type="email" value={email} onChange={e => onEmailChange(e.target.value)}
-                        onKeyDown={e => e.key === "Enter" && onSubmitEmailStep()}
-                        placeholder={accountType === "university" ? "ZNU email (@med.znu.edu.eg)" : "you@gmail.com"}
-                        name="email" id="signup-email" autoComplete="username" inputMode="email"
-                        className="flex-1 bg-transparent outline-none text-sm text-white placeholder:text-white/50" />
-                    </GlassPill>
-                  </BlurFade>
+              <BlurFade delay={0.11}>
+                <GlassPill className="flex items-center px-5 py-3.5">
+                  <input type="email" value={email} onChange={e => onEmailChange(e.target.value)}
+                    placeholder={accountType === "university" ? "ZNU email (@med.znu.edu.eg)" : "you@gmail.com"}
+                    name="email" id="signup-email" autoComplete="username" inputMode="email"
+                    className={cn(RESET_INPUT, "flex-1 text-sm text-white placeholder:text-white/50")} />
+                </GlassPill>
+              </BlurFade>
 
-                  {accountType === "university" && universityCodePreview && (
-                    <div className="text-xs text-sky-200 bg-white/10 border border-sky-300/30 backdrop-blur-xl rounded-xl px-4 py-2">
-                      🎓 University Code: <strong>{universityCodePreview}</strong>
-                    </div>
-                  )}
-
-                  <BlurFade delay={0.2}><GlassButton onClick={onSubmitEmailStep}>Continue <ArrowRight className="inline w-4 h-4 ml-1" /></GlassButton></BlurFade>
-
-                  <div className="mt-5 space-y-2">
-                    <GhostButton onClick={onToggleMode}>Already have an account? Sign In</GhostButton>
-                    <button onClick={onContinueAsGuest} className="block w-full text-center text-xs text-white/50 py-1">
-                      Continue without account →
-                    </button>
-                  </div>
-                </motion.div>
+              {accountType === "university" && universityCodePreview && (
+                <div className="text-xs text-sky-100 bg-slate-950/35 border border-sky-200/30 backdrop-blur-xl rounded-xl px-4 py-2">
+                  🎓 University Code: <strong>{universityCodePreview}</strong>
+                </div>
               )}
 
-              {step === "password" && (
-                <motion.div key="password" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-4">
-                  <p className="text-center text-xs text-white/60">{email}</p>
-                  <input type="email" value={email} readOnly hidden
-                    name="email" id="email-hidden" autoComplete="username"
-                    style={{ display: "none" }} />
-                  <GlassPill className="flex items-center px-5 py-3.5 gap-2">
-                    <Lock className="w-4 h-4 text-white/50 flex-shrink-0" />
-                    <input ref={passwordRef} type={showPw ? "text" : "password"} value={password}
-                      onChange={e => onPasswordChange(e.target.value)}
-                      onKeyDown={e => e.key === "Enter" && onSubmitPasswordStep()}
-                      placeholder="Password (min 6 characters)"
-                      name="password" id="password" autoComplete="new-password"
-                      className="flex-1 bg-transparent outline-none text-sm text-white placeholder:text-white/50" />
-                    <button type="button" onClick={() => setShowPw(!showPw)} className="text-white/50">
-                      {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </button>
-                  </GlassPill>
-                  <GlassButton onClick={onSubmitPasswordStep} disabled={loading}>
-                    {loading ? "Loading..." : "Continue"}
-                  </GlassButton>
-                  <button onClick={() => props.onStepChange("email")} className="flex items-center gap-1.5 text-xs text-white/60 mx-auto">
-                    <ArrowLeft className="w-3.5 h-3.5" /> Go back
+              <BlurFade delay={0.14}>
+                <GlassPill className="flex items-center px-5 py-3.5 gap-2">
+                  <Lock className="w-4 h-4 text-white/60 flex-shrink-0" />
+                  <input type={showPw ? "text" : "password"} value={password}
+                    onChange={e => onPasswordChange(e.target.value)}
+                    placeholder="Password (min 6 characters)"
+                    name="password" id="password" autoComplete="new-password"
+                    className={cn(RESET_INPUT, "flex-1 text-sm text-white placeholder:text-white/50")} />
+                  <button type="button" onClick={() => setShowPw(!showPw)} className={cn(RESET_BTN, "text-white/70 hover:text-white flex-shrink-0")}>
+                    {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
-                </motion.div>
-              )}
+                </GlassPill>
+              </BlurFade>
 
-              {step === "confirm" && (
-                <motion.div key="confirm" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-4">
-                  <p className="text-center text-xs text-white/60">{email}</p>
-                  <input type="email" value={email} readOnly hidden
-                    name="email" id="email-hidden-confirm" autoComplete="username"
-                    style={{ display: "none" }} />
-                  <GlassPill className="flex items-center px-5 py-3.5 gap-2">
-                    <Lock className="w-4 h-4 text-white/50 flex-shrink-0" />
-                    <input ref={confirmRef} type={showConfirmPw ? "text" : "password"} value={confirmPassword}
-                      onChange={e => onConfirmPasswordChange(e.target.value)}
-                      onKeyDown={e => e.key === "Enter" && onSubmitConfirmStep()}
-                      placeholder="Confirm password"
-                      name="confirm-password" id="confirm-password" autoComplete="new-password"
-                      className="flex-1 bg-transparent outline-none text-sm text-white placeholder:text-white/50" />
-                    <button type="button" onClick={() => setShowConfirmPw(!showConfirmPw)} className="text-white/50">
-                      {showConfirmPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </button>
-                  </GlassPill>
-                  <GlassButton onClick={onSubmitConfirmStep} disabled={loading}>
-                    {loading ? "Creating account..." : "Create Account"}
-                  </GlassButton>
-                  <button onClick={() => props.onStepChange("password")} className="flex items-center gap-1.5 text-xs text-white/60 mx-auto">
-                    <ArrowLeft className="w-3.5 h-3.5" /> Go back
+              <BlurFade delay={0.17}>
+                <GlassPill className="flex items-center px-5 py-3.5 gap-2">
+                  <Lock className="w-4 h-4 text-white/60 flex-shrink-0" />
+                  <input type={showConfirmPw ? "text" : "password"} value={confirmPassword}
+                    onChange={e => onConfirmPasswordChange(e.target.value)}
+                    onKeyDown={e => e.key === "Enter" && handleSubmit()}
+                    placeholder="Confirm password"
+                    name="confirm-password" id="confirm-password" autoComplete="new-password"
+                    className={cn(RESET_INPUT, "flex-1 text-sm text-white placeholder:text-white/50")} />
+                  <button type="button" onClick={() => setShowConfirmPw(!showConfirmPw)} className={cn(RESET_BTN, "text-white/70 hover:text-white flex-shrink-0")}>
+                    {showConfirmPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
-                </motion.div>
-              )}
+                </GlassPill>
+              </BlurFade>
 
-              {step === "verify" && (
-                <motion.div key="verify" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-4">
-                  <p className="text-center text-xs text-white/60">
-                    We sent a 6-digit code to <strong className="text-white">{email}</strong>
-                  </p>
-                  <GlassPill className="flex items-center justify-center px-5 py-3.5">
-                    <input ref={otpRef} inputMode="numeric" maxLength={6} value={otp}
-                      onChange={e => onOtpChange(e.target.value.replace(/\D/g, ""))}
-                      onKeyDown={e => e.key === "Enter" && onSubmitVerify()}
-                      placeholder="123456"
-                      name="otp" id="otp" autoComplete="one-time-code"
-                      className="w-full bg-transparent outline-none text-center text-xl font-bold tracking-[0.5em] text-white placeholder:text-white/50" />
-                  </GlassPill>
-                  <GlassButton onClick={onSubmitVerify} disabled={loading}>{loading ? "Verifying..." : "Verify & Continue"}</GlassButton>
-                  <GhostButton onClick={onResendCode}>Resend code</GhostButton>
-                </motion.div>
-              )}
-            </AnimatePresence>
+              <BlurFade delay={0.2}>
+                <GlassButton onClick={handleSubmit} disabled={loading}>
+                  {loading ? "Creating account..." : "Create Account"}
+                </GlassButton>
+              </BlurFade>
+
+              <div className="space-y-2 pt-1">
+                <GhostButton onClick={onToggleMode}>Already have an account? Sign In</GhostButton>
+                <div className="text-center pt-1">
+                  <TextLink onClick={onContinueAsGuest} className="text-white/70">Continue without account →</TextLink>
+                </div>
+              </div>
+            </motion.div>
           )}
         </div>
       </div>
