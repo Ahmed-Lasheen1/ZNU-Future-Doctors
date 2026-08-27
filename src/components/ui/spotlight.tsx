@@ -1,4 +1,5 @@
 'use client';
+
 import React, { useRef, useState, useCallback, useEffect } from 'react';
 import { motion, useSpring, useTransform, SpringOptions } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -12,11 +13,10 @@ type SpotlightProps = {
 export function Spotlight({
   className,
   size = 200,
-  springOptions = { bounce: 0 },
+  springOptions = { stiffness: 150, damping: 15 },
 }: SpotlightProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isHovered, setIsHovered] = useState(false);
-  const [parentElement, setParentElement] = useState<HTMLElement | null>(null);
 
   const mouseX = useSpring(0, springOptions);
   const mouseY = useSpring(0, springOptions);
@@ -24,47 +24,41 @@ export function Spotlight({
   const spotlightLeft = useTransform(mouseX, (x) => `${x - size / 2}px`);
   const spotlightTop = useTransform(mouseY, (y) => `${y - size / 2}px`);
 
-  useEffect(() => {
-    if (containerRef.current) {
-      const parent = containerRef.current.parentElement;
-      if (parent) {
-        parent.style.position = 'relative';
-        parent.style.overflow = 'hidden';
-        setParentElement(parent);
-      }
-    }
-  }, []);
-
   const handleMouseMove = useCallback(
     (event: MouseEvent) => {
-      if (!parentElement) return;
-      const { left, top } = parentElement.getBoundingClientRect();
+      const parent = containerRef.current?.parentElement;
+      if (!parent) return;
+
+      const { left, top } = parent.getBoundingClientRect();
       mouseX.set(event.clientX - left);
       mouseY.set(event.clientY - top);
     },
-    [mouseX, mouseY, parentElement]
+    [mouseX, mouseY]
   );
 
   useEffect(() => {
-    if (!parentElement) return;
+    const parent = containerRef.current?.parentElement;
+    if (!parent) return;
 
-    parentElement.addEventListener('mousemove', handleMouseMove);
-    parentElement.addEventListener('mouseenter', () => setIsHovered(true));
-    parentElement.addEventListener('mouseleave', () => setIsHovered(false));
+    const handleMouseEnter = () => setIsHovered(true);
+    const handleMouseLeave = () => setIsHovered(false);
+
+    parent.addEventListener('mousemove', handleMouseMove);
+    parent.addEventListener('mouseenter', handleMouseEnter);
+    parent.addEventListener('mouseleave', handleMouseLeave);
 
     return () => {
-      parentElement.removeEventListener('mousemove', handleMouseMove);
-      parentElement.removeEventListener('mouseenter', () => setIsHovered(true));
-      parentElement.removeEventListener('mouseleave', () =>
-        setIsHovered(false)
-      );
+      parent.removeEventListener('mousemove', handleMouseMove);
+      parent.removeEventListener('mouseenter', handleMouseEnter);
+      parent.removeEventListener('mouseleave', handleMouseLeave);
     };
-  }, [parentElement, handleMouseMove]);
+  }, [handleMouseMove]);
 
   return (
     <motion.div
       ref={containerRef}
       className={cn(
+
         'pointer-events-none absolute rounded-full bg-[radial-gradient(circle_at_center,var(--tw-gradient-stops),transparent_80%)] blur-xl transition-opacity duration-200',
         'from-zinc-50 via-zinc-100 to-zinc-200',
         isHovered ? 'opacity-100' : 'opacity-0',
