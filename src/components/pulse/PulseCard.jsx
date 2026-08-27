@@ -22,14 +22,14 @@ export default function PulseCard({ children, dark, onClick, delay = 0, accent, 
     }
   }
 
-  // تم تجميع الستايل بدون استخدام scale أو translate الخاصة بـ CSS لتجنب التعارض
   const baseStyle = {
     ...glass,
     position: 'relative',
     overflow: 'hidden',
     borderRadius: 18,
     opacity: visible ? 1 : 0,
-    transition: 'opacity 0.5s ease, box-shadow 0.25s ease',
+    transform: visible ? (hovered && interactive ? 'translateY(-3px)' : 'translateY(0px)') : 'translateY(16px)',
+    transition: 'opacity 0.4s ease, transform 0.25s ease-out, box-shadow 0.25s ease',
     cursor: interactive ? 'pointer' : 'default',
     boxShadow: hovered && interactive && accent
       ? `${glass.boxShadow}, 0 0 0 1px ${accent}55, 0 16px 32px -8px ${accent}40`
@@ -49,23 +49,12 @@ export default function PulseCard({ children, dark, onClick, delay = 0, accent, 
       onKeyDown={handleKeyDown}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      rotationFactor={7}
+      rotationFactor={6}
       isReverse
-      // إعدادات زنبرك أكثر اتزاناً تمنع الاهتزاز والتمدد الزائد
-      springOptions={{ stiffness: 150, damping: 15 }}
+      springOptions={{ stiffness: 120, damping: 14 }}
       style={baseStyle}
-      // الاعتماد على خصائص motion للحركات الخفيفة والرفع بدلاً من الـ CSS المباشر
-      animate={{
-        y: !visible ? 16 : (hovered ? -4 : 0),
-        scale: hovered ? 1.015 : 1 // نسبة تكبير خفيفة جداً ولطيفة
-      }}
-      transition={{
-        type: 'spring',
-        stiffness: 200,
-        damping: 20
-      }}
     >
-      <Spotlight size={260} springOptions={{ stiffness: 150, damping: 15 }} />
+      <Spotlight size={260} springOptions={{ stiffness: 120, damping: 14 }} />
       {children}
     </Tilt>
   )

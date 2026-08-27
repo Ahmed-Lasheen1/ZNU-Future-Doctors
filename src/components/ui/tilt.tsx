@@ -29,7 +29,7 @@ export function Tilt({
   rotationFactor = 15,
   isReverse = false,
   isRevese,
-  springOptions = { stiffness: 300, damping: 30 },
+  springOptions = { stiffness: 150, damping: 15 },
   onMouseEnter,
   onMouseLeave,
   ...rest
@@ -66,6 +66,9 @@ export function Tilt({
     const rect = ref.current.getBoundingClientRect();
     const width = rect.width;
     const height = rect.height;
+    
+    if (width === 0 || height === 0) return;
+
     const mouseX = e.clientX - rect.left;
     const mouseY = e.clientY - rect.top;
 
@@ -83,22 +86,24 @@ export function Tilt({
   };
 
   return (
-    <motion.div
-      ref={ref}
-      className={className}
-      style={{
-        transformStyle: 'preserve-3d',
-        perspective: 1000,
-        rotateX,
-        rotateY,
-        ...style,
-      }}
-      onMouseMove={handleMouseMove}
-      onMouseLeave={handleMouseLeave}
-      onMouseEnter={onMouseEnter}
-      {...rest}
-    >
-      {children}
-    </motion.div>
+    <div style={{ perspective: 1000, width: '100%', height: '100%' }}>
+      <motion.div
+        ref={ref}
+        className={className}
+        style={{
+          transformStyle: 'preserve-3d',
+          transformOrigin: 'center center',
+          rotateX,
+          rotateY,
+          ...style,
+        }}
+        onMouseMove={handleMouseMove}
+        onMouseLeave={handleMouseLeave}
+        onMouseEnter={onMouseEnter}
+        {...rest}
+      >
+        {children}
+      </motion.div>
+    </div>
   );
 }
