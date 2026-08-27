@@ -17,7 +17,6 @@ type TiltProps = {
   style?: MotionStyle;
   rotationFactor?: number;
   isReverse?: boolean;
-  /** @deprecated استخدم isReverse بدلاً منها */
   isRevese?: boolean;
   springOptions?: SpringOptions;
 } & Omit<HTMLMotionProps<'div'>, 'style' | 'className' | 'children'>;
@@ -35,7 +34,6 @@ export function Tilt({
   ...rest
 }: TiltProps) {
   const ref = useRef<HTMLDivElement>(null);
-
   const reverse = isRevese ?? isReverse;
 
   const x = useMotionValue(0);
@@ -47,36 +45,22 @@ export function Tilt({
   const rotateX = useTransform(
     ySpring,
     [-0.5, 0.5],
-    reverse
-      ? [rotationFactor, -rotationFactor]
-      : [-rotationFactor, rotationFactor]
+    reverse ? [rotationFactor, -rotationFactor] : [-rotationFactor, rotationFactor]
   );
 
   const rotateY = useTransform(
     xSpring,
     [-0.5, 0.5],
-    reverse
-      ? [-rotationFactor, rotationFactor]
-      : [rotationFactor, -rotationFactor]
+    reverse ? [-rotationFactor, rotationFactor] : [rotationFactor, -rotationFactor]
   );
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!ref.current) return;
-
     const rect = ref.current.getBoundingClientRect();
-    const width = rect.width;
-    const height = rect.height;
-    
-    if (width === 0 || height === 0) return;
+    if (!rect.width || !rect.height) return;
 
-    const mouseX = e.clientX - rect.left;
-    const mouseY = e.clientY - rect.top;
-
-    const xPos = mouseX / width - 0.5;
-    const yPos = mouseY / height - 0.5;
-
-    x.set(xPos);
-    y.set(yPos);
+    x.set((e.clientX - rect.left) / rect.width - 0.5);
+    y.set((e.clientY - rect.top) / rect.height - 0.5);
   };
 
   const handleMouseLeave = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -86,24 +70,23 @@ export function Tilt({
   };
 
   return (
-    <div style={{ perspective: 1000, width: '100%', height: '100%' }}>
-      <motion.div
-        ref={ref}
-        className={className}
-        style={{
-          transformStyle: 'preserve-3d',
-          transformOrigin: 'center center',
-          rotateX,
-          rotateY,
-          ...style,
-        }}
-        onMouseMove={handleMouseMove}
-        onMouseLeave={handleMouseLeave}
-        onMouseEnter={onMouseEnter}
-        {...rest}
-      >
-        {children}
-      </motion.div>
-    </div>
+    <motion.div
+      ref={ref}
+      className={className}
+      style={{
+        transformStyle: 'preserve-3d',
+        transformTemplate: ({ rotateX, rotateY }) =>
+          `perspective(1000px) rotateX(${rotateX}) rotateY(${rotateY})`,
+        rotateX,
+        rotateY,
+        ...style,
+      }}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+      onMouseEnter={onMouseEnter}
+      {...rest}
+    >
+      {children}
+    </motion.div>
   );
 }
