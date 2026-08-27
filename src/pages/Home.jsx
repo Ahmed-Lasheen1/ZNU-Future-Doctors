@@ -16,15 +16,14 @@ import ScrollReveal from '../components/pulse/ScrollReveal'
 
 // The ZNU Pulse mark — same file used for the PWA/manifest icons (see
 // public/manifest.json), so there's only one logo asset to keep in
-// sync. Reused here at header scale and again (larger) inside the
-// hero, both beating in time with the ECG sweep.
+// sync. Reused here at header scale and again inside the tagline
+// footer.
 const LOGO_SRC = '/icon-192.png'
 
 // Exact gradient sampled from the ZNU Pulse logo artwork itself (top →
 // bottom: light sky-blue fading to deep navy) — same recipe as
-// PAGE_BG in src/components/ui/sign-up.tsx, reproduced stop-for-stop
-// rather than approximated, so the Home page background matches the
-// logo exactly regardless of the dark/light toggle.
+// PAGE_BG in src/components/ui/sign-up.tsx, reproduced stop-for-stop.
+// Scoped ONLY to the hero panel below (not the whole page background).
 const LOGO_BG = [
   'linear-gradient(180deg,',
   '#a6d2ef 0%,',
@@ -251,250 +250,269 @@ export default function Home({ dark, toggleTheme }) {
   }
 
   return (
-    <div style={{
-      padding: '20px 16px 100px',
-      background: LOGO_BG,
-      minHeight: '100vh',
-      fontFamily: pulseFonts.body
-    }}>
-      <style>{`
-        .pulse-dash-grid {
-          display: grid;
-          grid-template-columns: 1fr 1.3fr 1fr;
-          gap: 20px;
-          align-items: stretch;
-        }
-        @media (max-width: 1000px) {
-          .pulse-dash-grid { grid-template-columns: 1fr; }
-        }
-        .pulse-stat-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-        .pulse-tools-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
-        @media (max-width: 720px) {
-          .pulse-tools-grid { grid-template-columns: repeat(2, 1fr); }
-        }
-      `}</style>
+    <div style={{ position: 'relative', minHeight: '100vh' }}>
+      {/* Fixed backdrop — pinned to the viewport, never scrolls. Only
+          the content layer below (cards, header, sections) moves as
+          the page is scrolled, which is what creates the flat "2D"
+          parallax feel: a still backdrop with floating UI on top. */}
+      <div style={{
+        position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none',
+        background: dark
+          ? `linear-gradient(180deg, ${pt.canvasAlt}, ${pt.canvas})`
+          : `linear-gradient(180deg, ${pt.canvas}, ${pt.canvasAlt})`,
+      }} />
 
-      {modulesError && <div className="page-container"><ErrorBanner /></div>}
-
-      {/* Header — same position/content as before: logo+name top-left,
-          utility buttons + profile pill top-right. */}
-      <div className="page-container" style={{
-        padding: '10px 0 22px',
-        opacity: titleVisible ? 1 : 0,
-        transform: titleVisible ? 'translateY(0)' : 'translateY(-14px)',
-        transition: 'all 0.55s ease'
+      {/* Scrolling content layer — everything the person actually
+          interacts with lives here, above the fixed backdrop. */}
+      <div style={{
+        position: 'relative', zIndex: 1,
+        padding: '20px 16px 100px',
+        fontFamily: pulseFonts.body
       }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-          <ZnuPulseBrand dark={dark} pt={pt} />
+        <style>{`
+          .pulse-dash-grid {
+            display: grid;
+            grid-template-columns: 1fr 1.3fr 1fr;
+            gap: 20px;
+            align-items: stretch;
+          }
+          @media (max-width: 1000px) {
+            .pulse-dash-grid { grid-template-columns: 1fr; }
+          }
+          .pulse-stat-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+          .pulse-tools-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+          @media (max-width: 720px) {
+            .pulse-tools-grid { grid-template-columns: repeat(2, 1fr); }
+          }
+        `}</style>
 
-          <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-            <button onClick={toggleTheme} style={utilityBtnStyle} aria-label={dark ? 'Switch to light mode' : 'Switch to dark mode'}>{dark ? '☀️' : '🌙'}</button>
-            <NavMenu dark={dark} />
-            <button onClick={() => navigate('/search')} aria-label="Search" style={utilityBtnStyle}>🔍</button>
+        {modulesError && <div className="page-container"><ErrorBanner /></div>}
 
-            {user && profile ? (
-              <div onClick={() => navigate('/profile')}
-                role="button" tabIndex={0}
-                onKeyDown={onActivateKeyDown(() => navigate('/profile'))}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 10,
-                  background: pt.surfaceFlat,
-                  border: `1px solid ${pt.border}`,
-                  borderRadius: 20, padding: '6px 14px 6px 6px', cursor: 'pointer',
-                  transition: 'all 0.2s'
-                }}
-                onMouseEnter={e => e.currentTarget.style.borderColor = pt.cobaltBorder}
-                onMouseLeave={e => e.currentTarget.style.borderColor = pt.border}>
-                <div style={{
-                  width: 30, height: 30, borderRadius: '50%',
-                  background: `linear-gradient(135deg, ${pt.cobalt}, ${pt.indigo})`,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 13, fontWeight: 900, color: '#fff', flexShrink: 0
-                }}>
-                  {initialOf(profile.name)}
-                </div>
-                <div style={{ textAlign: 'left' }}>
-                  <div style={{ color: pt.text, fontSize: 12, fontWeight: 700 }}>Dr. {profile.name}</div>
-                  <div style={{ color: pt.amber, fontSize: 10, fontWeight: 700 }}>⭐ {profile.points} points</div>
-                </div>
-              </div>
-            ) : (
-              <button onClick={() => navigate('/auth')} style={{
-                background: pt.cobaltSoft, color: pt.cobalt,
-                border: `1px solid ${pt.cobaltBorder}`,
-                padding: '8px 16px', borderRadius: 20,
-                cursor: 'pointer', fontSize: 13, fontWeight: 700
-              }}>Sign In →</button>
-            )}
-          </div>
-        </div>
-      </div>
+        {/* Header — same position/content as before: logo+name top-left,
+            utility buttons + profile pill top-right. */}
+        <div className="page-container" style={{
+          padding: '10px 0 22px',
+          opacity: titleVisible ? 1 : 0,
+          transform: titleVisible ? 'translateY(0)' : 'translateY(-14px)',
+          transition: 'all 0.55s ease'
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+            <ZnuPulseBrand dark={dark} pt={pt} />
 
-      <div className="page-container">
-        <NotifyPermissionButton dark={dark} label="🔔 Enable exam & deadline reminders" />
-      </div>
+            <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+              <button onClick={toggleTheme} style={utilityBtnStyle} aria-label={dark ? 'Switch to light mode' : 'Switch to dark mode'}>{dark ? '☀️' : '🌙'}</button>
+              <NavMenu dark={dark} />
+              <button onClick={() => navigate('/search')} aria-label="Search" style={utilityBtnStyle}>🔍</button>
 
-      {/* Main dashboard — every stat is now its own floating glass tile
-          with tilt (left), the ECG hero floats free in the center with
-          no card border (right where the reference puts it), and the
-          active-modules list on the right is a stack of pill-shaped
-          floating cards. */}
-      <div className="page-container" style={{ marginBottom: 32 }}>
-        <div className="pulse-dash-grid">
-
-          {/* Left: individual stat tiles */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            <StatTile dark={dark} pt={pt} delay={80} accent={pt.cobalt}>
-              <div style={{ color: pt.faint, fontSize: 11, fontWeight: 700, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 8 }}>
-                📊 Weekly Report
-              </div>
-              <div style={{
-                ...statNumStyle,
-                color: weeklySummary ? (weeklySummary.accuracy >= 60 ? pt.cobalt : pt.danger) : pt.text
-              }}>
-                {weeklySummary ? `${weeklySummary.accuracy}%` : '—'}
-              </div>
-              <div style={{ color: pt.sub, fontSize: 12, marginTop: 4 }}>
-                {weeklySummary ? 'Accuracy this week' : 'No questions logged this week'}
-              </div>
-            </StatTile>
-
-            <StatTile dark={dark} pt={pt} delay={140} accent={pt.indigo}>
-              <div style={{ ...statNumStyle, color: pt.text }}>{weeklySummary ? weeklySummary.totalAttempted : 0}</div>
-              <div style={{ color: pt.sub, fontSize: 12, marginTop: 4 }}>Questions attempted</div>
-            </StatTile>
-
-            <div className="pulse-stat-row-2">
-              <StatTile dark={dark} pt={pt} delay={200} accent={pt.indigo}>
-                <div style={{ color: pt.indigo, fontWeight: 800, fontSize: 15 }}>
-                  {weeklySummary?.topSubjectName || '—'}
-                </div>
-                <div style={{ color: pt.sub, fontSize: 11, marginTop: 4 }}>Most practiced</div>
-              </StatTile>
-              <StatTile dark={dark} pt={pt} delay={230} accent={pt.terracotta}>
-                <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, color: pt.terracotta }}>
-                  <span style={{ fontSize: 16 }}>🔥</span>
-                  <span style={{ fontFamily: pulseFonts.display, fontWeight: 800, fontSize: 22 }}>{streak}</span>
-                </div>
-                <div style={{ color: pt.sub, fontSize: 11, marginTop: 4 }}>Day streak</div>
-              </StatTile>
-            </div>
-
-            {(pausedExam || announcement) && (
-              <PulseCard dark={dark} delay={280} accent={pt.cobalt}
-                onClick={pausedExam ? () => navigate('/mcq') : undefined}
-                style={{ padding: '16px 20px' }}>
-                {pausedExam ? (
-                  <div style={{ color: pt.cobalt, fontWeight: 800, fontSize: 14 }}>
-                    ⏸ Continue where you left off →
+              {user && profile ? (
+                <div onClick={() => navigate('/profile')}
+                  role="button" tabIndex={0}
+                  onKeyDown={onActivateKeyDown(() => navigate('/profile'))}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 10,
+                    background: pt.surfaceFlat,
+                    border: `1px solid ${pt.border}`,
+                    borderRadius: 20, padding: '6px 14px 6px 6px', cursor: 'pointer',
+                    transition: 'all 0.2s'
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.borderColor = pt.cobaltBorder}
+                  onMouseLeave={e => e.currentTarget.style.borderColor = pt.border}>
+                  <div style={{
+                    width: 30, height: 30, borderRadius: '50%',
+                    background: `linear-gradient(135deg, ${pt.cobalt}, ${pt.indigo})`,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: 13, fontWeight: 900, color: '#fff', flexShrink: 0
+                  }}>
+                    {initialOf(profile.name)}
                   </div>
-                ) : (
-                  <div style={{ color: pt.text, fontWeight: 700, fontSize: 13, lineHeight: 1.5 }}>
-                    {announcement}
+                  <div style={{ textAlign: 'left' }}>
+                    <div style={{ color: pt.text, fontSize: 12, fontWeight: 700 }}>Dr. {profile.name}</div>
+                    <div style={{ color: pt.amber, fontSize: 10, fontWeight: 700 }}>⭐ {profile.points} points</div>
                   </div>
-                )}
-              </PulseCard>
-            )}
-          </div>
-
-          {/* Center: the ECG hero, unframed — matches the reference's
-              free-floating pulse line with no surrounding card. */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 260 }}>
-            <EcgHero pt={pt} height={280} />
-          </div>
-
-          {/* Right: Active modules as pill-shaped floating glass cards */}
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: pt.cobalt, fontSize: 11, fontWeight: 700, letterSpacing: 2.5, textTransform: 'uppercase', marginBottom: 14 }}>
-              <span style={{ width: 6, height: 6, borderRadius: '50%', background: pt.cobalt, display: 'inline-block' }} />
-              Active Modules
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {activeModules.length === 0 && (
-                <div style={{ color: pt.sub, fontSize: 13 }}>No active modules yet.</div>
+                </div>
+              ) : (
+                <button onClick={() => navigate('/auth')} style={{
+                  background: pt.cobaltSoft, color: pt.cobalt,
+                  border: `1px solid ${pt.cobaltBorder}`,
+                  padding: '8px 16px', borderRadius: 20,
+                  cursor: 'pointer', fontSize: 13, fontWeight: 700
+                }}>Sign In →</button>
               )}
-              {activeModules.map((mod, i) => (
-                <PulseCard key={mod.id} dark={dark} delay={250 + i * 70} accent={mod.color}
-                  onClick={() => navigate(`/module/${mod.id}`)}
-                  style={{ borderRadius: 999, padding: '10px 18px 10px 10px', display: 'flex', alignItems: 'center', gap: 14 }}>
-                  <div style={{
-                    width: 46, height: 46, borderRadius: '50%', flexShrink: 0,
-                    background: `${mod.color}22`, border: `1px solid ${mod.color}55`,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20
-                  }}>{mod.icon}</div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ color: pt.text, fontWeight: 700, fontSize: 14 }}>{mod.name}</div>
-                    <div style={{ color: pt.sub, fontSize: 11, marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{moduleBlurb(mod.name)}</div>
-                  </div>
-                  <span style={{ width: 8, height: 8, borderRadius: '50%', background: mod.color, display: 'inline-block', flexShrink: 0 }} />
-                </PulseCard>
-              ))}
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Tools — already floating glass tiles with tilt (PulseCard);
-          rounded a touch more to match the reference's pill-leaning cards. */}
-      <div className="page-container" style={{ marginBottom: 32 }}>
-        {sectionTitle('⚡ Tools')}
-        <div className="pulse-tools-grid">
-          {toolCards.map((card, i) => {
-            const accentColor = card.accent === 'amber' ? pt.amber : pt.indigo
-            return (
-              <PulseCard key={i} dark={dark} delay={500 + i * 70} accent={accentColor}
-                onClick={() => navigate(card.to)}
-                style={{ borderRadius: 22, padding: '18px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
-                  <div style={{
-                    width: 38, height: 38, borderRadius: '50%', flexShrink: 0,
-                    background: `${accentColor}22`,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18
-                  }}>{card.emoji}</div>
-                  <div style={{ minWidth: 0 }}>
-                    <div style={{ color: pt.text, fontWeight: 700, fontSize: 13 }}>{card.title}</div>
-                    <div style={{ color: pt.sub, fontSize: 11, marginTop: 1 }}>{card.sub}</div>
-                  </div>
+        <div className="page-container">
+          <NotifyPermissionButton dark={dark} label="🔔 Enable exam & deadline reminders" />
+        </div>
+
+        {/* Main dashboard — every stat is its own floating glass tile
+            with tilt (left), the ECG hero sits in its own gradient panel
+            (center — the ONLY place the exact logo gradient appears),
+            and the active-modules list on the right is a stack of
+            pill-shaped floating cards. */}
+        <div className="page-container" style={{ marginBottom: 32 }}>
+          <div className="pulse-dash-grid">
+
+            {/* Left: individual stat tiles */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <StatTile dark={dark} pt={pt} delay={80} accent={pt.cobalt}>
+                <div style={{ color: pt.faint, fontSize: 11, fontWeight: 700, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 8 }}>
+                  📊 Weekly Report
                 </div>
-                <div style={{ color: pt.faint, fontSize: 16, flexShrink: 0 }}>→</div>
-              </PulseCard>
-            )
-          })}
-        </div>
-      </div>
+                <div style={{
+                  ...statNumStyle,
+                  color: weeklySummary ? (weeklySummary.accuracy >= 60 ? pt.cobalt : pt.danger) : pt.text
+                }}>
+                  {weeklySummary ? `${weeklySummary.accuracy}%` : '—'}
+                </div>
+                <div style={{ color: pt.sub, fontSize: 12, marginTop: 4 }}>
+                  {weeklySummary ? 'Accuracy this week' : 'No questions logged this week'}
+                </div>
+              </StatTile>
 
-      {/* Tagline footer */}
-      <div className="page-container" style={{ display: 'flex', alignItems: 'center', gap: 14, justifyContent: 'center', margin: '8px 0 40px' }}>
-        <div style={{ height: 1, background: pt.border, flex: 1, maxWidth: 120 }} />
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: pt.faint, fontSize: 13, fontWeight: 600 }}>
-          <img src={LOGO_SRC} alt="" style={{ width: 18, height: 18, borderRadius: 4, objectFit: 'cover' }} />
-          Keep the pulse. Shape the future.
-        </div>
-        <div style={{ height: 1, background: pt.border, flex: 1, maxWidth: 120 }} />
-      </div>
+              <StatTile dark={dark} pt={pt} delay={140} accent={pt.indigo}>
+                <div style={{ ...statNumStyle, color: pt.text }}>{weeklySummary ? weeklySummary.totalAttempted : 0}</div>
+                <div style={{ color: pt.sub, fontSize: 12, marginTop: 4 }}>Questions attempted</div>
+              </StatTile>
 
-      {/* Completed modules — hidden until scrolled into view */}
-      {completedModules.length > 0 && (
-        <ScrollReveal>
-          <div className="page-container">
-            {sectionTitle('✓ Completed Modules')}
-            <AutoGrid>
-              {completedModules.map((mod, i) => (
-                <PulseCard key={mod.id} dark={dark} delay={i * 70}
-                  onClick={() => navigate(`/module/${mod.id}`)}
-                  style={{ padding: 'clamp(20px, 2vw, 28px)', textAlign: 'center' }}>
-                  <div style={{ fontSize: 'clamp(28px, 3vw, 42px)', marginBottom: 8, filter: 'grayscale(0.5)' }}>{mod.icon}</div>
-                  <div style={{ color: pt.sub, fontSize: 'clamp(13px, 1.1vw, 16px)', fontWeight: 700, marginBottom: 8 }}>{mod.name}</div>
-                  <div style={{
-                    display: 'inline-block', background: `${pt.faint}20`, color: pt.faint,
-                    border: `1px solid ${pt.faint}40`, borderRadius: 20, padding: '2px 10px', fontSize: 11, fontWeight: 700
-                  }}>✓ Completed</div>
+              <div className="pulse-stat-row-2">
+                <StatTile dark={dark} pt={pt} delay={200} accent={pt.indigo}>
+                  <div style={{ color: pt.indigo, fontWeight: 800, fontSize: 15 }}>
+                    {weeklySummary?.topSubjectName || '—'}
+                  </div>
+                  <div style={{ color: pt.sub, fontSize: 11, marginTop: 4 }}>Most practiced</div>
+                </StatTile>
+                <StatTile dark={dark} pt={pt} delay={230} accent={pt.terracotta}>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, color: pt.terracotta }}>
+                    <span style={{ fontSize: 16 }}>🔥</span>
+                    <span style={{ fontFamily: pulseFonts.display, fontWeight: 800, fontSize: 22 }}>{streak}</span>
+                  </div>
+                  <div style={{ color: pt.sub, fontSize: 11, marginTop: 4 }}>Day streak</div>
+                </StatTile>
+              </div>
+
+              {(pausedExam || announcement) && (
+                <PulseCard dark={dark} delay={280} accent={pt.cobalt}
+                  onClick={pausedExam ? () => navigate('/mcq') : undefined}
+                  style={{ padding: '16px 20px' }}>
+                  {pausedExam ? (
+                    <div style={{ color: pt.cobalt, fontWeight: 800, fontSize: 14 }}>
+                      ⏸ Continue where you left off →
+                    </div>
+                  ) : (
+                    <div style={{ color: pt.text, fontWeight: 700, fontSize: 13, lineHeight: 1.5 }}>
+                      {announcement}
+                    </div>
+                  )}
                 </PulseCard>
-              ))}
-            </AutoGrid>
+              )}
+            </div>
+
+            {/* Center: the hero panel — the exact logo gradient is
+                scoped to this box only, nowhere else on the page. */}
+            <div style={{
+              position: 'relative', borderRadius: 26, overflow: 'hidden',
+              background: LOGO_BG,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              minHeight: 260,
+              boxShadow: '0 20px 50px -18px rgba(4, 20, 50, 0.55)'
+            }}>
+              <EcgHero height={280} />
+            </div>
+
+            {/* Right: Active modules as pill-shaped floating glass cards */}
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: pt.cobalt, fontSize: 11, fontWeight: 700, letterSpacing: 2.5, textTransform: 'uppercase', marginBottom: 14 }}>
+                <span style={{ width: 6, height: 6, borderRadius: '50%', background: pt.cobalt, display: 'inline-block' }} />
+                Active Modules
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {activeModules.length === 0 && (
+                  <div style={{ color: pt.sub, fontSize: 13 }}>No active modules yet.</div>
+                )}
+                {activeModules.map((mod, i) => (
+                  <PulseCard key={mod.id} dark={dark} delay={250 + i * 70} accent={mod.color}
+                    onClick={() => navigate(`/module/${mod.id}`)}
+                    style={{ borderRadius: 999, padding: '10px 18px 10px 10px', display: 'flex', alignItems: 'center', gap: 14 }}>
+                    <div style={{
+                      width: 46, height: 46, borderRadius: '50%', flexShrink: 0,
+                      background: `${mod.color}22`, border: `1px solid ${mod.color}55`,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20
+                    }}>{mod.icon}</div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ color: pt.text, fontWeight: 700, fontSize: 14 }}>{mod.name}</div>
+                      <div style={{ color: pt.sub, fontSize: 11, marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{moduleBlurb(mod.name)}</div>
+                    </div>
+                    <span style={{ width: 8, height: 8, borderRadius: '50%', background: mod.color, display: 'inline-block', flexShrink: 0 }} />
+                  </PulseCard>
+                ))}
+              </div>
+            </div>
           </div>
-        </ScrollReveal>
-      )}
+        </div>
+
+        {/* Tools — already floating glass tiles with tilt (PulseCard). */}
+        <div className="page-container" style={{ marginBottom: 32 }}>
+          {sectionTitle('⚡ Tools')}
+          <div className="pulse-tools-grid">
+            {toolCards.map((card, i) => {
+              const accentColor = card.accent === 'amber' ? pt.amber : pt.indigo
+              return (
+                <PulseCard key={i} dark={dark} delay={500 + i * 70} accent={accentColor}
+                  onClick={() => navigate(card.to)}
+                  style={{ borderRadius: 22, padding: '18px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
+                    <div style={{
+                      width: 38, height: 38, borderRadius: '50%', flexShrink: 0,
+                      background: `${accentColor}22`,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18
+                    }}>{card.emoji}</div>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ color: pt.text, fontWeight: 700, fontSize: 13 }}>{card.title}</div>
+                      <div style={{ color: pt.sub, fontSize: 11, marginTop: 1 }}>{card.sub}</div>
+                    </div>
+                  </div>
+                  <div style={{ color: pt.faint, fontSize: 16, flexShrink: 0 }}>→</div>
+                </PulseCard>
+              )
+            })}
+          </div>
+        </div>
+
+        {/* Tagline footer */}
+        <div className="page-container" style={{ display: 'flex', alignItems: 'center', gap: 14, justifyContent: 'center', margin: '8px 0 40px' }}>
+          <div style={{ height: 1, background: pt.border, flex: 1, maxWidth: 120 }} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: pt.faint, fontSize: 13, fontWeight: 600 }}>
+            <img src={LOGO_SRC} alt="" style={{ width: 18, height: 18, borderRadius: 4, objectFit: 'cover' }} />
+            Keep the pulse. Shape the future.
+          </div>
+          <div style={{ height: 1, background: pt.border, flex: 1, maxWidth: 120 }} />
+        </div>
+
+        {/* Completed modules — hidden until scrolled into view */}
+        {completedModules.length > 0 && (
+          <ScrollReveal>
+            <div className="page-container">
+              {sectionTitle('✓ Completed Modules')}
+              <AutoGrid>
+                {completedModules.map((mod, i) => (
+                  <PulseCard key={mod.id} dark={dark} delay={i * 70}
+                    onClick={() => navigate(`/module/${mod.id}`)}
+                    style={{ padding: 'clamp(20px, 2vw, 28px)', textAlign: 'center' }}>
+                    <div style={{ fontSize: 'clamp(28px, 3vw, 42px)', marginBottom: 8, filter: 'grayscale(0.5)' }}>{mod.icon}</div>
+                    <div style={{ color: pt.sub, fontSize: 'clamp(13px, 1.1vw, 16px)', fontWeight: 700, marginBottom: 8 }}>{mod.name}</div>
+                    <div style={{
+                      display: 'inline-block', background: `${pt.faint}20`, color: pt.faint,
+                      border: `1px solid ${pt.faint}40`, borderRadius: 20, padding: '2px 10px', fontSize: 11, fontWeight: 700
+                    }}>✓ Completed</div>
+                  </PulseCard>
+                ))}
+              </AutoGrid>
+            </div>
+          </ScrollReveal>
+        )}
+      </div>
     </div>
   )
 }
