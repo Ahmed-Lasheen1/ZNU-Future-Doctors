@@ -8,6 +8,7 @@ import {
   useTransform,
   MotionStyle,
   SpringOptions,
+  HTMLMotionProps,
 } from 'framer-motion';
 
 type TiltProps = {
@@ -19,7 +20,7 @@ type TiltProps = {
   /** @deprecated استخدم isReverse بدلاً منها */
   isRevese?: boolean;
   springOptions?: SpringOptions;
-} & Omit<React.HTMLAttributes<HTMLDivElement>, 'style' | 'className' | 'children'>;
+} & Omit<HTMLMotionProps<'div'>, 'style' | 'className' | 'children'>;
 
 export function Tilt({
   children,
@@ -35,7 +36,6 @@ export function Tilt({
 }: TiltProps) {
   const ref = useRef<HTMLDivElement>(null);
 
-  // دعم اسم الخاصية المكتوب خطأ تلقائياً في حال استخدامه
   const reverse = isRevese ?? isReverse;
 
   const x = useMotionValue(0);
@@ -51,6 +51,7 @@ export function Tilt({
       ? [rotationFactor, -rotationFactor]
       : [-rotationFactor, rotationFactor]
   );
+
   const rotateY = useTransform(
     xSpring,
     [-0.5, 0.5],
