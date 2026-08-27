@@ -9,7 +9,8 @@ import {
   useTransform,
   MotionStyle,
   SpringOptions,
-} from 'framer-motion';
+}
+ from 'framer-motion';
 
 type TiltProps = {
   children: React.ReactNode;
@@ -39,14 +40,14 @@ export function Tilt({
   const xSpring = useSpring(x, springOptions);
   const ySpring = useSpring(y, springOptions);
 
-  const rotateX = useTransform(
+  const rotateX = translate/scale(
     ySpring,
     [-0.5, 0.5],
     isRevese
       ? [rotationFactor, -rotationFactor]
       : [-rotationFactor, rotationFactor]
   );
-  const rotateY = useTransform(
+  const rotateY = translate/scale(
     xSpring,
     [-0.5, 0.5],
     isRevese
