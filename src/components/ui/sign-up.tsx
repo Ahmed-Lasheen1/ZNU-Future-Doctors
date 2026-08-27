@@ -151,6 +151,13 @@ export function AuthComponent(props: AuthComponentProps) {
           )}>{message}</div>
         )}
 
+        {/* Hidden username mirror — kept in sync with the email field via
+            autoComplete="username" on the visible input below. Having a
+            username-typed field present (even across the email/password
+            steps living in separate DOM subtrees via AnimatePresence)
+            gives browser password managers a stronger "this is a login
+            form" signal than either field alone. */}
+
         <AnimatePresence mode="wait">
           {step === "email" && (
             <motion.div key="email" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-4">
@@ -175,6 +182,7 @@ export function AuthComponent(props: AuthComponentProps) {
                 <BlurFade delay={0.1}>
                   <GlassPill className="flex items-center px-5 py-3.5">
                     <input value={name} onChange={e => onNameChange(e.target.value)} placeholder="Your name"
+                      name="name" id="name" autoComplete="name"
                       className="flex-1 bg-transparent outline-none text-sm text-foreground placeholder:text-muted-foreground" />
                   </GlassPill>
                 </BlurFade>
@@ -185,6 +193,7 @@ export function AuthComponent(props: AuthComponentProps) {
                   <input type="email" value={email} onChange={e => onEmailChange(e.target.value)}
                     onKeyDown={e => e.key === "Enter" && onSubmitEmailStep()}
                     placeholder={mode === "signup" ? (accountType === "university" ? "ZNU email (@med.znu.edu.eg)" : "you@gmail.com") : "Email address"}
+                    name="email" id="email" autoComplete="username" inputMode="email"
                     className="flex-1 bg-transparent outline-none text-sm text-foreground placeholder:text-muted-foreground" />
                 </GlassPill>
               </BlurFade>
@@ -207,12 +216,21 @@ export function AuthComponent(props: AuthComponentProps) {
           {step === "password" && (
             <motion.div key="password" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-4">
               <p className="text-center text-xs text-muted-foreground">{email}</p>
+              {/* Hidden username field so the password manager can pair
+                  this password with the email entered on the previous
+                  step, even though the two inputs never share the DOM
+                  at the same time. */}
+              <input type="email" value={email} readOnly hidden
+                name="email" id="email-hidden" autoComplete="username"
+                style={{ display: "none" }} />
               <GlassPill className="flex items-center px-5 py-3.5 gap-2">
                 <Lock className="w-4 h-4 text-muted-foreground flex-shrink-0" />
                 <input ref={passwordRef} type={showPw ? "text" : "password"} value={password}
                   onChange={e => onPasswordChange(e.target.value)}
                   onKeyDown={e => e.key === "Enter" && onSubmitPasswordStep()}
                   placeholder="Password (min 6 characters)"
+                  name="password" id="password"
+                  autoComplete={mode === "signin" ? "current-password" : "new-password"}
                   className="flex-1 bg-transparent outline-none text-sm text-foreground placeholder:text-muted-foreground" />
                 <button type="button" onClick={() => setShowPw(!showPw)} className="text-muted-foreground">
                   {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -233,12 +251,16 @@ export function AuthComponent(props: AuthComponentProps) {
           {step === "confirm" && (
             <motion.div key="confirm" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-4">
               <p className="text-center text-xs text-muted-foreground">{email}</p>
+              <input type="email" value={email} readOnly hidden
+                name="email" id="email-hidden-confirm" autoComplete="username"
+                style={{ display: "none" }} />
               <GlassPill className="flex items-center px-5 py-3.5 gap-2">
                 <Lock className="w-4 h-4 text-muted-foreground flex-shrink-0" />
                 <input ref={confirmRef} type={showConfirmPw ? "text" : "password"} value={confirmPassword}
                   onChange={e => onConfirmPasswordChange(e.target.value)}
                   onKeyDown={e => e.key === "Enter" && onSubmitConfirmStep()}
                   placeholder="Confirm password"
+                  name="confirm-password" id="confirm-password" autoComplete="new-password"
                   className="flex-1 bg-transparent outline-none text-sm text-foreground placeholder:text-muted-foreground" />
                 <button type="button" onClick={() => setShowConfirmPw(!showConfirmPw)} className="text-muted-foreground">
                   {showConfirmPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -263,6 +285,7 @@ export function AuthComponent(props: AuthComponentProps) {
                   onChange={e => onOtpChange(e.target.value.replace(/\D/g, ""))}
                   onKeyDown={e => e.key === "Enter" && onSubmitVerify()}
                   placeholder="123456"
+                  name="otp" id="otp" autoComplete="one-time-code"
                   className="w-full bg-transparent outline-none text-center text-xl font-bold tracking-[0.5em] text-foreground placeholder:text-muted-foreground" />
               </GlassPill>
               <GlassButton onClick={onSubmitVerify} disabled={loading}>{loading ? "Verifying..." : "Verify & Continue"}</GlassButton>
