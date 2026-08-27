@@ -77,48 +77,16 @@ function onActivateKeyDown(handler) {
 }
 
 // ── ZNU PULSE brand mark (header) ──────────────────────────────────
-// Now the real logo artwork instead of a hand-drawn SVG trace — it
-// beats with the same lub-dub rhythm as the big hero mark below it
-// (see .znu-logo-beat / .znu-logo-glow), so the small header mark and
-// the large hero mark read as one heartbeat at two different scales.
+// The real logo artwork, static — no beat/glow animation here.
 function ZnuPulseBrand({ dark, pt }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-      <style>{`
-        @keyframes znuLogoBeat {
-          0%   { transform: scale(1); }
-          8%   { transform: scale(1.09); }
-          16%  { transform: scale(1); }
-          24%  { transform: scale(1.05); }
-          32%  { transform: scale(1); }
-          100% { transform: scale(1); }
-        }
-        @keyframes znuLogoGlow {
-          0%, 100% { opacity: 0.3; transform: scale(1); }
-          16% { opacity: 0.85; transform: scale(1.3); }
-          32% { opacity: 0.5; transform: scale(1.12); }
-          48% { opacity: 0.3; transform: scale(1); }
-        }
-        .znu-logo-beat { animation: znuLogoBeat 5.2s ease-in-out infinite; }
-        .znu-logo-glow { animation: znuLogoGlow 5.2s ease-in-out infinite; }
-        @media (prefers-reduced-motion: reduce) {
-          .znu-logo-beat, .znu-logo-glow { animation: none !important; }
-        }
-      `}</style>
-
-      <div style={{ position: 'relative', width: 44, height: 44, flexShrink: 0 }}>
-        <div className="znu-logo-glow" style={{
-          position: 'absolute', inset: -5, borderRadius: '50%',
-          background: `radial-gradient(circle, ${pt.ecgGlow}55, transparent 70%)`,
-          pointerEvents: 'none',
-        }} />
-        <div className="znu-logo-beat" style={{
-          position: 'relative', width: '100%', height: '100%',
-          borderRadius: 12, overflow: 'hidden',
-          background: pt.surfaceFlat, border: `1px solid ${pt.cobaltBorder}`,
-        }}>
-          <img src={LOGO_SRC} alt="ZNU Pulse" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-        </div>
+      <div style={{
+        width: 44, height: 44, flexShrink: 0,
+        borderRadius: 12, overflow: 'hidden',
+        background: pt.surfaceFlat, border: `1px solid ${pt.cobaltBorder}`,
+      }}>
+        <img src={LOGO_SRC} alt="ZNU Pulse" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
       </div>
 
       <div>

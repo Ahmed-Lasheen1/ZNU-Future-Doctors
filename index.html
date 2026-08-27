@@ -3,8 +3,18 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <!-- Cache-busted with ?v=2 — browsers cache favicons unusually
+         aggressively (often ignoring a normal hard-reload), so simply
+         overwriting favicon.svg's content at the same URL isn't
+         enough to make an already-visited browser pick up the new
+         logo. Bump this query string again next time the favicon
+         changes. .ico + sized PNGs are included as fallbacks for
+         browsers/OSes that ignore the SVG icon. -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=2" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png?v=2" />
+    <link rel="shortcut icon" href="/favicon.ico?v=2" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=2" />
     <link rel="manifest" href="/manifest.json" />
     <meta name="theme-color" content="#0a0f1e" />
     <meta name="description" content="ZNU Pulse — Your integrated medical study platform: schedules, checklists, question banks, lecture files, and smart summaries for ZNU medical students." />
