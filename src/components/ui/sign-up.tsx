@@ -115,7 +115,6 @@ export function AuthComponent(props: AuthComponentProps) {
   const celebratedRef = useRef(false)
 
   useEffect(() => {
-    if (step === "password") setTimeout(() => passwordRef.current?.focus(), 300)
     if (step === "confirm") setTimeout(() => confirmRef.current?.focus(), 300)
     if (step === "verify") setTimeout(() => otpRef.current?.focus(), 300)
   }, [step])
@@ -129,13 +128,23 @@ export function AuthComponent(props: AuthComponentProps) {
 
   const isSuccess = message.includes("✅")
 
+  // Sign-in submits with whatever is currently in email/password — no
+  // separate "continue" step, so Enter in either field (or the button)
+  // just goes straight to onSubmitPasswordStep, which is what actually
+  // performs supabase.auth.signInWithPassword() for mode === "signin".
+  function handleSignInSubmit() {
+    onSubmitPasswordStep()
+  }
+
   return (
     <div className="fixed inset-0 overflow-y-auto bg-gradient-to-b from-background to-[hsl(var(--card))] flex items-center justify-center">
       <GradientBlobs />
 
-      <div className="relative z-10 w-[92%] max-w-[400px] rounded-[28px] border border-white/10 bg-white/5 backdrop-blur-2xl p-9 shadow-2xl">
-        <BlurFade className="flex flex-col items-center gap-2 mb-6">
-          <div className="w-[60px] h-[60px] rounded-2xl overflow-hidden border border-primary/40 shadow-[0_8px_30px_-8px_hsl(var(--primary)/0.5)]">
+      {/* No boxed/bordered card anymore — content sits directly on the
+          full-page gradient background. */}
+      <div className="relative z-10 w-[92%] max-w-[400px] px-2 py-8">
+        <BlurFade className="flex flex-col items-center gap-2 mb-8">
+          <div className="w-[64px] h-[64px] rounded-2xl overflow-hidden border border-primary/40 shadow-[0_8px_30px_-8px_hsl(var(--primary)/0.5)]">
             <img src={logoSrc} alt={brandName} className="w-full h-full object-cover" />
           </div>
           <div className="font-extrabold text-2xl tracking-tight text-foreground">
@@ -151,21 +160,65 @@ export function AuthComponent(props: AuthComponentProps) {
           )}>{message}</div>
         )}
 
-        {/* Hidden username mirror — kept in sync with the email field via
-            autoComplete="username" on the visible input below. Having a
-            username-typed field present (even across the email/password
-            steps living in separate DOM subtrees via AnimatePresence)
-            gives browser password managers a stronger "this is a login
-            form" signal than either field alone. */}
+        {mode === "signin" ? (
+          // ── Sign in: email + password together, one submit, no
+          // intermediate "Continue" step. ─────────────────────────────
+          <motion.div key="signin" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
+            <BlurFade className="text-center">
+              <p className="font-light text-2xl text-foreground">Welcome back</p>
+            </BlurFade>
 
-        <AnimatePresence mode="wait">
-          {step === "email" && (
-            <motion.div key="email" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-4">
-              <BlurFade className="text-center">
-                <p className="font-light text-2xl text-foreground">{mode === "signup" ? "Create your account" : "Welcome back"}</p>
-              </BlurFade>
+            <BlurFade delay={0.08}>
+              <GlassPill className="flex items-center px-5 py-3.5">
+                <input type="email" value={email} onChange={e => onEmailChange(e.target.value)}
+                  onKeyDown={e => e.key === "Enter" && handleSignInSubmit()}
+                  placeholder="Email address"
+                  name="email" id="email" autoComplete="username" inputMode="email"
+                  className="flex-1 bg-transparent outline-none text-sm text-foreground placeholder:text-muted-foreground" />
+              </GlassPill>
+            </BlurFade>
 
-              {mode === "signup" && (
+            <BlurFade delay={0.14}>
+              <GlassPill className="flex items-center px-5 py-3.5 gap-2">
+                <Lock className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                <input ref={passwordRef} type={showPw ? "text" : "password"} value={password}
+                  onChange={e => onPasswordChange(e.target.value)}
+                  onKeyDown={e => e.key === "Enter" && handleSignInSubmit()}
+                  placeholder="Password"
+                  name="password" id="password" autoComplete="current-password"
+                  className="flex-1 bg-transparent outline-none text-sm text-foreground placeholder:text-muted-foreground" />
+                <button type="button" onClick={() => setShowPw(!showPw)} className="text-muted-foreground">
+                  {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </GlassPill>
+            </BlurFade>
+
+            <button onClick={onForgotPassword} className="block ml-auto text-xs text-primary underline">Forgot password?</button>
+
+            <BlurFade delay={0.2}>
+              <GlassButton onClick={handleSignInSubmit} disabled={loading}>
+                {loading ? "Signing in..." : "Sign In"}
+              </GlassButton>
+            </BlurFade>
+
+            <div className="space-y-2 pt-1">
+              <GhostButton onClick={onToggleMode}>Don't have an account? Sign Up</GhostButton>
+              <button onClick={onContinueAsGuest} className="block w-full text-center text-xs text-muted-foreground/70 py-1">
+                Continue without account →
+              </button>
+            </div>
+          </motion.div>
+        ) : (
+          // ── Sign up: unchanged multi-step flow (account type, name,
+          // email, password, confirm, verify) — more fields genuinely
+          // benefit from being split up. ──────────────────────────────
+          <AnimatePresence mode="wait">
+            {step === "email" && (
+              <motion.div key="email" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-4">
+                <BlurFade className="text-center">
+                  <p className="font-light text-2xl text-foreground">Create your account</p>
+                </BlurFade>
+
                 <BlurFade delay={0.05} className="flex gap-2">
                   <button onClick={() => onAccountTypeChange("university")} className={cn(
                     "flex-1 flex items-center justify-center gap-1.5 rounded-full py-2 text-xs font-bold border transition-colors",
@@ -176,9 +229,7 @@ export function AuthComponent(props: AuthComponentProps) {
                     accountType === "personal" ? "border-primary bg-primary/15 text-primary" : "border-white/10 bg-white/5 text-muted-foreground"
                   )}><Mail className="w-3.5 h-3.5" /> Personal Gmail</button>
                 </BlurFade>
-              )}
 
-              {mode === "signup" && (
                 <BlurFade delay={0.1}>
                   <GlassPill className="flex items-center px-5 py-3.5">
                     <input value={name} onChange={e => onNameChange(e.target.value)} placeholder="Your name"
@@ -186,123 +237,111 @@ export function AuthComponent(props: AuthComponentProps) {
                       className="flex-1 bg-transparent outline-none text-sm text-foreground placeholder:text-muted-foreground" />
                   </GlassPill>
                 </BlurFade>
-              )}
 
-              <BlurFade delay={0.15}>
-                <GlassPill className="flex items-center px-5 py-3.5">
-                  <input type="email" value={email} onChange={e => onEmailChange(e.target.value)}
-                    onKeyDown={e => e.key === "Enter" && onSubmitEmailStep()}
-                    placeholder={mode === "signup" ? (accountType === "university" ? "ZNU email (@med.znu.edu.eg)" : "you@gmail.com") : "Email address"}
-                    name="email" id="email" autoComplete="username" inputMode="email"
+                <BlurFade delay={0.15}>
+                  <GlassPill className="flex items-center px-5 py-3.5">
+                    <input type="email" value={email} onChange={e => onEmailChange(e.target.value)}
+                      onKeyDown={e => e.key === "Enter" && onSubmitEmailStep()}
+                      placeholder={accountType === "university" ? "ZNU email (@med.znu.edu.eg)" : "you@gmail.com"}
+                      name="email" id="signup-email" autoComplete="username" inputMode="email"
+                      className="flex-1 bg-transparent outline-none text-sm text-foreground placeholder:text-muted-foreground" />
+                  </GlassPill>
+                </BlurFade>
+
+                {accountType === "university" && universityCodePreview && (
+                  <div className="text-xs text-primary bg-primary/10 border border-primary/30 rounded-xl px-4 py-2">
+                    🎓 University Code: <strong>{universityCodePreview}</strong>
+                  </div>
+                )}
+                {accountType === "personal" && (
+                  <div className="text-xs text-[hsl(var(--chart-4))] bg-[hsl(var(--chart-4))]/10 border border-[hsl(var(--chart-4))]/30 rounded-xl px-4 py-2">
+                    ℹ️ No university code will be attached to a personal Gmail account.
+                  </div>
+                )}
+
+                <BlurFade delay={0.2}><GlassButton onClick={onSubmitEmailStep}>Continue <ArrowRight className="inline w-4 h-4 ml-1" /></GlassButton></BlurFade>
+
+                <div className="mt-5 space-y-2">
+                  <GhostButton onClick={onToggleMode}>Already have an account? Sign In</GhostButton>
+                  <button onClick={onContinueAsGuest} className="block w-full text-center text-xs text-muted-foreground/70 py-1">
+                    Continue without account →
+                  </button>
+                </div>
+              </motion.div>
+            )}
+
+            {step === "password" && (
+              <motion.div key="password" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-4">
+                <p className="text-center text-xs text-muted-foreground">{email}</p>
+                <input type="email" value={email} readOnly hidden
+                  name="email" id="email-hidden" autoComplete="username"
+                  style={{ display: "none" }} />
+                <GlassPill className="flex items-center px-5 py-3.5 gap-2">
+                  <Lock className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                  <input ref={passwordRef} type={showPw ? "text" : "password"} value={password}
+                    onChange={e => onPasswordChange(e.target.value)}
+                    onKeyDown={e => e.key === "Enter" && onSubmitPasswordStep()}
+                    placeholder="Password (min 6 characters)"
+                    name="password" id="password" autoComplete="new-password"
                     className="flex-1 bg-transparent outline-none text-sm text-foreground placeholder:text-muted-foreground" />
+                  <button type="button" onClick={() => setShowPw(!showPw)} className="text-muted-foreground">
+                    {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
                 </GlassPill>
-              </BlurFade>
-
-              {mode === "signup" && accountType === "university" && universityCodePreview && (
-                <div className="text-xs text-primary bg-primary/10 border border-primary/30 rounded-xl px-4 py-2">
-                  🎓 University Code: <strong>{universityCodePreview}</strong>
-                </div>
-              )}
-              {mode === "signup" && accountType === "personal" && (
-                <div className="text-xs text-[hsl(var(--chart-4))] bg-[hsl(var(--chart-4))]/10 border border-[hsl(var(--chart-4))]/30 rounded-xl px-4 py-2">
-                  ℹ️ No university code will be attached to a personal Gmail account.
-                </div>
-              )}
-
-              <BlurFade delay={0.2}><GlassButton onClick={onSubmitEmailStep}>Continue <ArrowRight className="inline w-4 h-4 ml-1" /></GlassButton></BlurFade>
-            </motion.div>
-          )}
-
-          {step === "password" && (
-            <motion.div key="password" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-4">
-              <p className="text-center text-xs text-muted-foreground">{email}</p>
-              {/* Hidden username field so the password manager can pair
-                  this password with the email entered on the previous
-                  step, even though the two inputs never share the DOM
-                  at the same time. */}
-              <input type="email" value={email} readOnly hidden
-                name="email" id="email-hidden" autoComplete="username"
-                style={{ display: "none" }} />
-              <GlassPill className="flex items-center px-5 py-3.5 gap-2">
-                <Lock className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                <input ref={passwordRef} type={showPw ? "text" : "password"} value={password}
-                  onChange={e => onPasswordChange(e.target.value)}
-                  onKeyDown={e => e.key === "Enter" && onSubmitPasswordStep()}
-                  placeholder="Password (min 6 characters)"
-                  name="password" id="password"
-                  autoComplete={mode === "signin" ? "current-password" : "new-password"}
-                  className="flex-1 bg-transparent outline-none text-sm text-foreground placeholder:text-muted-foreground" />
-                <button type="button" onClick={() => setShowPw(!showPw)} className="text-muted-foreground">
-                  {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                <GlassButton onClick={onSubmitPasswordStep} disabled={loading}>
+                  {loading ? "Loading..." : "Continue"}
+                </GlassButton>
+                <button onClick={() => props.onStepChange("email")} className="flex items-center gap-1.5 text-xs text-muted-foreground mx-auto">
+                  <ArrowLeft className="w-3.5 h-3.5" /> Go back
                 </button>
-              </GlassPill>
-              {mode === "signin" && (
-                <button onClick={onForgotPassword} className="block ml-auto text-xs text-primary underline">Forgot password?</button>
-              )}
-              <GlassButton onClick={onSubmitPasswordStep} disabled={loading}>
-                {loading ? "Loading..." : mode === "signup" ? "Continue" : "Sign In"}
-              </GlassButton>
-              <button onClick={() => props.onStepChange("email")} className="flex items-center gap-1.5 text-xs text-muted-foreground mx-auto">
-                <ArrowLeft className="w-3.5 h-3.5" /> Go back
-              </button>
-            </motion.div>
-          )}
+              </motion.div>
+            )}
 
-          {step === "confirm" && (
-            <motion.div key="confirm" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-4">
-              <p className="text-center text-xs text-muted-foreground">{email}</p>
-              <input type="email" value={email} readOnly hidden
-                name="email" id="email-hidden-confirm" autoComplete="username"
-                style={{ display: "none" }} />
-              <GlassPill className="flex items-center px-5 py-3.5 gap-2">
-                <Lock className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                <input ref={confirmRef} type={showConfirmPw ? "text" : "password"} value={confirmPassword}
-                  onChange={e => onConfirmPasswordChange(e.target.value)}
-                  onKeyDown={e => e.key === "Enter" && onSubmitConfirmStep()}
-                  placeholder="Confirm password"
-                  name="confirm-password" id="confirm-password" autoComplete="new-password"
-                  className="flex-1 bg-transparent outline-none text-sm text-foreground placeholder:text-muted-foreground" />
-                <button type="button" onClick={() => setShowConfirmPw(!showConfirmPw)} className="text-muted-foreground">
-                  {showConfirmPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            {step === "confirm" && (
+              <motion.div key="confirm" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-4">
+                <p className="text-center text-xs text-muted-foreground">{email}</p>
+                <input type="email" value={email} readOnly hidden
+                  name="email" id="email-hidden-confirm" autoComplete="username"
+                  style={{ display: "none" }} />
+                <GlassPill className="flex items-center px-5 py-3.5 gap-2">
+                  <Lock className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                  <input ref={confirmRef} type={showConfirmPw ? "text" : "password"} value={confirmPassword}
+                    onChange={e => onConfirmPasswordChange(e.target.value)}
+                    onKeyDown={e => e.key === "Enter" && onSubmitConfirmStep()}
+                    placeholder="Confirm password"
+                    name="confirm-password" id="confirm-password" autoComplete="new-password"
+                    className="flex-1 bg-transparent outline-none text-sm text-foreground placeholder:text-muted-foreground" />
+                  <button type="button" onClick={() => setShowConfirmPw(!showConfirmPw)} className="text-muted-foreground">
+                    {showConfirmPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </GlassPill>
+                <GlassButton onClick={onSubmitConfirmStep} disabled={loading}>
+                  {loading ? "Creating account..." : "Create Account"}
+                </GlassButton>
+                <button onClick={() => props.onStepChange("password")} className="flex items-center gap-1.5 text-xs text-muted-foreground mx-auto">
+                  <ArrowLeft className="w-3.5 h-3.5" /> Go back
                 </button>
-              </GlassPill>
-              <GlassButton onClick={onSubmitConfirmStep} disabled={loading}>
-                {loading ? "Creating account..." : "Create Account"}
-              </GlassButton>
-              <button onClick={() => props.onStepChange("password")} className="flex items-center gap-1.5 text-xs text-muted-foreground mx-auto">
-                <ArrowLeft className="w-3.5 h-3.5" /> Go back
-              </button>
-            </motion.div>
-          )}
+              </motion.div>
+            )}
 
-          {step === "verify" && (
-            <motion.div key="verify" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-4">
-              <p className="text-center text-xs text-muted-foreground">
-                We sent a 6-digit code to <strong className="text-foreground">{email}</strong>
-              </p>
-              <GlassPill className="flex items-center justify-center px-5 py-3.5">
-                <input ref={otpRef} inputMode="numeric" maxLength={6} value={otp}
-                  onChange={e => onOtpChange(e.target.value.replace(/\D/g, ""))}
-                  onKeyDown={e => e.key === "Enter" && onSubmitVerify()}
-                  placeholder="123456"
-                  name="otp" id="otp" autoComplete="one-time-code"
-                  className="w-full bg-transparent outline-none text-center text-xl font-bold tracking-[0.5em] text-foreground placeholder:text-muted-foreground" />
-              </GlassPill>
-              <GlassButton onClick={onSubmitVerify} disabled={loading}>{loading ? "Verifying..." : "Verify & Continue"}</GlassButton>
-              <GhostButton onClick={onResendCode}>Resend code</GhostButton>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {step === "email" && (
-          <div className="mt-5 space-y-2">
-            <GhostButton onClick={onToggleMode}>
-              {mode === "signup" ? "Already have an account? Sign In" : "Don't have an account? Sign Up"}
-            </GhostButton>
-            <button onClick={onContinueAsGuest} className="block w-full text-center text-xs text-muted-foreground/70 py-1">
-              Continue without account →
-            </button>
-          </div>
+            {step === "verify" && (
+              <motion.div key="verify" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-4">
+                <p className="text-center text-xs text-muted-foreground">
+                  We sent a 6-digit code to <strong className="text-foreground">{email}</strong>
+                </p>
+                <GlassPill className="flex items-center justify-center px-5 py-3.5">
+                  <input ref={otpRef} inputMode="numeric" maxLength={6} value={otp}
+                    onChange={e => onOtpChange(e.target.value.replace(/\D/g, ""))}
+                    onKeyDown={e => e.key === "Enter" && onSubmitVerify()}
+                    placeholder="123456"
+                    name="otp" id="otp" autoComplete="one-time-code"
+                    className="w-full bg-transparent outline-none text-center text-xl font-bold tracking-[0.5em] text-foreground placeholder:text-muted-foreground" />
+                </GlassPill>
+                <GlassButton onClick={onSubmitVerify} disabled={loading}>{loading ? "Verifying..." : "Verify & Continue"}</GlassButton>
+                <GhostButton onClick={onResendCode}>Resend code</GhostButton>
+              </motion.div>
+            )}
+          </AnimatePresence>
         )}
       </div>
     </div>
