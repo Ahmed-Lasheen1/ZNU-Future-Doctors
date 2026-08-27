@@ -42,15 +42,17 @@ function moduleBlurb(name) {
   return key ? MODULE_BLURBS[key] : 'Master the essentials of this module.'
 }
 
-function ctaPillStyle(pt) {
+function ctaPillStyle(pt, muted = false) {
   return {
     display: 'inline-flex', alignItems: 'center', gap: 8,
-    background: `linear-gradient(135deg, ${pt.cobalt}, ${pt.indigo})`,
-    color: '#fff', border: 'none',
+    background: muted ? `${pt.cobalt}18` : `linear-gradient(135deg, ${pt.cobalt}, ${pt.indigo})`,
+    color: muted ? pt.text : '#fff',
+    border: muted ? `1px solid ${pt.cobaltBorder}` : 'none',
     padding: '12px 22px', borderRadius: 999,
     fontSize: 14, fontWeight: 700, fontFamily: 'inherit',
-    cursor: 'pointer', boxShadow: `0 8px 24px ${pt.cobalt}40`,
-    textAlign: 'left', lineHeight: 1.4,
+    cursor: muted ? 'default' : 'pointer',
+    boxShadow: muted ? 'none' : `0 8px 24px ${pt.cobalt}40`,
+    textAlign: 'left', lineHeight: 1.4, whiteSpace: 'pre-wrap',
   }
 }
 
@@ -252,11 +254,6 @@ export default function Home({ dark, toggleTheme }) {
         .pulse-tools-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
         @media (max-width: 720px) {
           .pulse-tools-grid { grid-template-columns: repeat(2, 1fr); }
-          .pulse-stat-row { gap: 18px !important; }
-          .pulse-tool-copy { font-size: 12px !important; }
-        }
-        @media (max-width: 480px) {
-          .pulse-tools-grid { grid-template-columns: 1fr; }
         }
       `}</style>
 
@@ -331,7 +328,7 @@ export default function Home({ dark, toggleTheme }) {
               </div>
 
               {weeklySummary ? (
-                <div className="pulse-stat-row" style={{ display: 'flex', alignItems: 'flex-end', gap: 28, flexWrap: 'wrap', marginBottom: 20 }}>
+                <div style={{ display: 'flex', alignItems: 'flex-end', gap: 28, flexWrap: 'wrap', marginBottom: 20 }}>
                   <div>
                     <div style={{
                       fontFamily: pulseFonts.display, fontWeight: 800, fontSize: 'clamp(38px, 4vw, 52px)', lineHeight: 1,
@@ -371,25 +368,16 @@ export default function Home({ dark, toggleTheme }) {
                 </div>
               )}
 
-              {announcement && (
-                <div role="status" style={{
-                  display: 'flex', alignItems: 'flex-start', gap: 10,
-                  maxWidth: 480, padding: '10px 14px', marginBottom: 14,
-                  borderRadius: 12, background: pt.cobaltSoft,
-                  border: `1px solid ${pt.cobaltBorder}`, color: pt.text,
-                  fontSize: 13, lineHeight: 1.45
-                }}>
-                  <span aria-hidden="true">📣</span>
-                  <div><strong style={{ color: pt.cobalt }}>Announcement</strong><br />{announcement}</div>
-                </div>
-              )}
-
-              <button onClick={() => navigate('/mcq')} style={ctaPillStyle(pt)}>
-                {pausedExam ? '⏸ Continue your practice →' : '▶ Start a practice session →'}
-              </button>
+              {pausedExam ? (
+                <button onClick={() => navigate('/mcq')} style={ctaPillStyle(pt)}>
+                  ⏸ Continue where you left off →
+                </button>
+              ) : announcement ? (
+                <div style={ctaPillStyle(pt, true)}>{announcement}</div>
+              ) : null}
 
               <div style={{ marginTop: 22 }}>
-                <EcgHero pt={pt} height="clamp(160px, 22vw, 220px)" />
+                <EcgHero pt={pt} height={220} />
               </div>
             </div>
 
@@ -414,9 +402,12 @@ export default function Home({ dark, toggleTheme }) {
                     }}>{mod.icon}</div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ color: pt.text, fontWeight: 700, fontSize: 14 }}>{mod.name}</div>
-                      <div style={{ color: pt.sub, fontSize: 12, lineHeight: 1.35, marginTop: 2 }}>{moduleBlurb(mod.name)}</div>
+                      <div style={{ color: pt.sub, fontSize: 12, marginTop: 2 }}>{moduleBlurb(mod.name)}</div>
                     </div>
-                    <span style={{ color: mod.color, fontSize: 12, fontWeight: 700, flexShrink: 0 }}>Explore →</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexShrink: 0 }}>
+                      <span style={{ width: 6, height: 6, borderRadius: '50%', background: mod.color, display: 'inline-block' }} />
+                      <span style={{ color: mod.color, fontSize: 11, fontWeight: 700 }}>Active</span>
+                    </div>
                   </PulseCard>
                 ))}
               </div>
@@ -443,7 +434,7 @@ export default function Home({ dark, toggleTheme }) {
                   }}>{card.emoji}</div>
                   <div style={{ minWidth: 0 }}>
                     <div style={{ color: pt.text, fontWeight: 700, fontSize: 13 }}>{card.title}</div>
-                    <div className="pulse-tool-copy" style={{ color: pt.sub, fontSize: 12, lineHeight: 1.35, marginTop: 2 }}>{card.sub}</div>
+                    <div style={{ color: pt.sub, fontSize: 11, marginTop: 1 }}>{card.sub}</div>
                   </div>
                 </div>
                 <div style={{ color: pt.faint, fontSize: 16, flexShrink: 0 }}>→</div>
