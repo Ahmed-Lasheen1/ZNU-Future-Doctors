@@ -7,26 +7,18 @@ import { useEffect, useMemo, useState } from 'react'
 // length, followed by a gap that covers the rest. Animating
 // stroke-dashoffset slides that lit segment along the path.
 //
-// Previous version animated dashoffset between two arbitrary values
-// and then used a manual opacity fade-in/fade-out on TWO staggered
-// copies to hide the reset "jump" and to fake a continuous flow. The
-// fade windows and the stagger delay didn't line up (10%-wide fade on
-// one trace vs a 6%-wide fade on the other, offset by a mismatched
-// delay), so there was a real gap where both traces were dim at once —
-// visible as "sweeps normally, dips in the middle, picks back up".
+// The two dashoffset values below (0.14 -> -1) are exactly one full
+// dash pattern (0.14 + 1 = 1.14) apart, which makes them land on the
+// exact same visual state, so the loop is seamless with no opacity
+// crossfade needed.
 //
-// Fixed properly instead of re-tuning the fade timing: the two
-// dashoffset values below (0.14 -> -1) are exactly one full dash
-// pattern (0.14 + 1 = 1.14) apart, which makes them land on the exact
-// same visual state (verified: both are naturally fully invisible).
-// That means the loop is seamless on its own — no opacity animation
-// needed anywhere, so there's nothing left to fall out of sync.
-//
-// ECG_PATH: one bold, centered heartbeat complex (small P wave, sharp
-// tall QRS spike, deep S dip, rounded T wave) matching the ZNU Pulse
-// logo's pulse glyph, flanked by flat baseline on both sides — rather
-// than the previous double-complex shape.
-const ECG_PATH = 'M0,140 L340,140 C352,140 356,120 366,120 C376,120 380,140 392,140 L406,140 L414,140 L424,205 L434,8 L444,220 L454,140 L468,140 C486,140 492,90 508,90 C524,90 530,140 548,140 L900,140'
+// ECG_PATH: traced pixel-by-pixel from the actual ZNU Pulse logo
+// artwork (icon-192.png / favicon.svg) — small bump, small dip, a
+// bigger bump, then the sharp Q-dip / R-spike / S-trough complex,
+// then a mirrored bigger bump and a mirrored small bump, flanked by
+// flat baseline on both sides. This is the exact silhouette from the
+// logo, not an approximation.
+const ECG_PATH = 'M0,140 L140,140 C158,140 166,123 176,123 C186,123 194,140 212,140 C222,140 227,155 231,155 C235,155 244,140 254,140 C270,140 280,99 287,99 C294,99 304,140 320,140 L334,140 L375,175 L455,15 L534,205 L555,140 C583,140 599,113 610,113 C621,113 638,140 665,140 C683,140 693,132 700,132 C707,132 718,140 735,140 L900,140'
 
 function usePrefersReducedMotion() {
   const [reduced, setReduced] = useState(false)
@@ -62,11 +54,6 @@ export default function EcgHero({ pt, height = 220 }) {
           0%, 100% { opacity: 0.15; transform: scale(1); }
           50% { opacity: 0.9; transform: scale(1.4); }
         }
-        /* Single clean sweep, no opacity animation — see comment above
-           the ECG_PATH constant for why this replaces the old
-           two-trace crossfade. The core and halo layers below share
-           this exact animation (no stagger), so they always move as
-           one light, not two. */
         @keyframes pulseHeroSweep {
           0%   { stroke-dashoffset: 0.14; }
           100% { stroke-dashoffset: -1; }

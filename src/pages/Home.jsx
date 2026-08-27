@@ -20,6 +20,23 @@ import ScrollReveal from '../components/pulse/ScrollReveal'
 // hero, both beating in time with the ECG sweep.
 const LOGO_SRC = '/icon-192.png'
 
+// Exact gradient sampled from the ZNU Pulse logo artwork itself (top →
+// bottom: light sky-blue fading to deep navy) — same recipe as
+// PAGE_BG in src/components/ui/sign-up.tsx, reproduced stop-for-stop
+// rather than approximated, so the Home page background matches the
+// logo exactly regardless of the dark/light toggle.
+const LOGO_BG = [
+  'linear-gradient(180deg,',
+  '#a6d2ef 0%,',
+  '#97bcd7 15%,',
+  '#81a6c3 30%,',
+  '#6c8fad 45%,',
+  '#497194 60%,',
+  '#274e79 75%,',
+  '#042a59 90%,',
+  '#010c4a 100%)',
+].join(' ')
+
 const toolCards = [
   { emoji: '📅', title: 'Schedules', sub: 'Plan your study time', to: '/schedule', accent: 'indigo' },
   { emoji: '🎯', title: 'Checklist', sub: 'Track your progress', to: '/checklist', accent: 'amber' },
@@ -40,21 +57,6 @@ const MODULE_BLURBS = {
 function moduleBlurb(name) {
   const key = Object.keys(MODULE_BLURBS).find(k => name.toLowerCase().includes(k))
   return key ? MODULE_BLURBS[key] : 'Master the essentials of this module.'
-}
-
-function ctaPillStyle(pt, muted = false) {
-  return {
-    display: 'inline-flex', alignItems: 'center', gap: 8,
-    background: muted ? `${pt.cobalt}18` : `linear-gradient(135deg, ${pt.cobalt}, ${pt.indigo})`,
-    color: muted ? pt.text : '#fff',
-    border: muted ? `1px solid ${pt.cobaltBorder}` : 'none',
-    padding: '12px 22px', borderRadius: 999,
-    fontSize: 14, fontWeight: 700, fontFamily: 'inherit',
-    cursor: muted ? 'default' : 'pointer',
-    boxShadow: muted ? 'none' : `0 8px 24px ${pt.cobalt}40`,
-    textAlign: 'left', lineHeight: 1.4, whiteSpace: 'pre-wrap',
-    width: '100%', justifyContent: muted ? 'flex-start' : 'center',
-  }
 }
 
 const statNumStyle = { fontFamily: pulseFonts.display, fontWeight: 800, fontSize: 30 }
@@ -251,9 +253,7 @@ export default function Home({ dark, toggleTheme }) {
   return (
     <div style={{
       padding: '20px 16px 100px',
-      background: dark
-        ? `linear-gradient(180deg, ${pt.canvasAlt}, ${pt.canvas})`
-        : `linear-gradient(180deg, ${pt.canvas}, ${pt.canvasAlt})`,
+      background: LOGO_BG,
       minHeight: '100vh',
       fontFamily: pulseFonts.body
     }}>
