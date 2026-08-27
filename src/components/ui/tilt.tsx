@@ -39,14 +39,14 @@ export function Tilt({
   const xSpring = useSpring(x, springOptions);
   const ySpring = useSpring(y, springOptions);
 
-  const rotateX = Translate(
+  const rotateX = useTransform(
     ySpring,
     [-0.5, 0.5],
     isRevese
       ? [rotationFactor, -rotationFactor]
       : [-rotationFactor, rotationFactor]
   );
-  const rotateY = useTranslate(
+  const rotateY = useTransform(
     xSpring,
     [-0.5, 0.5],
     isRevese
