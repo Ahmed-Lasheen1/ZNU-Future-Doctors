@@ -53,11 +53,11 @@ function ctaPillStyle(pt, muted = false) {
     cursor: muted ? 'default' : 'pointer',
     boxShadow: muted ? 'none' : `0 8px 24px ${pt.cobalt}40`,
     textAlign: 'left', lineHeight: 1.4, whiteSpace: 'pre-wrap',
+    width: '100%', justifyContent: muted ? 'flex-start' : 'center',
   }
 }
 
-const statNumStyle = { fontFamily: pulseFonts.display, fontWeight: 700, fontSize: 22 }
-const statLabelStyle = { fontSize: 11, marginTop: 4 }
+const statNumStyle = { fontFamily: pulseFonts.display, fontWeight: 800, fontSize: 30 }
 
 // Small helper so a missing/blank name never crashes the avatar badge —
 // falls back to a "?" instead of calling .charAt(0) on an empty string.
@@ -78,6 +78,7 @@ function onActivateKeyDown(handler) {
 
 // ── ZNU PULSE brand mark (header) ──────────────────────────────────
 // The real logo artwork, static — no beat/glow animation here.
+// Position unchanged: top-left of the header, same as before.
 function ZnuPulseBrand({ dark, pt }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
@@ -100,6 +101,16 @@ function ZnuPulseBrand({ dark, pt }) {
         }}>For Future Doctors</div>
       </div>
     </div>
+  )
+}
+
+// ── Small floating stat tile — every dashboard number gets its own
+// glass card with tilt, instead of living inside one big merged panel. ──
+function StatTile({ dark, pt, delay, children, accent }) {
+  return (
+    <PulseCard dark={dark} delay={delay} accent={accent} style={{ padding: '18px 20px' }}>
+      {children}
+    </PulseCard>
   )
 }
 
@@ -247,10 +258,16 @@ export default function Home({ dark, toggleTheme }) {
       fontFamily: pulseFonts.body
     }}>
       <style>{`
-        .pulse-dash-grid { display: grid; grid-template-columns: 1.6fr 1fr; gap: 28px; align-items: start; }
-        @media (max-width: 860px) {
+        .pulse-dash-grid {
+          display: grid;
+          grid-template-columns: 1fr 1.3fr 1fr;
+          gap: 20px;
+          align-items: stretch;
+        }
+        @media (max-width: 1000px) {
           .pulse-dash-grid { grid-template-columns: 1fr; }
         }
+        .pulse-stat-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
         .pulse-tools-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
         @media (max-width: 720px) {
           .pulse-tools-grid { grid-template-columns: repeat(2, 1fr); }
@@ -259,7 +276,8 @@ export default function Home({ dark, toggleTheme }) {
 
       {modulesError && <div className="page-container"><ErrorBanner /></div>}
 
-      {/* Header */}
+      {/* Header — same position/content as before: logo+name top-left,
+          utility buttons + profile pill top-right. */}
       <div className="page-container" style={{
         padding: '10px 0 22px',
         opacity: titleVisible ? 1 : 0,
@@ -316,107 +334,108 @@ export default function Home({ dark, toggleTheme }) {
         <NotifyPermissionButton dark={dark} label="🔔 Enable exam & deadline reminders" />
       </div>
 
-      {/* Main dashboard — weekly report + hero on the left, active
-          modules list on the right, all inside one glass panel. */}
+      {/* Main dashboard — every stat is now its own floating glass tile
+          with tilt (left), the ECG hero floats free in the center with
+          no card border (right where the reference puts it), and the
+          active-modules list on the right is a stack of pill-shaped
+          floating cards. */}
       <div className="page-container" style={{ marginBottom: 32 }}>
-        <PulseCard dark={dark} delay={100} style={{ padding: 'clamp(20px, 2.4vw, 32px)' }}>
-          <div className="pulse-dash-grid">
-            {/* Left: stats + CTA + hero */}
-            <div>
-              <div style={{ color: pt.faint, fontSize: 11, fontWeight: 700, letterSpacing: 2.5, textTransform: 'uppercase', marginBottom: 14 }}>
+        <div className="pulse-dash-grid">
+
+          {/* Left: individual stat tiles */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <StatTile dark={dark} pt={pt} delay={80} accent={pt.cobalt}>
+              <div style={{ color: pt.faint, fontSize: 11, fontWeight: 700, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 8 }}>
                 📊 Weekly Report
               </div>
-
-              {weeklySummary ? (
-                <div style={{ display: 'flex', alignItems: 'flex-end', gap: 28, flexWrap: 'wrap', marginBottom: 20 }}>
-                  <div>
-                    <div style={{
-                      fontFamily: pulseFonts.display, fontWeight: 800, fontSize: 'clamp(38px, 4vw, 52px)', lineHeight: 1,
-                      color: weeklySummary.accuracy >= 60 ? pt.cobalt : pt.danger
-                    }}>{weeklySummary.accuracy}%</div>
-                    <div style={{ color: pt.sub, fontSize: 12, marginTop: 6 }}>Accuracy this week</div>
-                  </div>
-                  <div>
-                    <div style={{ ...statNumStyle, color: pt.text }}>{weeklySummary.totalAttempted}</div>
-                    <div style={{ ...statLabelStyle, color: pt.sub }}>Questions attempted</div>
-                  </div>
-                  {weeklySummary.topSubjectName && (
-                    <div>
-                      <div style={{ ...statNumStyle, fontSize: 17, color: pt.indigo }}>{weeklySummary.topSubjectName}</div>
-                      <div style={{ ...statLabelStyle, color: pt.sub }}>Most practiced</div>
-                    </div>
-                  )}
-                  {streak > 0 && (
-                    <div>
-                      <div style={{ display: 'flex', alignItems: 'baseline', gap: 5, color: pt.terracotta }}>
-                        <span style={{ fontSize: 15 }}>🔥</span>
-                        <span style={{ fontFamily: pulseFonts.display, fontWeight: 700, fontSize: 20 }}>{streak}</span>
-                      </div>
-                      <div style={{ ...statLabelStyle, color: pt.sub }}>Day streak</div>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap', marginBottom: 20 }}>
-                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, color: pt.terracotta }}>
-                    <span style={{ fontSize: 20 }}>🔥</span>
-                    <span style={{ fontFamily: pulseFonts.display, fontWeight: 800, fontSize: 34 }}>{streak}</span>
-                  </div>
-                  <div style={{ color: pt.sub, fontSize: 13 }}>
-                    day streak — keep it going. No questions logged yet this week.
-                  </div>
-                </div>
-              )}
-
-              {pausedExam ? (
-                <button onClick={() => navigate('/mcq')} style={ctaPillStyle(pt)}>
-                  ⏸ Continue where you left off →
-                </button>
-              ) : announcement ? (
-                <div style={ctaPillStyle(pt, true)}>{announcement}</div>
-              ) : null}
-
-              <div style={{ marginTop: 22 }}>
-                <EcgHero pt={pt} height={220} />
+              <div style={{
+                ...statNumStyle,
+                color: weeklySummary ? (weeklySummary.accuracy >= 60 ? pt.cobalt : pt.danger) : pt.text
+              }}>
+                {weeklySummary ? `${weeklySummary.accuracy}%` : '—'}
               </div>
+              <div style={{ color: pt.sub, fontSize: 12, marginTop: 4 }}>
+                {weeklySummary ? 'Accuracy this week' : 'No questions logged this week'}
+              </div>
+            </StatTile>
+
+            <StatTile dark={dark} pt={pt} delay={140} accent={pt.indigo}>
+              <div style={{ ...statNumStyle, color: pt.text }}>{weeklySummary ? weeklySummary.totalAttempted : 0}</div>
+              <div style={{ color: pt.sub, fontSize: 12, marginTop: 4 }}>Questions attempted</div>
+            </StatTile>
+
+            <div className="pulse-stat-row-2">
+              <StatTile dark={dark} pt={pt} delay={200} accent={pt.indigo}>
+                <div style={{ color: pt.indigo, fontWeight: 800, fontSize: 15 }}>
+                  {weeklySummary?.topSubjectName || '—'}
+                </div>
+                <div style={{ color: pt.sub, fontSize: 11, marginTop: 4 }}>Most practiced</div>
+              </StatTile>
+              <StatTile dark={dark} pt={pt} delay={230} accent={pt.terracotta}>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, color: pt.terracotta }}>
+                  <span style={{ fontSize: 16 }}>🔥</span>
+                  <span style={{ fontFamily: pulseFonts.display, fontWeight: 800, fontSize: 22 }}>{streak}</span>
+                </div>
+                <div style={{ color: pt.sub, fontSize: 11, marginTop: 4 }}>Day streak</div>
+              </StatTile>
             </div>
 
-            {/* Right: Active modules list */}
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: pt.cobalt, fontSize: 11, fontWeight: 700, letterSpacing: 2.5, textTransform: 'uppercase', marginBottom: 14 }}>
-                <span style={{ width: 6, height: 6, borderRadius: '50%', background: pt.cobalt, display: 'inline-block' }} />
-                Active Modules
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                {activeModules.length === 0 && (
-                  <div style={{ color: pt.sub, fontSize: 13 }}>No active modules yet.</div>
+            {(pausedExam || announcement) && (
+              <PulseCard dark={dark} delay={280} accent={pt.cobalt}
+                onClick={pausedExam ? () => navigate('/mcq') : undefined}
+                style={{ padding: '16px 20px' }}>
+                {pausedExam ? (
+                  <div style={{ color: pt.cobalt, fontWeight: 800, fontSize: 14 }}>
+                    ⏸ Continue where you left off →
+                  </div>
+                ) : (
+                  <div style={{ color: pt.text, fontWeight: 700, fontSize: 13, lineHeight: 1.5 }}>
+                    {announcement}
+                  </div>
                 )}
-                {activeModules.map((mod, i) => (
-                  <PulseCard key={mod.id} dark={dark} delay={250 + i * 70} accent={mod.color}
-                    onClick={() => navigate(`/module/${mod.id}`)}
-                    style={{ padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 14 }}>
-                    <div style={{
-                      width: 44, height: 44, borderRadius: 12, flexShrink: 0,
-                      background: `${mod.color}22`, border: `1px solid ${mod.color}55`,
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20
-                    }}>{mod.icon}</div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ color: pt.text, fontWeight: 700, fontSize: 14 }}>{mod.name}</div>
-                      <div style={{ color: pt.sub, fontSize: 12, marginTop: 2 }}>{moduleBlurb(mod.name)}</div>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexShrink: 0 }}>
-                      <span style={{ width: 6, height: 6, borderRadius: '50%', background: mod.color, display: 'inline-block' }} />
-                      <span style={{ color: mod.color, fontSize: 11, fontWeight: 700 }}>Active</span>
-                    </div>
-                  </PulseCard>
-                ))}
-              </div>
+              </PulseCard>
+            )}
+          </div>
+
+          {/* Center: the ECG hero, unframed — matches the reference's
+              free-floating pulse line with no surrounding card. */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 260 }}>
+            <EcgHero pt={pt} height={280} />
+          </div>
+
+          {/* Right: Active modules as pill-shaped floating glass cards */}
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: pt.cobalt, fontSize: 11, fontWeight: 700, letterSpacing: 2.5, textTransform: 'uppercase', marginBottom: 14 }}>
+              <span style={{ width: 6, height: 6, borderRadius: '50%', background: pt.cobalt, display: 'inline-block' }} />
+              Active Modules
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {activeModules.length === 0 && (
+                <div style={{ color: pt.sub, fontSize: 13 }}>No active modules yet.</div>
+              )}
+              {activeModules.map((mod, i) => (
+                <PulseCard key={mod.id} dark={dark} delay={250 + i * 70} accent={mod.color}
+                  onClick={() => navigate(`/module/${mod.id}`)}
+                  style={{ borderRadius: 999, padding: '10px 18px 10px 10px', display: 'flex', alignItems: 'center', gap: 14 }}>
+                  <div style={{
+                    width: 46, height: 46, borderRadius: '50%', flexShrink: 0,
+                    background: `${mod.color}22`, border: `1px solid ${mod.color}55`,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20
+                  }}>{mod.icon}</div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ color: pt.text, fontWeight: 700, fontSize: 14 }}>{mod.name}</div>
+                    <div style={{ color: pt.sub, fontSize: 11, marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{moduleBlurb(mod.name)}</div>
+                  </div>
+                  <span style={{ width: 8, height: 8, borderRadius: '50%', background: mod.color, display: 'inline-block', flexShrink: 0 }} />
+                </PulseCard>
+              ))}
             </div>
           </div>
-        </PulseCard>
+        </div>
       </div>
 
-      {/* Tools */}
+      {/* Tools — already floating glass tiles with tilt (PulseCard);
+          rounded a touch more to match the reference's pill-leaning cards. */}
       <div className="page-container" style={{ marginBottom: 32 }}>
         {sectionTitle('⚡ Tools')}
         <div className="pulse-tools-grid">
@@ -425,10 +444,10 @@ export default function Home({ dark, toggleTheme }) {
             return (
               <PulseCard key={i} dark={dark} delay={500 + i * 70} accent={accentColor}
                 onClick={() => navigate(card.to)}
-                style={{ padding: '18px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+                style={{ borderRadius: 22, padding: '18px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
                   <div style={{
-                    width: 38, height: 38, borderRadius: 10, flexShrink: 0,
+                    width: 38, height: 38, borderRadius: '50%', flexShrink: 0,
                     background: `${accentColor}22`,
                     display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18
                   }}>{card.emoji}</div>

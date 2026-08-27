@@ -21,7 +21,12 @@ import { useEffect, useMemo, useState } from 'react'
 // same visual state (verified: both are naturally fully invisible).
 // That means the loop is seamless on its own — no opacity animation
 // needed anywhere, so there's nothing left to fall out of sync.
-const ECG_PATH = 'M0,140 L160,140 C172,140 176,118 190,118 C204,118 208,140 226,140 L240,140 L248,140 L258,190 L268,20 L278,205 L288,140 L306,140 C330,140 338,96 358,96 C378,96 386,140 410,140 L900,140'
+//
+// ECG_PATH: one bold, centered heartbeat complex (small P wave, sharp
+// tall QRS spike, deep S dip, rounded T wave) matching the ZNU Pulse
+// logo's pulse glyph, flanked by flat baseline on both sides — rather
+// than the previous double-complex shape.
+const ECG_PATH = 'M0,140 L340,140 C352,140 356,120 366,120 C376,120 380,140 392,140 L406,140 L414,140 L424,205 L434,8 L444,220 L454,140 L468,140 C486,140 492,90 508,90 C524,90 530,140 548,140 L900,140'
 
 function usePrefersReducedMotion() {
   const [reduced, setReduced] = useState(false)
