@@ -72,6 +72,34 @@ const RESET_BTN = "appearance-none border-0 bg-transparent p-0 m-0 cursor-pointe
 // in a pill — stays a flat "text link" rather than another glass card.
 const TEXT_LEGIBLE = "drop-shadow-[0_1px_3px_rgba(0,0,20,0.55)]"
 
+// ── Real glassmorphism recipe ────────────────────────────────────────
+// A flat translucent color + blur reads as a tinted pane, not glass.
+// Actual refraction needs three things layered together:
+//  1. A diagonal light/shine gradient (as if light is hitting the
+//     surface from the upper-left) — this is what sells "glass" over
+//     "frosted rectangle".
+//  2. A steady dark tint underneath the shine, so text stays readable
+//     no matter which part of the page gradient sits behind it.
+//  3. An inset highlight on the top edge + inset shadow on the bottom
+//     edge (the bevel), plus an outer drop shadow for it to feel like
+//     it's floating above the page rather than painted onto it.
+// `tint` lets specific surfaces (the primary button, the selected
+// account-type toggle) pick up a faint brand-blue cast instead of
+// plain white, without changing the recipe.
+function glassSurface(tint: string = "rgba(255,255,255,0.14)") {
+  return {
+    background: [
+      `linear-gradient(135deg, rgba(255,255,255,0.30) 0%, rgba(255,255,255,0.08) 28%, rgba(255,255,255,0.02) 52%, ${tint} 100%)`,
+      "linear-gradient(180deg, rgba(6,14,34,0.40), rgba(6,14,34,0.40))",
+    ].join(", "),
+    boxShadow: [
+      "inset 0 1px 1px rgba(255,255,255,0.45)",
+      "inset 0 -1px 2px rgba(0,0,10,0.30)",
+      "0 10px 28px -10px rgba(0,0,20,0.55)",
+    ].join(", "),
+  }
+}
+const GLASS_CLASS = "backdrop-blur-2xl backdrop-saturate-150 border border-white/25"
 function BlurFade({ children, delay = 0, className }: { children: React.ReactNode; delay?: number; className?: string }) {
   return (
     <motion.div
@@ -83,18 +111,16 @@ function BlurFade({ children, delay = 0, className }: { children: React.ReactNod
   )
 }
 
-// Darker, more opaque glass than before — a near-transparent white
-// pill reads fine on the shadcn dark background it was designed for,
-// but this page's gradient runs light-blue at the top, so every glass
-// surface needs its own reliable dark tint to stay readable no matter
-// what part of the gradient sits behind it.
+// Every glass surface below shares the same refraction recipe
+// (glassSurface()) via inline style — Tailwind utility classes alone
+// can't express a layered diagonal-shine + dark-tint background, so
+// the gradient/shadow live in style while blur/saturation/border stay
+// as classes (GLASS_CLASS).
 function GlassPill({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
-    <div className={cn(
-      "relative rounded-full backdrop-blur-xl border border-white/15",
-      "bg-slate-950/30 shadow-[inset_0_1px_1px_rgba(255,255,255,0.08)]",
-      className
-    )}>{children}</div>
+    <div className={cn("relative rounded-full overflow-hidden", GLASS_CLASS)} style={glassSurface()}>
+      <div className={cn("relative", className)}>{children}</div>
+    </div>
   )
 }
 
@@ -103,25 +129,23 @@ function GlassButton({ children, onClick, type = "button", disabled, className }
 }) {
   return (
     <button type={type} onClick={onClick} disabled={disabled} className={cn(
-      RESET_BTN,
-      "w-full rounded-full py-3.5 font-semibold text-sm transition-all text-center",
-      "backdrop-blur-xl border",
+      RESET_BTN, GLASS_CLASS,
+      "w-full rounded-full py-3.5 font-semibold text-sm text-center transition-all",
       disabled
-        ? "bg-slate-950/20 border-white/10 text-white/40 cursor-not-allowed"
-        : "bg-slate-950/35 border-white/25 text-white hover:bg-slate-950/45 hover:scale-[0.98] shadow-[0_8px_28px_-8px_rgba(0,0,20,0.55)]",
+        ? "opacity-40 grayscale cursor-not-allowed"
+        : "text-white hover:brightness-125 hover:saturate-150 active:brightness-90 hover:scale-[0.98]",
       className
-    )}>{children}</button>
+    )} style={glassSurface("rgba(125,211,252,0.28)")}>{children}</button>
   )
 }
 
 function GhostButton({ children, onClick, className }: { children: React.ReactNode; onClick?: () => void; className?: string }) {
   return (
     <button type="button" onClick={onClick} className={cn(
-      RESET_BTN,
-      "w-full rounded-full py-2.5 text-xs font-semibold text-white/85 text-center",
-      "backdrop-blur-xl border border-white/15 bg-slate-950/25 hover:bg-slate-950/35 transition-colors",
+      RESET_BTN, GLASS_CLASS,
+      "w-full rounded-full py-2.5 text-xs font-semibold text-white/90 text-center transition-all hover:brightness-125",
       className
-    )}>{children}</button>
+    )} style={glassSurface()}>{children}</button>
   )
 }
 
