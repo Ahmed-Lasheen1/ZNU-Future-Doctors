@@ -1,11 +1,11 @@
-// ZNU Future Doctors — minimal service worker.
+// ZNU Future Doctors â€” minimal service worker.
 // Goal: make the app installable and keep the shell available offline,
 // without needing a build-time list of hashed asset filenames.
 
-// ملحوظة: رقم النسخة اتزود من v1 لـ v2 عشان أي جهاز فتح الموقع قبل كده
-// (وكانت متخزنة عنده نسخة قديمة من الأيقونات، أو من غير أيقونات خالص)
-// يجبر المتصفح إنه يمسح الكاش القديم ويجيب كل حاجة جديدة، من ضمنها
-// الأيقونات الجديدة.
+// Ù…Ù„Ø­ÙˆØ¸Ø©: Ø±Ù‚Ù… Ø§Ù„Ù†Ø³Ø®Ø© Ø§ØªØ²ÙˆØ¯ Ù…Ù† v1 Ù„Ù€ v2 Ø¹Ø´Ø§Ù† Ø£ÙŠ Ø¬Ù‡Ø§Ø² ÙØªØ­ Ø§Ù„Ù…ÙˆÙ‚Ø¹ Ù‚Ø¨Ù„ ÙƒØ¯Ù‡
+// (ÙˆÙƒØ§Ù†Øª Ù…ØªØ®Ø²Ù†Ø© Ø¹Ù†Ø¯Ù‡ Ù†Ø³Ø®Ø© Ù‚Ø¯ÙŠÙ…Ø© Ù…Ù† Ø§Ù„Ø£ÙŠÙ‚ÙˆÙ†Ø§ØªØŒ Ø£Ùˆ Ù…Ù† ØºÙŠØ± Ø£ÙŠÙ‚ÙˆÙ†Ø§Øª Ø®Ø§Ù„Øµ)
+// ÙŠØ¬Ø¨Ø± Ø§Ù„Ù…ØªØµÙØ­ Ø¥Ù†Ù‡ ÙŠÙ…Ø³Ø­ Ø§Ù„ÙƒØ§Ø´ Ø§Ù„Ù‚Ø¯ÙŠÙ… ÙˆÙŠØ¬ÙŠØ¨ ÙƒÙ„ Ø­Ø§Ø¬Ø© Ø¬Ø¯ÙŠØ¯Ø©ØŒ Ù…Ù† Ø¶Ù…Ù†Ù‡Ø§
+// Ø§Ù„Ø£ÙŠÙ‚ÙˆÙ†Ø§Øª Ø§Ù„Ø¬Ø¯ÙŠØ¯Ø©.
 const CACHE_NAME = 'znu-shell-v3'
 const SHELL_URLS = ['/', '/favicon.svg', '/icon-192.png', '/icon-512.png']
 
@@ -56,8 +56,8 @@ self.addEventListener('fetch', (event) => {
   )
 })
 
-// ── Web Push ─────────────────────────────────────────────────
-// Shows the notification even if no tab is open — this is what makes
+// â”€â”€ Web Push â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Shows the notification even if no tab is open â€” this is what makes
 // exam reminders, weekly reports, and admin broadcasts arrive while
 // the site itself is fully closed.
 self.addEventListener('push', (event) => {
@@ -83,11 +83,13 @@ self.addEventListener('push', (event) => {
 // one, otherwise opens a new one at the relevant page.
 self.addEventListener('notificationclick', (event) => {
   event.notification.close()
-  const url = event.notification.data?.url || '/'
+  const url = new URL(event.notification.data?.url || '/', self.location.origin).href
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
       for (const client of clientList) {
-        if (client.url.includes(self.location.origin) && 'focus' in client) return client.focus()
+        if (client.url.includes(self.location.origin) && 'focus' in client) {
+          return client.navigate(url).then((navigatedClient) => navigatedClient?.focus())
+        }
       }
       if (clients.openWindow) return clients.openWindow(url)
     })

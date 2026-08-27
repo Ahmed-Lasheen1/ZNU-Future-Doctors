@@ -6,15 +6,14 @@ const SUPABASE_URL = 'https://rbgfupgwmgvvrrzuawpo.supabase.co'
 // The `deadline` column only stores a DATE (no time of day was ever
 // collected from the student). To make "6 hours before the deadline"
 // meaningful, the deadline instant is treated as the end of that day
-// (23:59:59) in Egypt local time. Egypt currently uses a fixed
-// UTC+2 offset (no DST since it was dropped, aside from a brief
-// experiment in 2023) — hardcoded here rather than collecting a
-// timezone from every student, since the whole platform is for one
-// university in one country.
-const EGYPT_UTC_OFFSET_HOURS = 2
+// (23:59:59) in Egypt local time. Egypt observes daylight saving time,
+// so the offset must come from the IANA timezone rather than being
+// hard-coded. This service only serves one university, so Africa/Cairo
+// is the appropriate authoritative timezone.
+const EGYPT_TIMEZONE = 'Africa/Cairo'
 const REMINDER_WINDOW_HOURS = 6
 // Safety cap: don't fire reminders for tasks that are ALREADY more
-// than this many hours overdue — protects against a backlog of very
+// than this many hours overdue â€” protects against a backlog of very
 // old undone tasks all blowing up someone's phone the first time this
 // cron runs after being broken/paused for a while.
 const MAX_OVERDUE_HOURS = 24
@@ -25,20 +24,45 @@ webpush.setVapidDetails(
   process.env.VAPID_PRIVATE_KEY
 )
 
+const cairoTimeZoneFormatter = new Intl.DateTimeFormat('en-US', {
+  timeZone: EGYPT_TIMEZONE,
+  timeZoneName: 'longOffset'
+})
+
+function cairoOffsetMs(instant) {
+  const offset = cairoTimeZoneFormatter
+    .formatToParts(instant)
+    .find((part) => part.type === 'timeZoneName')?.value
+  const match = offset?.match(/^GMT([+-])(\d{1,2})(?::(\d{2}))?$/)
+
+  if (!match) throw new Error(`Could not determine ${EGYPT_TIMEZONE} offset`)
+
+  const [, sign, hours, minutes = '0'] = match
+  const milliseconds = (Number(hours) * 60 + Number(minutes)) * 60 * 1000
+  return sign === '+' ? milliseconds : -milliseconds
+}
+
 function deadlineInstant(dateStr) {
-  // dateStr is "YYYY-MM-DD". End of that day in Egypt time (23:59:59
-  // UTC+2) converted to UTC is 21:59:59 UTC the same calendar day.
-  return new Date(`${dateStr}T${(23 - EGYPT_UTC_OFFSET_HOURS).toString().padStart(2, '0')}:59:59Z`)
+  const [year, month, day] = dateStr.split('-').map(Number)
+  const wallClockTime = Date.UTC(year, month - 1, day, 23, 59, 59)
+
+  // Resolve the Cairo offset at the resulting instant, not at UTC
+  // wall-clock time. Repeating once handles the DST boundary correctly.
+  let timestamp = wallClockTime
+  for (let i = 0; i < 2; i += 1) {
+    timestamp = wallClockTime - cairoOffsetMs(new Date(timestamp))
+  }
+  return new Date(timestamp)
 }
 
 // Triggered every hour by a GitHub Actions cron job (see
 // .github/workflows/checklist-reminders-push.yml). Sends a reminder
-// ONLY to the specific student who owns the task — never a broadcast —
+// ONLY to the specific student who owns the task â€” never a broadcast â€”
 // by filtering push_subscriptions on that task's own user_id.
 //
 // Guest checklists (no account) live only in the browser's
 // localStorage and have no server-side row at all, so there is
-// nothing this cron can reach for them — this reminder only works for
+// nothing this cron can reach for them â€” this reminder only works for
 // signed-in accounts, which is an inherent limitation, not a bug.
 export default async function handler(req, res) {
   if (req.headers['x-cron-secret'] !== process.env.CRON_SECRET) {
@@ -77,28 +101,28 @@ export default async function handler(req, res) {
   const expiredSubIds = []
 
   await Promise.all(due.map(async (task) => {
-    // Only THIS task's own owner — never every registered device.
+    // Only THIS task's own owner â€” never every registered device.
     const { data: subs } = await supabase
       .from('push_subscriptions')
       .select('*')
       .eq('user_id', task.user_id)
 
     if (!subs || subs.length === 0) {
-      // No push device for this student — nothing to send, but still
+      // No push device for this student â€” nothing to send, but still
       // mark it reminded so we don't keep re-checking it every hour.
       remindedTaskIds.push(task.id)
       return
     }
 
-    const moduleName = task.modules?.name ? `${task.modules.name} — ` : ''
-    const body = `${moduleName}"${task.text}" is due soon and still not checked off. ⏰`
+    const moduleName = task.modules?.name ? `${task.modules.name} â€” ` : ''
+    const body = `${moduleName}"${task.text}" is due soon and still not checked off. â°`
 
     let deliveredToAtLeastOne = false
     await Promise.all(subs.map(async (sub) => {
       try {
         await webpush.sendNotification(
           { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
-          JSON.stringify({ title: '🎯 Checklist Reminder', body, url: '/checklist' })
+          JSON.stringify({ title: 'ðŸŽ¯ Checklist Reminder', body, url: '/checklist' })
         )
         deliveredToAtLeastOne = true
       } catch (err) {
@@ -106,8 +130,13 @@ export default async function handler(req, res) {
       }
     }))
 
-    if (deliveredToAtLeastOne) sent++
-    remindedTaskIds.push(task.id)
+    // A temporary push-service/VAPID failure must leave the task
+    // eligible for the next hourly run. Once at least one of the
+    // student's devices receives it, the reminder has done its job.
+    if (deliveredToAtLeastOne) {
+      sent++
+      remindedTaskIds.push(task.id)
+    }
   }))
 
   if (remindedTaskIds.length > 0) {
