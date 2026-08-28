@@ -5,23 +5,20 @@ import { pulseGlass } from '../../premiumTheme'
 // Home redesign — one visual language, one place to tune it. Not used
 // anywhere outside Home.jsx, so no other page is affected.
 //
-// The tilt effect is plain React state + a CSS transform now, NOT the
-// framer-motion Tilt/Spotlight components. Those relied on
+// The tilt effect is plain React state + a CSS transform, NOT the
+// framer-motion Tilt/Spotlight components — those relied on
 // framer-motion's MotionValue/spring subscriptions, which behaved
-// inconsistently depending on how the page was reached (a fresh
-// reload vs. a client-side route change right after sign-in): tilt
-// would work but the spotlight wouldn't, or the reverse, and the
-// card's flex layout would sometimes blow up in size. None of that is
-// under our control — it's framer-motion's internal lifecycle getting
-// out of sync with route changes.
+// inconsistently depending on how the page was reached (fresh reload
+// vs. a client-side route change right after sign-in). A plain
+// mouseMove handler updating useState has no external library state
+// to desync — it behaves identically no matter how the page was
+// reached. Same approach already used reliably in AnimatedCard.jsx.
 //
-// A plain mouseMove handler updating useState, applied as an inline
-// `transform`, has no external library state to desync — it behaves
-// identically no matter how the page was reached. This is the same
-// approach already used (and already working reliably) in
-// AnimatedCard.jsx elsewhere in this app. The spotlight glow has been
-// dropped entirely per feedback — it added a second unpredictable
-// moving part for no real visual gain over the tilt + glass alone.
+// The corner "glow" (a large blurred circle tucked in a corner,
+// clipped by the card's own rounded overflow:hidden) is the same
+// technique used on the Stats Card in the glassmorphism hero
+// reference — a cheap way to make a flat glass panel feel lit from
+// one side instead of uniformly flat.
 export default function PulseCard({ children, dark, onClick, delay = 0, accent, style = {} }) {
   const [visible, setVisible] = useState(false)
   const [hovered, setHovered] = useState(false)
@@ -85,11 +82,31 @@ export default function PulseCard({ children, dark, onClick, delay = 0, accent, 
       : glass.boxShadow,
   }
 
+  // Positioned top-right, partly outside the card, and clipped by the
+  // shell's own overflow:hidden + border-radius — exact technique from
+  // the glassmorphism reference. Tinted with the card's accent color
+  // when one is given, otherwise a neutral glass-white glow. Purely
+  // decorative, so it never intercepts clicks/hover.
+  const glow = (
+    <div aria-hidden style={{
+      position: 'absolute', top: -60, right: -60, width: 200, height: 200,
+      borderRadius: '50%', pointerEvents: 'none',
+      background: accent ? `${accent}33` : (dark ? 'rgba(255,255,255,0.07)' : 'rgba(255,255,255,0.5)'),
+      filter: 'blur(60px)',
+    }} />
+  )
+
+  const innerContentStyle = { position: 'relative', zIndex: 1, ...contentStyle }
+
   // Non-interactive cards (no onClick, e.g. the main dashboard panel)
-  // get no tilt at all — a single flat div, exactly like the very
-  // original card.
+  // get no tilt at all — same glass + glow, just no motion.
   if (!interactive) {
-    return <div style={{ ...shellStyle, ...contentStyle, borderRadius }}>{children}</div>
+    return (
+      <div style={{ ...shellStyle, borderRadius }}>
+        {glow}
+        <div style={innerContentStyle}>{children}</div>
+      </div>
+    )
   }
 
   return (
@@ -104,7 +121,8 @@ export default function PulseCard({ children, dark, onClick, delay = 0, accent, 
       onMouseLeave={handleMouseLeave}
       style={shellStyle}
     >
-      <div style={contentStyle}>{children}</div>
+      {glow}
+      <div style={innerContentStyle}>{children}</div>
     </div>
   )
 }
