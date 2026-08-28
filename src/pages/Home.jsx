@@ -23,8 +23,8 @@ const LOGO_SRC = '/icon-192.png'
 // Exact gradient sampled from the ZNU Pulse logo artwork itself (top →
 // bottom: light sky-blue fading to deep navy) — same recipe as
 // PAGE_BG in src/components/ui/sign-up.tsx, reproduced stop-for-stop.
-// This now lives on the FIXED page backdrop (see below), not scoped
-// to any single panel.
+// Lives on the FIXED page backdrop below, covering the whole page —
+// not scoped to any single panel.
 const LOGO_BG = [
   'linear-gradient(180deg,',
   '#a6d2ef 0%,',
@@ -288,7 +288,7 @@ export default function Home({ dark, toggleTheme }) {
              uses clamp() rather than a fixed px value, and the image
              inside keeps its aspect ratio via EcgHero's own CSS. */
           .pulse-hero-panel {
-            min-height: clamp(180px, 32vw, 300px);
+            min-height: clamp(140px, 40vw, 300px);
           }
         `}</style>
 
