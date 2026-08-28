@@ -71,16 +71,18 @@ const RESET_BTN = "appearance-none border-0 bg-transparent p-0 m-0 cursor-pointe
 // ── instead of the busier "iOS lens" style tried before ──────────────
 // That earlier version (specular streak + shimmer sweep + dual-inset
 // bevel) was closer to a skeuomorphic lens than clean modern glass.
-// The simpler, more common recipe is genuinely just: a thin border
-// (white/15), a very light fill (white/8), backdrop-blur, a soft
-// single drop shadow, and — for depth — one gentle ambient glow blob
-// tucked in a corner, not a directional streak across the whole
-// surface. No shimmer-on-hover theatrics; hover just brightens the
-// fill and border slightly, same as a plain modern UI kit would.
+// The recipe is genuinely just: a thin border (white/15), a light
+// fill (white/10), backdrop-blur, and a soft drop shadow. No corner
+// glow either — tried one, but every surface on this page is a thin
+// pill/bar, and a spot-glow on something that skinny just reads as a
+// stray bright patch, not a highlight (only makes sense on big card
+// shapes with room for it). No shimmer-on-hover theatrics either;
+// hover just brightens the fill and border slightly, same as a plain
+// modern UI kit would.
 //
 // The one thing this page still needs that a hero-on-a-dark-photo
 // doesn't: a thin dark tint UNDER the light glass, since this page's
-// gradient runs light sky-blue at the top. Without it, white/8 glass
+// gradient runs light sky-blue at the top. Without it, white/10 glass
 // on a light background washes out. Everything else follows the
 // simpler recipe as-is.
 const GLASS_BASE = cn(
@@ -91,24 +93,15 @@ const GLASS_BASE = cn(
   "shadow-[0_8px_32px_rgba(0,0,10,0.35),inset_0_1px_1px_rgba(255,255,255,0.30)]",
 )
 
-// The two extra layers (dark contrast tint + a soft corner glow) that
-// sit inside every glass surface, behind the actual content. The glow
-// is a plain radial-gradient rather than a blurred div — `filter:
-// blur()` paints outside its own box in most browsers and escapes the
-// parent's `overflow-hidden` + rounded corners (that was the gray
-// rectangle bleeding past the pill's edge). A gradient has no such
-// issue: it's clipped correctly like any other background.
-function GlassLayers({ tint = "rgba(8,16,36,0.24)", glow = true }: { tint?: string; glow?: boolean }) {
-  return (
-    <>
-      <div aria-hidden className="pointer-events-none absolute inset-0" style={{ background: tint }} />
-      {glow && (
-        <div aria-hidden className="pointer-events-none absolute inset-0" style={{
-          background: "radial-gradient(90px 90px at calc(100% - 4px) 0%, rgba(255,255,255,0.28), transparent 70%)"
-        }} />
-      )}
-    </>
-  )
+// A single flat contrast layer that sits inside every glass surface,
+// behind the actual content. (An earlier version also added a
+// corner "ambient glow" radial-gradient for extra depth — removed:
+// every surface on this page is a thin pill/bar, and a spot-glow on
+// something that skinny just reads as a stray bright patch rather
+// than a subtle highlight. It only makes sense on large card shapes,
+// which this page doesn't have.)
+function GlassLayers({ tint = "rgba(8,16,36,0.24)" }: { tint?: string }) {
+  return <div aria-hidden className="pointer-events-none absolute inset-0" style={{ background: tint }} />
 }
 
 function BlurFade({ children, delay = 0, className }: { children: React.ReactNode; delay?: number; className?: string }) {
@@ -125,7 +118,7 @@ function BlurFade({ children, delay = 0, className }: { children: React.ReactNod
 function GlassPill({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
     <div className={cn(GLASS_BASE, "rounded-full")}>
-      <GlassLayers glow={false} />
+      <GlassLayers />
       <div className={cn("relative z-10", className)}>{children}</div>
     </div>
   )
@@ -154,7 +147,7 @@ function GhostButton({ children, onClick, className }: { children: React.ReactNo
       RESET_BTN, GLASS_BASE, "w-full rounded-full py-2.5 text-xs font-semibold text-white/90 text-center transition-all hover:bg-white/15 hover:border-white/30",
       className
     )}>
-      <GlassLayers glow={false} />
+      <GlassLayers />
       <span className="relative z-10">{children}</span>
     </button>
   )
@@ -188,7 +181,7 @@ function GlassToggle({ children, active, onClick }: { children: React.ReactNode;
       "flex-1 flex items-center justify-center gap-1.5 rounded-full py-2 text-xs font-bold transition-all",
       active ? "text-sky-100 border-sky-200/60" : "text-white/70 hover:text-white/90 hover:bg-white/15"
     )}>
-      <GlassLayers tint={active ? "rgba(30,90,180,0.22)" : "rgba(8,16,36,0.24)"} glow={false} />
+      <GlassLayers tint={active ? "rgba(30,90,180,0.22)" : "rgba(8,16,36,0.24)"} />
       <span className="relative z-10 flex items-center gap-1.5">{children}</span>
     </button>
   )
