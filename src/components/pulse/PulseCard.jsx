@@ -5,26 +5,27 @@ import { pulseGlass } from '../../premiumTheme'
 // Home redesign — one visual language, one place to tune it. Not used
 // anywhere outside Home.jsx, so no other page is affected.
 //
-// The tilt effect is plain React state + a CSS transform, NOT the
-// framer-motion Tilt/Spotlight components — those relied on
-// framer-motion's MotionValue/spring subscriptions, which behaved
-// inconsistently depending on how the page was reached (fresh reload
-// vs. a client-side route change right after sign-in). A plain
-// mouseMove handler updating useState has no external library state
-// to desync — it behaves identically no matter how the page was
-// reached. Same approach already used reliably in AnimatedCard.jsx.
+// Split on purpose: the STATIC part of the glass look (fill tint,
+// hairline border, backdrop blur) is real Tailwind utility classes —
+// battle-tested, no hand-rolled rgba() strings to maintain. Everything
+// that's computed per-instance or per-frame (entrance fade, hover
+// lift/scale, the mouse-tracked tilt, and the accent-colored glow
+// shadow, which needs a runtime hex value Tailwind can't know about
+// at build time) stays inline style, driven by plain React state.
 //
-// The corner "glow" (a large blurred circle tucked in a corner,
-// clipped by the card's own rounded overflow:hidden) is the same
-// technique used on the Stats Card in the glassmorphism hero
-// reference — a cheap way to make a flat glass panel feel lit from
-// one side instead of uniformly flat.
+// The tilt itself is a plain mouseMove handler + useState, not
+// framer-motion — framer-motion's MotionValue/spring subscriptions
+// behaved inconsistently depending on how the page was reached (fresh
+// reload vs. a client-side route change right after sign-in). Plain
+// state has no external library lifecycle to desync.
 export default function PulseCard({ children, dark, onClick, delay = 0, accent, style = {} }) {
   const [visible, setVisible] = useState(false)
   const [hovered, setHovered] = useState(false)
   const [tilt, setTilt] = useState({ rx: 0, ry: 0 })
   const ref = useRef(null)
-  const glass = pulseGlass(dark)
+  // Only the shadow recipe still comes from premiumTheme — background/
+  // border/blur are now Tailwind classes below.
+  const { boxShadow: baseShadow } = pulseGlass(dark)
   const interactive = !!onClick
 
   useEffect(() => {
@@ -59,10 +60,18 @@ export default function PulseCard({ children, dark, onClick, delay = 0, accent, 
   // everything else in `style` is pure content layout and goes inside.
   const { borderRadius = 18, ...contentStyle } = style
 
+  // Static glass look — Tailwind utilities, no runtime values here.
+  const shellClassName = [
+    'relative overflow-hidden backdrop-blur-xl border',
+    dark ? 'bg-white/[.07] border-white/10' : 'bg-white/60 border-white/60',
+    interactive ? 'cursor-pointer' : 'cursor-default',
+  ].join(' ')
+
+  // Everything below genuinely needs a runtime value (theme-dependent
+  // number, animation state, or a dynamic accent hex) — this is why
+  // it can't be a static Tailwind class.
   const shellStyle = {
-    ...glass,
     position: 'relative',
-    overflow: 'hidden',
     borderRadius,
     opacity: visible ? 1 : 0,
     // Standalone translate/scale (not `transform`) for the entrance
@@ -76,17 +85,15 @@ export default function PulseCard({ children, dark, onClick, delay = 0, accent, 
     transition: !visible
       ? 'opacity 0.5s ease, translate 0.3s cubic-bezier(0.34,1.56,0.64,1)'
       : `translate 0.25s cubic-bezier(0.22,1,0.36,1), scale 0.25s cubic-bezier(0.22,1,0.36,1), box-shadow 0.25s ease, transform ${hovered ? '0.1s linear' : '0.4s cubic-bezier(0.22,1,0.36,1)'}`,
-    cursor: interactive ? 'pointer' : 'default',
     boxShadow: hovered && interactive && accent
-      ? `${glass.boxShadow}, 0 0 0 1px ${accent}55, 0 16px 32px -8px ${accent}40`
-      : glass.boxShadow,
+      ? `${baseShadow}, 0 0 0 1px ${accent}55, 0 16px 32px -8px ${accent}40`
+      : baseShadow,
   }
 
   // Positioned top-right, partly outside the card, and clipped by the
-  // shell's own overflow:hidden + border-radius — exact technique from
-  // the glassmorphism reference. Tinted with the card's accent color
-  // when one is given, otherwise a neutral glass-white glow. Purely
-  // decorative, so it never intercepts clicks/hover.
+  // shell's own overflow-hidden + border-radius. Tinted with the
+  // card's accent color when one is given — a runtime hex value, so
+  // this stays inline rather than a Tailwind class.
   const glow = (
     <div aria-hidden style={{
       position: 'absolute', top: -60, right: -60, width: 200, height: 200,
@@ -102,7 +109,7 @@ export default function PulseCard({ children, dark, onClick, delay = 0, accent, 
   // get no tilt at all — same glass + glow, just no motion.
   if (!interactive) {
     return (
-      <div style={{ ...shellStyle, borderRadius }}>
+      <div className={shellClassName} style={{ ...shellStyle, borderRadius }}>
         {glow}
         <div style={innerContentStyle}>{children}</div>
       </div>
@@ -119,6 +126,7 @@ export default function PulseCard({ children, dark, onClick, delay = 0, accent, 
       onMouseEnter={() => setHovered(true)}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
+      className={shellClassName}
       style={shellStyle}
     >
       {glow}

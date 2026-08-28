@@ -3,6 +3,7 @@ export default {
   darkMode: ['class'],
   content: [
     './src/components/ui/**/*.{ts,tsx}',
+    './src/components/pulse/**/*.{js,jsx,ts,tsx}',
     './src/pages/Auth.tsx',
     './src/pages/ResetPassword.tsx',
     './src/lib/**/*.{ts,tsx}',
