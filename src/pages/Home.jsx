@@ -250,7 +250,7 @@ export default function Home({ dark, toggleTheme }) {
   }
 
   return (
-    <div style={{ position: 'relative', minHeight: '100vh' }}>
+    <div style={{ position: 'relative', minHeight: '100vh', overflowX: 'hidden' }}>
       {/* Fixed backdrop — the exact logo gradient, pinned to the
           viewport so it NEVER scrolls or moves. Only the content
           layer below (header, cards, sections) moves as the page is
