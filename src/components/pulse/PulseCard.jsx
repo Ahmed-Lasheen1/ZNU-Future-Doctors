@@ -1,30 +1,18 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { pulseGlass } from '../../premiumTheme'
 
 // Shared "liquid glass" card used across every card on the ZNU Pulse
 // Home redesign — one visual language, one place to tune it. Not used
 // anywhere outside Home.jsx, so no other page is affected.
 //
-// Deliberately colorless: no accent-tinted ring/glow on hover and no
-// accent-tinted corner glow, even though callers still pass an
-// `accent` (e.g. a module's color) — it's accepted but unused here.
-// Feedback on hover is a plain, neutral glow (no hue) plus the tilt/
-// lift, nothing more.
-//
-// The glass "material" (fill/border/blur) is plain inline style — see
-// the note further down for why. Everything computed per-instance or
-// per-frame (entrance fade, hover lift/scale, the mouse-tracked tilt)
-// is also inline style, driven by plain React state rather than
-// framer-motion — framer-motion's MotionValue/spring subscriptions
-// behaved inconsistently depending on how the page was reached (fresh
-// reload vs. a client-side route change after sign-in).
+// No tilt, no accent coloring. Motion is limited to: a fade-in on
+// mount, and a small lift + neutral (colorless) shadow bump on hover.
+// The glass "material" (fill/border/blur) is plain inline style.
 export default function PulseCard({ children, dark, onClick, delay = 0, style = {} }) {
   const [visible, setVisible] = useState(false)
   const [hovered, setHovered] = useState(false)
-  const [tilt, setTilt] = useState({ rx: 0, ry: 0 })
-  const ref = useRef(null)
   // Only the shadow recipe still comes from premiumTheme — background/
-  // border/blur are Tailwind classes below.
+  // border/blur are set directly below.
   const { boxShadow: baseShadow } = pulseGlass(dark)
   const interactive = !!onClick
 
@@ -38,39 +26,17 @@ export default function PulseCard({ children, dark, onClick, delay = 0, style = 
     if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick() }
   }
 
-  function handleMouseMove(e) {
-    if (!interactive || !ref.current) return
-    const rect = ref.current.getBoundingClientRect()
-    if (!rect.width || !rect.height) return
-    const px = (e.clientX - rect.left) / rect.width - 0.5
-    const py = (e.clientY - rect.top) / rect.height - 0.5
-    // Vertical mouse position drives rotateX, horizontal drives
-    // rotateY — a small, subtle max of ~8deg either way.
-    setTilt({ rx: py * -8, ry: px * 8 })
-  }
-
-  function handleMouseLeave() {
-    setHovered(false)
-    setTilt({ rx: 0, ry: 0 })
-  }
-
   const liftY = !visible ? 16 : (hovered && interactive ? -4 : 0)
   // borderRadius has to apply to the outer shell (so the glass
   // background/clipping matches pill-shaped or extra-rounded cards) —
   // everything else in `style` is pure content layout and goes inside.
   const { borderRadius = 18, ...contentStyle } = style
 
-  // Static glass look — plain inline style now, not a Tailwind class.
-  // (Tailwind's arbitrary-opacity utilities here were not visibly
-  // taking effect no matter how far the number was pushed — moving
-  // this to inline style removes any dependency on build/content-scan
-  // config being exactly right.) Recipe matches iOS's actual dark/
-  // light "material" panels (Control Center, widgets): a near-black
-  // #1c1c1e panel at ~80% opacity in dark mode — not a translucent
-  // white/grey glass — with blur + a touch of saturation for the
-  // frosted-glass vibrancy, and the equivalent light "regular
-  // material" (#f2f2f7-ish) for light mode.
   const shellClassName = interactive ? 'relative overflow-hidden cursor-pointer' : 'relative overflow-hidden cursor-default'
+
+  // iOS-style dark/light "material" panel: near-black in dark mode,
+  // near-white-gray in light mode, blurred + saturated for the frosted
+  // vibrancy — not a translucent white/grey glass tint.
   const materialStyle = dark
     ? {
         background: 'rgba(28,28,30,0.35)',
@@ -85,7 +51,7 @@ export default function PulseCard({ children, dark, onClick, delay = 0, style = 
         WebkitBackdropFilter: 'blur(5px) saturate(160%)',
       }
 
-  // Neutral (colorless) hover shadow — just a slightly stronger/wider
+  // Neutral (colorless) hover shadow — just a slightly stronger
   // version of the resting shadow, no hue baked in.
   const hoverShadow = dark
     ? `${baseShadow}, 0 5px 10px -3px rgba(0,0,0,0.35)`
@@ -97,22 +63,19 @@ export default function PulseCard({ children, dark, onClick, delay = 0, style = 
     borderRadius,
     opacity: visible ? 1 : 0,
     // Standalone translate/scale (not `transform`) for the entrance
-    // slide-in and hover lift — kept separate from the tilt's own
-    // `transform` below so neither one overwrites the other. Kept as
-    // strings so React doesn't auto-append "px" to a unitless
-    // property.
+    // slide-in and hover lift. Kept as strings so React doesn't
+    // auto-append "px" to a unitless property.
     translate: `0 ${liftY}px`,
     scale: hovered && interactive ? '1.02' : '1',
-    transform: interactive ? `perspective(900px) rotateX(${tilt.rx}deg) rotateY(${tilt.ry}deg)` : undefined,
     transition: !visible
       ? 'opacity 0.5s ease, translate 0.3s cubic-bezier(0.34,1.56,0.64,1)'
-      : `translate 0.25s cubic-bezier(0.22,1,0.36,1), scale 0.25s cubic-bezier(0.22,1,0.36,1), box-shadow 0.25s ease, transform ${hovered ? '0.1s linear' : '0.4s cubic-bezier(0.22,1,0.36,1)'}`,
+      : 'translate 0.25s cubic-bezier(0.22,1,0.36,1), scale 0.25s cubic-bezier(0.22,1,0.36,1), box-shadow 0.25s ease',
     boxShadow: hovered && interactive ? hoverShadow : baseShadow,
   }
 
   // Positioned top-right, partly outside the card, and clipped by the
-  // shell's own overflow-hidden + border-radius. Always neutral now —
-  // no accent tint, regardless of what the caller passes.
+  // shell's own overflow-hidden + border-radius. Always neutral — no
+  // accent tint.
   const glow = (
     <div aria-hidden style={{
       position: 'absolute', top: -60, right: -60, width: 200, height: 200,
@@ -124,8 +87,6 @@ export default function PulseCard({ children, dark, onClick, delay = 0, style = 
 
   const innerContentStyle = { position: 'relative', zIndex: 1, ...contentStyle }
 
-  // Non-interactive cards (no onClick, e.g. the main dashboard panel)
-  // get no tilt at all — same glass + glow, just no motion.
   if (!interactive) {
     return (
       <div className={shellClassName} style={{ ...shellStyle, borderRadius }}>
@@ -137,14 +98,12 @@ export default function PulseCard({ children, dark, onClick, delay = 0, style = 
 
   return (
     <div
-      ref={ref}
       role="button"
       tabIndex={0}
       onClick={onClick}
       onKeyDown={handleKeyDown}
       onMouseEnter={() => setHovered(true)}
-      onMouseMove={handleMouseMove}
-      onMouseLeave={handleMouseLeave}
+      onMouseLeave={() => setHovered(false)}
       className={shellClassName}
       style={shellStyle}
     >
