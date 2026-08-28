@@ -28,9 +28,9 @@ const CENTER_PATH = 'M0,310.5 L4,310.5 L8,310.5 L12,310.5 L16,310.5 L20,310.5 L2
 // same crop's pixel units (measured directly from clean flat baseline
 // columns) — the glow's stroke width matches this, so it reads as the
 // same thickness as the pulse itself.
-const STROKE_WIDTH = 26
+const STROKE_WIDTH = 20
 
-const BEAM_DURATION = '4.5s'
+const BEAM_DURATION = '5s'
 
 function usePrefersReducedMotion() {
   const [reduced, setReduced] = useState(false)
