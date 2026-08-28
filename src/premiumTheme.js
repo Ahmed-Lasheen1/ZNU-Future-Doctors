@@ -96,7 +96,7 @@ export function pulseGlass(dark) {
         boxShadow: [
           '0 1px 0 rgba(255,255,255,0.04) inset',
           '0 -1px 0 rgba(0,0,0,0.12) inset',
-          '0 6px 14px -8px rgba(0,0,0,0.25)',
+          '0 4px 8px -2px rgba(0,0,0,0.40)',
         ].join(', '),
       }
     : {
@@ -107,7 +107,7 @@ export function pulseGlass(dark) {
         boxShadow: [
           '0 1px 0 rgba(255,255,255,0.4) inset',
           '0 -1px 0 rgba(184,197,216,0.14) inset',
-          '0 6px 14px -8px rgba(37,60,97,0.10)',
+          '0 4px 8px -2px rgba(37,60,97,0.20)',
         ].join(', '),
       }
 }

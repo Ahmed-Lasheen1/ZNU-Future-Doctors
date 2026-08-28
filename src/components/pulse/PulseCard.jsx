@@ -73,23 +73,23 @@ export default function PulseCard({ children, dark, onClick, delay = 0, style = 
   const shellClassName = interactive ? 'relative overflow-hidden cursor-pointer' : 'relative overflow-hidden cursor-default'
   const materialStyle = dark
     ? {
-        background: 'rgba(28,28,30,0.30)',
+        background: 'rgba(28,28,30,0.35)',
         border: '1px solid rgba(255,255,255,0.10)',
-        backdropFilter: 'blur(1px) saturate(160%)',
-        WebkitBackdropFilter: 'blur(1px) saturate(160%)',
+        backdropFilter: 'blur(5px) saturate(160%)',
+        WebkitBackdropFilter: 'blur(5px) saturate(160%)',
       }
     : {
-        background: 'rgba(242,242,247,0.30)',
+        background: 'rgba(242,242,247,0.35)',
         border: '1px solid rgba(0,0,0,0.08)',
-        backdropFilter: 'blur(1px) saturate(160%)',
-        WebkitBackdropFilter: 'blur(1px) saturate(160%)',
+        backdropFilter: 'blur(5px) saturate(160%)',
+        WebkitBackdropFilter: 'blur(5px) saturate(160%)',
       }
 
   // Neutral (colorless) hover shadow — just a slightly stronger/wider
   // version of the resting shadow, no hue baked in.
   const hoverShadow = dark
-    ? `${baseShadow}, 0 8px 16px -8px rgba(0,0,0,0.25)`
-    : `${baseShadow}, 0 8px 16px -8px rgba(37,60,97,0.12)`
+    ? `${baseShadow}, 0 5px 10px -3px rgba(0,0,0,0.35)`
+    : `${baseShadow}, 0 5px 10px -3px rgba(37,60,97,0.18)`
 
   const shellStyle = {
     ...materialStyle,
