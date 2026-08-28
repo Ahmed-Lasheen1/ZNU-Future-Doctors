@@ -85,6 +85,23 @@ export default function Auth() {
       return
     }
 
+    // If "Confirm email" is turned off for this Supabase project,
+    // signUp() returns a fully active session immediately — no
+    // confirmation email is sent because none is needed. Sending the
+    // person to a "waiting for a code" screen in that case is a dead
+    // end: no code is ever coming. Detect that and just log them
+    // straight in instead.
+    if (data?.session) {
+      setLoading(false)
+      navigate("/")
+      return
+    }
+
+    // Otherwise "Confirm email" really is required — a confirmation
+    // email should be on its way from Supabase now. (If it never
+    // arrives here, that's a project-level email delivery issue —
+    // check Supabase Dashboard → Authentication → SMTP Settings and
+    // → Logs, and check spam — not something the client can control.)
     setLoading(false)
     setStep("verify")
   }
