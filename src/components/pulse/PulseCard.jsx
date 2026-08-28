@@ -73,16 +73,16 @@ export default function PulseCard({ children, dark, onClick, delay = 0, style = 
   const shellClassName = interactive ? 'relative overflow-hidden cursor-pointer' : 'relative overflow-hidden cursor-default'
   const materialStyle = dark
     ? {
-        background: 'rgba(28,28,30,0.82)',
-        border: '1px solid rgba(255,255,255,0.09)',
-        backdropFilter: 'blur(20px) saturate(150%)',
-        WebkitBackdropFilter: 'blur(20px) saturate(150%)',
+        background: 'rgba(28,28,30,0.52)',
+        border: '1px solid rgba(255,255,255,0.10)',
+        backdropFilter: 'blur(28px) saturate(160%)',
+        WebkitBackdropFilter: 'blur(28px) saturate(160%)',
       }
     : {
-        background: 'rgba(242,242,247,0.82)',
-        border: '1px solid rgba(0,0,0,0.06)',
-        backdropFilter: 'blur(20px) saturate(150%)',
-        WebkitBackdropFilter: 'blur(20px) saturate(150%)',
+        background: 'rgba(242,242,247,0.58)',
+        border: '1px solid rgba(0,0,0,0.08)',
+        backdropFilter: 'blur(28px) saturate(160%)',
+        WebkitBackdropFilter: 'blur(28px) saturate(160%)',
       }
 
   // Neutral (colorless) hover shadow — just a slightly stronger/wider
