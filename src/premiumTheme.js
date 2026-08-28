@@ -30,8 +30,8 @@ export function getPulseTheme(dark) {
 
         // Text
         text: '#E8EEF7',
-        sub: '#AEBBD0',
-        faint: '#8496B2',
+        sub: '#C7D3E8',
+        faint: '#9FB0CC',
 
         // Accents — no green anywhere
         cobalt: '#4C86FF',
@@ -59,8 +59,8 @@ export function getPulseTheme(dark) {
         borderStrong: '#AFC0D6',
 
         text: '#15243A',
-        sub: '#52637A',
-        faint: '#6C7B93',
+        sub: '#3E4D63',
+        faint: '#57667D',
 
         cobalt: '#2A5CD8',
         cobaltSoft: 'rgba(42,92,216,0.10)',
