@@ -67,14 +67,24 @@ export default function Auth() {
 
     if (error) { setLoading(false); return setMessage("❌ " + error.message) }
 
+    // Supabase's documented signal for "this email is already registered
+    // to a confirmed account": no error is returned (so client code
+    // can't be used to enumerate which emails exist), but data.user
+    // comes back with an EMPTY identities array. There's no pending,
+    // unconfirmed signup to resend a code for in this case — the
+    // account already exists and is already verified — so calling
+    // resend() here (as this used to) was always a false positive:
+    // it silently sent nothing, while the UI claimed a fresh code was
+    // on its way. Tell the person plainly instead, and send them to
+    // Sign In with their email already filled in.
     if (data?.user && data.user.identities && data.user.identities.length === 0) {
-      const { error: resendError } = await supabase.auth.resend({ type: "signup", email })
       setLoading(false)
-      if (resendError) return setMessage("❌ " + resendError.message)
-      setMessage("✅ This email was already pending verification — a fresh code was sent.")
-      setStep("verify")
+      setPassword("")
+      setMode("signin")
+      setMessage("❌ An account with this email already exists — switched you to Sign In.")
       return
     }
+
     setLoading(false)
     setStep("verify")
   }
