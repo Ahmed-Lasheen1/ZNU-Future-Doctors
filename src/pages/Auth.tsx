@@ -67,41 +67,14 @@ export default function Auth() {
 
     if (error) { setLoading(false); return setMessage("❌ " + error.message) }
 
-    // Supabase's documented signal for "this email is already registered
-    // to a confirmed account": no error is returned (so client code
-    // can't be used to enumerate which emails exist), but data.user
-    // comes back with an EMPTY identities array. There's no pending,
-    // unconfirmed signup to resend a code for in this case — the
-    // account already exists and is already verified — so calling
-    // resend() here (as this used to) was always a false positive:
-    // it silently sent nothing, while the UI claimed a fresh code was
-    // on its way. Tell the person plainly instead, and send them to
-    // Sign In with their email already filled in.
     if (data?.user && data.user.identities && data.user.identities.length === 0) {
+      const { error: resendError } = await supabase.auth.resend({ type: "signup", email })
       setLoading(false)
-      setPassword("")
-      setMode("signin")
-      setMessage("❌ An account with this email already exists — switched you to Sign In.")
+      if (resendError) return setMessage("❌ " + resendError.message)
+      setMessage("✅ This email was already pending verification — a fresh code was sent.")
+      setStep("verify")
       return
     }
-
-    // If "Confirm email" is turned off for this Supabase project,
-    // signUp() returns a fully active session immediately — no
-    // confirmation email is sent because none is needed. Sending the
-    // person to a "waiting for a code" screen in that case is a dead
-    // end: no code is ever coming. Detect that and just log them
-    // straight in instead.
-    if (data?.session) {
-      setLoading(false)
-      navigate("/")
-      return
-    }
-
-    // Otherwise "Confirm email" really is required — a confirmation
-    // email should be on its way from Supabase now. (If it never
-    // arrives here, that's a project-level email delivery issue —
-    // check Supabase Dashboard → Authentication → SMTP Settings and
-    // → Logs, and check spam — not something the client can control.)
     setLoading(false)
     setStep("verify")
   }
