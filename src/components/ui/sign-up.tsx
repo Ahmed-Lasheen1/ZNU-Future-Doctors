@@ -67,39 +67,44 @@ const PAGE_BG = {
 const RESET_INPUT = "appearance-none border-0 outline-none bg-transparent p-0 m-0 rounded-none"
 const RESET_BTN = "appearance-none border-0 bg-transparent p-0 m-0 cursor-pointer"
 
-// A soft dark drop-shadow keeps plain text links legible against both
-// the light top and dark bottom of the gradient, without boxing them
-// in a pill — stays a flat "text link" rather than another glass card.
-const TEXT_LEGIBLE = "drop-shadow-[0_1px_3px_rgba(0,0,20,0.55)]"
+// ── Real glassmorphism recipe, modeled on iOS "liquid glass" ────────
+// The earlier version leaned on a heavy dark tint to force contrast,
+// which made it read as frosted plastic instead of glass. The fix:
+// keep the glass itself LIGHT and mostly transparent (like real
+// glass), and get "glass" from three specific ingredients instead —
+//  1. A bright, clearly-visible border (white/40) that defines the
+//     pane's edge.
+//  2. A strong bright inset highlight on the top edge (glass catching
+//     light) paired with a soft dark inset on the bottom edge.
+//  3. A separate rotated specular-highlight blob layered on top —
+//     this is what actually reads as "light refracting through a
+//     curved surface" rather than a flat tinted rectangle.
+// backdrop-blur + backdrop-saturate boosts whatever's behind it, which
+// is the real optical trick glass does (blur *and* intensify color).
+//
+// The one addition on top of the plain recipe: a thin, low-opacity
+// dark layer sits UNDER the light glass (not instead of it) purely so
+// white text stays legible against the bright top of this page's
+// gradient — everything else is the light-glass-plus-specular-blob
+// approach.
+const GLASS_BASE = cn(
+  "relative overflow-hidden",
+  "backdrop-blur-2xl backdrop-saturate-200",
+  "border border-white/40",
+  "bg-gradient-to-b from-white/25 via-white/10 to-white/5",
+  "shadow-[0_10px_28px_rgba(0,0,10,0.35),inset_0_1px_2px_rgba(255,255,255,0.65),inset_0_-1px_1px_rgba(0,0,0,0.15)]",
+)
 
-// ── Real glassmorphism recipe ────────────────────────────────────────
-// A flat translucent color + blur reads as a tinted pane, not glass.
-// Actual refraction needs three things layered together:
-//  1. A diagonal light/shine gradient (as if light is hitting the
-//     surface from the upper-left) — this is what sells "glass" over
-//     "frosted rectangle".
-//  2. A steady dark tint underneath the shine, so text stays readable
-//     no matter which part of the page gradient sits behind it.
-//  3. An inset highlight on the top edge + inset shadow on the bottom
-//     edge (the bevel), plus an outer drop shadow for it to feel like
-//     it's floating above the page rather than painted onto it.
-// `tint` lets specific surfaces (the primary button, the selected
-// account-type toggle) pick up a faint brand-blue cast instead of
-// plain white, without changing the recipe.
-function glassSurface(tint: string = "rgba(255,255,255,0.14)") {
-  return {
-    background: [
-      `linear-gradient(135deg, rgba(255,255,255,0.30) 0%, rgba(255,255,255,0.08) 28%, rgba(255,255,255,0.02) 52%, ${tint} 100%)`,
-      "linear-gradient(180deg, rgba(6,14,34,0.40), rgba(6,14,34,0.40))",
-    ].join(", "),
-    boxShadow: [
-      "inset 0 1px 1px rgba(255,255,255,0.45)",
-      "inset 0 -1px 2px rgba(0,0,10,0.30)",
-      "0 10px 28px -10px rgba(0,0,20,0.55)",
-    ].join(", "),
-  }
+// The two extra layers (dark contrast tint + specular blob) that sit
+// inside every glass surface, behind the actual content.
+function GlassLayers({ tint = "rgba(8,16,36,0.22)" }: { tint?: string }) {
+  return (
+    <>
+      <div aria-hidden className="pointer-events-none absolute inset-0" style={{ background: tint }} />
+      <div aria-hidden className="pointer-events-none absolute -left-1/4 -top-1/2 h-full w-3/4 rotate-12 bg-gradient-to-br from-white/55 via-white/5 to-transparent opacity-70 blur-md" />
+    </>
+  )
 }
-const GLASS_CLASS = "backdrop-blur-2xl backdrop-saturate-150 border border-white/25"
 
 function BlurFade({ children, delay = 0, className }: { children: React.ReactNode; delay?: number; className?: string }) {
   return (
@@ -112,15 +117,11 @@ function BlurFade({ children, delay = 0, className }: { children: React.ReactNod
   )
 }
 
-// Every glass surface below shares the same refraction recipe
-// (glassSurface()) via inline style — Tailwind utility classes alone
-// can't express a layered diagonal-shine + dark-tint background, so
-// the gradient/shadow live in style while blur/saturation/border stay
-// as classes (GLASS_CLASS).
 function GlassPill({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
-    <div className={cn("relative rounded-full overflow-hidden", GLASS_CLASS)} style={glassSurface()}>
-      <div className={cn("relative", className)}>{children}</div>
+    <div className={cn(GLASS_BASE, "rounded-full")}>
+      <GlassLayers />
+      <div className={cn("relative z-10", className)}>{children}</div>
     </div>
   )
 }
@@ -130,25 +131,37 @@ function GlassButton({ children, onClick, type = "button", disabled, className }
 }) {
   return (
     <button type={type} onClick={onClick} disabled={disabled} className={cn(
-      RESET_BTN, GLASS_CLASS,
-      "w-full rounded-full py-3.5 font-semibold text-sm text-center transition-all",
+      RESET_BTN, GLASS_BASE, "group w-full rounded-full py-3.5 font-semibold text-sm text-center transition-all",
       disabled
         ? "opacity-40 grayscale cursor-not-allowed"
-        : "text-white hover:brightness-125 hover:saturate-150 active:brightness-90 hover:scale-[0.98]",
+        : "text-white hover:border-white/60 active:scale-95",
       className
-    )} style={glassSurface("rgba(125,211,252,0.28)")}>{children}</button>
+    )}>
+      <GlassLayers tint="rgba(30,90,180,0.20)" />
+      {/* Shimmer sweep — a light bar that travels across on hover, the
+          classic "liquid glass" reflection pass. */}
+      <span aria-hidden className="pointer-events-none absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/50 to-transparent transition-transform duration-700 ease-in-out group-hover:translate-x-full" />
+      <span className="relative z-10">{children}</span>
+    </button>
   )
 }
 
 function GhostButton({ children, onClick, className }: { children: React.ReactNode; onClick?: () => void; className?: string }) {
   return (
     <button type="button" onClick={onClick} className={cn(
-      RESET_BTN, GLASS_CLASS,
-      "w-full rounded-full py-2.5 text-xs font-semibold text-white/90 text-center transition-all hover:brightness-125",
+      RESET_BTN, GLASS_BASE, "w-full rounded-full py-2.5 text-xs font-semibold text-white/90 text-center transition-all hover:border-white/55",
       className
-    )} style={glassSurface()}>{children}</button>
+    )}>
+      <GlassLayers />
+      <span className="relative z-10">{children}</span>
+    </button>
   )
 }
+
+// A soft dark drop-shadow keeps plain text links legible against both
+// the light top and dark bottom of the gradient, without boxing them
+// in a pill — stays a flat "text link" rather than another glass card.
+const TEXT_LEGIBLE = "drop-shadow-[0_1px_3px_rgba(0,0,20,0.55)]"
 
 // Plain, unboxed text link — used for "Forgot password?", "Go back",
 // "Continue without account". Explicitly reset since a bare <button>
@@ -169,11 +182,12 @@ function TextLink({ children, onClick, className }: { children: React.ReactNode;
 function GlassToggle({ children, active, onClick }: { children: React.ReactNode; active: boolean; onClick: () => void }) {
   return (
     <button onClick={onClick} className={cn(
-      RESET_BTN, GLASS_CLASS,
+      RESET_BTN, GLASS_BASE,
       "flex-1 flex items-center justify-center gap-1.5 rounded-full py-2 text-xs font-bold transition-all",
-      active ? "text-sky-100 border-sky-200/60" : "text-white/70 hover:text-white/90"
-    )} style={glassSurface(active ? "rgba(125,211,252,0.32)" : "rgba(255,255,255,0.10)")}>
-      {children}
+      active ? "text-sky-100 border-sky-200/70" : "text-white/70 hover:text-white/90"
+    )}>
+      <GlassLayers tint={active ? "rgba(30,90,180,0.20)" : "rgba(8,16,36,0.22)"} />
+      <span className="relative z-10 flex items-center gap-1.5">{children}</span>
     </button>
   )
 }
@@ -252,11 +266,9 @@ export function AuthComponent(props: AuthComponentProps) {
           </BlurFade>
 
           {message && (
-            <div className={cn(
-              "text-center text-xs font-semibold rounded-xl py-2.5 px-4 mb-4",
-              GLASS_CLASS
-            )} style={glassSurface(isSuccess ? "rgba(52,211,153,0.28)" : "rgba(248,113,113,0.28)")}>
-              <span className={isSuccess ? "text-emerald-100" : "text-red-100"}>{message}</span>
+            <div className={cn(GLASS_BASE, "text-center text-xs font-semibold rounded-xl py-2.5 px-4 mb-4")}>
+              <GlassLayers tint={isSuccess ? "rgba(16,120,90,0.28)" : "rgba(140,20,20,0.28)"} />
+              <span className={cn("relative z-10", isSuccess ? "text-emerald-100" : "text-red-100")}>{message}</span>
             </div>
           )}
 
@@ -367,8 +379,9 @@ export function AuthComponent(props: AuthComponentProps) {
               </BlurFade>
 
               {accountType === "university" && universityCodePreview && (
-                <div className={cn("text-xs text-sky-100 rounded-xl px-4 py-2", GLASS_CLASS)} style={glassSurface("rgba(125,211,252,0.24)")}>
-                  🎓 University Code: <strong>{universityCodePreview}</strong>
+                <div className={cn(GLASS_BASE, "text-xs text-sky-100 rounded-xl px-4 py-2")}>
+                  <GlassLayers tint="rgba(30,90,180,0.20)" />
+                  <span className="relative z-10">🎓 University Code: <strong>{universityCodePreview}</strong></span>
                 </div>
               )}
 
