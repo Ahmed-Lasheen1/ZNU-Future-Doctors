@@ -23,7 +23,8 @@ const LOGO_SRC = '/icon-192.png'
 // Exact gradient sampled from the ZNU Pulse logo artwork itself (top →
 // bottom: light sky-blue fading to deep navy) — same recipe as
 // PAGE_BG in src/components/ui/sign-up.tsx, reproduced stop-for-stop.
-// Scoped ONLY to the hero panel below (not the whole page background).
+// This now lives on the FIXED page backdrop (see below), not scoped
+// to any single panel.
 const LOGO_BG = [
   'linear-gradient(180deg,',
   '#a6d2ef 0%,',
@@ -251,15 +252,14 @@ export default function Home({ dark, toggleTheme }) {
 
   return (
     <div style={{ position: 'relative', minHeight: '100vh' }}>
-      {/* Fixed backdrop — pinned to the viewport, never scrolls. Only
-          the content layer below (cards, header, sections) moves as
-          the page is scrolled, which is what creates the flat "2D"
-          parallax feel: a still backdrop with floating UI on top. */}
+      {/* Fixed backdrop — the exact logo gradient, pinned to the
+          viewport so it NEVER scrolls or moves. Only the content
+          layer below (header, cards, sections) moves as the page is
+          scrolled, which is what creates the flat "2D" feel: a still
+          backdrop with floating UI on top, on any screen size. */}
       <div style={{
         position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none',
-        background: dark
-          ? `linear-gradient(180deg, ${pt.canvasAlt}, ${pt.canvas})`
-          : `linear-gradient(180deg, ${pt.canvas}, ${pt.canvasAlt})`,
+        background: LOGO_BG,
       }} />
 
       {/* Scrolling content layer — everything the person actually
@@ -283,6 +283,12 @@ export default function Home({ dark, toggleTheme }) {
           .pulse-tools-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
           @media (max-width: 720px) {
             .pulse-tools-grid { grid-template-columns: repeat(2, 1fr); }
+          }
+          /* Hero panel scales fluidly from phone to desktop — height
+             uses clamp() rather than a fixed px value, and the image
+             inside keeps its aspect ratio via EcgHero's own CSS. */
+          .pulse-hero-panel {
+            min-height: clamp(180px, 32vw, 300px);
           }
         `}</style>
 
@@ -347,10 +353,10 @@ export default function Home({ dark, toggleTheme }) {
         </div>
 
         {/* Main dashboard — every stat is its own floating glass tile
-            with tilt (left), the ECG hero sits in its own gradient panel
-            (center — the ONLY place the exact logo gradient appears),
-            and the active-modules list on the right is a stack of
-            pill-shaped floating cards. */}
+            with tilt (left), the exact pulse artwork floats free in
+            the center with no panel background of its own (the fixed
+            backdrop shows through), and the active-modules list on
+            the right is a stack of pill-shaped floating cards. */}
         <div className="page-container" style={{ marginBottom: 32 }}>
           <div className="pulse-dash-grid">
 
@@ -409,16 +415,15 @@ export default function Home({ dark, toggleTheme }) {
               )}
             </div>
 
-            {/* Center: the hero panel — the exact logo gradient is
-                scoped to this box only, nowhere else on the page. */}
-            <div style={{
-              position: 'relative', borderRadius: 26, overflow: 'hidden',
-              background: LOGO_BG,
+            {/* Center: the exact pulse artwork — no background of its
+                own, so the fixed logo-gradient backdrop shows through
+                exactly like the source logo. Responsive: scales
+                fluidly via the min-height clamp() above and the
+                image's own aspect-ratio (see EcgHero.jsx). */}
+            <div className="pulse-hero-panel" style={{
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              minHeight: 260,
-              boxShadow: '0 20px 50px -18px rgba(4, 20, 50, 0.55)'
             }}>
-              <EcgHero height={280} />
+              <EcgHero height="100%" />
             </div>
 
             {/* Right: Active modules as pill-shaped floating glass cards */}
