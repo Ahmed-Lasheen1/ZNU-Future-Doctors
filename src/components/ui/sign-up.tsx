@@ -67,41 +67,39 @@ const PAGE_BG = {
 const RESET_INPUT = "appearance-none border-0 outline-none bg-transparent p-0 m-0 rounded-none"
 const RESET_BTN = "appearance-none border-0 bg-transparent p-0 m-0 cursor-pointer"
 
-// ── Real glassmorphism recipe, modeled on iOS "liquid glass" ────────
-// The earlier version leaned on a heavy dark tint to force contrast,
-// which made it read as frosted plastic instead of glass. The fix:
-// keep the glass itself LIGHT and mostly transparent (like real
-// glass), and get "glass" from three specific ingredients instead —
-//  1. A bright, clearly-visible border (white/40) that defines the
-//     pane's edge.
-//  2. A strong bright inset highlight on the top edge (glass catching
-//     light) paired with a soft dark inset on the bottom edge.
-//  3. A separate rotated specular-highlight blob layered on top —
-//     this is what actually reads as "light refracting through a
-//     curved surface" rather than a flat tinted rectangle.
-// backdrop-blur + backdrop-saturate boosts whatever's behind it, which
-// is the real optical trick glass does (blur *and* intensify color).
+// ── Glassmorphism recipe, modeled on the minimal "Vercel/Linear" style
+// ── instead of the busier "iOS lens" style tried before ──────────────
+// That earlier version (specular streak + shimmer sweep + dual-inset
+// bevel) was closer to a skeuomorphic lens than clean modern glass.
+// The simpler, more common recipe is genuinely just: a thin border
+// (white/15), a very light fill (white/8), backdrop-blur, a soft
+// single drop shadow, and — for depth — one gentle ambient glow blob
+// tucked in a corner, not a directional streak across the whole
+// surface. No shimmer-on-hover theatrics; hover just brightens the
+// fill and border slightly, same as a plain modern UI kit would.
 //
-// The one addition on top of the plain recipe: a thin, low-opacity
-// dark layer sits UNDER the light glass (not instead of it) purely so
-// white text stays legible against the bright top of this page's
-// gradient — everything else is the light-glass-plus-specular-blob
-// approach.
+// The one thing this page still needs that a hero-on-a-dark-photo
+// doesn't: a thin dark tint UNDER the light glass, since this page's
+// gradient runs light sky-blue at the top. Without it, white/8 glass
+// on a light background washes out. Everything else follows the
+// simpler recipe as-is.
 const GLASS_BASE = cn(
   "relative overflow-hidden",
-  "backdrop-blur-2xl backdrop-saturate-200",
-  "border border-white/40",
-  "bg-gradient-to-b from-white/25 via-white/10 to-white/5",
-  "shadow-[0_10px_28px_rgba(0,0,10,0.35),inset_0_1px_2px_rgba(255,255,255,0.65),inset_0_-1px_1px_rgba(0,0,0,0.15)]",
+  "border border-white/15",
+  "bg-white/10",
+  "backdrop-blur-xl",
+  "shadow-[0_8px_32px_rgba(0,0,10,0.35),inset_0_1px_1px_rgba(255,255,255,0.30)]",
 )
 
-// The two extra layers (dark contrast tint + specular blob) that sit
-// inside every glass surface, behind the actual content.
-function GlassLayers({ tint = "rgba(8,16,36,0.22)" }: { tint?: string }) {
+// The two extra layers (dark contrast tint + a soft corner glow) that
+// sit inside every glass surface, behind the actual content.
+function GlassLayers({ tint = "rgba(8,16,36,0.24)", glow = true }: { tint?: string; glow?: boolean }) {
   return (
     <>
       <div aria-hidden className="pointer-events-none absolute inset-0" style={{ background: tint }} />
-      <div aria-hidden className="pointer-events-none absolute -left-1/4 -top-1/2 h-full w-3/4 rotate-12 bg-gradient-to-br from-white/55 via-white/5 to-transparent opacity-70 blur-md" />
+      {glow && (
+        <div aria-hidden className="pointer-events-none absolute -top-8 -right-8 h-24 w-24 rounded-full bg-white/15 blur-2xl" />
+      )}
     </>
   )
 }
@@ -120,7 +118,7 @@ function BlurFade({ children, delay = 0, className }: { children: React.ReactNod
 function GlassPill({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
     <div className={cn(GLASS_BASE, "rounded-full")}>
-      <GlassLayers />
+      <GlassLayers glow={false} />
       <div className={cn("relative z-10", className)}>{children}</div>
     </div>
   )
@@ -131,16 +129,13 @@ function GlassButton({ children, onClick, type = "button", disabled, className }
 }) {
   return (
     <button type={type} onClick={onClick} disabled={disabled} className={cn(
-      RESET_BTN, GLASS_BASE, "group w-full rounded-full py-3.5 font-semibold text-sm text-center transition-all",
+      RESET_BTN, GLASS_BASE, "w-full rounded-full py-3.5 font-semibold text-sm text-center transition-all",
       disabled
         ? "opacity-40 grayscale cursor-not-allowed"
-        : "text-white hover:border-white/60 active:scale-95",
+        : "text-white hover:bg-white/15 hover:border-white/30 hover:scale-[1.01] active:scale-[0.98]",
       className
     )}>
-      <GlassLayers tint="rgba(30,90,180,0.20)" />
-      {/* Shimmer sweep — a light bar that travels across on hover, the
-          classic "liquid glass" reflection pass. */}
-      <span aria-hidden className="pointer-events-none absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/50 to-transparent transition-transform duration-700 ease-in-out group-hover:translate-x-full" />
+      <GlassLayers tint="rgba(30,90,180,0.22)" />
       <span className="relative z-10">{children}</span>
     </button>
   )
@@ -149,10 +144,10 @@ function GlassButton({ children, onClick, type = "button", disabled, className }
 function GhostButton({ children, onClick, className }: { children: React.ReactNode; onClick?: () => void; className?: string }) {
   return (
     <button type="button" onClick={onClick} className={cn(
-      RESET_BTN, GLASS_BASE, "w-full rounded-full py-2.5 text-xs font-semibold text-white/90 text-center transition-all hover:border-white/55",
+      RESET_BTN, GLASS_BASE, "w-full rounded-full py-2.5 text-xs font-semibold text-white/90 text-center transition-all hover:bg-white/15 hover:border-white/30",
       className
     )}>
-      <GlassLayers />
+      <GlassLayers glow={false} />
       <span className="relative z-10">{children}</span>
     </button>
   )
@@ -176,17 +171,17 @@ function TextLink({ children, onClick, className }: { children: React.ReactNode;
 }
 
 // Small glass toggle pill — used for the University / Personal Gmail
-// switch. Same refraction recipe as everything else; the selected
-// state just picks up the sky-blue tint so it reads as "active"
-// without breaking the glass look.
+// switch. Same recipe as everything else; the selected state just
+// picks up the sky-blue tint so it reads as "active" without breaking
+// the glass look.
 function GlassToggle({ children, active, onClick }: { children: React.ReactNode; active: boolean; onClick: () => void }) {
   return (
     <button onClick={onClick} className={cn(
       RESET_BTN, GLASS_BASE,
       "flex-1 flex items-center justify-center gap-1.5 rounded-full py-2 text-xs font-bold transition-all",
-      active ? "text-sky-100 border-sky-200/70" : "text-white/70 hover:text-white/90"
+      active ? "text-sky-100 border-sky-200/60" : "text-white/70 hover:text-white/90 hover:bg-white/15"
     )}>
-      <GlassLayers tint={active ? "rgba(30,90,180,0.20)" : "rgba(8,16,36,0.22)"} />
+      <GlassLayers tint={active ? "rgba(30,90,180,0.22)" : "rgba(8,16,36,0.24)"} glow={false} />
       <span className="relative z-10 flex items-center gap-1.5">{children}</span>
     </button>
   )
