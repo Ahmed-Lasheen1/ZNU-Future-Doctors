@@ -17,14 +17,10 @@ const LINE_MASK = '/pulse-line-mask.png'
 const ART_WIDTH = 879
 const ART_HEIGHT = 621
 
-// Width of the glowing band itself, in the SAME pixel units as the
-// artwork. Previously the bright core was buried in the middle of a
-// very wide (3x canvas) moving rect, so most of each animation cycle
-// was spent with the bright part still off-screen — that "off-screen
-// travel time" is exactly what read as a pause between loops. Making
-// the band itself narrow, and only travelling a little further than
-// the visible canvas on each side, means the glow is crossing the
-// visible pulse for almost the entire duration — no dead time.
+// Width of the glowing band itself, in the same pixel units as the
+// artwork — kept fairly narrow (and the travel range only a little
+// past each edge) so the glow crosses the visible pulse for nearly
+// the whole cycle, with no dead "off-screen travel" time.
 const BAND_WIDTH = ART_WIDTH * 0.32
 const BEAM_DURATION = '4.2s'
 
@@ -82,13 +78,17 @@ export default function EcgHero({ height = 220 }) {
             <image href={LINE_MASK} x="0" y="0" width={ART_WIDTH} height={ART_HEIGHT} />
           </mask>
 
-          {/* Fixed-width electric band, defined once in absolute pixel
-              units (userSpaceOnUse) — its own position is what gets
-              animated (via gradientTransform below), rather than
-              moving a giant rect with the bright spot buried inside
-              it. More electric, saturated cyan-violet edges building
-              to a pure white core. */}
-          <linearGradient id="pulseBeamGradient" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2={BAND_WIDTH} y2="0">
+          {/* objectBoundingBox (the default) — this gradient is always
+              stretched across whatever rect uses it, 0% to 100% of
+              THAT rect's own width. So as the rect's "x" position is
+              animated below, the gradient rides along with it
+              automatically — no need to separately animate the
+              gradient's own coordinate system (gradientTransform via
+              SMIL has inconsistent browser support and was the cause
+              of the beam freezing on its first frame). Animating a
+              plain "x" attribute via <animate> is the most reliably
+              supported SMIL animation there is. */}
+          <linearGradient id="pulseBeamGradient">
             <stop offset="0%"  stopColor="#3ad1ff" stopOpacity="0" />
             <stop offset="22%" stopColor="#3ad1ff" stopOpacity="0.5" />
             <stop offset="40%" stopColor="#aef2ff" stopOpacity="0.95" />
@@ -96,18 +96,6 @@ export default function EcgHero({ height = 220 }) {
             <stop offset="60%" stopColor="#aef2ff" stopOpacity="0.95" />
             <stop offset="78%" stopColor="#3ad1ff" stopOpacity="0.5" />
             <stop offset="100%" stopColor="#3ad1ff" stopOpacity="0" />
-
-            {!reduced && (
-              <animateTransform
-                attributeName="gradientTransform"
-                type="translate"
-                from={`${-BAND_WIDTH},0`}
-                to={`${ART_WIDTH},0`}
-                dur={BEAM_DURATION}
-                repeatCount="indefinite"
-                calcMode="linear"
-              />
-            )}
           </linearGradient>
 
           {/* Two-stage glow: a big soft outer bloom + a tighter, more
@@ -131,11 +119,17 @@ export default function EcgHero({ height = 220 }) {
         {!reduced && (
           <g mask="url(#pulseLineMask)">
             {/* Outer soft bloom */}
-            <rect x="0" y="0" width={ART_WIDTH} height={ART_HEIGHT}
-              fill="url(#pulseBeamGradient)" filter="url(#pulseBeamHalo)" opacity="0.95" />
+            <rect y="0" width={BAND_WIDTH} height={ART_HEIGHT}
+              fill="url(#pulseBeamGradient)" filter="url(#pulseBeamHalo)" opacity="0.95">
+              <animate attributeName="x" from={-BAND_WIDTH} to={ART_WIDTH}
+                dur={BEAM_DURATION} repeatCount="indefinite" calcMode="linear" />
+            </rect>
             {/* Inner bright core, sharper but still glowing, on top */}
-            <rect x="0" y="0" width={ART_WIDTH} height={ART_HEIGHT}
-              fill="url(#pulseBeamGradient)" filter="url(#pulseBeamGlow)" />
+            <rect y="0" width={BAND_WIDTH} height={ART_HEIGHT}
+              fill="url(#pulseBeamGradient)" filter="url(#pulseBeamGlow)">
+              <animate attributeName="x" from={-BAND_WIDTH} to={ART_WIDTH}
+                dur={BEAM_DURATION} repeatCount="indefinite" calcMode="linear" />
+            </rect>
           </g>
         )}
       </svg>
