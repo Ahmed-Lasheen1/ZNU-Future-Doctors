@@ -61,12 +61,14 @@ export default function PulseCard({ children, dark, onClick, delay = 0, style = 
   const { borderRadius = 18, ...contentStyle } = style
 
   // Static glass look — Tailwind utilities, no runtime values here.
-  // Fill bumped back up from the previous pass (was bg-white/[.07] /
-  // bg-white/60) — that read as glass but washed out lower-contrast
-  // text (pt.sub / pt.faint) sitting on top of it.
+  // Dark mode now tints toward BLACK rather than white — a light tint
+  // over a dark canvas sits too close in luminance to the light text
+  // on top of it. A dark, more opaque panel gives the text something
+  // to actually contrast against while still reading as glass (the
+  // backdrop-blur is what keeps it from looking like a flat card).
   const shellClassName = [
     'relative overflow-hidden backdrop-blur-xl border',
-    dark ? 'bg-white/[.10] border-white/10' : 'bg-white/75 border-white/70',
+    dark ? 'bg-black/35 border-white/10' : 'bg-white/85 border-black/10',
     interactive ? 'cursor-pointer' : 'cursor-default',
   ].join(' ')
 
@@ -101,7 +103,7 @@ export default function PulseCard({ children, dark, onClick, delay = 0, style = 
     <div aria-hidden style={{
       position: 'absolute', top: -60, right: -60, width: 200, height: 200,
       borderRadius: '50%', pointerEvents: 'none',
-      background: dark ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.45)',
+      background: dark ? 'rgba(255,255,255,0.035)' : 'rgba(255,255,255,0.3)',
       filter: 'blur(60px)',
     }} />
   )
