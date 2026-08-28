@@ -88,8 +88,8 @@ export default function PulseCard({ children, dark, onClick, delay = 0, style = 
   // Neutral (colorless) hover shadow — just a slightly stronger/wider
   // version of the resting shadow, no hue baked in.
   const hoverShadow = dark
-    ? `${baseShadow}, 0 12px 26px -10px rgba(0,0,0,0.35)`
-    : `${baseShadow}, 0 12px 26px -10px rgba(37,60,97,0.18)`
+    ? `${baseShadow}, 0 8px 16px -8px rgba(0,0,0,0.25)`
+    : `${baseShadow}, 0 8px 16px -8px rgba(37,60,97,0.12)`
 
   const shellStyle = {
     ...materialStyle,

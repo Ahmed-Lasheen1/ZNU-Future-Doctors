@@ -94,9 +94,9 @@ export function pulseGlass(dark) {
         WebkitBackdropFilter: 'blur(24px)',
         border: '1px solid rgba(255,255,255,0.10)',
         boxShadow: [
-          '0 1px 0 rgba(255,255,255,0.05) inset',
-          '0 -1px 0 rgba(0,0,0,0.18) inset',
-          '0 14px 28px -14px rgba(0,0,0,0.35)',
+          '0 1px 0 rgba(255,255,255,0.04) inset',
+          '0 -1px 0 rgba(0,0,0,0.12) inset',
+          '0 6px 14px -8px rgba(0,0,0,0.25)',
         ].join(', '),
       }
     : {
@@ -105,9 +105,9 @@ export function pulseGlass(dark) {
         WebkitBackdropFilter: 'blur(24px)',
         border: '1px solid rgba(255,255,255,0.6)',
         boxShadow: [
-          '0 1px 0 rgba(255,255,255,0.5) inset',
-          '0 -1px 0 rgba(184,197,216,0.20) inset',
-          '0 14px 28px -14px rgba(37,60,97,0.15)',
+          '0 1px 0 rgba(255,255,255,0.4) inset',
+          '0 -1px 0 rgba(184,197,216,0.14) inset',
+          '0 6px 14px -8px rgba(37,60,97,0.10)',
         ].join(', '),
       }
 }
