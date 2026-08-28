@@ -8,18 +8,17 @@ import { pulseGlass } from '../../premiumTheme'
 // completed-module cards) — one visual language, one place to tune it.
 // Not used anywhere outside Home.jsx, so no other page is affected.
 //
-// Single root element, same as the original version — Tilt (a
-// motion.div) forwards onClick/role/tabIndex/onKeyDown/onMouseEnter
-// straight through, so there's no extra wrapper div sitting between
-// the card and its grid/flex container (that extra div was what threw
-// off the card sizing in a previous version of this file).
-//
-// Uses the standalone `translate`/`scale` CSS properties (not
-// `transform`) for the entrance fade-in and hover lift, since Tilt
-// owns `transform` for its own 3D rotation — translate/scale/rotate
-// compose independently of transform, so both effects run at once
-// without fighting each other.
-export default function PulseCard({ children, dark, onClick, delay = 0, accent, style }) {
+// IMPORTANT: the glass "shell" (background/border/rounding/Tilt's own
+// 3D transform) is kept on a SEPARATE element from the actual content
+// layout (display/padding/gap/etc, whatever the caller passes via
+// `style`). Putting `transform-style: preserve-3d` + a live `transform`
+// (Tilt's rotation) on the very same element that's also a flex/grid
+// layout container is a known cross-browser bug — the browser can
+// miscompute flex-basis/percentage sizes inside that 3D context. That
+// was the actual cause of the card-size regression, not extra nesting.
+// Splitting shell vs. content fixes it: the flex layout now happens on
+// a perfectly normal, untransformed inner div.
+export default function PulseCard({ children, dark, onClick, delay = 0, accent, style = {} }) {
   const [visible, setVisible] = useState(false)
   const [hovered, setHovered] = useState(false)
   const glass = pulseGlass(dark)
@@ -36,15 +35,24 @@ export default function PulseCard({ children, dark, onClick, delay = 0, accent, 
   }
 
   const liftY = !visible ? 16 : (hovered && interactive ? -4 : 0)
+  // borderRadius has to apply to the outer shell (so the glass
+  // background/clipping matches pill-shaped or extra-rounded cards) —
+  // everything else in `style` is pure content layout and goes inside.
+  const { borderRadius = 18, ...contentStyle } = style
 
-  const cardStyle = {
+  const shellStyle = {
     ...glass,
     position: 'relative',
     overflow: 'hidden',
-    borderRadius: 18,
+    borderRadius,
     opacity: visible ? 1 : 0,
+    // Standalone translate/scale (not `transform`) — these compose
+    // independently of Tilt's own `transform`, so the entrance
+    // slide-in and hover lift keep working without fighting Tilt for
+    // control of that property. Kept as strings so React doesn't
+    // auto-append "px" to a unitless CSS property.
     translate: `0 ${liftY}px`,
-    scale: hovered && interactive ? 1.02 : 1,
+    scale: hovered && interactive ? '1.02' : '1',
     transition: !visible
       ? 'opacity 0.5s ease, translate 0.3s cubic-bezier(0.34,1.56,0.64,1)'
       : 'translate 0.25s cubic-bezier(0.22,1,0.36,1), scale 0.25s cubic-bezier(0.22,1,0.36,1), box-shadow 0.25s ease',
@@ -52,11 +60,13 @@ export default function PulseCard({ children, dark, onClick, delay = 0, accent, 
     boxShadow: hovered && interactive && accent
       ? `${glass.boxShadow}, 0 0 0 1px ${accent}55, 0 16px 32px -8px ${accent}40`
       : glass.boxShadow,
-    ...style,
   }
 
+  // Non-interactive cards (no onClick, e.g. the main dashboard panel)
+  // never get Tilt/Spotlight at all, so there's no 3D context to worry
+  // about — a single flat div, exactly like the very original card.
   if (!interactive) {
-    return <div style={cardStyle}>{children}</div>
+    return <div style={{ ...shellStyle, ...contentStyle, borderRadius }}>{children}</div>
   }
 
   return (
@@ -70,10 +80,10 @@ export default function PulseCard({ children, dark, onClick, delay = 0, accent, 
       rotationFactor={7}
       isRevese
       springOptions={{ stiffness: 26.7, damping: 4.1, mass: 0.2 }}
-      style={cardStyle}
+      style={shellStyle}
     >
       <Spotlight size={260} springOptions={{ stiffness: 26.7, damping: 4.1, mass: 0.2 }} />
-      {children}
+      <div style={contentStyle}>{children}</div>
     </Tilt>
   )
 }
