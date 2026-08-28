@@ -84,7 +84,7 @@ const RESET_BTN = "appearance-none border-0 bg-transparent p-0 m-0 cursor-pointe
 // on a light background washes out. Everything else follows the
 // simpler recipe as-is.
 const GLASS_BASE = cn(
-  "relative overflow-hidden",
+  "relative isolate overflow-hidden",
   "border border-white/15",
   "bg-white/10",
   "backdrop-blur-xl",
@@ -92,13 +92,20 @@ const GLASS_BASE = cn(
 )
 
 // The two extra layers (dark contrast tint + a soft corner glow) that
-// sit inside every glass surface, behind the actual content.
+// sit inside every glass surface, behind the actual content. The glow
+// is a plain radial-gradient rather than a blurred div — `filter:
+// blur()` paints outside its own box in most browsers and escapes the
+// parent's `overflow-hidden` + rounded corners (that was the gray
+// rectangle bleeding past the pill's edge). A gradient has no such
+// issue: it's clipped correctly like any other background.
 function GlassLayers({ tint = "rgba(8,16,36,0.24)", glow = true }: { tint?: string; glow?: boolean }) {
   return (
     <>
       <div aria-hidden className="pointer-events-none absolute inset-0" style={{ background: tint }} />
       {glow && (
-        <div aria-hidden className="pointer-events-none absolute -top-8 -right-8 h-24 w-24 rounded-full bg-white/15 blur-2xl" />
+        <div aria-hidden className="pointer-events-none absolute inset-0" style={{
+          background: "radial-gradient(90px 90px at calc(100% - 4px) 0%, rgba(255,255,255,0.28), transparent 70%)"
+        }} />
       )}
     </>
   )
