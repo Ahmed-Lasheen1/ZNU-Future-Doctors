@@ -550,9 +550,6 @@ export default function Home({ dark, toggleTheme }) {
                 ))}
               </AutoGrid>
             </div>
-          </ScrollReveal>
-        )}
-      </div>
-    </div>
-  )
-}
+           </div>
+           )
+           }
