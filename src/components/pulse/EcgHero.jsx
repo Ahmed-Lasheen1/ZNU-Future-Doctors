@@ -17,10 +17,16 @@ const LINE_MASK = '/pulse-line-mask.png'
 const ART_WIDTH = 879
 const ART_HEIGHT = 621
 
-// How long one full sweep takes, left edge to right edge — slowed
-// down considerably from the original 2.8s for a calmer, more
-// deliberate "pulse of light" feel.
-const BEAM_DURATION = '5.5s'
+// Width of the glowing band itself, in the SAME pixel units as the
+// artwork. Previously the bright core was buried in the middle of a
+// very wide (3x canvas) moving rect, so most of each animation cycle
+// was spent with the bright part still off-screen — that "off-screen
+// travel time" is exactly what read as a pause between loops. Making
+// the band itself narrow, and only travelling a little further than
+// the visible canvas on each side, means the glow is crossing the
+// visible pulse for almost the entire duration — no dead time.
+const BAND_WIDTH = ART_WIDTH * 0.32
+const BEAM_DURATION = '4.2s'
 
 function usePrefersReducedMotion() {
   const [reduced, setReduced] = useState(false)
@@ -65,14 +71,6 @@ export default function EcgHero({ height = 220 }) {
       position: 'relative', width: '100%', height, maxHeight: '100%',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
     }}>
-      {/*
-        Everything — the real artwork AND the traveling beam — lives
-        inside ONE <svg> sharing ONE viewBox, so both scale identically
-        at any render size. The beam's motion uses SMIL <animateTransform>
-        (unit-exact in the SVG's own coordinate space, unlike a CSS
-        percentage-based transform on an SVG element, which browsers
-        handle inconsistently).
-      */}
       <svg
         viewBox={`0 0 ${ART_WIDTH} ${ART_HEIGHT}`}
         preserveAspectRatio="xMidYMid meet"
@@ -84,27 +82,41 @@ export default function EcgHero({ height = 220 }) {
             <image href={LINE_MASK} x="0" y="0" width={ART_WIDTH} height={ART_HEIGHT} />
           </mask>
 
-          {/* Wide, soft, strongly-glowing gradient band — warmer
-              electric cyan, brought to full white at the very core so
-              it unmistakably outshines the pale-blue line beneath it. */}
-          <linearGradient id="pulseBeamGradient" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0%"  stopColor="#4fd8ff" stopOpacity="0" />
-            <stop offset="30%" stopColor="#7fe6ff" stopOpacity="0.55" />
-            <stop offset="45%" stopColor="#c9f5ff" stopOpacity="0.95" />
+          {/* Fixed-width electric band, defined once in absolute pixel
+              units (userSpaceOnUse) — its own position is what gets
+              animated (via gradientTransform below), rather than
+              moving a giant rect with the bright spot buried inside
+              it. More electric, saturated cyan-violet edges building
+              to a pure white core. */}
+          <linearGradient id="pulseBeamGradient" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2={BAND_WIDTH} y2="0">
+            <stop offset="0%"  stopColor="#3ad1ff" stopOpacity="0" />
+            <stop offset="22%" stopColor="#3ad1ff" stopOpacity="0.5" />
+            <stop offset="40%" stopColor="#aef2ff" stopOpacity="0.95" />
             <stop offset="50%" stopColor="#ffffff" stopOpacity="1" />
-            <stop offset="55%" stopColor="#c9f5ff" stopOpacity="0.95" />
-            <stop offset="70%" stopColor="#7fe6ff" stopOpacity="0.55" />
-            <stop offset="100%" stopColor="#4fd8ff" stopOpacity="0" />
+            <stop offset="60%" stopColor="#aef2ff" stopOpacity="0.95" />
+            <stop offset="78%" stopColor="#3ad1ff" stopOpacity="0.5" />
+            <stop offset="100%" stopColor="#3ad1ff" stopOpacity="0" />
+
+            {!reduced && (
+              <animateTransform
+                attributeName="gradientTransform"
+                type="translate"
+                from={`${-BAND_WIDTH},0`}
+                to={`${ART_WIDTH},0`}
+                dur={BEAM_DURATION}
+                repeatCount="indefinite"
+                calcMode="linear"
+              />
+            )}
           </linearGradient>
 
           {/* Two-stage glow: a big soft outer bloom + a tighter, more
-              intense inner glow, layered for a genuinely "glowing"
-              look rather than a thin bright stripe. */}
-          <filter id="pulseBeamHalo" x="-80%" y="-80%" width="260%" height="260%">
-            <feGaussianBlur stdDeviation="14" />
+              intense inner glow, for a genuinely "glowing" look. */}
+          <filter id="pulseBeamHalo" x="-100%" y="-100%" width="300%" height="300%">
+            <feGaussianBlur stdDeviation="16" />
           </filter>
-          <filter id="pulseBeamGlow" x="-60%" y="-60%" width="220%" height="220%">
-            <feGaussianBlur stdDeviation="7" result="blur" />
+          <filter id="pulseBeamGlow" x="-70%" y="-70%" width="240%" height="240%">
+            <feGaussianBlur stdDeviation="8" result="blur" />
             <feMerge>
               <feMergeNode in="blur" />
               <feMergeNode in="blur" />
@@ -118,36 +130,12 @@ export default function EcgHero({ height = 220 }) {
 
         {!reduced && (
           <g mask="url(#pulseLineMask)">
-            {/* Outer soft bloom — wide and heavily blurred, gives the
-                beam an actual glow radius beyond the line's own width */}
-            <g>
-              <rect
-                x={-ART_WIDTH} y="0"
-                width={ART_WIDTH * 3} height={ART_HEIGHT}
-                fill="url(#pulseBeamGradient)"
-                filter="url(#pulseBeamHalo)"
-                opacity="0.9"
-              />
-              <animateTransform
-                attributeName="transform" type="translate"
-                from={`${-ART_WIDTH},0`} to={`${ART_WIDTH},0`}
-                dur={BEAM_DURATION} repeatCount="indefinite"
-              />
-            </g>
-            {/* Inner bright core — sharper, still glowing, sits on top */}
-            <g>
-              <rect
-                x={-ART_WIDTH} y="0"
-                width={ART_WIDTH * 3} height={ART_HEIGHT}
-                fill="url(#pulseBeamGradient)"
-                filter="url(#pulseBeamGlow)"
-              />
-              <animateTransform
-                attributeName="transform" type="translate"
-                from={`${-ART_WIDTH},0`} to={`${ART_WIDTH},0`}
-                dur={BEAM_DURATION} repeatCount="indefinite"
-              />
-            </g>
+            {/* Outer soft bloom */}
+            <rect x="0" y="0" width={ART_WIDTH} height={ART_HEIGHT}
+              fill="url(#pulseBeamGradient)" filter="url(#pulseBeamHalo)" opacity="0.95" />
+            {/* Inner bright core, sharper but still glowing, on top */}
+            <rect x="0" y="0" width={ART_WIDTH} height={ART_HEIGHT}
+              fill="url(#pulseBeamGradient)" filter="url(#pulseBeamGlow)" />
           </g>
         )}
       </svg>
