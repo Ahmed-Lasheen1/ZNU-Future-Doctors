@@ -12,18 +12,9 @@ import { loadSavedActiveExam } from '../lib/activeExam'
 import NotifyPermissionButton from '../components/NotifyPermissionButton'
 import PulseCard from '../components/pulse/PulseCard'
 import EcgHero from '../components/pulse/EcgHero'
-import ScrollReveal from '../components/pulse/ScrollReveal'
 
-// The ZNU Pulse mark — same file used for the PWA/manifest icons (see
-// public/manifest.json), so there's only one logo asset to keep in
-// sync. Reused here at header scale and again inside the tagline
-// footer.
 const LOGO_SRC = '/icon-192.png'
 
-// Exact gradient sampled from the ZNU Pulse logo artwork itself (top →
-// bottom: light sky-blue fading to deep navy) — same recipe as
-// PAGE_BG in src/components/ui/sign-up.tsx, reproduced stop-for-stop.
-// Lives on the FIXED page backdrop below, covering the whole page.
 const LOGO_BG = [
   'linear-gradient(180deg,',
   '#a6d2ef 0%,',
@@ -43,9 +34,6 @@ const toolCards = [
   { emoji: '🏆', title: 'Leaderboard', sub: 'See where you stand', to: '/profile?tab=leaderboard', accent: 'amber' },
 ]
 
-// Small, best-effort marketing captions per module (purely cosmetic —
-// not stored in the DB). Falls back to a generic line for any module
-// name that doesn't match one of these keywords.
 const MODULE_BLURBS = {
   neuro: 'Explore the wonders of the nervous system',
   cardio: 'Understand the heart and blood vessels',
@@ -60,14 +48,10 @@ function moduleBlurb(name) {
 
 const statNumStyle = { fontFamily: pulseFonts.display, fontWeight: 800, fontSize: 30 }
 
-// Small helper so a missing/blank name never crashes the avatar badge —
-// falls back to a "?" instead of calling .charAt(0) on an empty string.
 function initialOf(name) {
   return name && name.trim() ? name.trim().charAt(0).toUpperCase() : '?'
 }
 
-// Shared Enter/Space handler for the clickable-div pattern below —
-// matches the existing checklist-row keyboard pattern in Checklist.jsx.
 function onActivateKeyDown(handler) {
   return (e) => {
     if (e.key === 'Enter' || e.key === ' ') {
@@ -77,9 +61,6 @@ function onActivateKeyDown(handler) {
   }
 }
 
-// ── ZNU PULSE brand mark (header) ──────────────────────────────────
-// The real logo artwork, static — no beat/glow animation here.
-// Position unchanged: top-left of the header, same as before.
 function ZnuPulseBrand({ dark, pt }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
@@ -105,8 +86,6 @@ function ZnuPulseBrand({ dark, pt }) {
   )
 }
 
-// ── Small floating stat tile — every dashboard number gets its own
-// glass card with tilt, instead of living inside one big merged panel. ──
 function StatTile({ dark, pt, delay, children, accent }) {
   return (
     <PulseCard dark={dark} delay={delay} accent={accent} style={{ padding: '18px 20px' }}>
@@ -136,8 +115,6 @@ export default function Home({ dark, toggleTheme }) {
       .then(({ data }) => { if (data?.value) setAnnouncement(data.value) })
   }, [])
 
-  // Study streak — consecutive days with at least one quiz attempt,
-  // computed from exam_history (or the guest-local equivalent).
   useEffect(() => {
     async function loadStreak() {
       if (user) {
@@ -150,17 +127,10 @@ export default function Home({ dark, toggleTheme }) {
     loadStreak()
   }, [user])
 
-  // "Continue where you left off" — a paused mock/practice exam saved
-  // from MCQ.jsx. Clicking it just opens the MCQ page, which shows the
-  // same resume banner and does the actual restoring.
   useEffect(() => {
     loadSavedActiveExam(user).then(setPausedExam)
   }, [user])
 
-  // Weekly summary — a lightweight, auto-refreshing recap built purely
-  // from exam_history (or its guest-local equivalent), so there's
-  // nothing extra to maintain: questions attempted, accuracy, and the
-  // most-practiced subject over the last 7 days.
   useEffect(() => {
     async function loadWeekly() {
       const weekAgoMs = Date.now() - 7 * 24 * 60 * 60 * 1000
@@ -197,11 +167,6 @@ export default function Home({ dark, toggleTheme }) {
     loadWeekly()
   }, [user])
 
-  // Upcoming-exam reminder — fires a local notification (only if
-  // permission was already granted, at most once per day) when an
-  // admin-set exam date is 0-2 days away. This only triggers while the
-  // app is actually open; a true always-on background push would need
-  // separate push-server infrastructure.
   useEffect(() => {
     async function checkExamReminders() {
       if (!('Notification' in window) || Notification.permission !== 'granted') return
@@ -251,27 +216,16 @@ export default function Home({ dark, toggleTheme }) {
 
   return (
     <div style={{ position: 'relative', minHeight: '100vh', overflowX: 'hidden' }}>
-      {/* Fixed backdrop — the exact logo gradient, pinned to the
-          viewport so it NEVER scrolls or moves. Only the content
-          layer below (header, cards, sections) moves as the page is
-          scrolled, which is what creates the flat "2D" feel: a still
-          backdrop with floating UI on top, on any screen size. */}
       <div style={{
         position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none',
         background: LOGO_BG,
       }} />
 
-      {/* Scrolling content layer — everything the person actually
-          interacts with lives here, above the fixed backdrop. */}
       <div style={{
         position: 'relative', zIndex: 1,
         fontFamily: pulseFonts.body
       }}>
         <style>{`
-          /* Wider content container used ONLY on this page — takes
-             advantage of large screens far more than the app-wide
-             .page-container (which stays capped at 1160px), while
-             still keeping comfortable side margins on huge monitors. */
           .pulse-wide {
             width: 100%;
             max-width: 1800px;
@@ -286,11 +240,6 @@ export default function Home({ dark, toggleTheme }) {
             .pulse-wide { padding: 0 64px; }
           }
 
-          /* "Above the fold" block: header + dashboard + tools +
-             tagline. Targets a full viewport tall on larger screens so
-             Completed Modules sits below the first scroll — 100svh is
-             the mobile-browser-chrome-safe viewport unit, with 100vh
-             as the fallback for browsers that don't support it yet. */
           .pulse-fold {
             min-height: 100vh;
             min-height: 100svh;
@@ -321,7 +270,6 @@ export default function Home({ dark, toggleTheme }) {
             .pulse-tools-grid { grid-template-columns: repeat(2, 1fr); }
           }
 
-          /* Hero panel scales fluidly from phone to desktop */
           .pulse-hero-panel {
             min-height: clamp(130px, 34vw, 320px);
           }
@@ -329,7 +277,6 @@ export default function Home({ dark, toggleTheme }) {
             .pulse-hero-panel { min-height: clamp(110px, 46vw, 220px); }
           }
 
-          /* Mobile-specific tightening across the whole above-fold block */
           @media (max-width: 640px) {
             .pulse-fold { gap: 14px; }
             .pulse-stat-row-2 { gap: 8px; }
@@ -339,8 +286,6 @@ export default function Home({ dark, toggleTheme }) {
         <div className="pulse-fold">
           {modulesError && <div className="pulse-wide"><ErrorBanner /></div>}
 
-          {/* Header — same position/content as before: logo+name top-left,
-              utility buttons + profile pill top-right. */}
           <div className="pulse-wide" style={{
             opacity: titleVisible ? 1 : 0,
             transform: titleVisible ? 'translateY(0)' : 'translateY(-14px)',
@@ -396,15 +341,8 @@ export default function Home({ dark, toggleTheme }) {
             <NotifyPermissionButton dark={dark} label="🔔 Enable exam & deadline reminders" />
           </div>
 
-          {/* Main dashboard — every stat is its own floating glass tile
-              with tilt (left), the exact pulse artwork floats free in
-              the center with no panel background of its own (the fixed
-              backdrop shows through), and the active-modules list on
-              the right is a stack of pill-shaped floating cards. */}
           <div className="pulse-wide">
             <div className="pulse-dash-grid">
-
-              {/* Left: individual stat tiles */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                 <StatTile dark={dark} pt={pt} delay={80} accent={pt.cobalt}>
                   <div style={{ color: pt.faint, fontSize: 11, fontWeight: 700, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 8 }}>
@@ -459,18 +397,12 @@ export default function Home({ dark, toggleTheme }) {
                 )}
               </div>
 
-              {/* Center: the exact pulse artwork — no background of its
-                  own, so the fixed logo-gradient backdrop shows through
-                  exactly like the source logo. Fully responsive via the
-                  min-height clamp() above and the image's own
-                  aspect-ratio (see EcgHero.jsx). */}
               <div className="pulse-hero-panel" style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}>
                 <EcgHero height="100%" />
               </div>
 
-              {/* Right: Active modules as pill-shaped floating glass cards */}
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: pt.cobalt, fontSize: 11, fontWeight: 700, letterSpacing: 2.5, textTransform: 'uppercase', marginBottom: 14 }}>
                   <span style={{ width: 6, height: 6, borderRadius: '50%', background: pt.cobalt, display: 'inline-block' }} />
@@ -501,7 +433,6 @@ export default function Home({ dark, toggleTheme }) {
             </div>
           </div>
 
-          {/* Tools — already floating glass tiles with tilt (PulseCard). */}
           <div className="pulse-wide">
             {sectionTitle('⚡ Tools')}
             <div className="pulse-tools-grid">
@@ -529,7 +460,6 @@ export default function Home({ dark, toggleTheme }) {
             </div>
           </div>
 
-          {/* Tagline footer */}
           <div className="pulse-wide" style={{ display: 'flex', alignItems: 'center', gap: 14, justifyContent: 'center' }}>
             <div style={{ height: 1, background: pt.border, flex: 1, maxWidth: 120 }} />
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: pt.faint, fontSize: 13, fontWeight: 600 }}>
@@ -540,27 +470,26 @@ export default function Home({ dark, toggleTheme }) {
           </div>
         </div>
 
-        {/* Completed modules — below the first-screen fold, hidden
-            until scrolled into view. */}
         {completedModules.length > 0 && (
-          
-            <div className="pulse-wide" style={{ paddingBottom: 100 }}>
-              {sectionTitle('✓ Completed Modules')}
-              <AutoGrid>
-                {completedModules.map((mod, i) => (
-                  <PulseCard key={mod.id} dark={dark} delay={i * 70}
-                    onClick={() => navigate(`/module/${mod.id}`)}
-                    style={{ padding: 'clamp(20px, 2vw, 28px)', textAlign: 'center' }}>
-                    <div style={{ fontSize: 'clamp(28px, 3vw, 42px)', marginBottom: 8, filter: 'grayscale(0.5)' }}>{mod.icon}</div>
-                    <div style={{ color: pt.sub, fontSize: 'clamp(13px, 1.1vw, 16px)', fontWeight: 700, marginBottom: 8 }}>{mod.name}</div>
-                    <div style={{
-                      display: 'inline-block', background: `${pt.faint}20`, color: pt.faint,
-                      border: `1px solid ${pt.faint}40`, borderRadius: 20, padding: '2px 10px', fontSize: 11, fontWeight: 700
-                    }}>✓ Completed</div>
-                  </PulseCard>
-                ))}
-              </AutoGrid>
-            </div>
+          <div className="pulse-wide" style={{ paddingBottom: 100 }}>
+            {sectionTitle('✓ Completed Modules')}
+            <AutoGrid>
+              {completedModules.map((mod, i) => (
+                <PulseCard key={mod.id} dark={dark} delay={i * 70}
+                  onClick={() => navigate(`/module/${mod.id}`)}
+                  style={{ padding: 'clamp(20px, 2vw, 28px)', textAlign: 'center' }}>
+                  <div style={{ fontSize: 'clamp(28px, 3vw, 42px)', marginBottom: 8, filter: 'grayscale(0.5)' }}>{mod.icon}</div>
+                  <div style={{ color: pt.sub, fontSize: 'clamp(13px, 1.1vw, 16px)', fontWeight: 700, marginBottom: 8 }}>{mod.name}</div>
+                  <div style={{
+                    display: 'inline-block', background: `${pt.faint}20`, color: pt.faint,
+                    border: `1px solid ${pt.faint}40`, borderRadius: 20, padding: '2px 10px', fontSize: 11, fontWeight: 700
+                  }}>✓ Completed</div>
+                </PulseCard>
+              ))}
+            </AutoGrid>
+          </div>
+        )}
+      </div>
     </div>
   )
 }
