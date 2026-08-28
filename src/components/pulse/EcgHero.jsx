@@ -2,9 +2,8 @@ import { useEffect, useState } from 'react'
 
 // The exact ZNU Pulse artwork — extracted pixel-for-pixel from the
 // real logo. Line keeps its real pale sky-blue color; the shadow is a
-// flat dark navy with a soft, properly-graduated alpha falloff
-// (recalibrated against the real logo's shadow darkness — not a hard
-// dark blob), so it composites naturally against any background.
+// flat dark navy with a soft, properly-graduated alpha falloff, so it
+// composites naturally against any background.
 const HERO_WEBP = '/pulse-hero.webp'
 const HERO_PNG = '/pulse-hero.png'
 const HERO_WEBP_MOBILE = '/pulse-hero-mobile.webp'
@@ -61,29 +60,16 @@ export default function EcgHero({ height = 220 }) {
       position: 'relative', width: '100%', height, maxHeight: '100%',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
     }}>
-      <style>{`
-        @keyframes pulseHeroBeamMove {
-          0%   { transform: translateX(-100%); }
-          100% { transform: translateX(100%); }
-        }
-        .pulse-hero-beam-group {
-          animation: pulseHeroBeamMove 2.8s linear infinite;
-        }
-        @media (prefers-reduced-motion: reduce) {
-          .pulse-hero-beam-group { animation: none !important; opacity: 0.55 !important; transform: translateX(0) !important; }
-        }
-      `}</style>
-
       {/*
         Everything — the real artwork AND the traveling beam — lives
-        inside ONE <svg> sharing ONE viewBox. This is deliberate: an
-        <img> (object-fit: contain, letterboxed) and a separate CSS
-        element (which just stretches to its box) can end up scaled
-        slightly differently whenever the container's own aspect ratio
-        doesn't exactly match the artwork's — that mismatch was what
-        made the beam misaligned and inconsistently thick before.
-        Inside one SVG with one viewBox, both layers are guaranteed to
-        scale identically, at any render size, on any device.
+        inside ONE <svg> sharing ONE viewBox, so both scale identically
+        at any render size. The beam's motion uses SMIL <animateTransform>
+        rather than a CSS "transform: translateX(%)" keyframe — CSS
+        percentage-based transforms on SVG elements are NOT reliably
+        supported across browsers (this was why the beam was invisible:
+        it likely wasn't actually moving into view at all). SMIL
+        operates directly in the SVG's own coordinate units, matching
+        the viewBox exactly, so it's unambiguous everywhere.
       */}
       <svg
         viewBox={`0 0 ${ART_WIDTH} ${ART_HEIGHT}`}
@@ -111,23 +97,28 @@ export default function EcgHero({ height = 220 }) {
           </filter>
         </defs>
 
-        {/* The exact real artwork — real line color, real (recalibrated) shadow */}
+        {/* The exact real artwork — real line color, real shadow */}
         <image href={heroSrc} x="0" y="0" width={ART_WIDTH} height={ART_HEIGHT} />
 
         {/* Traveling beam: a wide gradient band masked to the exact
-            real line silhouette, sliding left-to-right on a loop. A
-            single <g> is translated by CSS transform in percentage
-            terms of ITS OWN bounding box (which spans the same
-            viewBox units as everything else here), so its visual
-            width relative to the line never changes with render size. */}
+            real line silhouette, sliding left-to-right on a loop via
+            SMIL (reliable, unit-exact, no CSS % ambiguity on SVG). */}
         {!reduced && (
           <g mask="url(#pulseLineMask)">
-            <g className="pulse-hero-beam-group">
+            <g>
               <rect
                 x={-ART_WIDTH} y="0"
                 width={ART_WIDTH * 3} height={ART_HEIGHT}
                 fill="url(#pulseBeamGradient)"
                 filter="url(#pulseBeamGlow)"
+              />
+              <animateTransform
+                attributeName="transform"
+                type="translate"
+                from={`${-ART_WIDTH},0`}
+                to={`${ART_WIDTH},0`}
+                dur="2.8s"
+                repeatCount="indefinite"
               />
             </g>
           </g>
