@@ -11,13 +11,13 @@ import { pulseGlass } from '../../premiumTheme'
 // Feedback on hover is a plain, neutral glow (no hue) plus the tilt/
 // lift, nothing more.
 //
-// The static part of the glass look (fill tint, hairline border,
-// backdrop blur) is real Tailwind utility classes. Everything computed
-// per-instance or per-frame (entrance fade, hover lift/scale, the
-// mouse-tracked tilt) stays inline style, driven by plain React state
-// rather than framer-motion — framer-motion's MotionValue/spring
-// subscriptions behaved inconsistently depending on how the page was
-// reached (fresh reload vs. a client-side route change after sign-in).
+// The glass "material" (fill/border/blur) is plain inline style — see
+// the note further down for why. Everything computed per-instance or
+// per-frame (entrance fade, hover lift/scale, the mouse-tracked tilt)
+// is also inline style, driven by plain React state rather than
+// framer-motion — framer-motion's MotionValue/spring subscriptions
+// behaved inconsistently depending on how the page was reached (fresh
+// reload vs. a client-side route change after sign-in).
 export default function PulseCard({ children, dark, onClick, delay = 0, style = {} }) {
   const [visible, setVisible] = useState(false)
   const [hovered, setHovered] = useState(false)
@@ -60,17 +60,30 @@ export default function PulseCard({ children, dark, onClick, delay = 0, style = 
   // everything else in `style` is pure content layout and goes inside.
   const { borderRadius = 18, ...contentStyle } = style
 
-  // Static glass look — Tailwind utilities, no runtime values here.
-  // Dark mode now tints toward BLACK rather than white — a light tint
-  // over a dark canvas sits too close in luminance to the light text
-  // on top of it. A dark, more opaque panel gives the text something
-  // to actually contrast against while still reading as glass (the
-  // backdrop-blur is what keeps it from looking like a flat card).
-  const shellClassName = [
-    'relative overflow-hidden backdrop-blur-xl border',
-    dark ? 'bg-black/100 border-white/10' : 'bg-white/95 border-black/10',
-    interactive ? 'cursor-pointer' : 'cursor-default',
-  ].join(' ')
+  // Static glass look — plain inline style now, not a Tailwind class.
+  // (Tailwind's arbitrary-opacity utilities here were not visibly
+  // taking effect no matter how far the number was pushed — moving
+  // this to inline style removes any dependency on build/content-scan
+  // config being exactly right.) Recipe matches iOS's actual dark/
+  // light "material" panels (Control Center, widgets): a near-black
+  // #1c1c1e panel at ~80% opacity in dark mode — not a translucent
+  // white/grey glass — with blur + a touch of saturation for the
+  // frosted-glass vibrancy, and the equivalent light "regular
+  // material" (#f2f2f7-ish) for light mode.
+  const shellClassName = interactive ? 'relative overflow-hidden cursor-pointer' : 'relative overflow-hidden cursor-default'
+  const materialStyle = dark
+    ? {
+        background: 'rgba(28,28,30,0.82)',
+        border: '1px solid rgba(255,255,255,0.09)',
+        backdropFilter: 'blur(20px) saturate(150%)',
+        WebkitBackdropFilter: 'blur(20px) saturate(150%)',
+      }
+    : {
+        background: 'rgba(242,242,247,0.82)',
+        border: '1px solid rgba(0,0,0,0.06)',
+        backdropFilter: 'blur(20px) saturate(150%)',
+        WebkitBackdropFilter: 'blur(20px) saturate(150%)',
+      }
 
   // Neutral (colorless) hover shadow — just a slightly stronger/wider
   // version of the resting shadow, no hue baked in.
@@ -79,6 +92,7 @@ export default function PulseCard({ children, dark, onClick, delay = 0, style = 
     : `${baseShadow}, 0 20px 44px -10px rgba(37,60,97,0.28)`
 
   const shellStyle = {
+    ...materialStyle,
     position: 'relative',
     borderRadius,
     opacity: visible ? 1 : 0,
@@ -103,7 +117,7 @@ export default function PulseCard({ children, dark, onClick, delay = 0, style = 
     <div aria-hidden style={{
       position: 'absolute', top: -60, right: -60, width: 200, height: 200,
       borderRadius: '50%', pointerEvents: 'none',
-      background: dark ? 'rgba(255,255,255,0.035)' : 'rgba(255,255,255,0.3)',
+      background: dark ? 'rgba(255,255,255,0.02)' : 'rgba(255,255,255,0.25)',
       filter: 'blur(60px)',
     }} />
   )
