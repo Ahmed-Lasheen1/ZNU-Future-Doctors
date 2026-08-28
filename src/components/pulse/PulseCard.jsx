@@ -5,26 +5,26 @@ import { pulseGlass } from '../../premiumTheme'
 // Home redesign — one visual language, one place to tune it. Not used
 // anywhere outside Home.jsx, so no other page is affected.
 //
-// Split on purpose: the STATIC part of the glass look (fill tint,
-// hairline border, backdrop blur) is real Tailwind utility classes —
-// battle-tested, no hand-rolled rgba() strings to maintain. Everything
-// that's computed per-instance or per-frame (entrance fade, hover
-// lift/scale, the mouse-tracked tilt, and the accent-colored glow
-// shadow, which needs a runtime hex value Tailwind can't know about
-// at build time) stays inline style, driven by plain React state.
+// Deliberately colorless: no accent-tinted ring/glow on hover and no
+// accent-tinted corner glow, even though callers still pass an
+// `accent` (e.g. a module's color) — it's accepted but unused here.
+// Feedback on hover is a plain, neutral glow (no hue) plus the tilt/
+// lift, nothing more.
 //
-// The tilt itself is a plain mouseMove handler + useState, not
-// framer-motion — framer-motion's MotionValue/spring subscriptions
-// behaved inconsistently depending on how the page was reached (fresh
-// reload vs. a client-side route change right after sign-in). Plain
-// state has no external library lifecycle to desync.
-export default function PulseCard({ children, dark, onClick, delay = 0, accent, style = {} }) {
+// The static part of the glass look (fill tint, hairline border,
+// backdrop blur) is real Tailwind utility classes. Everything computed
+// per-instance or per-frame (entrance fade, hover lift/scale, the
+// mouse-tracked tilt) stays inline style, driven by plain React state
+// rather than framer-motion — framer-motion's MotionValue/spring
+// subscriptions behaved inconsistently depending on how the page was
+// reached (fresh reload vs. a client-side route change after sign-in).
+export default function PulseCard({ children, dark, onClick, delay = 0, style = {} }) {
   const [visible, setVisible] = useState(false)
   const [hovered, setHovered] = useState(false)
   const [tilt, setTilt] = useState({ rx: 0, ry: 0 })
   const ref = useRef(null)
   // Only the shadow recipe still comes from premiumTheme — background/
-  // border/blur are now Tailwind classes below.
+  // border/blur are Tailwind classes below.
   const { boxShadow: baseShadow } = pulseGlass(dark)
   const interactive = !!onClick
 
@@ -61,15 +61,21 @@ export default function PulseCard({ children, dark, onClick, delay = 0, accent, 
   const { borderRadius = 18, ...contentStyle } = style
 
   // Static glass look — Tailwind utilities, no runtime values here.
+  // Fill bumped back up from the previous pass (was bg-white/[.07] /
+  // bg-white/60) — that read as glass but washed out lower-contrast
+  // text (pt.sub / pt.faint) sitting on top of it.
   const shellClassName = [
     'relative overflow-hidden backdrop-blur-xl border',
-    dark ? 'bg-white/[.07] border-white/10' : 'bg-white/60 border-white/60',
+    dark ? 'bg-white/[.10] border-white/10' : 'bg-white/75 border-white/70',
     interactive ? 'cursor-pointer' : 'cursor-default',
   ].join(' ')
 
-  // Everything below genuinely needs a runtime value (theme-dependent
-  // number, animation state, or a dynamic accent hex) — this is why
-  // it can't be a static Tailwind class.
+  // Neutral (colorless) hover shadow — just a slightly stronger/wider
+  // version of the resting shadow, no hue baked in.
+  const hoverShadow = dark
+    ? `${baseShadow}, 0 20px 44px -10px rgba(0,0,0,0.55)`
+    : `${baseShadow}, 0 20px 44px -10px rgba(37,60,97,0.28)`
+
   const shellStyle = {
     position: 'relative',
     borderRadius,
@@ -85,20 +91,17 @@ export default function PulseCard({ children, dark, onClick, delay = 0, accent, 
     transition: !visible
       ? 'opacity 0.5s ease, translate 0.3s cubic-bezier(0.34,1.56,0.64,1)'
       : `translate 0.25s cubic-bezier(0.22,1,0.36,1), scale 0.25s cubic-bezier(0.22,1,0.36,1), box-shadow 0.25s ease, transform ${hovered ? '0.1s linear' : '0.4s cubic-bezier(0.22,1,0.36,1)'}`,
-    boxShadow: hovered && interactive && accent
-      ? `${baseShadow}, 0 0 0 1px ${accent}55, 0 16px 32px -8px ${accent}40`
-      : baseShadow,
+    boxShadow: hovered && interactive ? hoverShadow : baseShadow,
   }
 
   // Positioned top-right, partly outside the card, and clipped by the
-  // shell's own overflow-hidden + border-radius. Tinted with the
-  // card's accent color when one is given — a runtime hex value, so
-  // this stays inline rather than a Tailwind class.
+  // shell's own overflow-hidden + border-radius. Always neutral now —
+  // no accent tint, regardless of what the caller passes.
   const glow = (
     <div aria-hidden style={{
       position: 'absolute', top: -60, right: -60, width: 200, height: 200,
       borderRadius: '50%', pointerEvents: 'none',
-      background: accent ? `${accent}33` : (dark ? 'rgba(255,255,255,0.07)' : 'rgba(255,255,255,0.5)'),
+      background: dark ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.45)',
       filter: 'blur(60px)',
     }} />
   )
