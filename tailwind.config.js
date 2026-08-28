@@ -6,6 +6,7 @@ export default {
     './src/components/pulse/**/*.{js,jsx,ts,tsx}',
     './src/pages/Auth.tsx',
     './src/pages/ResetPassword.tsx',
+    './src/pages/Home.jsx',
     './src/lib/**/*.{ts,tsx}',
   ],
   corePlugins: { preflight: false },

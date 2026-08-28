@@ -15,20 +15,15 @@ import EcgHero from '../components/pulse/EcgHero'
 import PulseIntro from '../components/pulse/PulseIntro'
 import PulseParticles from '../components/pulse/PulseParticles'
 import ScrollRevealItem from '../components/pulse/ScrollRevealItem'
+// Tailwind's generated stylesheet is otherwise only loaded when the
+// lazy Auth/ResetPassword chunks mount — Home is eager, so it needs
+// its own import for the Tailwind classes below to actually render.
+import '../styles/shadcn-theme.css'
 
 const LOGO_SRC = '/icon-192.png'
 
-const LOGO_BG = [
-  'linear-gradient(180deg,',
-  '#a6d2ef 0%,',
-  '#97bcd7 15%,',
-  '#81a6c3 30%,',
-  '#6c8fad 45%,',
-  '#497194 60%,',
-  '#274e79 75%,',
-  '#042a59 90%,',
-  '#010c4a 100%)',
-].join(' ')
+const LOGO_BG_CLASS =
+  'bg-[linear-gradient(180deg,#a6d2ef_0%,#97bcd7_15%,#81a6c3_30%,#6c8fad_45%,#497194_60%,#274e79_75%,#042a59_90%,#010c4a_100%)]'
 
 const toolCards = [
   { emoji: '📅', title: 'Schedules', sub: 'Plan your study time', to: '/schedule', accent: 'indigo' },
@@ -49,8 +44,6 @@ function moduleBlurb(name) {
   return key ? MODULE_BLURBS[key] : 'Master the essentials of this module.'
 }
 
-const statNumStyle = { fontFamily: pulseFonts.display, fontWeight: 800, fontSize: 30, lineHeight: 1.15 }
-
 function initialOf(name) {
   return name && name.trim() ? name.trim().charAt(0).toUpperCase() : '?'
 }
@@ -64,38 +57,43 @@ function onActivateKeyDown(handler) {
   }
 }
 
-function ZnuPulseBrand({ dark, pt }) {
+function ZnuPulseBrand() {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-      <div style={{
-        width: 44, height: 44, flexShrink: 0,
-        borderRadius: 12, overflow: 'hidden',
-        background: pt.surfaceFlat, border: `1px solid ${pt.cobaltBorder}`,
-      }}>
-        <img src={LOGO_SRC} alt="ZNU Pulse" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+    <div className="flex items-center gap-3.5">
+      <div className="w-11 h-11 flex-shrink-0 rounded-xl overflow-hidden bg-[var(--pulse-surface-flat)] border border-[var(--pulse-cobalt-border)]">
+        <img src={LOGO_SRC} alt="ZNU Pulse" className="w-full h-full object-cover block" />
       </div>
-
       <div>
-        <div style={{
-          fontFamily: pulseFonts.display, fontWeight: 800, fontSize: 20, letterSpacing: 1.2,
-          color: pt.text, lineHeight: 1.15
-        }}>ZNU <span style={{ color: pt.cobalt }}>PULSE</span></div>
-        <div style={{
-          fontFamily: pulseFonts.body, fontWeight: 600, fontSize: 10, letterSpacing: 2.2,
-          color: pt.faint, marginTop: 5, textTransform: 'uppercase'
-        }}>For Future Doctors</div>
+        <div
+          className="font-extrabold text-xl leading-[1.15] text-[var(--pulse-text)]"
+          style={{ fontFamily: pulseFonts.display, letterSpacing: '0.02em' }}
+        >
+          ZNU <span className="text-[var(--pulse-cobalt)]">PULSE</span>
+        </div>
+        <div
+          className="font-semibold text-[10px] uppercase text-[var(--pulse-faint)] mt-1"
+          style={{ fontFamily: pulseFonts.body, letterSpacing: '0.16em' }}
+        >
+          For Future Doctors
+        </div>
       </div>
     </div>
   )
 }
 
-function StatTile({ dark, pt, delay, children, accent }) {
+function StatTile({ dark, delay, children, accent }) {
   return (
     <PulseCard dark={dark} delay={delay} accent={accent} style={{ padding: '18px 20px' }}>
       {children}
     </PulseCard>
   )
 }
+
+const utilityBtnClass =
+  'bg-[var(--pulse-surface-flat)] text-[var(--pulse-cobalt)] border border-[var(--pulse-border)] px-3.5 py-1.5 rounded-[10px] cursor-pointer text-base font-bold transition-colors'
+
+const sectionLabelClass =
+  'text-[var(--pulse-sub)] text-xs font-bold uppercase mb-4'
 
 export default function Home({ dark, toggleTheme }) {
   const c = getTheme(dark)
@@ -221,37 +219,32 @@ export default function Home({ dark, toggleTheme }) {
   const activeModules = modules.filter(m => m.status === 'active')
   const completedModules = modules.filter(m => m.status === 'completed')
 
-  const sectionTitle = (text) => (
-    <h2 style={{
-      color: pt.sub,
-      fontSize: 12, fontWeight: 700, letterSpacing: 2,
-      marginBottom: 16, textTransform: 'uppercase',
-      fontFamily: pulseFonts.body
-    }}>{text}</h2>
-  )
-
-  const utilityBtnStyle = {
-    background: pt.surfaceFlat,
-    color: pt.cobalt,
-    border: `1px solid ${pt.border}`,
-    padding: '6px 14px', borderRadius: 10,
-    cursor: 'pointer', fontSize: 16, fontWeight: 700
+  // Theme tokens exposed as CSS custom properties so Tailwind's
+  // arbitrary-value syntax can reference them below (one source of
+  // truth in premiumTheme.js, actual styling in utility classes).
+  const pulseVars = {
+    '--pulse-text': pt.text,
+    '--pulse-sub': pt.sub,
+    '--pulse-faint': pt.faint,
+    '--pulse-cobalt': pt.cobalt,
+    '--pulse-cobalt-soft': pt.cobaltSoft,
+    '--pulse-cobalt-border': pt.cobaltBorder,
+    '--pulse-indigo': pt.indigo,
+    '--pulse-terracotta': pt.terracotta,
+    '--pulse-amber': pt.amber,
+    '--pulse-danger': pt.danger,
+    '--pulse-border': pt.border,
+    '--pulse-surface-flat': pt.surfaceFlat,
   }
 
   return (
-    <div style={{ position: 'relative', minHeight: '100vh', overflowX: 'hidden' }}>
+    <div className="relative min-h-screen overflow-x-hidden">
       {introPlaying && <PulseIntro onDone={() => setIntroPlaying(false)} />}
 
-      <div style={{
-        position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none',
-        background: LOGO_BG,
-      }} />
+      <div className={`fixed inset-0 z-0 pointer-events-none ${LOGO_BG_CLASS}`} />
       <PulseParticles />
 
-      <div style={{
-        position: 'relative', zIndex: 1,
-        fontFamily: pulseFonts.body
-      }}>
+      <div className="relative z-10" style={{ ...pulseVars, fontFamily: pulseFonts.body }}>
         <style>{`
           .pulse-wide {
             width: 100%;
@@ -313,52 +306,39 @@ export default function Home({ dark, toggleTheme }) {
         <div className="pulse-fold">
           {modulesError && <div className="pulse-wide"><ErrorBanner /></div>}
 
-          <div className="pulse-wide" style={{
-            opacity: titleVisible ? 1 : 0,
-            transform: titleVisible ? 'translateY(0)' : 'translateY(-14px)',
-            transition: 'all 0.55s ease'
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-              <ZnuPulseBrand dark={dark} pt={pt} />
+          <div
+            className={`pulse-wide transition-all duration-500 ease-out ${titleVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-3.5'}`}
+          >
+            <div className="flex justify-between items-center gap-3 flex-wrap">
+              <ZnuPulseBrand />
 
-              <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-                <button onClick={toggleTheme} style={utilityBtnStyle} aria-label={dark ? 'Switch to light mode' : 'Switch to dark mode'}>{dark ? '☀️' : '🌙'}</button>
+              <div className="flex gap-2.5 items-center flex-wrap">
+                <button onClick={toggleTheme} className={utilityBtnClass} aria-label={dark ? 'Switch to light mode' : 'Switch to dark mode'}>{dark ? '☀️' : '🌙'}</button>
                 <NavMenu dark={dark} />
-                <button onClick={() => navigate('/search')} aria-label="Search" style={utilityBtnStyle}>🔍</button>
+                <button onClick={() => navigate('/search')} aria-label="Search" className={utilityBtnClass}>🔍</button>
 
                 {user && profile ? (
-                  <div onClick={() => navigate('/profile')}
+                  <div
+                    onClick={() => navigate('/profile')}
                     role="button" tabIndex={0}
                     onKeyDown={onActivateKeyDown(() => navigate('/profile'))}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: 10,
-                      background: pt.surfaceFlat,
-                      border: `1px solid ${pt.border}`,
-                      borderRadius: 20, padding: '6px 14px 6px 6px', cursor: 'pointer',
-                      transition: 'all 0.2s'
-                    }}
-                    onMouseEnter={e => e.currentTarget.style.borderColor = pt.cobaltBorder}
-                    onMouseLeave={e => e.currentTarget.style.borderColor = pt.border}>
-                    <div style={{
-                      width: 30, height: 30, borderRadius: '50%',
-                      background: `linear-gradient(135deg, ${pt.cobalt}, ${pt.indigo})`,
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: 13, fontWeight: 900, color: '#fff', flexShrink: 0
-                    }}>
+                    className="flex items-center gap-2.5 bg-[var(--pulse-surface-flat)] border border-[var(--pulse-border)] rounded-full pl-1.5 pr-3.5 py-1.5 cursor-pointer transition-colors hover:border-[var(--pulse-cobalt-border)]"
+                  >
+                    <div className="w-[30px] h-[30px] rounded-full flex-shrink-0 flex items-center justify-center text-[13px] font-black text-white bg-gradient-to-br from-[var(--pulse-cobalt)] to-[var(--pulse-indigo)]">
                       {initialOf(profile.name)}
                     </div>
-                    <div style={{ textAlign: 'left' }}>
-                      <div style={{ color: pt.text, fontSize: 12, fontWeight: 700 }}>Dr. {profile.name}</div>
-                      <div style={{ color: pt.amber, fontSize: 10, fontWeight: 700 }}>⭐ {profile.points} points</div>
+                    <div className="text-left">
+                      <div className="text-[var(--pulse-text)] text-xs font-bold">Dr. {profile.name}</div>
+                      <div className="text-[var(--pulse-amber)] text-[10px] font-bold">⭐ {profile.points} points</div>
                     </div>
                   </div>
                 ) : (
-                  <button onClick={() => navigate('/auth')} style={{
-                    background: pt.cobaltSoft, color: pt.cobalt,
-                    border: `1px solid ${pt.cobaltBorder}`,
-                    padding: '8px 16px', borderRadius: 20,
-                    cursor: 'pointer', fontSize: 13, fontWeight: 700
-                  }}>Sign In →</button>
+                  <button
+                    onClick={() => navigate('/auth')}
+                    className="bg-[var(--pulse-cobalt-soft)] text-[var(--pulse-cobalt)] border border-[var(--pulse-cobalt-border)] px-4 py-2 rounded-full cursor-pointer text-[13px] font-bold"
+                  >
+                    Sign In →
+                  </button>
                 )}
               </div>
             </div>
@@ -370,40 +350,45 @@ export default function Home({ dark, toggleTheme }) {
 
           <div className="pulse-wide">
             <div className="pulse-dash-grid">
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                <StatTile dark={dark} pt={pt} delay={80 + revealBase} accent={pt.cobalt}>
-                  <div style={{ color: pt.sub, fontSize: 11, fontWeight: 700, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 8 }}>
+              <div className="flex flex-col gap-3.5">
+                <StatTile dark={dark} delay={80 + revealBase} accent={pt.cobalt}>
+                  <div className="text-[var(--pulse-sub)] text-[11px] font-bold uppercase mb-2">
                     📊 Weekly Report
                   </div>
-                  <div style={{
-                    ...statNumStyle,
-                    color: weeklySummary ? (weeklySummary.accuracy >= 60 ? pt.cobalt : pt.danger) : pt.text
-                  }}>
+                  <div
+                    className="font-extrabold text-[30px] leading-[1.15]"
+                    style={{
+                      fontFamily: pulseFonts.display,
+                      color: weeklySummary ? (weeklySummary.accuracy >= 60 ? 'var(--pulse-cobalt)' : 'var(--pulse-danger)') : 'var(--pulse-text)'
+                    }}
+                  >
                     {weeklySummary ? `${weeklySummary.accuracy}%` : '—'}
                   </div>
-                  <div style={{ color: pt.sub, fontSize: 12, marginTop: 4, lineHeight: 1.4 }}>
+                  <div className="text-[var(--pulse-sub)] text-xs mt-1 leading-[1.4]">
                     {weeklySummary ? 'Accuracy this week' : 'No questions logged this week'}
                   </div>
                 </StatTile>
 
-                <StatTile dark={dark} pt={pt} delay={140 + revealBase} accent={pt.indigo}>
-                  <div style={{ ...statNumStyle, color: pt.text }}>{weeklySummary ? weeklySummary.totalAttempted : 0}</div>
-                  <div style={{ color: pt.sub, fontSize: 12, marginTop: 4, lineHeight: 1.4 }}>Questions attempted</div>
+                <StatTile dark={dark} delay={140 + revealBase} accent={pt.indigo}>
+                  <div className="font-extrabold text-[30px] leading-[1.15] text-[var(--pulse-text)]" style={{ fontFamily: pulseFonts.display }}>
+                    {weeklySummary ? weeklySummary.totalAttempted : 0}
+                  </div>
+                  <div className="text-[var(--pulse-sub)] text-xs mt-1 leading-[1.4]">Questions attempted</div>
                 </StatTile>
 
                 <div className="pulse-stat-row-2">
-                  <StatTile dark={dark} pt={pt} delay={200 + revealBase} accent={pt.indigo}>
-                    <div style={{ color: pt.indigo, fontWeight: 700, fontSize: 15, lineHeight: 1.3 }}>
+                  <StatTile dark={dark} delay={200 + revealBase} accent={pt.indigo}>
+                    <div className="text-[var(--pulse-indigo)] font-bold text-[15px] leading-[1.3]">
                       {weeklySummary?.topSubjectName || '—'}
                     </div>
-                    <div style={{ color: pt.sub, fontSize: 11, marginTop: 4, lineHeight: 1.4 }}>Most practiced</div>
+                    <div className="text-[var(--pulse-sub)] text-[11px] mt-1 leading-[1.4]">Most practiced</div>
                   </StatTile>
-                  <StatTile dark={dark} pt={pt} delay={230 + revealBase} accent={pt.terracotta}>
-                    <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, color: pt.terracotta }}>
-                      <span style={{ fontSize: 16 }}>🔥</span>
-                      <span style={{ fontFamily: pulseFonts.display, fontWeight: 800, fontSize: 22 }}>{streak}</span>
+                  <StatTile dark={dark} delay={230 + revealBase} accent={pt.terracotta}>
+                    <div className="flex items-baseline gap-1.5 text-[var(--pulse-terracotta)]">
+                      <span className="text-base">🔥</span>
+                      <span className="font-extrabold text-[22px]" style={{ fontFamily: pulseFonts.display }}>{streak}</span>
                     </div>
-                    <div style={{ color: pt.sub, fontSize: 11, marginTop: 4, lineHeight: 1.4 }}>Day streak</div>
+                    <div className="text-[var(--pulse-sub)] text-[11px] mt-1 leading-[1.4]">Day streak</div>
                   </StatTile>
                 </div>
 
@@ -412,11 +397,11 @@ export default function Home({ dark, toggleTheme }) {
                     onClick={pausedExam ? () => navigate('/mcq') : undefined}
                     style={{ padding: '16px 20px' }}>
                     {pausedExam ? (
-                      <div style={{ color: pt.cobalt, fontWeight: 800, fontSize: 14 }}>
+                      <div className="text-[var(--pulse-cobalt)] font-extrabold text-sm">
                         ⏸ Continue where you left off →
                       </div>
                     ) : (
-                      <div style={{ color: pt.text, fontWeight: 700, fontSize: 13, lineHeight: 1.5 }}>
+                      <div className="text-[var(--pulse-text)] font-bold text-[13px] leading-[1.5]">
                         {announcement}
                       </div>
                     )}
@@ -424,35 +409,34 @@ export default function Home({ dark, toggleTheme }) {
                 )}
               </div>
 
-              <div className="pulse-hero-panel" style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}>
+              <div className="pulse-hero-panel flex items-center justify-center">
                 <EcgHero height="100%" />
               </div>
 
               <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: pt.cobalt, fontSize: 11, fontWeight: 700, letterSpacing: 2.5, textTransform: 'uppercase', marginBottom: 14 }}>
-                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: pt.cobalt, display: 'inline-block' }} />
-                  Active Modules
+                <div className="flex items-center gap-2 text-[var(--pulse-cobalt)] text-[11px] font-bold uppercase mb-3.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[var(--pulse-cobalt)] inline-block" style={{ letterSpacing: '0.2em' }} />
+                  <span style={{ letterSpacing: '0.2em' }}>Active Modules</span>
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <div className="flex flex-col gap-3">
                   {activeModules.length === 0 && (
-                    <div style={{ color: pt.sub, fontSize: 13 }}>No active modules yet.</div>
+                    <div className="text-[var(--pulse-sub)] text-[13px]">No active modules yet.</div>
                   )}
                   {activeModules.map((mod, i) => (
                     <PulseCard key={mod.id} dark={dark} delay={250 + revealBase + i * 70} accent={mod.color}
                       onClick={() => navigate(`/module/${mod.id}`)}
                       style={{ borderRadius: 999, padding: '10px 18px 10px 10px', display: 'flex', alignItems: 'center', gap: 14 }}>
-                      <div style={{
-                        width: 46, height: 46, borderRadius: '50%', flexShrink: 0,
-                        background: `${mod.color}22`, border: `1px solid ${mod.color}55`,
-                        display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20
-                      }}>{mod.icon}</div>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ color: pt.text, fontWeight: 700, fontSize: 14, lineHeight: 1.25 }}>{mod.name}</div>
-                        <div style={{ color: pt.sub, fontSize: 11, marginTop: 2, lineHeight: 1.4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{moduleBlurb(mod.name)}</div>
+                      <div
+                        className="w-[46px] h-[46px] rounded-full flex-shrink-0 flex items-center justify-center text-xl bg-[color-mix(in_srgb,var(--accent)_13%,transparent)] border border-[color-mix(in_srgb,var(--accent)_33%,transparent)]"
+                        style={{ '--accent': mod.color }}
+                      >
+                        {mod.icon}
                       </div>
-                      <span style={{ width: 8, height: 8, borderRadius: '50%', background: mod.color, display: 'inline-block', flexShrink: 0 }} />
+                      <div className="flex-1 min-w-0">
+                        <div className="text-[var(--pulse-text)] font-bold text-sm leading-[1.25]">{mod.name}</div>
+                        <div className="text-[var(--pulse-sub)] text-[11px] mt-0.5 leading-[1.4] overflow-hidden text-ellipsis whitespace-nowrap">{moduleBlurb(mod.name)}</div>
+                      </div>
+                      <span className="w-2 h-2 rounded-full inline-block flex-shrink-0" style={{ background: mod.color }} />
                     </PulseCard>
                   ))}
                 </div>
@@ -461,7 +445,7 @@ export default function Home({ dark, toggleTheme }) {
           </div>
 
           <div className="pulse-wide">
-            {sectionTitle('⚡ Tools')}
+            <div className={sectionLabelClass} style={{ letterSpacing: '0.15em' }}>⚡ Tools</div>
             <div className="pulse-tools-grid">
               {toolCards.map((card, i) => {
                 const accentColor = card.accent === 'amber' ? pt.amber : pt.indigo
@@ -469,49 +453,49 @@ export default function Home({ dark, toggleTheme }) {
                   <PulseCard key={i} dark={dark} delay={500 + revealBase + i * 70} accent={accentColor}
                     onClick={() => navigate(card.to)}
                     style={{ borderRadius: 22, padding: '18px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
-                      <div style={{
-                        width: 38, height: 38, borderRadius: '50%', flexShrink: 0,
-                        background: `${accentColor}22`,
-                        display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18
-                      }}>{card.emoji}</div>
-                      <div style={{ minWidth: 0 }}>
-                        <div style={{ color: pt.text, fontWeight: 700, fontSize: 13, lineHeight: 1.25 }}>{card.title}</div>
-                        <div style={{ color: pt.sub, fontSize: 11, marginTop: 1, lineHeight: 1.4 }}>{card.sub}</div>
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div
+                        className="w-[38px] h-[38px] rounded-full flex-shrink-0 flex items-center justify-center text-lg bg-[color-mix(in_srgb,var(--accent)_13%,transparent)]"
+                        style={{ '--accent': accentColor }}
+                      >
+                        {card.emoji}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-[var(--pulse-text)] font-bold text-[13px] leading-[1.25]">{card.title}</div>
+                        <div className="text-[var(--pulse-sub)] text-[11px] mt-0.5 leading-[1.4]">{card.sub}</div>
                       </div>
                     </div>
-                    <div style={{ color: pt.faint, fontSize: 16, flexShrink: 0 }}>→</div>
+                    <div className="text-[var(--pulse-faint)] text-base flex-shrink-0">→</div>
                   </PulseCard>
                 )
               })}
             </div>
           </div>
 
-          <div className="pulse-wide" style={{ display: 'flex', alignItems: 'center', gap: 14, justifyContent: 'center' }}>
-            <div style={{ height: 1, background: pt.border, flex: 1, maxWidth: 120 }} />
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: pt.faint, fontSize: 13, fontWeight: 600 }}>
-              <img src={LOGO_SRC} alt="" style={{ width: 18, height: 18, borderRadius: 4, objectFit: 'cover' }} />
+          <div className="pulse-wide flex items-center gap-3.5 justify-center">
+            <div className="h-px bg-[var(--pulse-border)] flex-1 max-w-[120px]" />
+            <div className="flex items-center gap-2 text-[var(--pulse-faint)] text-[13px] font-semibold">
+              <img src={LOGO_SRC} alt="" className="w-[18px] h-[18px] rounded object-cover" />
               Keep the pulse. Shape the future.
             </div>
-            <div style={{ height: 1, background: pt.border, flex: 1, maxWidth: 120 }} />
+            <div className="h-px bg-[var(--pulse-border)] flex-1 max-w-[120px]" />
           </div>
         </div>
 
         {completedModules.length > 0 && (
-          <div className="pulse-wide" style={{ paddingBottom: 100 }}>
-            {sectionTitle('✓ Completed Modules')}
+          <div className="pulse-wide pb-[100px]">
+            <div className={sectionLabelClass} style={{ letterSpacing: '0.15em' }}>✓ Completed Modules</div>
             <AutoGrid>
               {completedModules.map((mod, i) => (
                 <ScrollRevealItem key={mod.id} delay={i * 110}>
                   <PulseCard dark={dark} delay={0}
                     onClick={() => navigate(`/module/${mod.id}`)}
                     style={{ padding: 'clamp(20px, 2vw, 28px)', textAlign: 'center' }}>
-                    <div style={{ fontSize: 'clamp(28px, 3vw, 42px)', marginBottom: 8, filter: 'grayscale(0.5)' }}>{mod.icon}</div>
-                    <div style={{ color: pt.sub, fontSize: 'clamp(13px, 1.1vw, 16px)', fontWeight: 700, marginBottom: 8, lineHeight: 1.3 }}>{mod.name}</div>
-                    <div style={{
-                      display: 'inline-block', background: `${pt.faint}20`, color: pt.faint,
-                      border: `1px solid ${pt.faint}40`, borderRadius: 20, padding: '2px 10px', fontSize: 11, fontWeight: 700
-                    }}>✓ Completed</div>
+                    <div className="text-[clamp(28px,3vw,42px)] mb-2" style={{ filter: 'grayscale(0.5)' }}>{mod.icon}</div>
+                    <div className="text-[var(--pulse-sub)] text-[clamp(13px,1.1vw,16px)] font-bold mb-2 leading-[1.3]">{mod.name}</div>
+                    <div className="inline-block rounded-full px-2.5 py-0.5 text-[11px] font-bold text-[var(--pulse-faint)] bg-[color-mix(in_srgb,var(--pulse-faint)_12%,transparent)] border border-[color-mix(in_srgb,var(--pulse-faint)_25%,transparent)]">
+                      ✓ Completed
+                    </div>
                   </PulseCard>
                 </ScrollRevealItem>
               ))}
