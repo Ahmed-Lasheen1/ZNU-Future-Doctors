@@ -17,6 +17,11 @@ const LINE_MASK = '/pulse-line-mask.png'
 const ART_WIDTH = 879
 const ART_HEIGHT = 621
 
+// How long one full sweep takes, left edge to right edge — slowed
+// down considerably from the original 2.8s for a calmer, more
+// deliberate "pulse of light" feel.
+const BEAM_DURATION = '5.5s'
+
 function usePrefersReducedMotion() {
   const [reduced, setReduced] = useState(false)
   useEffect(() => {
@@ -64,12 +69,9 @@ export default function EcgHero({ height = 220 }) {
         Everything — the real artwork AND the traveling beam — lives
         inside ONE <svg> sharing ONE viewBox, so both scale identically
         at any render size. The beam's motion uses SMIL <animateTransform>
-        rather than a CSS "transform: translateX(%)" keyframe — CSS
-        percentage-based transforms on SVG elements are NOT reliably
-        supported across browsers (this was why the beam was invisible:
-        it likely wasn't actually moving into view at all). SMIL
-        operates directly in the SVG's own coordinate units, matching
-        the viewBox exactly, so it's unambiguous everywhere.
+        (unit-exact in the SVG's own coordinate space, unlike a CSS
+        percentage-based transform on an SVG element, which browsers
+        handle inconsistently).
       */}
       <svg
         viewBox={`0 0 ${ART_WIDTH} ${ART_HEIGHT}`}
@@ -81,16 +83,30 @@ export default function EcgHero({ height = 220 }) {
           <mask id="pulseLineMask" maskUnits="userSpaceOnUse" x="0" y="0" width={ART_WIDTH} height={ART_HEIGHT}>
             <image href={LINE_MASK} x="0" y="0" width={ART_WIDTH} height={ART_HEIGHT} />
           </mask>
+
+          {/* Wide, soft, strongly-glowing gradient band — warmer
+              electric cyan, brought to full white at the very core so
+              it unmistakably outshines the pale-blue line beneath it. */}
           <linearGradient id="pulseBeamGradient" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0%" stopColor="#8fd4ff" stopOpacity="0" />
-            <stop offset="42%" stopColor="#bdeaff" stopOpacity="0.9" />
-            <stop offset="50%" stopColor="#eafcff" stopOpacity="1" />
-            <stop offset="58%" stopColor="#bdeaff" stopOpacity="0.9" />
-            <stop offset="100%" stopColor="#8fd4ff" stopOpacity="0" />
+            <stop offset="0%"  stopColor="#4fd8ff" stopOpacity="0" />
+            <stop offset="30%" stopColor="#7fe6ff" stopOpacity="0.55" />
+            <stop offset="45%" stopColor="#c9f5ff" stopOpacity="0.95" />
+            <stop offset="50%" stopColor="#ffffff" stopOpacity="1" />
+            <stop offset="55%" stopColor="#c9f5ff" stopOpacity="0.95" />
+            <stop offset="70%" stopColor="#7fe6ff" stopOpacity="0.55" />
+            <stop offset="100%" stopColor="#4fd8ff" stopOpacity="0" />
           </linearGradient>
-          <filter id="pulseBeamGlow" x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur stdDeviation="6" result="blur" />
+
+          {/* Two-stage glow: a big soft outer bloom + a tighter, more
+              intense inner glow, layered for a genuinely "glowing"
+              look rather than a thin bright stripe. */}
+          <filter id="pulseBeamHalo" x="-80%" y="-80%" width="260%" height="260%">
+            <feGaussianBlur stdDeviation="14" />
+          </filter>
+          <filter id="pulseBeamGlow" x="-60%" y="-60%" width="220%" height="220%">
+            <feGaussianBlur stdDeviation="7" result="blur" />
             <feMerge>
+              <feMergeNode in="blur" />
               <feMergeNode in="blur" />
               <feMergeNode in="SourceGraphic" />
             </feMerge>
@@ -100,11 +116,25 @@ export default function EcgHero({ height = 220 }) {
         {/* The exact real artwork — real line color, real shadow */}
         <image href={heroSrc} x="0" y="0" width={ART_WIDTH} height={ART_HEIGHT} />
 
-        {/* Traveling beam: a wide gradient band masked to the exact
-            real line silhouette, sliding left-to-right on a loop via
-            SMIL (reliable, unit-exact, no CSS % ambiguity on SVG). */}
         {!reduced && (
           <g mask="url(#pulseLineMask)">
+            {/* Outer soft bloom — wide and heavily blurred, gives the
+                beam an actual glow radius beyond the line's own width */}
+            <g>
+              <rect
+                x={-ART_WIDTH} y="0"
+                width={ART_WIDTH * 3} height={ART_HEIGHT}
+                fill="url(#pulseBeamGradient)"
+                filter="url(#pulseBeamHalo)"
+                opacity="0.9"
+              />
+              <animateTransform
+                attributeName="transform" type="translate"
+                from={`${-ART_WIDTH},0`} to={`${ART_WIDTH},0`}
+                dur={BEAM_DURATION} repeatCount="indefinite"
+              />
+            </g>
+            {/* Inner bright core — sharper, still glowing, sits on top */}
             <g>
               <rect
                 x={-ART_WIDTH} y="0"
@@ -113,12 +143,9 @@ export default function EcgHero({ height = 220 }) {
                 filter="url(#pulseBeamGlow)"
               />
               <animateTransform
-                attributeName="transform"
-                type="translate"
-                from={`${-ART_WIDTH},0`}
-                to={`${ART_WIDTH},0`}
-                dur="2.8s"
-                repeatCount="indefinite"
+                attributeName="transform" type="translate"
+                from={`${-ART_WIDTH},0`} to={`${ART_WIDTH},0`}
+                dur={BEAM_DURATION} repeatCount="indefinite"
               />
             </g>
           </g>
