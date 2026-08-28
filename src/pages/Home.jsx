@@ -12,6 +12,7 @@ import { loadSavedActiveExam } from '../lib/activeExam'
 import NotifyPermissionButton from '../components/NotifyPermissionButton'
 import PulseCard from '../components/pulse/PulseCard'
 import EcgHero from '../components/pulse/EcgHero'
+import ScrollReveal from '../components/pulse/ScrollReveal'
 
 // The ZNU Pulse mark — same file used for the PWA/manifest icons (see
 // public/manifest.json), so there's only one logo asset to keep in
@@ -101,6 +102,16 @@ function ZnuPulseBrand({ dark, pt }) {
         }}>For Future Doctors</div>
       </div>
     </div>
+  )
+}
+
+// ── Small floating stat tile — every dashboard number gets its own
+// glass card with tilt, instead of living inside one big merged panel. ──
+function StatTile({ dark, pt, delay, children, accent }) {
+  return (
+    <PulseCard dark={dark} delay={delay} accent={accent} style={{ padding: '18px 20px' }}>
+      {children}
+    </PulseCard>
   )
 }
 
@@ -532,7 +543,7 @@ export default function Home({ dark, toggleTheme }) {
         {/* Completed modules — below the first-screen fold, hidden
             until scrolled into view. */}
         {completedModules.length > 0 && (
-          <ScrollReveal>
+          
             <div className="pulse-wide" style={{ paddingBottom: 100 }}>
               {sectionTitle('✓ Completed Modules')}
               <AutoGrid>
@@ -550,6 +561,6 @@ export default function Home({ dark, toggleTheme }) {
                 ))}
               </AutoGrid>
             </div>
-           </div>
-           )
-           }
+    </div>
+  )
+}
