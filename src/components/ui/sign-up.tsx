@@ -100,6 +100,7 @@ function glassSurface(tint: string = "rgba(255,255,255,0.14)") {
   }
 }
 const GLASS_CLASS = "backdrop-blur-2xl backdrop-saturate-150 border border-white/25"
+
 function BlurFade({ children, delay = 0, className }: { children: React.ReactNode; delay?: number; className?: string }) {
   return (
     <motion.div
@@ -158,6 +159,22 @@ function TextLink({ children, onClick, className }: { children: React.ReactNode;
     <button type="button" onClick={onClick} className={cn(
       RESET_BTN, "text-xs text-white/85 hover:text-white transition-colors", TEXT_LEGIBLE, className
     )}>{children}</button>
+  )
+}
+
+// Small glass toggle pill — used for the University / Personal Gmail
+// switch. Same refraction recipe as everything else; the selected
+// state just picks up the sky-blue tint so it reads as "active"
+// without breaking the glass look.
+function GlassToggle({ children, active, onClick }: { children: React.ReactNode; active: boolean; onClick: () => void }) {
+  return (
+    <button onClick={onClick} className={cn(
+      RESET_BTN, GLASS_CLASS,
+      "flex-1 flex items-center justify-center gap-1.5 rounded-full py-2 text-xs font-bold transition-all",
+      active ? "text-sky-100 border-sky-200/60" : "text-white/70 hover:text-white/90"
+    )} style={glassSurface(active ? "rgba(125,211,252,0.32)" : "rgba(255,255,255,0.10)")}>
+      {children}
+    </button>
   )
 }
 
@@ -236,9 +253,11 @@ export function AuthComponent(props: AuthComponentProps) {
 
           {message && (
             <div className={cn(
-              "text-center text-xs font-semibold rounded-xl py-2.5 px-4 mb-4 border backdrop-blur-xl",
-              isSuccess ? "bg-emerald-950/40 border-emerald-300/30 text-emerald-200" : "bg-red-950/40 border-red-300/30 text-red-200"
-            )}>{message}</div>
+              "text-center text-xs font-semibold rounded-xl py-2.5 px-4 mb-4",
+              GLASS_CLASS
+            )} style={glassSurface(isSuccess ? "rgba(52,211,153,0.28)" : "rgba(248,113,113,0.28)")}>
+              <span className={isSuccess ? "text-emerald-100" : "text-red-100"}>{message}</span>
+            </div>
           )}
 
           {step === "verify" ? (
@@ -322,16 +341,12 @@ export function AuthComponent(props: AuthComponentProps) {
               </BlurFade>
 
               <BlurFade delay={0.05} className="flex gap-2">
-                <button onClick={() => onAccountTypeChange("university")} className={cn(
-                  RESET_BTN,
-                  "flex-1 flex items-center justify-center gap-1.5 rounded-full py-2 text-xs font-bold border backdrop-blur-xl transition-colors",
-                  accountType === "university" ? "border-sky-200/70 bg-slate-950/40 text-sky-100" : "border-white/15 bg-slate-950/20 text-white/70"
-                )}><GraduationCap className="w-3.5 h-3.5" /> University</button>
-                <button onClick={() => onAccountTypeChange("personal")} className={cn(
-                  RESET_BTN,
-                  "flex-1 flex items-center justify-center gap-1.5 rounded-full py-2 text-xs font-bold border backdrop-blur-xl transition-colors",
-                  accountType === "personal" ? "border-sky-200/70 bg-slate-950/40 text-sky-100" : "border-white/15 bg-slate-950/20 text-white/70"
-                )}><Mail className="w-3.5 h-3.5" /> Personal Gmail</button>
+                <GlassToggle active={accountType === "university"} onClick={() => onAccountTypeChange("university")}>
+                  <GraduationCap className="w-3.5 h-3.5" /> University
+                </GlassToggle>
+                <GlassToggle active={accountType === "personal"} onClick={() => onAccountTypeChange("personal")}>
+                  <Mail className="w-3.5 h-3.5" /> Personal Gmail
+                </GlassToggle>
               </BlurFade>
 
               <BlurFade delay={0.08}>
@@ -352,7 +367,7 @@ export function AuthComponent(props: AuthComponentProps) {
               </BlurFade>
 
               {accountType === "university" && universityCodePreview && (
-                <div className="text-xs text-sky-100 bg-slate-950/35 border border-sky-200/30 backdrop-blur-xl rounded-xl px-4 py-2">
+                <div className={cn("text-xs text-sky-100 rounded-xl px-4 py-2", GLASS_CLASS)} style={glassSurface("rgba(125,211,252,0.24)")}>
                   🎓 University Code: <strong>{universityCodePreview}</strong>
                 </div>
               )}
