@@ -68,7 +68,7 @@ export default function PulseCard({ children, dark, onClick, delay = 0, style = 
   // backdrop-blur is what keeps it from looking like a flat card).
   const shellClassName = [
     'relative overflow-hidden backdrop-blur-xl border',
-    dark ? 'bg-black/35 border-white/10' : 'bg-white/85 border-black/10',
+    dark ? 'bg-black/60 border-white/10' : 'bg-white/95 border-black/10',
     interactive ? 'cursor-pointer' : 'cursor-default',
   ].join(' ')
 
