@@ -104,16 +104,6 @@ function ZnuPulseBrand({ dark, pt }) {
   )
 }
 
-// ── Small floating stat tile — every dashboard number gets its own
-// glass card with tilt, instead of living inside one big merged panel. ──
-function StatTile({ dark, pt, delay, children, accent }) {
-  return (
-    <PulseCard dark={dark} delay={delay} accent={accent} style={{ padding: '18px 20px' }}>
-      {children}
-    </PulseCard>
-  )
-}
-
 export default function Home({ dark, toggleTheme }) {
   const c = getTheme(dark)
   const pt = getPulseTheme(dark)
