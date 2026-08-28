@@ -16,6 +16,17 @@ export const pulseFonts = {
   body: "'Inter', 'Segoe UI', sans-serif",
 }
 
+// Semantic weight scale for the Home typography refinement — regular
+// for body/description, medium for supporting UI labels, semibold for
+// section labels/card titles, bold reserved for primary metrics and
+// major headings only.
+export const pulseWeights = {
+  regular: 400,
+  medium: 600,
+  semibold: 700,
+  bold: 800,
+}
+
 export function getPulseTheme(dark) {
   return dark
     ? {
@@ -28,10 +39,13 @@ export function getPulseTheme(dark) {
         border: '#3A527A66',
         borderStrong: '#4A6690',
 
-        // Text
+        // Text — primary/secondary already near the target opacity
+        // band; `faint` (tertiary/metadata) is brightened slightly so
+        // section labels and the tagline stay legible against the
+        // gradient/glass instead of washing out.
         text: '#E8EEF7',
         sub: '#C7D3E8',
-        faint: '#9FB0CC',
+        faint: '#A9BADC',
 
         // Accents — no green anywhere
         cobalt: '#4C86FF',
@@ -60,7 +74,7 @@ export function getPulseTheme(dark) {
 
         text: '#15243A',
         sub: '#3E4D63',
-        faint: '#57667D',
+        faint: '#4B5A72',
 
         cobalt: '#2A5CD8',
         cobaltSoft: 'rgba(42,92,216,0.10)',
