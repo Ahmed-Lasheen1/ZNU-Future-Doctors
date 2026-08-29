@@ -1,3 +1,23 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* NOTE: preflight is disabled in tailwind.config.js
+   (corePlugins.preflight: false), so @tailwind base injects almost
+   nothing here — it will not reset the hand-written styles below.
+   This block is what was missing: without it, PostCSS's Tailwind
+   plugin had nowhere to inject generated utility classes into the
+   stylesheet that's actually loaded on every page (main.jsx imports
+   this file globally). The only other file with these directives is
+   src/styles/shadcn-theme.css, which is only imported by the lazy
+   /auth and /reset-password routes — so every Tailwind class used
+   anywhere else in the app (curved-menu.tsx's `fixed`/`z-[2000]`/
+   `h-[100dvh]`/`w-screen`/`bg-white`, PulseCard's `cursor-pointer`/
+   `overflow-hidden`, etc.) silently compiled to nothing on every other
+   page, including Home. This is why the menu button worked in JS
+   (state toggled, the panel mounted) but was never actually visible —
+   it had no position/size/background CSS to render with. */
+
 * {
   margin: 0;
   padding: 0;
