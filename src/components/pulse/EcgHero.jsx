@@ -21,8 +21,18 @@ const ART_HEIGHT = 621
 // artwork — kept fairly narrow (and the travel range only a little
 // past each edge) so the glow crosses the visible pulse for nearly
 // the whole cycle, with no dead "off-screen travel" time.
-const BAND_WIDTH = ART_WIDTH * 0.30
-const BEAM_DURATION = '7s'
+const BAND_WIDTH = ART_WIDTH * 0.32
+const BEAM_DURATION = '5.5s'
+
+// The band's own bright center sits at ~50% of its width. To make the
+// light visibly linger over the pulse's central spike (the busiest,
+// most important part of the artwork, roughly at x≈430), the
+// mid-keyframe below places the rect's LEFT edge at this x so that
+// its bright center lands on the spike at the animation's temporal
+// midpoint — combined with the eased keySplines, the light decelerates
+// into that position and accelerates back out, rather than moving at
+// one constant speed the whole way across.
+const MID_X = 430 - BAND_WIDTH / 2
 
 function usePrefersReducedMotion() {
   const [reduced, setReduced] = useState(false)
@@ -80,22 +90,17 @@ export default function EcgHero({ height = 220 }) {
 
           {/* objectBoundingBox (the default) — this gradient is always
               stretched across whatever rect uses it, 0% to 100% of
-              THAT rect's own width. So as the rect's "x" position is
-              animated below, the gradient rides along with it
-              automatically — no need to separately animate the
-              gradient's own coordinate system (gradientTransform via
-              SMIL has inconsistent browser support and was the cause
-              of the beam freezing on its first frame). Animating a
-              plain "x" attribute via <animate> is the most reliably
-              supported SMIL animation there is. */}
+              THAT rect's own width, so it rides along automatically as
+              the rect's "x" is animated below. No white/near-white
+              anywhere in the ramp — darker saturated blue-cyan only. */}
           <linearGradient id="pulseBeamGradient">
-            <stop offset="0%"  stopColor="#3ad1ff" stopOpacity="0" />
-            <stop offset="22%" stopColor="#3ad1ff" stopOpacity="0.5" />
-            <stop offset="40%" stopColor="#3ad1ff" stopOpacity="0.95" />
-            <stop offset="50%" stopColor="#aef2ff" stopOpacity="1" />
-            <stop offset="60%" stopColor="#aef2ff" stopOpacity="0.95" />
-            <stop offset="78%" stopColor="#aef2ff" stopOpacity="0.5" />
-            <stop offset="100%" stopColor="#ffffff" stopOpacity="0" />
+            <stop offset="0%"  stopColor="#aef2ff" stopOpacity="0" />
+            <stop offset="22%" stopColor="#3ad1ff" stopOpacity="0.45" />
+            <stop offset="40%" stopColor="#0e93c9" stopOpacity="0.85" />
+            <stop offset="50%" stopColor="#0e93c9" stopOpacity="1" />
+            <stop offset="60%" stopColor="#0e6a97" stopOpacity="0.85" />
+            <stop offset="78%" stopColor="#0e6a97" stopOpacity="0.45" />
+            <stop offset="100%" stopColor="#0c3a58" stopOpacity="0" />
           </linearGradient>
 
           {/* Two-stage glow: a big soft outer bloom + a tighter, more
@@ -118,17 +123,30 @@ export default function EcgHero({ height = 220 }) {
 
         {!reduced && (
           <g mask="url(#pulseLineMask)">
-            {/* Outer soft bloom */}
+            {/* Outer soft bloom. calcMode="spline" with a keyframe
+                exactly at the midpoint (MID_X) and eased keySplines on
+                either side makes the motion decelerate INTO the middle
+                of the artwork and accelerate back OUT of it — instead
+                of one constant linear speed the whole way across. */}
             <rect y="0" width={BAND_WIDTH} height={ART_HEIGHT}
               fill="url(#pulseBeamGradient)" filter="url(#pulseBeamHalo)" opacity="0.95">
-              <animate attributeName="x" from={-BAND_WIDTH} to={ART_WIDTH}
-                dur={BEAM_DURATION} repeatCount="indefinite" calcMode="linear" />
+              <animate attributeName="x"
+                values={`${-BAND_WIDTH};${MID_X};${ART_WIDTH}`}
+                keyTimes="0;0.5;1"
+               calcMode="spline"
+               keySplines="0.5 0.1 0.7 0.4; 0.3 0.6 0.5 0.9"
+                dur={BEAM_DURATION} repeatCount="indefinite" />
             </rect>
-            {/* Inner bright core, sharper but still glowing, on top */}
+            {/* Inner bright core, sharper but still glowing, on top —
+                identical timing so it stays perfectly in sync. */}
             <rect y="0" width={BAND_WIDTH} height={ART_HEIGHT}
               fill="url(#pulseBeamGradient)" filter="url(#pulseBeamGlow)">
-              <animate attributeName="x" from={-BAND_WIDTH} to={ART_WIDTH}
-                dur={BEAM_DURATION} repeatCount="indefinite" calcMode="linear" />
+              <animate attributeName="x"
+                values={`${-BAND_WIDTH};${MID_X};${ART_WIDTH}`}
+                keyTimes="0;0.5;1"
+                calcMode="spline"
+                keySplines="0.32 0 0.68 1;0.32 0 0.68 1"
+                dur={BEAM_DURATION} repeatCount="indefinite" />
             </rect>
           </g>
         )}
