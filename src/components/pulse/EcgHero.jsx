@@ -118,12 +118,9 @@ export default function EcgHero({ height = 220 }) {
 
         {!reduced && (
           <g mask="url(#pulseLineMask)">
-            {/* Outer soft bloom. calcMode="spline" with a keyframe
-                exactly at the midpoint (MID_X) and eased keySplines on
-                either side makes the motion decelerate INTO the middle
-                of the artwork and accelerate back OUT of it — instead
-                of one constant linear speed the whole way across. */}
+            {/* Outer soft bloom مع تدوير الحواف rx و ry */}
             <rect y="0" width={BAND_WIDTH} height={ART_HEIGHT}
+              rx={BAND_WIDTH / 2} ry={ART_HEIGHT / 2}
               fill="url(#pulseBeamGradient)" filter="url(#pulseBeamHalo)" opacity="0.95">
               <animate attributeName="x"
                 values={`${-BAND_WIDTH};${MID_X};${ART_WIDTH}`}
@@ -132,9 +129,9 @@ export default function EcgHero({ height = 220 }) {
                 keySplines="0.2 0.8 0.3 0.6; 0.7 0.4 0.8 0.2"
                 dur={BEAM_DURATION} repeatCount="indefinite" />
             </rect>
-            {/* Inner bright core, sharper but still glowing, on top —
-                identical timing so it stays perfectly in sync. */}
+            {/* Inner bright core مع تدوير الحواف rx و ry */}
             <rect y="0" width={BAND_WIDTH} height={ART_HEIGHT}
+              rx={BAND_WIDTH / 2} ry={ART_HEIGHT / 2}
               fill="url(#pulseBeamGradient)" filter="url(#pulseBeamGlow)">
               <animate attributeName="x"
                 values={`${-BAND_WIDTH};${MID_X};${ART_WIDTH}`}
