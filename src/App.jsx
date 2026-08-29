@@ -54,10 +54,12 @@ function ScrollToTop() {
   return null
 }
 
-// Nav items for the curved slide-in menu (src/components/ui/curved-menu.tsx).
-// Search now lives here as a regular item since the old dedicated 🔍
-// header button was removed along with ← Back (see SmartHeader below).
-const curvedMenuItems = [
+// Static nav items for the curved slide-in menu. Search lives here as
+// a regular item now (the dedicated 🔍 header button was removed).
+// Profile/Sign-In and the theme toggle are NOT here — they're dynamic
+// (depend on auth state / current theme) and live in the menu's footer
+// instead, built below in NavMenu.
+const baseMenuItems = [
   { heading: 'Home', href: '/' },
   { heading: 'Search', href: '/search' },
   { heading: 'Schedules', href: '/schedule' },
@@ -68,10 +70,25 @@ const curvedMenuItems = [
 ]
 
 // Click-triggered animated hamburger (MenuToggleIcon) that opens the
-// curved sliding panel (CurvedMenu) — replaces the old hover dropdown.
-// Used both here (SmartHeader) and on Home.jsx's own header.
-export function NavMenu({ dark }) {
+// curved sliding panel (CurvedMenu). This is now the ONLY control in
+// the header — search, theme toggle, and profile/sign-in all live
+// inside the menu (nav list + footer row) instead of as separate
+// header buttons. Used both in SmartHeader below and on Home.jsx's
+// own header.
+export function NavMenu({ dark, toggleTheme }) {
   const [open, setOpen] = useState(false)
+  const navigate = useNavigate()
+  const { user, profile } = useAuth()
+
+  function goTo(path) {
+    setOpen(false)
+    navigate(path)
+  }
+
+  const navItems = [
+    ...baseMenuItems,
+    user ? { heading: 'Profile', href: '/profile' } : { heading: 'Sign In', href: '/auth' },
+  ]
 
   return (
     <>
@@ -92,10 +109,32 @@ export function NavMenu({ dark }) {
         {open && (
           <CurvedMenu
             setIsActive={setOpen}
-            navItems={curvedMenuItems}
+            navItems={navItems}
             footer={
-              <div className="w-full text-center text-xs text-black/50 px-10 py-6">
-                Made with ❤️ by Ahmed Lasheen · ZNU Future Doctors
+              <div className="w-full flex items-center justify-between px-10 md:px-24 py-5 border-t border-black/10">
+                <button
+                  onClick={toggleTheme}
+                  aria-label={dark ? 'Switch to light mode' : 'Switch to dark mode'}
+                  className="flex items-center gap-2 text-sm font-bold text-black/70"
+                >
+                  <span className="text-lg">{dark ? '☀️' : '🌙'}</span>
+                  {dark ? 'Light mode' : 'Dark mode'}
+                </button>
+
+                {user ? (
+                  <div
+                    onClick={() => goTo('/profile')}
+                    role="button" tabIndex={0}
+                    onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); goTo('/profile') } }}
+                    className="flex items-center gap-1.5 text-sm font-extrabold text-amber-600 cursor-pointer"
+                  >
+                    ⭐ {profile?.points || 0} points
+                  </div>
+                ) : (
+                  <button onClick={() => goTo('/auth')} className="text-sm font-extrabold text-sky-600">
+                    Sign In →
+                  </button>
+                )}
               </div>
             }
           />
@@ -106,9 +145,7 @@ export function NavMenu({ dark }) {
 }
 
 function SmartHeader({ dark, toggleTheme }) {
-  const navigate = useNavigate()
   const location = useLocation()
-  const { user, signOut, profile } = useAuth()
   if (location.pathname === '/') return null
 
   return (
@@ -120,47 +157,18 @@ function SmartHeader({ dark, toggleTheme }) {
       position: 'sticky', top: 0, zIndex: 1000,
       borderBottom: `1px solid ${dark ? 'rgba(56,189,248,0.2)' : '#e2e8f0'}`,
     }}>
-      {/* Left cluster — was Back + Menu + Search, now just the menu
-          toggle. Search lives inside the curved menu's nav list, and
-          most inner pages already have their own contextual ← Back
-          button, so nothing here is actually lost. */}
-      <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-        <NavMenu dark={dark} />
-      </div>
+      {/* The only header control now — search, theme toggle, and
+          profile/sign-in were removed from here and folded into the
+          curved menu itself (nav list + footer row). */}
+      <NavMenu dark={dark} toggleTheme={toggleTheme} />
 
       <span className="smart-header-title" style={{ color: dark ? '#38bdf8' : '#0ea5e9', fontWeight: 900, fontSize: 16 }}>ZNU Future Doctors</span>
 
-      <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-        <button onClick={toggleTheme} style={{
-          ...navBtn,
-          background: dark ? 'rgba(56,189,248,0.1)' : '#f1f5f9',
-          color: dark ? '#38bdf8' : '#475569',
-          border: `1px solid ${dark ? 'rgba(56,189,248,0.3)' : '#e2e8f0'}`
-        }} aria-label={dark ? 'Switch to light mode' : 'Switch to dark mode'}>{dark ? '☀️' : '🌙'}</button>
-
-        {user ? (
-          <button onClick={() => navigate('/profile')} style={{
-            ...navBtn,
-            background: '#f59e0b20',
-            color: '#f59e0b',
-            border: '1px solid #f59e0b40'
-          }}>⭐ {profile?.points || 0}</button>
-        ) : (
-          <button onClick={() => navigate('/auth')} style={{
-            ...navBtn,
-            background: '#38bdf820',
-            color: '#38bdf8',
-            border: '1px solid #38bdf840'
-          }}>Sign In</button>
-        )}
-      </div>
+      {/* Empty spacer matching the menu button's width, so the title
+          stays visually centered now that the right side is empty. */}
+      <div style={{ width: 40, height: 40 }} />
     </div>
   )
-}
-
-const navBtn = {
-  padding: '6px 12px', borderRadius: '10px',
-  fontSize: '13px', fontWeight: '700', cursor: 'pointer'
 }
 
 export default function App() {
