@@ -34,7 +34,7 @@ const CENTER_PATH = 'M0,310.5 L4,310.5 L8,310.5 L12,310.5 L16,310.5 L20,310.5 L2
 // everywhere along the path — the mask above is what then crops this
 // down to the exact real silhouette, so the final visible width is
 // governed entirely by the real pixels, not by this number.
-const STROKE_WIDTH = 60
+const STROKE_WIDTH = 65
 
 const BEAM_DURATION = '6s'
 
