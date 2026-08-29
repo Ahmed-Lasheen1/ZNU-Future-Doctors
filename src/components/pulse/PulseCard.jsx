@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { pulseGlass } from '../../premiumTheme'
 
@@ -5,12 +6,20 @@ import { pulseGlass } from '../../premiumTheme'
 // Home redesign — one visual language, one place to tune it. Not used
 // anywhere outside Home.jsx, so no other page is affected.
 //
-// Entrance + hover motion now runs through framer-motion (the same
-// motion.div language used elsewhere) instead of a manual
-// setTimeout + CSS transition — same visual result (fade + rise on
-// mount, lift + neutral shadow bump on hover), just declared as
-// motion targets instead of imperative state.
+// Structured as two nested elements on purpose:
+//  - The OUTER motion.div is the hover/click hit-box. It only ever
+//    animates once, on mount (fade + rise in), then sits perfectly
+//    still — so its hover boundary never moves.
+//  - The INNER motion.div is purely visual: it scales/lifts on hover,
+//    but since it isn't the element listening for the hover itself,
+//    that visual movement can never cause the cursor to end up
+//    "outside" the hoverable area and re-trigger the gesture.
+// Putting both on ONE element (the previous version) meant that once
+// the card scaled up and lifted, its own hit-box moved out from under
+// the cursor near the edges — causing a rapid hover/unhover flicker
+// that only stopped once the cursor was dragged well clear of it.
 export default function PulseCard({ children, dark, onClick, delay = 0, style = {} }) {
+  const [hovered, setHovered] = useState(false)
   const { boxShadow: baseShadow } = pulseGlass(dark)
   const interactive = !!onClick
 
@@ -19,8 +28,8 @@ export default function PulseCard({ children, dark, onClick, delay = 0, style = 
     if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick() }
   }
 
-  // borderRadius has to apply to the outer shell (so the glass
-  // background/clipping matches pill-shaped or extra-rounded cards) —
+  // borderRadius has to apply to the inner (visual) shell so the glass
+  // background/clipping matches pill-shaped or extra-rounded cards —
   // everything else in `style` is pure content layout and goes inside.
   const { borderRadius = 18, ...contentStyle } = style
 
@@ -48,8 +57,8 @@ export default function PulseCard({ children, dark, onClick, delay = 0, style = 
     : `${baseShadow}, 0 5px 10px -3px rgba(37,60,97,0.18)`
 
   // Positioned top-right, partly outside the card, and clipped by the
-  // shell's own overflow-hidden + border-radius. Always neutral — no
-  // accent tint.
+  // inner shell's own overflow-hidden + border-radius. Always neutral
+  // — no accent tint.
   const glow = (
     <div aria-hidden style={{
       position: 'absolute', top: -60, right: -60, width: 200, height: 200,
@@ -60,43 +69,35 @@ export default function PulseCard({ children, dark, onClick, delay = 0, style = 
   )
 
   const innerContentStyle = { position: 'relative', zIndex: 1, ...contentStyle }
-  const shellClassName = interactive ? 'relative overflow-hidden cursor-pointer' : 'relative overflow-hidden cursor-default'
-
-  // `delay` arrives in milliseconds (matches how every call site in
-  // Home.jsx already passes it, e.g. delay={i * 70}) — framer-motion's
-  // transition.delay wants seconds, hence the /1000 below.
-  const shared = {
-    className: shellClassName,
-    style: { ...materialStyle, position: 'relative', borderRadius, boxShadow: baseShadow },
-    initial: { opacity: 0, y: 16 },
-    animate: { opacity: 1, y: 0 },
-    transition: { duration: 0.5, delay: delay / 1000, ease: [0.34, 1.56, 0.64, 1] },
-  }
-
-  if (!interactive) {
-    return (
-      <motion.div {...shared}>
-        {glow}
-        <div style={innerContentStyle}>{children}</div>
-      </motion.div>
-    )
-  }
 
   return (
     <motion.div
-      {...shared}
-      role="button"
-      tabIndex={0}
+      role={interactive ? 'button' : undefined}
+      tabIndex={interactive ? 0 : undefined}
       onClick={onClick}
       onKeyDown={handleKeyDown}
-      whileHover={{
-        y: -4, scale: 1.02, boxShadow: hoverShadow,
-        transition: { duration: 0.25, ease: [0.22, 1, 0.36, 1] }
-      }}
-      whileTap={{ scale: 0.99 }}
+      onMouseEnter={() => interactive && setHovered(true)}
+      onMouseLeave={() => interactive && setHovered(false)}
+      className={interactive ? 'cursor-pointer' : 'cursor-default'}
+      style={{ position: 'relative' }}
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, delay: delay / 1000, ease: [0.34, 1.56, 0.64, 1] }}
+      whileTap={interactive ? { scale: 0.99 } : undefined}
     >
-      {glow}
-      <div style={innerContentStyle}>{children}</div>
+      <motion.div
+        className="relative overflow-hidden"
+        style={{ ...materialStyle, borderRadius, height: '100%' }}
+        animate={{
+          scale: hovered && interactive ? 1.02 : 1,
+          y: hovered && interactive ? -4 : 0,
+          boxShadow: hovered && interactive ? hoverShadow : baseShadow,
+        }}
+        transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+      >
+        {glow}
+        <div style={innerContentStyle}>{children}</div>
+      </motion.div>
     </motion.div>
   )
 }
