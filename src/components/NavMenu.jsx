@@ -85,15 +85,15 @@ export default function NavMenu({ dark, toggleTheme, align = 'left' }) {
     ? {
         background: 'rgba(28,28,30,0.30)',
         border: '1px solid rgba(255,255,255,0.14)',
-        backdropFilter: 'blur(48px) saturate(180%)',
-        WebkitBackdropFilter: 'blur(48px) saturate(180%)',
+        backdropFilter: 'blur(70px) saturate(180%)',
+        WebkitBackdropFilter: 'blur(70px) saturate(180%)',
         boxShadow: '0 20px 50px -12px rgba(0,0,0,0.5)',
       }
     : {
         background: 'rgba(255,255,255,0.38)',
         border: '1px solid rgba(255,255,255,0.55)',
-        backdropFilter: 'blur(48px) saturate(180%)',
-        WebkitBackdropFilter: 'blur(48px) saturate(180%)',
+        backdropFilter: 'blur(70px) saturate(180%)',
+        WebkitBackdropFilter: 'blur(70px) saturate(180%)',
         boxShadow: '0 20px 50px -12px rgba(37,60,97,0.25)',
       }
 
