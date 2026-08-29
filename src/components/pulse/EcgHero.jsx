@@ -22,7 +22,7 @@ const ART_HEIGHT = 621
 // past each edge) so the glow crosses the visible pulse for nearly
 // the whole cycle, with no dead "off-screen travel" time.
 const BAND_WIDTH = ART_WIDTH * 0.32
-const BEAM_DURATION = '4.2s'
+const BEAM_DURATION = '6.5s'
 
 function usePrefersReducedMotion() {
   const [reduced, setReduced] = useState(false)
