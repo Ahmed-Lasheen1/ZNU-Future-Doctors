@@ -88,19 +88,14 @@ export default function EcgHero({ height = 220 }) {
             <image href={LINE_MASK} x="0" y="0" width={ART_WIDTH} height={ART_HEIGHT} />
           </mask>
 
-          {/* objectBoundingBox (the default) — this gradient is always
-              stretched across whatever rect uses it, 0% to 100% of
-              THAT rect's own width, so it rides along automatically as
-              the rect's "x" is animated below. No white/near-white
-              anywhere in the ramp — darker saturated blue-cyan only. */}
+          {/* Shooting Star Gradient: Fades from trailing tail to intense bright head */}
           <linearGradient id="pulseBeamGradient">
-            <stop offset="0%"  stopColor="#0c3a58" stopOpacity="0" />
-            <stop offset="22%" stopColor="#0e6a97" stopOpacity="0.85" />
-            <stop offset="40%" stopColor="#0e6a97" stopOpacity="0.45" />
-            <stop offset="50%" stopColor="#0e93c9" stopOpacity="1" />
-            <stop offset="60%" stopColor="#0e93c9" stopOpacity="0.45" />
-            <stop offset="78%" stopColor="#3ad1ff" stopOpacity="0.85" />
-            <stop offset="100%" stopColor="#aef2ff" stopOpacity="0" />
+            <stop offset="0%" stopColor="#0e6a97" stopOpacity="0" />
+            <stop offset="30%" stopColor="#0e93c9" stopOpacity="0.25" />
+            <stop offset="60%" stopColor="#3ad1ff" stopOpacity="0.6" />
+            <stop offset="88%" stopColor="#ffffff" stopOpacity="0.95" />
+            <stop offset="96%" stopColor="#ffffff" stopOpacity="1" />
+            <stop offset="100%" stopColor="#ffffff" stopOpacity="0" />
           </linearGradient>
 
           {/* Two-stage glow: a big soft outer bloom + a tighter, more
@@ -133,8 +128,8 @@ export default function EcgHero({ height = 220 }) {
               <animate attributeName="x"
                 values={`${-BAND_WIDTH};${MID_X};${ART_WIDTH}`}
                 keyTimes="0;0.5;1"
-               calcMode="spline"
-               keySplines="0.2 0.8 0.3 0.6; 0.7 0.4 0.8 0.2"
+                calcMode="spline"
+                keySplines="0.2 0.8 0.3 0.6; 0.7 0.4 0.8 0.2"
                 dur={BEAM_DURATION} repeatCount="indefinite" />
             </rect>
             {/* Inner bright core, sharper but still glowing, on top —
