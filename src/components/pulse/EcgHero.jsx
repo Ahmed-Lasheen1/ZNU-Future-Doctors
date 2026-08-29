@@ -94,13 +94,13 @@ export default function EcgHero({ height = 220 }) {
               the rect's "x" is animated below. No white/near-white
               anywhere in the ramp — darker saturated blue-cyan only. */}
           <linearGradient id="pulseBeamGradient">
-            <stop offset="0%"  stopColor="#aef2ff" stopOpacity="0" />
-            <stop offset="22%" stopColor="#3ad1ff" stopOpacity="0.45" />
-            <stop offset="40%" stopColor="#0e93c9" stopOpacity="0.85" />
+            <stop offset="0%"  stopColor="#0c3a58" stopOpacity="0" />
+            <stop offset="22%" stopColor="#0e6a97" stopOpacity="0.45" />
+            <stop offset="40%" stopColor="#0e6a97" stopOpacity="0.85" />
             <stop offset="50%" stopColor="#0e93c9" stopOpacity="1" />
-            <stop offset="60%" stopColor="#0e6a97" stopOpacity="0.85" />
-            <stop offset="78%" stopColor="#0e6a97" stopOpacity="0.45" />
-            <stop offset="100%" stopColor="#0c3a58" stopOpacity="0" />
+            <stop offset="60%" stopColor="#0e93c9" stopOpacity="0.85" />
+            <stop offset="78%" stopColor="#3ad1ff" stopOpacity="0.45" />
+            <stop offset="100%" stopColor="#aef2ff" stopOpacity="0" />
           </linearGradient>
 
           {/* Two-stage glow: a big soft outer bloom + a tighter, more
@@ -134,7 +134,7 @@ export default function EcgHero({ height = 220 }) {
                 values={`${-BAND_WIDTH};${MID_X};${ART_WIDTH}`}
                 keyTimes="0;0.5;1"
                calcMode="spline"
-               keySplines="0.5 0.1 0.7 0.4; 0.3 0.6 0.5 0.9"
+               keySplines="0.2 0.8 0.3 0.6; 0.7 0.4 0.8 0.2"
                 dur={BEAM_DURATION} repeatCount="indefinite" />
             </rect>
             {/* Inner bright core, sharper but still glowing, on top —
@@ -145,7 +145,7 @@ export default function EcgHero({ height = 220 }) {
                 values={`${-BAND_WIDTH};${MID_X};${ART_WIDTH}`}
                 keyTimes="0;0.5;1"
                 calcMode="spline"
-                keySplines="0.32 0 0.68 1;0.32 0 0.68 1"
+                keySplines="0.2 0.8 0.3 0.6; 0.7 0.4 0.8 0.2"
                 dur={BEAM_DURATION} repeatCount="indefinite" />
             </rect>
           </g>
