@@ -88,24 +88,34 @@ export default function NavMenu({ dark, toggleTheme, align = 'left' }) {
   const rowHover = dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)'
 
   // PERF NOTE: backdrop-filter (blur+saturate) has to resample
-  // everything behind it on every frame it's active. Animating
-  // `scale` on the SAME element that carries backdrop-filter forces
-  // the browser to redo that expensive resample at every intermediate
-  // size each frame — that's what was causing the lag, especially on
-  // mobile. Fix: the outer motion.div below only animates cheap,
-  // GPU-composited properties (opacity + translateY), and never
-  // scales. The glass/blur layer (glassStyle) is applied to a plain,
-  // non-animated inner div that just fades in/out with its parent's
-  // opacity — no resampling-during-resize ever happens.
+  // everything behind it while it's active. Animating `scale` on the
+  // SAME element that carries backdrop-filter forces the browser to
+  // redo that expensive resample at every intermediate size, every
+  // frame — that was the lag source. Fix: the outer motion.div below
+  // animates scale/y/opacity (the bouncy "pop" feel), but the glass/
+  // blur layer (glassStyle) is applied to a plain, non-animated INNER
+  // div. The browser composites the already-blurred layer as a single
+  // texture and just transforms that texture — cheap — instead of
+  // recomputing the blur itself on every frame.
   const panelVariants = {
-    hidden: { opacity: 0, y: -8 },
+    hidden: {
+      opacity: 0,
+      scale: 0.85,
+      y: -8,
+      transformOrigin: align === 'right' ? 'top right' : 'top left',
+    },
     visible: {
-      opacity: 1, y: 0,
-      transition: { duration: 0.22, ease: 'easeOut' },
+      opacity: 1,
+      scale: 1,
+      y: 0,
+      transformOrigin: align === 'right' ? 'top right' : 'top left',
+      transition: { duration: 0.32, ease: [0.34, 1.56, 0.64, 1] },
     },
     exit: {
-      opacity: 0, y: -6,
-      transition: { duration: 0.15, ease: 'easeIn' },
+      opacity: 0,
+      scale: 0.9,
+      y: -6,
+      transition: { duration: 0.18, ease: [0.4, 0, 1, 1] },
     },
   }
 
@@ -142,10 +152,13 @@ export default function NavMenu({ dark, toggleTheme, align = 'left' }) {
               width: 260, maxWidth: '85vw',
               zIndex: 2000,
               willChange: 'opacity, transform',
-              transform: 'translateZ(0)', // own GPU layer, no repaint of siblings
             }}
           >
-            <div style={{ borderRadius: 20, padding: 10, ...glassStyle, fontFamily: pulseFonts.body }}>
+            <div style={{
+              borderRadius: 20, padding: 10,
+              ...glassStyle,
+              fontFamily: pulseFonts.body
+            }}>
               {/* Profile / Sign In — first thing in the panel */}
               {user ? (
                 <div
