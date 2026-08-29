@@ -1,14 +1,13 @@
-import { useState, useEffect, createContext, useContext, Suspense, lazy } from 'react'
-import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation } from 'react-router-dom'
-import { AnimatePresence } from 'framer-motion'
+import { useState, useEffect, Suspense, lazy } from 'react'
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom'
 import { supabase } from './supabase'
 import { getTheme } from './theme'
 import { fetchModulesSorted } from './lib/modules'
 import { subscribeOnlinePresence } from './lib/onlinePresence'
 import ErrorBoundary from './components/ErrorBoundary'
 import ToastProvider from './components/ToastProvider'
-import { MenuToggleIcon } from './components/ui/menu-toggle-icon'
-import CurvedMenu from './components/ui/curved-menu'
+import NavMenu from './components/NavMenu'
+import { ThemeContext, AuthContext, ModulesContext } from './contexts'
 import Home from './pages/Home'
 const Checklist = lazy(() => import('./pages/Checklist'))
 const Schedule = lazy(() => import('./pages/Schedule'))
@@ -29,13 +28,23 @@ const NotFound = lazy(() => import('./pages/NotFound'))
 const Search = lazy(() => import('./pages/Search'))
 import Footer from './components/Footer'
 
-export const ThemeContext = createContext()
-export const AuthContext = createContext()
-export const ModulesContext = createContext()
-
-export function useTheme() { return useContext(ThemeContext) }
-export function useAuth() { return useContext(AuthContext) }
-export function useModules() { return useContext(ModulesContext) }
+// ThemeContext/AuthContext/ModulesContext + useTheme/useAuth/useModules
+// used to be defined right here. They now live in src/contexts.js (a
+// file with zero dependents of its own) because Home.jsx importing
+// them FROM App.jsx — combined with App.jsx importing Home.jsx
+// directly (not lazily, since it's the landing route) — created a
+// real circular dependency: src/App.jsx -> src/pages/Home.jsx ->
+// src/App.jsx (confirmed by Rollup's circular-dependency warning).
+// Re-exported here so every other page's existing
+// `import { useAuth, useModules } from '../App'` keeps working
+// unchanged — only Home.jsx (and NotifyPermissionButton.jsx) were
+// updated to import directly from '../contexts' instead, since those
+// two were the actual source of the cycle.
+export { ThemeContext, AuthContext, ModulesContext, useTheme, useAuth, useModules } from './contexts'
+// NavMenu also used to be defined here, for the same reason — see
+// src/components/NavMenu.jsx. Re-exported so nothing else that
+// imports it from '../App' needs to change.
+export { default as NavMenu } from './components/NavMenu'
 
 function PageLoader({ dark }) {
   const c = getTheme(dark)
@@ -52,120 +61,6 @@ function ScrollToTop() {
   const { pathname } = useLocation()
   useEffect(() => { window.scrollTo(0, 0) }, [pathname])
   return null
-}
-
-// Static nav items for the curved slide-in menu. Search lives here as
-// a regular item now (the dedicated 🔍 header button was removed).
-// Profile/Sign-In and the theme toggle are NOT here — they're dynamic
-// (depend on auth state / current theme) and live in the menu's footer
-// instead, built below in NavMenu.
-const baseMenuItems = [
-  { heading: 'Home', href: '/' },
-  { heading: 'Search', href: '/search' },
-  { heading: 'Schedules', href: '/schedule' },
-  { heading: 'Checklist', href: '/checklist' },
-  { heading: 'Review', href: '/review' },
-  { heading: 'Anonymous Q&A', href: '/anon-questions' },
-  { heading: 'Leaderboard', href: '/profile?tab=leaderboard' },
-]
-
-// Click-triggered animated hamburger (MenuToggleIcon) that opens the
-// curved sliding panel (CurvedMenu). This is now the ONLY control in
-// the header — search, theme toggle, and profile/sign-in all live
-// inside the menu (nav list + footer row) instead of as separate
-// header buttons. Used both in SmartHeader below and on Home.jsx's
-// own header.
-export function NavMenu({ dark, toggleTheme }) {
-  const [open, setOpen] = useState(false)
-  const navigate = useNavigate()
-  const { user, profile } = useAuth()
-
-  function goTo(path) {
-    setOpen(false)
-    navigate(path)
-  }
-
-  const navItems = [
-    ...baseMenuItems,
-    user ? { heading: 'Profile', href: '/profile' } : { heading: 'Sign In', href: '/auth' },
-  ]
-
-  // NOTE: this button and the footer below use plain inline styles,
-  // not Tailwind classes — tailwind.config.js's `content` array does
-  // not scan App.jsx/Home.jsx (only src/components/ui, src/components/
-  // pulse, Auth.tsx, ResetPassword.tsx, src/lib), so any Tailwind
-  // classes written directly in this file are silently dropped and do
-  // nothing. curved-menu.tsx and menu-toggle-icon.tsx live under
-  // src/components/ui/, which IS scanned, so their own Tailwind
-  // classes (rotation, layout, etc.) still work normally — only THIS
-  // file avoids Tailwind, matching how the rest of the app is styled.
-  return (
-    <>
-      <button
-        onClick={() => setOpen(o => !o)}
-        aria-label={open ? 'Close navigation menu' : 'Open navigation menu'}
-        aria-haspopup="true"
-        aria-expanded={open}
-        style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          width: 40, height: 40, borderRadius: 10, flexShrink: 0, padding: 0,
-          background: dark ? 'rgba(56,189,248,0.1)' : '#f1f5f9',
-          border: `1px solid ${dark ? 'rgba(56,189,248,0.3)' : '#e2e8f0'}`,
-          cursor: 'pointer'
-        }}
-      >
-        {/* width/height passed as real SVG attributes (not a Tailwind
-            className) so the icon always renders at the right size
-            regardless of whether Tailwind processed this file. */}
-        <MenuToggleIcon open={open} width={20} height={20} stroke={dark ? '#38bdf8' : '#475569'} duration={400} />
-      </button>
-      <AnimatePresence mode="wait">
-        {open && (
-          <CurvedMenu
-            setIsActive={setOpen}
-            navItems={navItems}
-            footer={
-              <div style={{
-                width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                padding: '20px 40px', borderTop: '1px solid rgba(0,0,0,0.1)', boxSizing: 'border-box'
-              }}>
-                <button
-                  onClick={toggleTheme}
-                  aria-label={dark ? 'Switch to light mode' : 'Switch to dark mode'}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 8,
-                    background: 'transparent', border: 'none', cursor: 'pointer',
-                    fontSize: 13, fontWeight: 700, color: 'rgba(0,0,0,0.7)', fontFamily: 'inherit', padding: 0
-                  }}
-                >
-                  <span style={{ fontSize: 18 }}>{dark ? '☀️' : '🌙'}</span>
-                  {dark ? 'Light mode' : 'Dark mode'}
-                </button>
-
-                {user ? (
-                  <div
-                    onClick={() => goTo('/profile')}
-                    role="button" tabIndex={0}
-                    onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); goTo('/profile') } }}
-                    style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 800, color: '#d97706', cursor: 'pointer' }}
-                  >
-                    ⭐ {profile?.points || 0} points
-                  </div>
-                ) : (
-                  <button onClick={() => goTo('/auth')} style={{
-                    background: 'transparent', border: 'none', cursor: 'pointer',
-                    fontSize: 13, fontWeight: 800, color: '#0284c7', fontFamily: 'inherit', padding: 0
-                  }}>
-                    Sign In →
-                  </button>
-                )}
-              </div>
-            }
-          />
-        )}
-      </AnimatePresence>
-    </>
-  )
 }
 
 function SmartHeader({ dark, toggleTheme }) {
@@ -273,9 +168,9 @@ export default function App() {
     : 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 50%, #f0f9ff 100%)'
 
   return (
-    <ThemeContext.Provider value={{ dark }}>
-      <AuthContext.Provider value={{ user, signOut, profile, fetchProfile, authLoaded }}>
-        <ModulesContext.Provider value={{ modules, modulesLoaded, modulesError, refreshModules: loadModules }}>
+    <ThemeContextProvider dark={dark}>
+      <AuthContextProvider user={user} signOut={signOut} profile={profile} fetchProfile={fetchProfile} authLoaded={authLoaded}>
+        <ModulesContextProvider modules={modules} modulesLoaded={modulesLoaded} modulesError={modulesError} refreshModules={loadModules}>
         <ToastProvider>
         <Router>
           <div style={{
@@ -316,8 +211,20 @@ export default function App() {
           </div>
         </Router>
         </ToastProvider>
-        </ModulesContext.Provider>
-      </AuthContext.Provider>
-    </ThemeContext.Provider>
+        </ModulesContextProvider>
+      </AuthContextProvider>
+    </ThemeContextProvider>
   )
+}
+
+// Thin provider wrappers so the JSX above stays readable — same
+// contexts as before, just sourced from ./contexts now.
+function ThemeContextProvider({ dark, children }) {
+  return <ThemeContext.Provider value={{ dark }}>{children}</ThemeContext.Provider>
+}
+function AuthContextProvider({ user, signOut, profile, fetchProfile, authLoaded, children }) {
+  return <AuthContext.Provider value={{ user, signOut, profile, fetchProfile, authLoaded }}>{children}</AuthContext.Provider>
+}
+function ModulesContextProvider({ modules, modulesLoaded, modulesError, refreshModules, children }) {
+  return <ModulesContext.Provider value={{ modules, modulesLoaded, modulesError, refreshModules }}>{children}</ModulesContext.Provider>
 }

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { getTheme } from '../theme'
-import { useAuth } from '../App'
+import { useAuth } from '../contexts'
 import { subscribeToPush } from '../lib/pushNotifications'
 import { supabase } from '../supabase'
 import { useToast } from './ToastProvider'
