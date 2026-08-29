@@ -68,10 +68,11 @@ function onActivateKeyDown(handler) {
 // "PULSE" cascade in one word at a time; the tagline line fades in
 // once both words have landed. All relative to ENTRANCE_PAUSE, the
 // same shared "moment to load" every other animated element on this
-// page also waits out first.
-const BRAND_WORDS_START = ENTRANCE_PAUSE + 0.3
-const BRAND_WORD_STAGGER = 0.13
-const BRAND_TAGLINE_DELAY = BRAND_WORDS_START + BRAND_WORD_STAGGER * 2 + 0.15
+// page also waits out first. Widened from the first pass so each step
+// reads as its own deliberate beat rather than a quick flurry.
+const BRAND_WORDS_START = ENTRANCE_PAUSE + 0.45
+const BRAND_WORD_STAGGER = 0.2
+const BRAND_TAGLINE_DELAY = BRAND_WORDS_START + BRAND_WORD_STAGGER * 2 + 0.2
 
 const brandWordsContainer = {
   hidden: {},
@@ -79,7 +80,7 @@ const brandWordsContainer = {
 }
 const brandWordItem = {
   hidden: { opacity: 0, y: 10 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.35, ease: 'easeOut' } },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: 'easeOut' } },
 }
 
 function ZnuPulseBrand({ dark, pt }) {
@@ -88,7 +89,7 @@ function ZnuPulseBrand({ dark, pt }) {
       <motion.div
         initial={{ opacity: 0, x: -20 }}
         animate={{ opacity: 1, x: 0 }}
-        transition={{ duration: 0.5, delay: ENTRANCE_PAUSE }}
+        transition={{ duration: 0.7, delay: ENTRANCE_PAUSE }}
         style={{
           width: 44, height: 44, flexShrink: 0,
           borderRadius: 12, overflow: 'hidden',
@@ -115,7 +116,7 @@ function ZnuPulseBrand({ dark, pt }) {
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: BRAND_TAGLINE_DELAY }}
+          transition={{ duration: 0.55, delay: BRAND_TAGLINE_DELAY }}
           style={{
             fontFamily: pulseFonts.body, fontWeight: 700, fontSize: 9, letterSpacing: 2.5,
             color: pt.faint, marginTop: 5, textTransform: 'uppercase'
@@ -239,7 +240,7 @@ export default function Home({ dark, toggleTheme }) {
     <motion.h2
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, delay: ENTRANCE_PAUSE + 0.2 }}
+      transition={{ duration: 0.7, delay: ENTRANCE_PAUSE + 0.35 }}
       style={{
         color: pt.faint,
         fontSize: 12, fontWeight: 700, letterSpacing: 2.5,
@@ -335,7 +336,7 @@ export default function Home({ dark, toggleTheme }) {
               <motion.div
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.5, delay: ENTRANCE_PAUSE }}
+                transition={{ duration: 0.7, delay: ENTRANCE_PAUSE }}
                 style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}
               >
                 <button onClick={toggleTheme} style={utilityBtnStyle} aria-label={dark ? 'Switch to light mode' : 'Switch to dark mode'}>{dark ? '☀️' : '🌙'}</button>
@@ -383,7 +384,7 @@ export default function Home({ dark, toggleTheme }) {
           <motion.div className="pulse-wide"
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: ENTRANCE_PAUSE + 0.15 }}
+            transition={{ duration: 0.7, delay: ENTRANCE_PAUSE + 0.25 }}
           >
             <NotifyPermissionButton dark={dark} label="🔔 Enable exam & deadline reminders" />
           </motion.div>
@@ -447,7 +448,7 @@ export default function Home({ dark, toggleTheme }) {
               <motion.div className="pulse-hero-panel"
                 initial={{ opacity: 0, scale: 0.85 }}
                 animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.6, delay: ENTRANCE_PAUSE + 0.3 }}
+                transition={{ duration: 0.85, delay: ENTRANCE_PAUSE + 0.5 }}
                 style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
               >
                 <EcgHero height="100%" />
@@ -457,7 +458,7 @@ export default function Home({ dark, toggleTheme }) {
                 <motion.div
                   initial={{ opacity: 0, y: 16 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: ENTRANCE_PAUSE + 0.25 }}
+                  transition={{ duration: 0.7, delay: ENTRANCE_PAUSE + 0.4 }}
                   style={{ display: 'flex', alignItems: 'center', gap: 8, color: pt.cobalt, fontSize: 11, fontWeight: 700, letterSpacing: 2.5, textTransform: 'uppercase', marginBottom: 14 }}
                 >
                   <span style={{ width: 6, height: 6, borderRadius: '50%', background: pt.cobalt, display: 'inline-block' }} />
@@ -468,7 +469,7 @@ export default function Home({ dark, toggleTheme }) {
                     <div style={{ color: pt.sub, fontSize: 13 }}>No active modules yet.</div>
                   )}
                   {activeModules.map((mod, i) => (
-                    <PulseCard key={mod.id} dark={dark} delay={250 + i * 70} accent={mod.color}
+                    <PulseCard key={mod.id} dark={dark} delay={400 + i * 110} accent={mod.color}
                       onClick={() => navigate(`/module/${mod.id}`)}
                       style={{ borderRadius: 999, padding: '10px 18px 10px 10px', display: 'flex', alignItems: 'center', gap: 14 }}>
                       <div style={{
@@ -494,7 +495,7 @@ export default function Home({ dark, toggleTheme }) {
               {toolCards.map((card, i) => {
                 const accentColor = card.accent === 'amber' ? pt.amber : pt.indigo
                 return (
-                  <PulseCard key={i} dark={dark} delay={500 + i * 70} accent={accentColor}
+                  <PulseCard key={i} dark={dark} delay={750 + i * 110} accent={accentColor}
                     onClick={() => navigate(card.to)}
                     style={{ borderRadius: 22, padding: '18px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
@@ -518,7 +519,7 @@ export default function Home({ dark, toggleTheme }) {
           <motion.div className="pulse-wide"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ duration: 0.5, delay: ENTRANCE_PAUSE + 0.6 }}
+            transition={{ duration: 0.7, delay: ENTRANCE_PAUSE + 1.1 }}
             style={{ display: 'flex', alignItems: 'center', gap: 14, justifyContent: 'center' }}
           >
             <div style={{ height: 1, background: pt.border, flex: 1, maxWidth: 120 }} />
@@ -535,7 +536,7 @@ export default function Home({ dark, toggleTheme }) {
             {sectionTitle('✓ Completed Modules')}
             <AutoGrid>
               {completedModules.map((mod, i) => (
-                <PulseCard key={mod.id} dark={dark} delay={i * 70}
+                <PulseCard key={mod.id} dark={dark} delay={i * 110}
                   onClick={() => navigate(`/module/${mod.id}`)}
                   style={{ padding: 'clamp(20px, 2vw, 28px)', textAlign: 'center' }}>
                   <div style={{ fontSize: 'clamp(28px, 3vw, 42px)', marginBottom: 8, filter: 'grayscale(0.5)' }}>{mod.icon}</div>

@@ -71,6 +71,12 @@ export default function PulseCard({ children, dark, onClick, delay = 0, style = 
 
   const innerContentStyle = { position: 'relative', zIndex: 1, ...contentStyle }
 
+  // `delay` arrives in milliseconds (e.g. delay={i * 70} at call sites
+  // in Home.jsx). The 1.5x here widens the gap between cascading items
+  // in a list/grid — same relative order, just a more leisurely pace
+  // between each one appearing instead of a quick burst.
+  const entranceDelay = ENTRANCE_PAUSE + (delay / 1000) * 1.5
+
   return (
     <motion.div
       role={interactive ? 'button' : undefined}
@@ -83,7 +89,7 @@ export default function PulseCard({ children, dark, onClick, delay = 0, style = 
       style={{ position: 'relative' }}
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, delay: ENTRANCE_PAUSE + delay / 1000, ease: [0.34, 1.56, 0.64, 1] }}
+      transition={{ duration: 0.75, delay: entranceDelay, ease: [0.34, 1.56, 0.64, 1] }}
       whileTap={interactive ? { scale: 0.99 } : undefined}
     >
       <motion.div
