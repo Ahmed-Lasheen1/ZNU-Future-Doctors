@@ -4,10 +4,14 @@ const HERO_WEBP = '/pulse-hero.webp'
 const HERO_PNG = '/pulse-hero.png'
 const HERO_WEBP_MOBILE = '/pulse-hero-mobile.webp'
 const HERO_PNG_MOBILE = '/pulse-hero-mobile.png'
-const LINE_MASK = '/pulse-line-mask.png'
 
 const ART_WIDTH = 879
 const ART_HEIGHT = 621
+const BEAM_DURATION = '7s'
+
+// ضع هنا مسار الـ SVG الخاص بالخط فقط (النبضة)
+// لو مش معاك المسار دقيق، تقدر تجيبه من ملف الـ SVG أو Figma (الـ vector path)
+const ECG_PATH_DATA = "M 0,310 L 300,310 L 330,200 L 360,450 L 400,100 L 440,500 L 470,310 L 879,310" 
 
 function usePrefersReducedMotion() {
   const [reduced, setReduced] = useState(false)
@@ -48,22 +52,20 @@ export default function EcgHero({ height = 220 }) {
       position: 'relative', width: '100%', height, maxHeight: '100%',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
     }}>
-      {/* حقن الـ CSS Animation المستند على GPU */}
       <style>{`
-        @keyframes cometPass {
+        @keyframes flowComet {
           0% {
-            transform: translate3d(-200px, 0, 0);
-          }
-          50% {
-            transform: translate3d(320px, 0, 0);
+            stroke-dashoffset: 1200;
           }
           100% {
-            transform: translate3d(900px, 0, 0);
+            stroke-dashoffset: -1200;
           }
         }
-        .comet-beam {
-          animation: cometPass 7s cubic-bezier(0.2, 0.8, 0.3, 0.6) infinite;
-          will-change: transform;
+        .ecg-comet {
+          /* stroke-dasharray: [طول الشهاب] [مسافة الفراغ بين كل شهاب والتاني] */
+          stroke-dasharray: 180 1200;
+          animation: flowComet ${BEAM_DURATION} cubic-bezier(0.4, 0.0, 0.2, 1) infinite;
+          will-change: stroke-dashoffset;
         }
       `}</style>
 
@@ -74,46 +76,39 @@ export default function EcgHero({ height = 220 }) {
         style={{ display: 'block', overflow: 'hidden' }}
       >
         <defs>
-          <mask id="pulseLineMask" maskUnits="userSpaceOnUse" x="0" y="0" width={ART_WIDTH} height={ART_HEIGHT}>
-            <image href={LINE_MASK} x="0" y="0" width={ART_WIDTH} height={ART_HEIGHT} />
-          </mask>
-
-          <linearGradient id="pulseBeamGradient">
+          {/* التدرج اللوني للشهاب ليكون مرن وموازي للمسار */}
+          <linearGradient id="cometStrokeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
             <stop offset="0%" stopColor="#0c3a58" stopOpacity="0" />
-            <stop offset="30%" stopColor="#0e6a97" stopOpacity="0.3" />
-            <stop offset="60%" stopColor="#0e93c9" stopOpacity="0.75" />
-            <stop offset="85%" stopColor="#3ad1ff" stopOpacity="0.95" />
-            <stop offset="96%" stopColor="#00f0ff" stopOpacity="1" />
-            <stop offset="100%" stopColor="#52e5ff" stopOpacity="0" />
+            <stop offset="40%" stopColor="#0e93c9" stopOpacity="0.4" />
+            <stop offset="80%" stopColor="#3ad1ff" stopOpacity="0.9" />
+            <stop offset="100%" stopColor="#00f0ff" stopOpacity="1" />
           </linearGradient>
 
-          <filter id="pulseBeamHalo" x="-100%" y="-100%" width="300%" height="300%">
-            <feGaussianBlur stdDeviation="16" />
-          </filter>
-          <filter id="pulseBeamGlow" x="-70%" y="-70%" width="240%" height="240%">
-            <feGaussianBlur stdDeviation="8" result="blur" />
+          {/* التوهج الخاص بالمسار */}
+          <filter id="pathGlow" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="6" result="blur" />
             <feMerge>
-              <feMergeNode in="blur" />
               <feMergeNode in="blur" />
               <feMergeNode in="SourceGraphic" />
             </feMerge>
           </filter>
         </defs>
 
+        {/* الخلفية الأصلية */}
         <image href={heroSrc} x="0" y="0" width={ART_WIDTH} height={ART_HEIGHT} />
 
+        {/* الشهاب المتحرك فوق المسار مباشرة */}
         {!reduced && (
-          <g mask="url(#pulseLineMask)">
-            {/* مجموعة واحدة تحرك العنصرين معاً عبر CSS Transform */}
-            <g className="comet-beam">
-              <rect x="0" y="0" width={ART_WIDTH * 0.25} height={ART_HEIGHT}
-                rx={(ART_WIDTH * 0.25) / 2} ry={ART_HEIGHT / 2}
-                fill="url(#pulseBeamGradient)" filter="url(#pulseBeamHalo)" opacity="0.95" />
-              
-              <rect x="0" y="0" width={ART_WIDTH * 0.25} height={ART_HEIGHT}
-                rx={(ART_WIDTH * 0.25) / 2} ry={ART_HEIGHT / 2}
-                fill="url(#pulseBeamGradient)" filter="url(#pulseBeamGlow)" />
-            </g>
+          <g filter="url(#pathGlow)">
+            <path
+              d={ECG_PATH_DATA}
+              fill="none"
+              stroke="url(#cometStrokeGradient)"
+              strokeWidth="6"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="ecg-comet"
+            />
           </g>
         )}
       </svg>
