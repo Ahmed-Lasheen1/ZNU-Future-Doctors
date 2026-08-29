@@ -85,7 +85,7 @@ export default function EcgHero({ height = 220 }) {
            point moving along the wire's actual length, which cannot
            visually split into two, unlike a horizontally-sweeping band. */
         @keyframes pulseHeroDash {
-          0%   { stroke-dashoffset: 1; }
+          0%   { stroke-dashoffset: 1.16; }
           100% { stroke-dashoffset: 0; }
         }
         .pulse-hero-beam {
