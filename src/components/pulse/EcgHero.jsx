@@ -29,32 +29,30 @@ const CENTER_PATH = 'M0,310.5 L4,310.5 L8,310.5 L12,310.5 L16,310.5 L20,310.5 L2
 // governed by the real pixels, not by these numbers.
 const BASE_STROKE_WIDTH = 46
 
-// Dash pattern: a short lit segment (0.05) then a long gap (1.2). The
-// TOTAL pattern length is 0.05 + 1.2 = 1.25 — the dashoffset animation
-// below must travel exactly that much per loop, or the restart won't
-// land on the same phase (that mismatch was the earlier "shift" bug).
+// Dash pattern: a short lit segment then a long gap. The TOTAL pattern
+// length is DASH_ON + DASH_GAP, and the dashoffset animation below
+// must travel exactly that much per loop, or the restart won't land
+// on the same phase (a mismatch there was the earlier "shift" bug).
 const DASH_ON = 0.05
 const DASH_GAP = 1.2
 const DASH_TOTAL = DASH_ON + DASH_GAP
 
 const BEAM_DURATION = 6 // seconds
 
-// Comet trail: each layer is the SAME dash animation, just started a
-// little later (positive CSS animation-delay). A layer that started
-// later is, at any given instant, showing an EARLIER point in its own
-// cycle than a delay=0 layer — i.e. it hasn't traveled as far along
-// the path yet — which reads as "further behind" the leading point.
-// Ordered here from the tail (largest delay, widest, dimmest, darkest)
-// to the front tip (delay 0, narrowest, brightest) — narrowing width
-// toward the front is what reads as a "point" rather than a blob.
-const TAIL_STEP = 0.09 // seconds between each trailing layer
+// Comet trail: each layer is the SAME dash animation, started a little
+// later than the previous one (positive CSS animation-delay), so at
+// any instant it's showing an earlier point in its own cycle than the
+// delay=0 layer — i.e. further behind the leading point. Trimmed from
+// 7 to 5 layers, and — more importantly — the blur below is now
+// applied ONCE to the whole group instead of once per layer, which is
+// what was actually causing the lag (feGaussianBlur is expensive, and
+// computing it 7 separate times every frame adds up fast).
+const TAIL_STEP = 0.11
 const LAYERS = [
-  { delay: TAIL_STEP * 6, opacity: 0.05, widthMul: 1.6, color: '#082438' },
-  { delay: TAIL_STEP * 5, opacity: 0.09, widthMul: 1.4, color: '#0a3450' },
-  { delay: TAIL_STEP * 4, opacity: 0.16, widthMul: 1.2, color: '#0c4a72' },
-  { delay: TAIL_STEP * 3, opacity: 0.26, widthMul: 1.0, color: '#0e6a97' },
-  { delay: TAIL_STEP * 2, opacity: 0.42, widthMul: 0.75, color: '#0e93c9' },
-  { delay: TAIL_STEP * 1, opacity: 0.65, widthMul: 0.5,  color: '#3ad1ff' },
+  { delay: TAIL_STEP * 4, opacity: 0.08, widthMul: 1.5, color: '#0a3450' },
+  { delay: TAIL_STEP * 3, opacity: 0.18, widthMul: 1.15, color: '#0c4a72' },
+  { delay: TAIL_STEP * 2, opacity: 0.32, widthMul: 0.85, color: '#0e93c9' },
+  { delay: TAIL_STEP * 1, opacity: 0.6,  widthMul: 0.55, color: '#3ad1ff' },
   { delay: 0,             opacity: 1,    widthMul: 0.32, color: '#7fe6ff' }, // pointed front tip
 ]
 
@@ -108,6 +106,7 @@ export default function EcgHero({ height = 220 }) {
           animation-duration: ${BEAM_DURATION}s;
           animation-timing-function: linear;
           animation-iteration-count: infinite;
+          will-change: stroke-dashoffset;
         }
         @media (prefers-reduced-motion: reduce) {
           .pulse-hero-beam-layer { animation: none !important; opacity: 0.35 !important; }
@@ -124,8 +123,13 @@ export default function EcgHero({ height = 220 }) {
           <mask id="pulseLineMask" maskUnits="userSpaceOnUse" x="0" y="0" width={ART_WIDTH} height={ART_HEIGHT}>
             <image href={LINE_MASK} x="0" y="0" width={ART_WIDTH} height={ART_HEIGHT} />
           </mask>
-          <filter id="pulseBeamSoftGlow" x="-100%" y="-100%" width="300%" height="300%">
-            <feGaussianBlur stdDeviation="5" />
+          {/* Smaller filter region than before (less area to compute)
+              and applied to the whole layer group at once below,
+              rather than once per path — this is the main fix for the
+              lag: 5 separately-blurred elements is much more expensive
+              than 1 blur pass over all 5 combined. */}
+          <filter id="pulseBeamSoftGlow" x="-40%" y="-40%" width="180%" height="180%">
+            <feGaussianBlur stdDeviation="4" />
           </filter>
         </defs>
 
@@ -134,9 +138,10 @@ export default function EcgHero({ height = 220 }) {
 
         {/* Clipped to the real tube's exact pixel shape — whatever
             width these strokes are drawn at, only the part overlapping
-            the real line ever becomes visible. */}
+            the real line ever becomes visible. The single filter here
+            blurs the combined result of all layers just once. */}
         {!reduced && (
-          <g mask="url(#pulseLineMask)">
+          <g mask="url(#pulseLineMask)" filter="url(#pulseBeamSoftGlow)">
             {LAYERS.map((layer, i) => (
               <path
                 key={i}
@@ -149,7 +154,6 @@ export default function EcgHero({ height = 220 }) {
                 strokeWidth={BASE_STROKE_WIDTH * layer.widthMul}
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                filter="url(#pulseBeamSoftGlow)"
                 style={{ animationDelay: `${layer.delay}s` }}
               />
             ))}
