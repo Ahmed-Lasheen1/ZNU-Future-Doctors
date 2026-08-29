@@ -21,7 +21,7 @@ const ART_HEIGHT = 621
 // artwork — kept fairly narrow (and the travel range only a little
 // past each edge) so the glow crosses the visible pulse for nearly
 // the whole cycle, with no dead "off-screen travel" time.
-const BAND_WIDTH = ART_WIDTH * 0.30
+const BAND_WIDTH = ART_WIDTH * 0.25
 const BEAM_DURATION = '7s'
 
 // The band's own bright center sits at ~50% of its width. To make the
