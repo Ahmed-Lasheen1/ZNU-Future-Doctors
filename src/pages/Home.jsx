@@ -52,21 +52,37 @@ function moduleBlurb(name) {
 const statNumStyle = { fontFamily: pulseFonts.display, fontWeight: 800, fontSize: 30 }
 
 // ── Reveal order ───────────────────────────────────────────────────
-// The ECG hero is the very first thing to appear (right when
-// ENTRANCE_PAUSE ends), then the logo — everything else keeps its
-// original timing untouched. HERO_DELAY takes the slot ENTRANCE_PAUSE
-// used to sit in for the logo; LOGO_DELAY takes the slot the hero used
-// to sit in — a straight swap of the two start times rather than a
-// re-tuning of the rest of the page.
-const HERO_DELAY = ENTRANCE_PAUSE
-const LOGO_DELAY = ENTRANCE_PAUSE + 0.5
+// Six explicit groups, in this order: hero → logo → weekly report →
+// active modules → tools → completed modules. Each _START constant is
+// the earlier group's start plus a fixed gap, so nudging one value
+// shifts everything after it in sequence rather than needing every
+// number re-tuned by hand. NOTIFY_DELAY and FOOTER_DELAY aren't part
+// of the named sequence but sit naturally between the groups they're
+// positioned next to in the page.
+const HERO_DELAY = ENTRANCE_PAUSE                        // 1. Hero
+const LOGO_DELAY = ENTRANCE_PAUSE + 0.5                   // 2. Logo (+ NavMenu)
+const NOTIFY_DELAY = LOGO_DELAY + 0.3
+const WEEKLY_REPORT_START = LOGO_DELAY + 0.6               // 3. Weekly Report
+const ACTIVE_MODULES_START = WEEKLY_REPORT_START + 0.6      // 4. Active Modules
+const TOOLS_START = ACTIVE_MODULES_START + 0.6               // 5. Tools
+const FOOTER_DELAY = TOOLS_START + 0.5
+const COMPLETED_MODULES_START = TOOLS_START + 0.6             // 6. Completed Modules
+
+// PulseCard's own entrance formula is `ENTRANCE_PAUSE + (delay/1000) *
+// 1.5` (see PulseCard.jsx) — this converts "I want this card's group
+// to start at N seconds" into the millisecond `delay` prop that
+// formula expects, so every group below is defined by WHEN it starts
+// rather than by a hand-picked ms number.
+function msFor(targetSeconds) {
+  return Math.round(((targetSeconds - ENTRANCE_PAUSE) / 1.5) * 1000)
+}
 
 // ── Brand block timeline ──────────────────────────────────────────
-// Logo icon slides in first (now at LOGO_DELAY, after the hero);
-// once it's mostly settled, "ZNU" and "PULSE" cascade in one word at
-// a time; the tagline line fades in once both words have landed —
-// all anchored to LOGO_DELAY so the brand cascade stays in sync with
-// wherever the logo itself now starts.
+// Logo icon slides in first (at LOGO_DELAY); once it's mostly
+// settled, "ZNU" and "PULSE" cascade in one word at a time; the
+// tagline line fades in once both words have landed — all anchored to
+// LOGO_DELAY so the brand cascade stays in sync with wherever the
+// logo itself starts.
 const BRAND_WORDS_START = LOGO_DELAY + 0.45
 const BRAND_WORD_STAGGER = 0.2
 const BRAND_TAGLINE_DELAY = BRAND_WORDS_START + BRAND_WORD_STAGGER * 2 + 0.2
@@ -232,12 +248,13 @@ export default function Home({ dark, toggleTheme }) {
 
   // Same fade-up entrance language used across the rest of this page's
   // motion.div elements — kept as a helper since it's reused for both
-  // section title instances (Tools, Completed Modules).
-  const sectionTitle = (text) => (
+  // section title instances (Tools, Completed Modules), each with its
+  // own place in the 6-group reveal order via the delaySeconds arg.
+  const sectionTitle = (text, delaySeconds) => (
     <motion.h2
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.7, delay: ENTRANCE_PAUSE + 0.35 }}
+      transition={{ duration: 0.7, delay: delaySeconds }}
       style={{
         color: pt.faint,
         fontSize: 12, fontWeight: 700, letterSpacing: 2.5,
@@ -325,7 +342,8 @@ export default function Home({ dark, toggleTheme }) {
               {/* Theme toggle, search, and profile/sign-in used to live
                   here as separate buttons — all folded into NavMenu now
                   (its nav list + footer row). This is the only header
-                  control left on the right. */}
+                  control left on the right. Paired with the logo's own
+                  LOGO_DELAY so both sides of the header land together. */}
               <motion.div
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
@@ -339,15 +357,18 @@ export default function Home({ dark, toggleTheme }) {
           <motion.div className="pulse-wide"
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, delay: ENTRANCE_PAUSE + 0.25 }}
+            transition={{ duration: 0.7, delay: NOTIFY_DELAY }}
           >
             <NotifyPermissionButton dark={dark} label="🔔 Enable exam & deadline reminders" />
           </motion.div>
 
           <div className="pulse-wide">
             <div className="pulse-dash-grid">
+              {/* 3. Weekly Report group — every stat tile in this
+                  column starts from WEEKLY_REPORT_START, with the same
+                  internal stagger between tiles as before. */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                <StatTile dark={dark} pt={pt} delay={80} accent={pt.cobalt}>
+                <StatTile dark={dark} pt={pt} delay={msFor(WEEKLY_REPORT_START)} accent={pt.cobalt}>
                   <div style={{ color: pt.faint, fontSize: 11, fontWeight: 700, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 8 }}>
                     📊 Weekly Report
                   </div>
@@ -362,19 +383,19 @@ export default function Home({ dark, toggleTheme }) {
                   </div>
                 </StatTile>
 
-                <StatTile dark={dark} pt={pt} delay={140} accent={pt.indigo}>
+                <StatTile dark={dark} pt={pt} delay={msFor(WEEKLY_REPORT_START) + 60} accent={pt.indigo}>
                   <div style={{ ...statNumStyle, color: pt.text }}>{weeklySummary ? weeklySummary.totalAttempted : 0}</div>
                   <div style={{ color: pt.sub, fontSize: 12, marginTop: 4 }}>Questions attempted</div>
                 </StatTile>
 
                 <div className="pulse-stat-row-2">
-                  <StatTile dark={dark} pt={pt} delay={200} accent={pt.indigo}>
+                  <StatTile dark={dark} pt={pt} delay={msFor(WEEKLY_REPORT_START) + 120} accent={pt.indigo}>
                     <div style={{ color: pt.indigo, fontWeight: 800, fontSize: 15 }}>
                       {weeklySummary?.topSubjectName || '—'}
                     </div>
                     <div style={{ color: pt.sub, fontSize: 11, marginTop: 4 }}>Most practiced</div>
                   </StatTile>
-                  <StatTile dark={dark} pt={pt} delay={230} accent={pt.terracotta}>
+                  <StatTile dark={dark} pt={pt} delay={msFor(WEEKLY_REPORT_START) + 150} accent={pt.terracotta}>
                     <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, color: pt.terracotta }}>
                       <span style={{ fontSize: 16 }}>🔥</span>
                       <span style={{ fontFamily: pulseFonts.display, fontWeight: 800, fontSize: 22 }}>{streak}</span>
@@ -384,7 +405,7 @@ export default function Home({ dark, toggleTheme }) {
                 </div>
 
                 {(pausedExam || announcement) && (
-                  <PulseCard dark={dark} delay={280} accent={pt.cobalt}
+                  <PulseCard dark={dark} delay={msFor(WEEKLY_REPORT_START) + 200} accent={pt.cobalt}
                     onClick={pausedExam ? () => navigate('/mcq') : undefined}
                     style={{ padding: '16px 20px' }}>
                     {pausedExam ? (
@@ -400,6 +421,7 @@ export default function Home({ dark, toggleTheme }) {
                 )}
               </div>
 
+              {/* 1. Hero — first thing to appear on the whole page. */}
               <motion.div className="pulse-hero-panel"
                 initial={{ opacity: 0, scale: 0.85 }}
                 animate={{ opacity: 1, scale: 1 }}
@@ -409,11 +431,12 @@ export default function Home({ dark, toggleTheme }) {
                 <EcgHero height="100%" />
               </motion.div>
 
+              {/* 4. Active Modules group. */}
               <div>
                 <motion.div
                   initial={{ opacity: 0, y: 16 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.7, delay: ENTRANCE_PAUSE + 0.4 }}
+                  transition={{ duration: 0.7, delay: ACTIVE_MODULES_START }}
                   style={{ display: 'flex', alignItems: 'center', gap: 8, color: pt.cobalt, fontSize: 11, fontWeight: 700, letterSpacing: 2.5, textTransform: 'uppercase', marginBottom: 14 }}
                 >
                   <span style={{ width: 6, height: 6, borderRadius: '50%', background: pt.cobalt, display: 'inline-block' }} />
@@ -424,7 +447,7 @@ export default function Home({ dark, toggleTheme }) {
                     <div style={{ color: pt.sub, fontSize: 13 }}>No active modules yet.</div>
                   )}
                   {activeModules.map((mod, i) => (
-                    <PulseCard key={mod.id} dark={dark} delay={400 + i * 110} accent={mod.color}
+                    <PulseCard key={mod.id} dark={dark} delay={msFor(ACTIVE_MODULES_START) + i * 110} accent={mod.color}
                       onClick={() => navigate(`/module/${mod.id}`)}
                       style={{ borderRadius: 999, padding: '10px 18px 10px 10px', display: 'flex', alignItems: 'center', gap: 14 }}>
                       <div style={{
@@ -444,13 +467,14 @@ export default function Home({ dark, toggleTheme }) {
             </div>
           </div>
 
+          {/* 5. Tools group. */}
           <div className="pulse-wide">
-            {sectionTitle('⚡ Tools')}
+            {sectionTitle('⚡ Tools', TOOLS_START)}
             <div className="pulse-tools-grid">
               {toolCards.map((card, i) => {
                 const accentColor = card.accent === 'amber' ? pt.amber : pt.indigo
                 return (
-                  <PulseCard key={i} dark={dark} delay={750 + i * 110} accent={accentColor}
+                  <PulseCard key={i} dark={dark} delay={msFor(TOOLS_START) + i * 110} accent={accentColor}
                     onClick={() => navigate(card.to)}
                     style={{ borderRadius: 22, padding: '18px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
@@ -474,7 +498,7 @@ export default function Home({ dark, toggleTheme }) {
           <motion.div className="pulse-wide"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ duration: 0.7, delay: ENTRANCE_PAUSE + 1.1 }}
+            transition={{ duration: 0.7, delay: FOOTER_DELAY }}
             style={{ display: 'flex', alignItems: 'center', gap: 14, justifyContent: 'center' }}
           >
             <div style={{ height: 1, background: pt.border, flex: 1, maxWidth: 120 }} />
@@ -486,12 +510,13 @@ export default function Home({ dark, toggleTheme }) {
           </motion.div>
         </div>
 
+        {/* 6. Completed Modules group — last in the sequence. */}
         {completedModules.length > 0 && (
           <div className="pulse-wide" style={{ paddingBottom: 100 }}>
-            {sectionTitle('✓ Completed Modules')}
+            {sectionTitle('✓ Completed Modules', COMPLETED_MODULES_START)}
             <AutoGrid>
               {completedModules.map((mod, i) => (
-                <PulseCard key={mod.id} dark={dark} delay={i * 110}
+                <PulseCard key={mod.id} dark={dark} delay={msFor(COMPLETED_MODULES_START) + i * 110}
                   onClick={() => navigate(`/module/${mod.id}`)}
                   style={{ padding: 'clamp(20px, 2vw, 28px)', textAlign: 'center' }}>
                   <div style={{ fontSize: 'clamp(28px, 3vw, 42px)', marginBottom: 8, filter: 'grayscale(0.5)' }}>{mod.icon}</div>
