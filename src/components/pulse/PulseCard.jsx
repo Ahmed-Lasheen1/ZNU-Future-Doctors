@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { pulseGlass } from '../../premiumTheme'
+import { ENTRANCE_PAUSE } from '../../lib/pulseMotion'
 
 // Shared "liquid glass" card used across every card on the ZNU Pulse
 // Home redesign — one visual language, one place to tune it. Not used
@@ -14,10 +15,10 @@ import { pulseGlass } from '../../premiumTheme'
 //    but since it isn't the element listening for the hover itself,
 //    that visual movement can never cause the cursor to end up
 //    "outside" the hoverable area and re-trigger the gesture.
-// Putting both on ONE element (the previous version) meant that once
-// the card scaled up and lifted, its own hit-box moved out from under
-// the cursor near the edges — causing a rapid hover/unhover flicker
-// that only stopped once the cursor was dragged well clear of it.
+// Putting both on ONE element meant that once the card scaled up and
+// lifted, its own hit-box moved out from under the cursor near the
+// edges — causing a rapid hover/unhover flicker that only stopped
+// once the cursor was dragged well clear of it.
 export default function PulseCard({ children, dark, onClick, delay = 0, style = {} }) {
   const [hovered, setHovered] = useState(false)
   const { boxShadow: baseShadow } = pulseGlass(dark)
@@ -82,7 +83,7 @@ export default function PulseCard({ children, dark, onClick, delay = 0, style = 
       style={{ position: 'relative' }}
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, delay: delay / 1000, ease: [0.34, 1.56, 0.64, 1] }}
+      transition={{ duration: 0.5, delay: ENTRANCE_PAUSE + delay / 1000, ease: [0.34, 1.56, 0.64, 1] }}
       whileTap={interactive ? { scale: 0.99 } : undefined}
     >
       <motion.div

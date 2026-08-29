@@ -10,6 +10,7 @@ import AutoGrid from '../components/AutoGrid'
 import { computeStreak } from '../lib/streak'
 import { getGuestHistory } from '../lib/reviewStorage'
 import { loadSavedActiveExam } from '../lib/activeExam'
+import { ENTRANCE_PAUSE } from '../lib/pulseMotion'
 import NotifyPermissionButton from '../components/NotifyPermissionButton'
 import PulseCard from '../components/pulse/PulseCard'
 import EcgHero from '../components/pulse/EcgHero'
@@ -49,26 +50,77 @@ function moduleBlurb(name) {
 
 const statNumStyle = { fontFamily: pulseFonts.display, fontWeight: 800, fontSize: 30 }
 
+function initialOf(name) {
+  return name && name.trim() ? name.trim().charAt(0).toUpperCase() : '?'
+}
+
+function onActivateKeyDown(handler) {
+  return (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault()
+      handler()
+    }
+  }
+}
+
+// ── Brand block timeline ──────────────────────────────────────────
+// Logo icon slides in first; once it's mostly settled, "ZNU" and
+// "PULSE" cascade in one word at a time; the tagline line fades in
+// once both words have landed. All relative to ENTRANCE_PAUSE, the
+// same shared "moment to load" every other animated element on this
+// page also waits out first.
+const BRAND_WORDS_START = ENTRANCE_PAUSE + 0.3
+const BRAND_WORD_STAGGER = 0.13
+const BRAND_TAGLINE_DELAY = BRAND_WORDS_START + BRAND_WORD_STAGGER * 2 + 0.15
+
+const brandWordsContainer = {
+  hidden: {},
+  visible: { transition: { delayChildren: BRAND_WORDS_START, staggerChildren: BRAND_WORD_STAGGER } },
+}
+const brandWordItem = {
+  hidden: { opacity: 0, y: 10 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.35, ease: 'easeOut' } },
+}
+
 function ZnuPulseBrand({ dark, pt }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-      <div style={{
-        width: 44, height: 44, flexShrink: 0,
-        borderRadius: 12, overflow: 'hidden',
-        background: pt.surfaceFlat, border: `1px solid ${pt.cobaltBorder}`,
-      }}>
+      <motion.div
+        initial={{ opacity: 0, x: -20 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.5, delay: ENTRANCE_PAUSE }}
+        style={{
+          width: 44, height: 44, flexShrink: 0,
+          borderRadius: 12, overflow: 'hidden',
+          background: pt.surfaceFlat, border: `1px solid ${pt.cobaltBorder}`,
+        }}
+      >
         <img src={LOGO_SRC} alt="ZNU Pulse" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-      </div>
+      </motion.div>
 
       <div>
-        <div style={{
-          fontFamily: pulseFonts.display, fontWeight: 800, fontSize: 20, letterSpacing: 1.2,
-          color: pt.text, lineHeight: 1
-        }}>ZNU <span style={{ color: pt.cobalt }}>PULSE</span></div>
-        <div style={{
-          fontFamily: pulseFonts.body, fontWeight: 700, fontSize: 9, letterSpacing: 2.5,
-          color: pt.faint, marginTop: 5, textTransform: 'uppercase'
-        }}>For Future Doctors</div>
+        <motion.div
+          initial="hidden"
+          animate="visible"
+          variants={brandWordsContainer}
+          style={{
+            fontFamily: pulseFonts.display, fontWeight: 800, fontSize: 20, letterSpacing: 1.2,
+            color: pt.text, lineHeight: 1
+          }}
+        >
+          <motion.span variants={brandWordItem} style={{ display: 'inline-block' }}>ZNU</motion.span>
+          {' '}
+          <motion.span variants={brandWordItem} style={{ display: 'inline-block', color: pt.cobalt }}>PULSE</motion.span>
+        </motion.div>
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: BRAND_TAGLINE_DELAY }}
+          style={{
+            fontFamily: pulseFonts.body, fontWeight: 700, fontSize: 9, letterSpacing: 2.5,
+            color: pt.faint, marginTop: 5, textTransform: 'uppercase'
+          }}
+        >For Future Doctors</motion.div>
       </div>
     </div>
   )
@@ -187,7 +239,7 @@ export default function Home({ dark, toggleTheme }) {
     <motion.h2
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, delay: 0.2 }}
+      transition={{ duration: 0.5, delay: ENTRANCE_PAUSE + 0.2 }}
       style={{
         color: pt.faint,
         fontSize: 12, fontWeight: 700, letterSpacing: 2.5,
@@ -195,6 +247,14 @@ export default function Home({ dark, toggleTheme }) {
         fontFamily: pulseFonts.body
       }}>{text}</motion.h2>
   )
+
+  const utilityBtnStyle = {
+    background: pt.surfaceFlat,
+    color: pt.cobalt,
+    border: `1px solid ${pt.border}`,
+    padding: '6px 14px', borderRadius: 10,
+    cursor: 'pointer', fontSize: 16, fontWeight: 700
+  }
 
   return (
     <div style={{ position: 'relative', minHeight: '100vh', overflowX: 'hidden' }}>
@@ -270,24 +330,52 @@ export default function Home({ dark, toggleTheme }) {
 
           <div className="pulse-wide">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-              <motion.div
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.5 }}
-              >
-                <ZnuPulseBrand dark={dark} pt={pt} />
-              </motion.div>
+              <ZnuPulseBrand dark={dark} pt={pt} />
 
-              {/* Search, theme toggle, and profile/sign-in used to live
-                  here as separate buttons — all folded into NavMenu now
-                  (its nav list + footer row). This is the only header
-                  control left on the right. */}
               <motion.div
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.5 }}
+                transition={{ duration: 0.5, delay: ENTRANCE_PAUSE }}
+                style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}
               >
-                <NavMenu dark={dark} toggleTheme={toggleTheme} />
+                <button onClick={toggleTheme} style={utilityBtnStyle} aria-label={dark ? 'Switch to light mode' : 'Switch to dark mode'}>{dark ? '☀️' : '🌙'}</button>
+                <NavMenu dark={dark} />
+                <button onClick={() => navigate('/search')} aria-label="Search" style={utilityBtnStyle}>🔍</button>
+
+                {user && profile ? (
+                  <div onClick={() => navigate('/profile')}
+                    role="button" tabIndex={0}
+                    onKeyDown={onActivateKeyDown(() => navigate('/profile'))}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 10,
+                      background: pt.surfaceFlat,
+                      border: `1px solid ${pt.border}`,
+                      borderRadius: 20, padding: '6px 14px 6px 6px', cursor: 'pointer',
+                      transition: 'all 0.2s'
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.borderColor = pt.cobaltBorder}
+                    onMouseLeave={e => e.currentTarget.style.borderColor = pt.border}>
+                    <div style={{
+                      width: 30, height: 30, borderRadius: '50%',
+                      background: `linear-gradient(135deg, ${pt.cobalt}, ${pt.indigo})`,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: 13, fontWeight: 900, color: '#fff', flexShrink: 0
+                    }}>
+                      {initialOf(profile.name)}
+                    </div>
+                    <div style={{ textAlign: 'left' }}>
+                      <div style={{ color: pt.text, fontSize: 12, fontWeight: 700 }}>Dr. {profile.name}</div>
+                      <div style={{ color: pt.amber, fontSize: 10, fontWeight: 700 }}>⭐ {profile.points} points</div>
+                    </div>
+                  </div>
+                ) : (
+                  <button onClick={() => navigate('/auth')} style={{
+                    background: pt.cobaltSoft, color: pt.cobalt,
+                    border: `1px solid ${pt.cobaltBorder}`,
+                    padding: '8px 16px', borderRadius: 20,
+                    cursor: 'pointer', fontSize: 13, fontWeight: 700
+                  }}>Sign In →</button>
+                )}
               </motion.div>
             </div>
           </div>
@@ -295,7 +383,7 @@ export default function Home({ dark, toggleTheme }) {
           <motion.div className="pulse-wide"
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.15 }}
+            transition={{ duration: 0.5, delay: ENTRANCE_PAUSE + 0.15 }}
           >
             <NotifyPermissionButton dark={dark} label="🔔 Enable exam & deadline reminders" />
           </motion.div>
@@ -359,7 +447,7 @@ export default function Home({ dark, toggleTheme }) {
               <motion.div className="pulse-hero-panel"
                 initial={{ opacity: 0, scale: 0.85 }}
                 animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.6, delay: 0.3 }}
+                transition={{ duration: 0.6, delay: ENTRANCE_PAUSE + 0.3 }}
                 style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
               >
                 <EcgHero height="100%" />
@@ -369,7 +457,7 @@ export default function Home({ dark, toggleTheme }) {
                 <motion.div
                   initial={{ opacity: 0, y: 16 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: 0.25 }}
+                  transition={{ duration: 0.5, delay: ENTRANCE_PAUSE + 0.25 }}
                   style={{ display: 'flex', alignItems: 'center', gap: 8, color: pt.cobalt, fontSize: 11, fontWeight: 700, letterSpacing: 2.5, textTransform: 'uppercase', marginBottom: 14 }}
                 >
                   <span style={{ width: 6, height: 6, borderRadius: '50%', background: pt.cobalt, display: 'inline-block' }} />
@@ -430,7 +518,7 @@ export default function Home({ dark, toggleTheme }) {
           <motion.div className="pulse-wide"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ duration: 0.5, delay: 0.6 }}
+            transition={{ duration: 0.5, delay: ENTRANCE_PAUSE + 0.6 }}
             style={{ display: 'flex', alignItems: 'center', gap: 14, justifyContent: 'center' }}
           >
             <div style={{ height: 1, background: pt.border, flex: 1, maxWidth: 120 }} />
