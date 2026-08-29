@@ -1,4 +1,5 @@
 import React, { useRef } from "react";
+import { createPortal } from "react-dom";
 import { motion, useMotionValue } from "framer-motion";
 import { Link } from "react-router-dom";
 
@@ -89,16 +90,28 @@ interface CurvedMenuProps {
   footer?: React.ReactNode;
 }
 
-// Render this wrapped in <AnimatePresence> at the call site so the
-// exit animation plays — see NavMenu in App.jsx.
+// Rendered wrapped in <AnimatePresence> at the call site (see NavMenu
+// in App.jsx) so the exit animation plays.
+//
+// IMPORTANT: this teleports its output to document.body via a portal.
+// `position: fixed` only positions relative to the viewport if none of
+// its ANCESTORS have a CSS `transform` applied — but framer-motion
+// keeps a `transform` inline style on any element it animates, even at
+// rest. If NavMenu is ever rendered inside a `motion.div` (e.g.
+// Home.jsx's animated header row), a non-portaled fixed panel would
+// get trapped inside that small ancestor instead of covering the
+// screen, making it look like the menu "isn't showing". The portal
+// sidesteps this entirely regardless of where NavMenu is mounted.
 export default function CurvedMenu({ setIsActive, navItems, footer }: CurvedMenuProps) {
-  return (
+  if (typeof document === "undefined") return null;
+
+  return createPortal(
     <motion.div
       variants={MENU_SLIDE_ANIMATION}
       initial="initial"
       animate="enter"
       exit="exit"
-      className="h-[100dvh] w-screen max-w-screen-sm fixed right-0 top-0 z-[1200] bg-white"
+      className="h-[100dvh] w-screen max-w-screen-sm fixed right-0 top-0 z-[2000] bg-white"
     >
       <div className="h-full pt-11 flex flex-col justify-between overflow-y-auto">
         <div className="flex flex-col text-5xl gap-3 mt-0 px-6 md:px-16">
@@ -116,6 +129,7 @@ export default function CurvedMenu({ setIsActive, navItems, footer }: CurvedMenu
         {footer}
       </div>
       <Curve />
-    </motion.div>
+    </motion.div>,
+    document.body
   );
 }
