@@ -331,7 +331,7 @@ export default function Home({ dark, toggleTheme }) {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.7, delay: LOGO_DELAY }}
               >
-                <NavMenu dark={dark} toggleTheme={toggleTheme} />
+                <NavMenu dark={dark} toggleTheme={toggleTheme} align="right" />
               </motion.div>
             </div>
           </div>
