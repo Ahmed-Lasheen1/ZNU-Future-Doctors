@@ -7,6 +7,7 @@ export default {
     './src/pages/Auth.tsx',
     './src/pages/ResetPassword.tsx',
     './src/lib/**/*.{ts,tsx}',
+    './src/App.jsx',
   ],
   corePlugins: { preflight: false },
   theme: {

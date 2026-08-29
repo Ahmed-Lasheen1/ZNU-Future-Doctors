@@ -1,11 +1,14 @@
 import { useState, useEffect, createContext, useContext, Suspense, lazy } from 'react'
 import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation } from 'react-router-dom'
+import { AnimatePresence } from 'framer-motion'
 import { supabase } from './supabase'
 import { getTheme } from './theme'
 import { fetchModulesSorted } from './lib/modules'
 import { subscribeOnlinePresence } from './lib/onlinePresence'
 import ErrorBoundary from './components/ErrorBoundary'
 import ToastProvider from './components/ToastProvider'
+import { MenuToggleIcon } from './components/ui/menu-toggle-icon'
+import CurvedMenu from './components/ui/curved-menu'
 import Home from './pages/Home'
 const Checklist = lazy(() => import('./pages/Checklist'))
 const Schedule = lazy(() => import('./pages/Schedule'))
@@ -51,51 +54,54 @@ function ScrollToTop() {
   return null
 }
 
-const menuLinks = [
-  { to: '/', label: '🏠 Home' },
-  { to: '/schedule', label: '📅 Schedules' },
-  { to: '/checklist', label: '🎯 Checklist' },
-  { to: '/review', label: '📚 Review' },
-  { to: '/anon-questions', label: '💬 Anonymous Q&A' },
-  { to: '/profile?tab=leaderboard', label: '🏆 Leaderboard' },
+// Nav items for the curved slide-in menu (src/components/ui/curved-menu.tsx).
+// Search now lives here as a regular item since the old dedicated 🔍
+// header button was removed along with ← Back (see SmartHeader below).
+const curvedMenuItems = [
+  { heading: 'Home', href: '/' },
+  { heading: 'Search', href: '/search' },
+  { heading: 'Schedules', href: '/schedule' },
+  { heading: 'Checklist', href: '/checklist' },
+  { heading: 'Review', href: '/review' },
+  { heading: 'Anonymous Q&A', href: '/anon-questions' },
+  { heading: 'Leaderboard', href: '/profile?tab=leaderboard' },
 ]
 
+// Click-triggered animated hamburger (MenuToggleIcon) that opens the
+// curved sliding panel (CurvedMenu) — replaces the old hover dropdown.
+// Used both here (SmartHeader) and on Home.jsx's own header.
 export function NavMenu({ dark }) {
   const [open, setOpen] = useState(false)
-  const navigate = useNavigate()
+
   return (
-    <div style={{ position: 'relative' }}
-      onMouseEnter={() => setOpen(true)}
-      onMouseLeave={() => setOpen(false)}>
-      <button style={{
-        ...navBtn,
-        background: dark ? 'rgba(56,189,248,0.1)' : '#f1f5f9',
-        color: dark ? '#38bdf8' : '#475569',
-        border: `1px solid ${dark ? 'rgba(56,189,248,0.3)' : '#e2e8f0'}`
-      }} aria-label="Open navigation menu" aria-haspopup="true" aria-expanded={open}>☰ Menu</button>
-      {open && (
-        <div style={{
-          position: 'absolute', top: '100%', left: 0,
-          background: dark ? '#0f1e35' : '#fff',
-          border: `1px solid ${dark ? 'rgba(56,189,248,0.25)' : '#e2e8f0'}`,
-          borderRadius: 12, padding: 8, minWidth: 200,
-          zIndex: 1100, boxShadow: '0 8px 32px rgba(0,0,0,0.25)'
-        }}>
-          {menuLinks.map((item, i) => (
-            <button key={i} onClick={() => { navigate(item.to); setOpen(false) }} style={{
-              display: 'block', width: '100%', textAlign: 'left',
-              padding: '8px 14px', background: 'transparent', border: 'none',
-              color: getTheme(dark).text, fontSize: 13, fontWeight: 600,
-              borderRadius: 8, cursor: 'pointer', fontFamily: 'inherit'
-            }}
-              onMouseEnter={e => e.target.style.background = dark ? 'rgba(56,189,248,0.12)' : '#f1f5f9'}
-              onMouseLeave={e => e.target.style.background = 'transparent'}>
-              {item.label}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
+    <>
+      <button
+        onClick={() => setOpen(o => !o)}
+        aria-label={open ? 'Close navigation menu' : 'Open navigation menu'}
+        aria-haspopup="true"
+        aria-expanded={open}
+        className="flex items-center justify-center w-10 h-10 rounded-[10px]"
+        style={{
+          background: dark ? 'rgba(56,189,248,0.1)' : '#f1f5f9',
+          border: `1px solid ${dark ? 'rgba(56,189,248,0.3)' : '#e2e8f0'}`
+        }}
+      >
+        <MenuToggleIcon open={open} className="w-5 h-5" stroke={dark ? '#38bdf8' : '#475569'} duration={400} />
+      </button>
+      <AnimatePresence mode="wait">
+        {open && (
+          <CurvedMenu
+            setIsActive={setOpen}
+            navItems={curvedMenuItems}
+            footer={
+              <div className="w-full text-center text-xs text-black/50 px-10 py-6">
+                Made with ❤️ by Ahmed Lasheen · ZNU Future Doctors
+              </div>
+            }
+          />
+        )}
+      </AnimatePresence>
+    </>
   )
 }
 
@@ -114,20 +120,12 @@ function SmartHeader({ dark, toggleTheme }) {
       position: 'sticky', top: 0, zIndex: 1000,
       borderBottom: `1px solid ${dark ? 'rgba(56,189,248,0.2)' : '#e2e8f0'}`,
     }}>
+      {/* Left cluster — was Back + Menu + Search, now just the menu
+          toggle. Search lives inside the curved menu's nav list, and
+          most inner pages already have their own contextual ← Back
+          button, so nothing here is actually lost. */}
       <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-        <button onClick={() => navigate(-1)} aria-label="Go back" style={{
-          ...navBtn,
-          background: dark ? 'rgba(56,189,248,0.1)' : '#f1f5f9',
-          color: dark ? '#38bdf8' : '#475569',
-          border: `1px solid ${dark ? 'rgba(56,189,248,0.3)' : '#e2e8f0'}`
-        }}>← Back</button>
         <NavMenu dark={dark} />
-        <button onClick={() => navigate('/search')} aria-label="Search" style={{
-          ...navBtn,
-          background: dark ? 'rgba(56,189,248,0.1)' : '#f1f5f9',
-          color: dark ? '#38bdf8' : '#475569',
-          border: `1px solid ${dark ? 'rgba(56,189,248,0.3)' : '#e2e8f0'}`
-        }}>🔍</button>
       </div>
 
       <span className="smart-header-title" style={{ color: dark ? '#38bdf8' : '#0ea5e9', fontWeight: 900, fontSize: 16 }}>ZNU Future Doctors</span>
