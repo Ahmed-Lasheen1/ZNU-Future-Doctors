@@ -60,25 +60,28 @@ export default function NavMenu({ dark, toggleTheme }) {
   // file avoids Tailwind, matching how the rest of the app is styled.
   return (
     <>
-           <button
+                <button
         onClick={() => setOpen(o => !o)}
         aria-label={open ? 'Close navigation menu' : 'Open navigation menu'}
         aria-haspopup="true"
         aria-expanded={open}
         style={{
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          width: 40, height: 40, flexShrink: 0, padding: 0,
+          width: 44, height: 44, flexShrink: 0, padding: 0,
           background: 'transparent',
           border: 'none',
-          cursor: 'pointer'
+          cursor: 'pointer',
+          // Removes the default gray tap-highlight rectangle Android/
+          // Chrome mobile draws on :active for tappable elements.
+          WebkitTapHighlightColor: 'transparent',
+          outline: 'none'
         }}
       >
         {/* width/height passed as real SVG attributes (not a Tailwind
             className) so the icon always renders at the right size
-            regardless of whether Tailwind processed this file. Bumped
-            2.5x (20 -> 50) so the hamburger/X lines read as bigger,
-            bolder strokes without changing the button's hit-box size. */}
-        <MenuToggleIcon open={open} width={300} height={300} stroke={dark ? '#38bdf8' : '#475569'} duration={400} />
+            regardless of whether Tailwind processed this file. Sized
+            to match the 44px logo mark elsewhere on Home. */}
+        <MenuToggleIcon open={open} width={44} height={44} stroke={dark ? '#38bdf8' : '#475569'} duration={400} />
       </button>
       <AnimatePresence mode="wait">
         {open && (
