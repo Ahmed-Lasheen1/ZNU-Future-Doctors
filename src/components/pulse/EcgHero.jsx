@@ -97,7 +97,7 @@ export default function EcgHero({ height = 220 }) {
             <stop offset="0%"  stopColor="#0c3a58" stopOpacity="0" />
             <stop offset="22%" stopColor="#0e6a97" stopOpacity="0.22" />
             <stop offset="40%" stopColor="#0e6a97" stopOpacity="0.40" />
-            <stop offset="50%" stopColor="#0e93c9" stopOpacity="050" />
+            <stop offset="50%" stopColor="#0e93c9" stopOpacity="0.50" />
             <stop offset="60%" stopColor="#0e93c9" stopOpacity="0.60" />
             <stop offset="78%" stopColor="#3ad1ff" stopOpacity="0.70" />
             <stop offset="100%" stopColor="#aef2ff" stopOpacity="1" />
