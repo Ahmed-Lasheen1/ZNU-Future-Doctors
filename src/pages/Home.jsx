@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { motion } from 'framer-motion'
 import { useAuth, NavMenu, useModules } from '../App'
 import { getTheme } from '../theme'
 import { getPulseTheme, pulseFonts } from '../premiumTheme'
@@ -100,15 +101,10 @@ export default function Home({ dark, toggleTheme }) {
   const navigate = useNavigate()
   const { user, profile } = useAuth()
   const { modules, modulesError } = useModules()
-  const [titleVisible, setTitleVisible] = useState(false)
   const [announcement, setAnnouncement] = useState('')
   const [streak, setStreak] = useState(0)
   const [pausedExam, setPausedExam] = useState(null)
   const [weeklySummary, setWeeklySummary] = useState(null)
-
-  useEffect(() => {
-    setTimeout(() => setTitleVisible(true), 100)
-  }, [])
 
   useEffect(() => {
     supabase.from('site_settings').select('value').eq('key', 'home_announcement').single()
@@ -197,13 +193,20 @@ export default function Home({ dark, toggleTheme }) {
   const activeModules = modules.filter(m => m.status === 'active')
   const completedModules = modules.filter(m => m.status === 'completed')
 
+  // Same fade-up entrance language used across the rest of this page's
+  // motion.div elements — kept as a helper since it's reused for both
+  // section title instances (Tools, Completed Modules).
   const sectionTitle = (text) => (
-    <h2 style={{
-      color: pt.faint,
-      fontSize: 12, fontWeight: 700, letterSpacing: 2.5,
-      marginBottom: 16, textTransform: 'uppercase',
-      fontFamily: pulseFonts.body
-    }}>{text}</h2>
+    <motion.h2
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, delay: 0.2 }}
+      style={{
+        color: pt.faint,
+        fontSize: 12, fontWeight: 700, letterSpacing: 2.5,
+        marginBottom: 16, textTransform: 'uppercase',
+        fontFamily: pulseFonts.body
+      }}>{text}</motion.h2>
   )
 
   const utilityBtnStyle = {
@@ -286,15 +289,22 @@ export default function Home({ dark, toggleTheme }) {
         <div className="pulse-fold">
           {modulesError && <div className="pulse-wide"><ErrorBanner /></div>}
 
-          <div className="pulse-wide" style={{
-            opacity: titleVisible ? 1 : 0,
-            transform: titleVisible ? 'translateY(0)' : 'translateY(-14px)',
-            transition: 'all 0.55s ease'
-          }}>
+          <div className="pulse-wide">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-              <ZnuPulseBrand dark={dark} pt={pt} />
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.5 }}
+              >
+                <ZnuPulseBrand dark={dark} pt={pt} />
+              </motion.div>
 
-              <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.5 }}
+                style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}
+              >
                 <button onClick={toggleTheme} style={utilityBtnStyle} aria-label={dark ? 'Switch to light mode' : 'Switch to dark mode'}>{dark ? '☀️' : '🌙'}</button>
                 <NavMenu dark={dark} />
                 <button onClick={() => navigate('/search')} aria-label="Search" style={utilityBtnStyle}>🔍</button>
@@ -333,13 +343,17 @@ export default function Home({ dark, toggleTheme }) {
                     cursor: 'pointer', fontSize: 13, fontWeight: 700
                   }}>Sign In →</button>
                 )}
-              </div>
+              </motion.div>
             </div>
           </div>
 
-          <div className="pulse-wide">
+          <motion.div className="pulse-wide"
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.15 }}
+          >
             <NotifyPermissionButton dark={dark} label="🔔 Enable exam & deadline reminders" />
-          </div>
+          </motion.div>
 
           <div className="pulse-wide">
             <div className="pulse-dash-grid">
@@ -397,17 +411,25 @@ export default function Home({ dark, toggleTheme }) {
                 )}
               </div>
 
-              <div className="pulse-hero-panel" style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}>
+              <motion.div className="pulse-hero-panel"
+                initial={{ opacity: 0, scale: 0.85 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.6, delay: 0.3 }}
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              >
                 <EcgHero height="100%" />
-              </div>
+              </motion.div>
 
               <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: pt.cobalt, fontSize: 11, fontWeight: 700, letterSpacing: 2.5, textTransform: 'uppercase', marginBottom: 14 }}>
+                <motion.div
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: 0.25 }}
+                  style={{ display: 'flex', alignItems: 'center', gap: 8, color: pt.cobalt, fontSize: 11, fontWeight: 700, letterSpacing: 2.5, textTransform: 'uppercase', marginBottom: 14 }}
+                >
                   <span style={{ width: 6, height: 6, borderRadius: '50%', background: pt.cobalt, display: 'inline-block' }} />
                   Active Modules
-                </div>
+                </motion.div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                   {activeModules.length === 0 && (
                     <div style={{ color: pt.sub, fontSize: 13 }}>No active modules yet.</div>
@@ -460,14 +482,19 @@ export default function Home({ dark, toggleTheme }) {
             </div>
           </div>
 
-          <div className="pulse-wide" style={{ display: 'flex', alignItems: 'center', gap: 14, justifyContent: 'center' }}>
+          <motion.div className="pulse-wide"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.5, delay: 0.6 }}
+            style={{ display: 'flex', alignItems: 'center', gap: 14, justifyContent: 'center' }}
+          >
             <div style={{ height: 1, background: pt.border, flex: 1, maxWidth: 120 }} />
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: pt.faint, fontSize: 13, fontWeight: 600 }}>
               <img src={LOGO_SRC} alt="" style={{ width: 18, height: 18, borderRadius: 4, objectFit: 'cover' }} />
               Keep the pulse. Shape the future.
             </div>
             <div style={{ height: 1, background: pt.border, flex: 1, maxWidth: 120 }} />
-          </div>
+          </motion.div>
         </div>
 
         {completedModules.length > 0 && (
