@@ -1,17 +1,36 @@
 import { useEffect, useState } from 'react'
 
+// The exact ZNU Pulse artwork — extracted pixel-for-pixel from the
+// real logo. Line keeps its real pale sky-blue color; the shadow is a
+// flat dark navy with a soft, properly-graduated alpha falloff, so it
+// composites naturally against any background.
 const HERO_WEBP = '/pulse-hero.webp'
 const HERO_PNG = '/pulse-hero.png'
 const HERO_WEBP_MOBILE = '/pulse-hero-mobile.webp'
 const HERO_PNG_MOBILE = '/pulse-hero-mobile.png'
 
+// Native pixel size of the hero image.
 const ART_WIDTH = 879
 const ART_HEIGHT = 621
-const BEAM_DURATION = '7s'
 
-// ضع هنا مسار الـ SVG الخاص بالخط فقط (النبضة)
-// لو مش معاك المسار دقيق، تقدر تجيبه من ملف الـ SVG أو Figma (الـ vector path)
-const ECG_PATH_DATA = "M998.097 60.35c20.663-2.111 30.463 5.872 33.873 26.53 3 18.135 5.44 36.343 8.05 54.536l14.22 96.92 45.33 296.796 75.51 498.078c6.47 44.03 14.59 89.01 20.39 132.85l1.14.46c4.68-9.15 10.97-36.36 13.79-47.28l15.91-60.28c8.46-33.31 18.2-77.751 35.18-107.254 15.55-27.022 38.79-40.788 69.94-30.974 10.67 3.363 26.13 12.722 36.89 9.993 3.79-.959 6.88-4.225 8.66-7.652 7.74-14.914 13.23-31.831 19.07-47.589 7.97-21.481 16.84-42.78 25.28-64.004 7.64-19.212 14.63-39.573 25.25-57.163 8.99-14.873 26.74-36.683 44.64-40.031 55.89-10.451 76.56 53.336 92.72 91.485a535 535 0 0 0 20.22 42.506c3.69 6.821 9.43 17.706 16.41 21.567 14.11 7.796 49.39-22.183 65.62-27.258 34.32-10.73 62.91 16.388 95.08 20.911 28.24 3.971 107.92-4.748 126.3 5.363 9.23 5.074 12.31 15.138 15.13 24.558-3.95 17.092-10.26 28.138-29.56 29.057-20.36.632-40.86.654-61.27.437-26.53-.243-50.93 1.743-76.78-5.227-18.72-5.049-34.82-14.873-52.87-19.988-27.77 12.41-50.36 38.943-87.3 32.512-45.62-8.589-62.41-54.465-78.21-92.097-4.27-10.191-25.45-58.518-34.04-59.916-16.32 11.646-58.85 144.083-72.22 167.061-11.47 19.701-23.79 35.894-47.35 43.325-20.49 6.461-49.9-.611-68.27-10.915-14.48 24.953-33.62 104.743-42.07 135.803l-39.82 141.88c-4.46 15.62-8.72 31.13-13.8 46.63-5.15 15.68-14.26 24.82-31.16 26.17-17.04 1.36-29.88-12.04-32.32-28.09-5.18-30.77-9.85-61.67-14.28-92.48l-17.98-120.93-56.89-377.484-44.25-300.101a4655 4655 0 0 0-11.63-77.039c-2.21-14.054-5.92-34.003-6.88-47.862l-2.76-7.822c-5.509 21.438-10.459 54.734-14.408 77.227l-23.507 131.844L880.49 943.03c-5.154 28.372-24.564 151.4-34.718 169.37-3.739 6.61-13.112 12.77-20.372 14.64-10.73 2.76-24.117-2.13-31.032-10.66-8.776-10.83-12.192-28.08-16.449-41.18-11.395-35.08-21.191-70.56-31.597-105.935-4.442-15.101-8.365-30.792-13.702-45.583-1.547-4.286-3.837-10.847-7.259-13.999-6.874-6.334-20.993-.94-29.481-1.458-10.673-.652-22.757-4.694-31.874-10.246-28.409-17.299-38.443-62.706-46.759-92.569a1731 1731 0 0 1-15.839-61.566 4814 4814 0 0 1-29.465 105.075c-9.681 33.588-19.543 68.499-34.285 100.154-14.661 29.715-38.548 46.69-72.281 43.538-35.09-2.331-56.274-32.348-69.234-61.851-11.016-25.076-21.373-50.58-34.678-74.519-4.08-7.343-14.045-26.283-24.268-17.178-6.863 6.112-11.84 13.376-17.287 20.702-22.151 32.252-51.908 60.765-93.368 62.612-35.514 1.582-71.367-.684-106.886 1.022-15.338.737-29.94 3.419-44.402-3.67-13.872-6.057-20.931-25.194-12.832-39.125C79.217 851.717 134.14 866.076 163 863.09c19.257-1.992 40.832 4.503 61.26-.637 45.865-11.541 55.356-71.631 101.926-83.738 58.724-15.292 81.467 36.998 100.888 79.566a1242 1242 0 0 0 16.479 33.909c9.093 18.347 14.245 32.909 32.557 43.167 14.389-15.759 26.736-61.447 33.372-82.876a3330 3330 0 0 0 35.362-121.07c8.079-28.726 16.495-57.974 26.426-86.175 3.607-9.264 10.41-19.653 20.009-23.362 16.108-6.225 34.186 1.296 40.631 17.39 7.824 19.535 12.3 40.963 17.378 61.398a3031 3031 0 0 0 20.941 77.949c2.666 9.623 15.748 62.483 24.402 65.699 13.997 5.203 35.844-2.775 53.009 6.242 45.485 23.893 47.215 92.011 63.862 134.844l.504 1.277c8.439-39.02 15.758-84.226 22.674-123.816l22.817-125.339 81.365-444.719a9274 9274 0 0 1 24.149-135.578c3.66-20.455 7.007-40.997 10.62-61.464 2.98-16.885 5.672-30.836 24.466-35.407"
+// The real line's centerline, auto-traced column-by-column directly
+// from the source pixels (weighted centroid of the solid line alpha
+// at every x), not hand-fit with bezier curves. This is why the beam
+// no longer splits into "two" through the sharp central spike — a
+// horizontally-sweeping band can't correctly light a single point
+// along a path that has near-vertical sections (it lights both the
+// up-stroke and down-stroke at once), but a stroke animated via
+// dash-offset follows the path's actual arc length as a single point,
+// so it can't branch no matter how steep the curve gets.
+const CENTER_PATH = 'M0,310.5 L4,310.5 L8,310.5 L12,310.5 L16,310.5 L20,310.5 L24,334.7 L28,383.1 L32,383.0 L36,383.0 L40,383.0 L44,383.0 L48,382.8 L52,383.0 L56,383.0 L60,383.0 L64,382.7 L68,382.6 L72,383.0 L76,383.0 L80,383.0 L84,383.0 L88,383.0 L92,382.8 L96,382.5 L100,381.8 L104,380.2 L108,377.7 L112,375.0 L116,371.7 L120,367.7 L124,363.5 L128,359.8 L132,356.0 L136,352.2 L140,348.9 L144,346.1 L148,345.7 L152,347.9 L156,351.7 L160,356.4 L164,362.3 L168,368.8 L172,375.8 L176,382.3 L180,388.5 L184,395.0 L188,400.4 L192,405.2 L196,409.4 L200,411.9 L204,412.7 L208,409.9 L212,404.3 L216,397.4 L220,389.7 L224,381.3 L228,371.5 L232,360.5 L236,348.3 L240,335.6 L244,322.9 L248,311.9 L252,303.1 L256,295.3 L260,297.0 L264,305.1 L268,313.5 L272,323.0 L276,333.8 L280,344.4 L284,353.3 L288,361.7 L292,369.2 L296,374.4 L300,376.0 L304,375.5 L308,375.6 L312,377.1 L316,382.8 L320,390.3 L324,398.2 L328,407.0 L332,415.9 L336,426.2 L340,436.9 L344,445.6 L348,451.3 L352,442.6 L356,431.0 L360,418.4 L364,404.2 L368,384.6 L372,362.7 L376,340.7 L380,318.8 L384,297.3 L388,275.5 L392,253.0 L396,231.1 L400,208.9 L404,186.7 L408,163.9 L412,141.9 L416,119.6 L420,99.7 L424,85.8 L428,74.8 L432,79.7 L436,93.1 L440,108.6 L444,130.8 L448,158.1 L452,185.2 L456,212.0 L460,238.3 L464,264.1 L468,290.8 L472,317.5 L476,344.0 L480,370.2 L484,396.9 L488,423.3 L492,449.8 L496,474.2 L500,491.3 L504,506.1 L508,519.6 L512,531.5 L516,529.3 L520,519.9 L524,507.6 L528,493.0 L532,478.6 L536,465.2 L540,453.6 L544,443.4 L548,433.9 L552,425.0 L556,416.9 L560,410.7 L564,406.8 L568,407.4 L572,408.7 L576,410.0 L580,411.3 L584,412.1 L588,411.4 L592,408.3 L596,402.6 L600,396.3 L604,389.6 L608,382.6 L612,374.5 L616,365.7 L620,357.0 L624,348.5 L628,340.9 L632,333.9 L636,328.1 L640,323.2 L644,319.8 L648,321.2 L652,325.7 L656,330.5 L660,336.5 L664,343.2 L668,349.9 L672,356.8 L676,363.4 L680,370.0 L684,375.6 L688,380.4 L692,384.1 L696,386.2 L700,386.1 L704,385.0 L708,383.2 L712,381.0 L716,378.7 L720,376.4 L724,374.3 L728,373.1 L732,372.8 L736,373.7 L740,375.2 L744,376.5 L748,378.3 L752,379.8 L756,381.0 L760,382.1 L764,382.8 L768,383.0 L772,383.0 L776,383.0 L780,383.0 L784,383.0 L788,383.0 L792,383.0 L796,383.0 L800,383.0 L804,383.0 L808,383.0 L812,383.0 L816,383.0 L820,383.0 L824,383.0 L828,383.0 L832,383.0 L836,383.0 L840,383.0 L844,383.0 L848,383.0 L852,383.0 L856,383.0 L860,383.0 L864,383.0 L868,383.0 L872,383.0 L876,383.0 L878,383.0'
+
+// Real measured stroke thickness of the actual logo line, in this
+// same crop's pixel units (measured directly from clean flat baseline
+// columns) — the glow's stroke width matches this, so it reads as the
+// same thickness as the pulse itself.
+const STROKE_WIDTH = 20
+
+const BEAM_DURATION = '6s'
 
 function usePrefersReducedMotion() {
   const [reduced, setReduced] = useState(false)
@@ -53,19 +72,22 @@ export default function EcgHero({ height = 220 }) {
       display: 'flex', alignItems: 'center', justifyContent: 'center',
     }}>
       <style>{`
-        @keyframes flowComet {
-          0% {
-            stroke-dashoffset: 1200;
-          }
-          100% {
-            stroke-dashoffset: -1200;
-          }
+        /* pathLength="1" makes the path exactly 1 unit long regardless
+           of its real geometry, so dasharray/dashoffset work in clean
+           fractions. A short "lit" segment (0.16 of the total length)
+           chases around the path once every BEAM_DURATION — a single
+           point moving along the wire's actual length, which cannot
+           visually split into two, unlike a horizontally-sweeping band. */
+        @keyframes pulseHeroDash {
+          0%   { stroke-dashoffset: 1; }
+          100% { stroke-dashoffset: 0; }
         }
-        .ecg-comet {
-          /* stroke-dasharray: [طول الشهاب] [مسافة الفراغ بين كل شهاب والتاني] */
-          stroke-dasharray: 180 1200;
-          animation: flowComet ${BEAM_DURATION} cubic-bezier(0.4, 0.0, 0.2, 1) infinite;
-          will-change: stroke-dashoffset;
+        .pulse-hero-beam {
+          stroke-dasharray: 0.16 1;
+          animation: pulseHeroDash ${BEAM_DURATION} linear infinite;
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .pulse-hero-beam { animation: none !important; opacity: 0.5 !important; }
         }
       `}</style>
 
@@ -76,40 +98,50 @@ export default function EcgHero({ height = 220 }) {
         style={{ display: 'block', overflow: 'hidden' }}
       >
         <defs>
-          {/* التدرج اللوني للشهاب ليكون مرن وموازي للمسار */}
-          <linearGradient id="cometStrokeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="#0c3a58" stopOpacity="0" />
-            <stop offset="40%" stopColor="#0e93c9" stopOpacity="0.4" />
-            <stop offset="80%" stopColor="#3ad1ff" stopOpacity="0.9" />
-            <stop offset="100%" stopColor="#00f0ff" stopOpacity="1" />
-          </linearGradient>
-
-          {/* التوهج الخاص بالمسار */}
-          <filter id="pathGlow" x="-50%" y="-50%" width="200%" height="200%">
+          <filter id="pulseBeamHalo" x="-100%" y="-100%" width="300%" height="300%">
+            <feGaussianBlur stdDeviation="14" />
+          </filter>
+          <filter id="pulseBeamGlow" x="-70%" y="-70%" width="240%" height="240%">
             <feGaussianBlur stdDeviation="6" result="blur" />
             <feMerge>
+              <feMergeNode in="blur" />
               <feMergeNode in="blur" />
               <feMergeNode in="SourceGraphic" />
             </feMerge>
           </filter>
         </defs>
 
-        {/* الخلفية الأصلية */}
+        {/* The exact real artwork — real line color, real shadow */}
         <image href={heroSrc} x="0" y="0" width={ART_WIDTH} height={ART_HEIGHT} />
 
-        {/* الشهاب المتحرك فوق المسار مباشرة */}
         {!reduced && (
-          <g filter="url(#pathGlow)">
+          <>
+            {/* Outer soft bloom, same thickness as the real line, following its exact traced centerline */}
             <path
-              d={ECG_PATH_DATA}
+              className="pulse-hero-beam"
+              pathLength="1"
+              d={CENTER_PATH}
               fill="none"
-              stroke="url(#cometStrokeGradient)"
-              strokeWidth="6"
+              stroke="#5fd9ff"
+              strokeWidth={STROKE_WIDTH + 10}
               strokeLinecap="round"
               strokeLinejoin="round"
-              className="ecg-comet"
+              opacity="0.85"
+              filter="url(#pulseBeamHalo)"
             />
-          </g>
+            {/* Bright electric core, exact same width as the real line */}
+            <path
+              className="pulse-hero-beam"
+              pathLength="1"
+              d={CENTER_PATH}
+              fill="none"
+              stroke="#ffffff"
+              strokeWidth={STROKE_WIDTH}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              filter="url(#pulseBeamGlow)"
+            />
+          </>
         )}
       </svg>
     </div>
