@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '../contexts'
 import { MenuToggleIcon } from './ui/menu-toggle-icon'
 import { getPulseTheme, pulseFonts } from '../premiumTheme'
@@ -85,6 +86,34 @@ export default function NavMenu({ dark, toggleTheme, align = 'left' }) {
 
   const rowHover = dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)'
 
+  // Anchors the pop's growth point to whichever top corner the panel
+  // actually hangs from, so it visibly expands out of the button
+  // instead of just scaling from its own center. Same overshoot
+  // easing already used for PulseCard/AnimatedCard entrances
+  // elsewhere in the app, so this pop feels consistent with the rest
+  // of the UI's motion language.
+  const panelVariants = {
+    hidden: {
+      opacity: 0,
+      scale: 0.85,
+      y: -8,
+      transformOrigin: align === 'right' ? 'top right' : 'top left',
+    },
+    visible: {
+      opacity: 1,
+      scale: 1,
+      y: 0,
+      transformOrigin: align === 'right' ? 'top right' : 'top left',
+      transition: { duration: 0.32, ease: [0.34, 1.56, 0.64, 1] },
+    },
+    exit: {
+      opacity: 0,
+      scale: 0.9,
+      y: -6,
+      transition: { duration: 0.18, ease: [0.4, 0, 1, 1] },
+    },
+  }
+
   return (
     <div ref={wrapperRef} style={{ position: 'relative', display: 'inline-block' }}>
       <button
@@ -105,101 +134,109 @@ export default function NavMenu({ dark, toggleTheme, align = 'left' }) {
         <MenuToggleIcon open={open} width={44} height={44} stroke={dark ? '#38bdf8' : '#475569'} duration={400} />
       </button>
 
-      {open && (
-        <div style={{
-          position: 'absolute', top: 'calc(100% + 10px)',
-          [align === 'right' ? 'right' : 'left']: 0,
-          width: 260, maxWidth: '85vw',
-          borderRadius: 20, padding: 10, zIndex: 2000,
-          ...glassStyle,
-          fontFamily: pulseFonts.body
-        }}>
-          {/* Profile / Sign In — first thing in the panel */}
-          {user ? (
-            <div
-              onClick={() => goTo('/profile')}
-              role="button" tabIndex={0}
-              onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); goTo('/profile') } }}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 12,
-                padding: '10px 12px', borderRadius: 14, cursor: 'pointer', marginBottom: 6
-              }}
-              onMouseEnter={e => { e.currentTarget.style.background = rowHover }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
-            >
-              <div style={{
-                width: 40, height: 40, borderRadius: '50%', flexShrink: 0,
-                background: `linear-gradient(135deg, ${pt.cobalt}, ${pt.indigo})`,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 16, fontWeight: 900, color: '#fff'
-              }}>{initialOf(profile?.name)}</div>
-              <div style={{ minWidth: 0, flex: 1 }}>
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            variants={panelVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            style={{
+              position: 'absolute', top: 'calc(100% + 10px)',
+              [align === 'right' ? 'right' : 'left']: 0,
+              width: 260, maxWidth: '85vw',
+              borderRadius: 20, padding: 10, zIndex: 2000,
+              ...glassStyle,
+              fontFamily: pulseFonts.body
+            }}
+          >
+            {/* Profile / Sign In — first thing in the panel */}
+            {user ? (
+              <div
+                onClick={() => goTo('/profile')}
+                role="button" tabIndex={0}
+                onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); goTo('/profile') } }}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 12,
+                  padding: '10px 12px', borderRadius: 14, cursor: 'pointer', marginBottom: 6
+                }}
+                onMouseEnter={e => { e.currentTarget.style.background = rowHover }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
+              >
                 <div style={{
-                  color: pt.text, fontWeight: 800, fontSize: 13,
-                  overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'
-                }}>Dr. {profile?.name || '...'}</div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: pt.amber, fontSize: 12, fontWeight: 700, marginTop: 2 }}>
-                  ⭐ {profile?.points || 0} points
+                  width: 40, height: 40, borderRadius: '50%', flexShrink: 0,
+                  background: `linear-gradient(135deg, ${pt.cobalt}, ${pt.indigo})`,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 16, fontWeight: 900, color: '#fff'
+                }}>{initialOf(profile?.name)}</div>
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <div style={{
+                    color: pt.text, fontWeight: 800, fontSize: 13,
+                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'
+                  }}>Dr. {profile?.name || '...'}</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: pt.amber, fontSize: 12, fontWeight: 700, marginTop: 2 }}>
+                    ⭐ {profile?.points || 0} points
+                  </div>
                 </div>
               </div>
-            </div>
-          ) : (
-            <button onClick={() => goTo('/auth')} style={{
-              width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-              padding: '12px', marginBottom: 6, borderRadius: 14,
-              background: `linear-gradient(135deg, ${pt.cobalt}, ${pt.indigo})`,
-              border: 'none', cursor: 'pointer',
-              color: '#fff', fontWeight: 800, fontSize: 13, fontFamily: 'inherit'
-            }}>Sign In →</button>
-          )}
+            ) : (
+              <button onClick={() => goTo('/auth')} style={{
+                width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                padding: '12px', marginBottom: 6, borderRadius: 14,
+                background: `linear-gradient(135deg, ${pt.cobalt}, ${pt.indigo})`,
+                border: 'none', cursor: 'pointer',
+                color: '#fff', fontWeight: 800, fontSize: 13, fontFamily: 'inherit'
+              }}>Sign In →</button>
+            )}
 
-          <div style={{ height: 1, background: pt.border, margin: '6px 4px' }} />
+            <div style={{ height: 1, background: pt.border, margin: '6px 4px' }} />
 
-          {/* Navigation */}
-          {navItems.map(item => (
-            <button key={item.href} onClick={() => goTo(item.href)} style={{
-              width: '100%', textAlign: 'left', background: 'transparent', border: 'none',
+            {/* Navigation */}
+            {navItems.map(item => (
+              <button key={item.href} onClick={() => goTo(item.href)} style={{
+                width: '100%', textAlign: 'left', background: 'transparent', border: 'none',
+                padding: '10px 12px', borderRadius: 12, cursor: 'pointer',
+                color: pt.text, fontSize: 13, fontWeight: 600, fontFamily: 'inherit'
+              }}
+                onMouseEnter={e => { e.currentTarget.style.background = rowHover }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
+              >{item.label}</button>
+            ))}
+
+            <div style={{ height: 1, background: pt.border, margin: '6px 4px' }} />
+
+            {/* Theme toggle */}
+            <button onClick={toggleTheme} style={{
+              width: '100%', display: 'flex', alignItems: 'center', gap: 10,
+              background: 'transparent', border: 'none',
               padding: '10px 12px', borderRadius: 12, cursor: 'pointer',
-              color: pt.text, fontSize: 13, fontWeight: 600, fontFamily: 'inherit'
+              color: pt.text, fontSize: 13, fontWeight: 700, fontFamily: 'inherit'
             }}
               onMouseEnter={e => { e.currentTarget.style.background = rowHover }}
               onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
-            >{item.label}</button>
-          ))}
+            >
+              <span style={{ fontSize: 16 }}>{dark ? '☀️' : '🌙'}</span>
+              {dark ? 'Light mode' : 'Dark mode'}
+            </button>
 
-          <div style={{ height: 1, background: pt.border, margin: '6px 4px' }} />
-
-          {/* Theme toggle */}
-          <button onClick={toggleTheme} style={{
-            width: '100%', display: 'flex', alignItems: 'center', gap: 10,
-            background: 'transparent', border: 'none',
-            padding: '10px 12px', borderRadius: 12, cursor: 'pointer',
-            color: pt.text, fontSize: 13, fontWeight: 700, fontFamily: 'inherit'
-          }}
-            onMouseEnter={e => { e.currentTarget.style.background = rowHover }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
-          >
-            <span style={{ fontSize: 16 }}>{dark ? '☀️' : '🌙'}</span>
-            {dark ? 'Light mode' : 'Dark mode'}
-          </button>
-
-          {/* Sign out — last, only when signed in */}
-          {user && (
-            <>
-              <div style={{ height: 1, background: pt.border, margin: '6px 4px' }} />
-              <button onClick={handleSignOut} style={{
-                width: '100%', textAlign: 'left', display: 'flex', alignItems: 'center', gap: 10,
-                background: 'transparent', border: 'none',
-                padding: '10px 12px', borderRadius: 12, cursor: 'pointer',
-                color: pt.danger, fontSize: 13, fontWeight: 700, fontFamily: 'inherit'
-              }}
-                onMouseEnter={e => { e.currentTarget.style.background = dark ? 'rgba(239,107,87,0.1)' : 'rgba(214,84,63,0.08)' }}
-                onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
-              >🚪 Sign Out</button>
-            </>
-          )}
-        </div>
-      )}
+            {/* Sign out — last, only when signed in */}
+            {user && (
+              <>
+                <div style={{ height: 1, background: pt.border, margin: '6px 4px' }} />
+                <button onClick={handleSignOut} style={{
+                  width: '100%', textAlign: 'left', display: 'flex', alignItems: 'center', gap: 10,
+                  background: 'transparent', border: 'none',
+                  padding: '10px 12px', borderRadius: 12, cursor: 'pointer',
+                  color: pt.danger, fontSize: 13, fontWeight: 700, fontFamily: 'inherit'
+                }}
+                  onMouseEnter={e => { e.currentTarget.style.background = dark ? 'rgba(239,107,87,0.1)' : 'rgba(214,84,63,0.08)' }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
+                >🚪 Sign Out</button>
+              </>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }
