@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useLayoutEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '../contexts'
@@ -38,7 +38,21 @@ export default function NavMenu({ dark, toggleTheme, align = 'left' }) {
   const navigate = useNavigate()
   const { user, profile, signOut } = useAuth()
   const wrapperRef = useRef(null)
+  const contentRef = useRef(null)
+  const [panelHeight, setPanelHeight] = useState(0)
   const pt = getPulseTheme(dark)
+
+  // Measures the panel's real content height so the outer wrapper can
+  // animate `height` from 0 up to it — this is what makes the panel
+  // look like it's extending/unrolling straight down out of the
+  // button, rather than popping in at full size. Re-measures whenever
+  // the content that affects height changes while open (e.g. signing
+  // in adds the "Sign Out" row).
+  useLayoutEffect(() => {
+    if (open && contentRef.current) {
+      setPanelHeight(contentRef.current.scrollHeight)
+    }
+  }, [open, user, profile])
 
   useEffect(() => {
     if (!open) return
@@ -65,78 +79,60 @@ export default function NavMenu({ dark, toggleTheme, align = 'left' }) {
     navigate('/')
   }
 
-  // True frosted glass: low opacity + heavy blur so page content
-  // behind the panel actually shows through as soft blurred shapes,
-  // rather than a mostly-solid tinted panel. Lives on a STATIC
-  // (non-animated) inner layer — see perf note below.
+  // True frosted glass, blurred up further so text always reads
+  // clearly regardless of what's scrolling underneath the panel.
   const glassStyle = dark
     ? {
-        background: 'rgba(28,28,30,0.22)',
+        background: 'rgba(28,28,30,0.30)',
         border: '1px solid rgba(255,255,255,0.14)',
-        backdropFilter: 'blur(10px) saturate(180%)',
-        WebkitBackdropFilter: 'blur(10px) saturate(180%)',
+        backdropFilter: 'blur(48px) saturate(180%)',
+        WebkitBackdropFilter: 'blur(48px) saturate(180%)',
         boxShadow: '0 20px 50px -12px rgba(0,0,0,0.5)',
       }
     : {
-        background: 'rgba(255,255,255,0.28)',
-        border: '1px solid rgba(255,255,255,0.5)',
-        backdropFilter: 'blur(10px) saturate(180%)',
-        WebkitBackdropFilter: 'blur(10px) saturate(180%)',
+        background: 'rgba(255,255,255,0.38)',
+        border: '1px solid rgba(255,255,255,0.55)',
+        backdropFilter: 'blur(48px) saturate(180%)',
+        WebkitBackdropFilter: 'blur(48px) saturate(180%)',
         boxShadow: '0 20px 50px -12px rgba(37,60,97,0.25)',
       }
 
   const rowHover = dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)'
 
   // PERF NOTE: backdrop-filter has to resample everything behind it.
-  // Animating `scale` on the SAME element that carries backdrop-filter
-  // forces the browser to redo that resample at every intermediate
-  // size, every frame. Fix: the outer motion.div animates scale/y/
-  // opacity via a spring, while the glass/blur sits on a plain,
-  // non-animated INNER div — the browser composites the already-
-  // blurred layer as one texture and just transforms that texture.
+  // The glass/blur (glassStyle) sits on a plain, non-animated inner
+  // div; only the OUTER wrapper's `height` and `opacity` animate —
+  // the browser just reveals progressively more of an already-blurred
+  // texture rather than recomputing blur every frame.
   //
-  // Panel now uses a spring instead of a fixed-duration easing curve
-  // for a smoother, more natural pop — slightly bouncier on entry,
-  // gentler and gliding on exit (which mirrors `hidden` exactly, so
-  // closing plays like the opening in reverse).
+  // Height starts at 0 (fully collapsed into the button) and animates
+  // up to the real measured content height — this is the "extending
+  // from the button" unrolling effect. Exit reverses it back to 0.
   const panelVariants = {
-    hidden: {
-      opacity: 0,
-      scale: 0.82,
-      y: -10,
-      transformOrigin: align === 'right' ? 'top right' : 'top left',
-    },
+    hidden: { height: 0, opacity: 0 },
     visible: {
+      height: panelHeight,
       opacity: 1,
-      scale: 1,
-      y: 0,
-      transformOrigin: align === 'right' ? 'top right' : 'top left',
-      transition: { type: 'spring', stiffness: 380, damping: 26, mass: 0.8 },
+      transition: { height: { type: 'spring', stiffness: 300, damping: 30, mass: 0.9 }, opacity: { duration: 0.2 } },
     },
     exit: {
+      height: 0,
       opacity: 0,
-      scale: 0.82,
-      y: -10,
-      transformOrigin: align === 'right' ? 'top right' : 'top left',
-      transition: { type: 'spring', stiffness: 420, damping: 32, mass: 0.6 },
+      transition: { height: { type: 'spring', stiffness: 340, damping: 34, mass: 0.7 }, opacity: { duration: 0.15 } },
     },
   }
 
   // Staggered cascade for the rows inside the panel — each row fades
-  // + slides up slightly, one after another, instead of the whole
-  // panel's content appearing all at once the instant the panel pops.
-  // `staggerChildren`/`delayChildren` only run on the "visible" state;
-  // rows use their own hidden/visible/exit so they also animate out
-  // (in reverse stagger) when the panel closes.
+  // + slides up slightly, one after another, as the panel unrolls.
   const listContainer = {
     hidden: {},
-    visible: { transition: { delayChildren: 0.08, staggerChildren: 0.045 } },
-    exit: { transition: { staggerChildren: 0.02, staggerDirection: -1 } },
+    visible: { transition: { delayChildren: 0.1, staggerChildren: 0.045 } },
+    exit: { transition: { staggerChildren: 0.015, staggerDirection: -1 } },
   }
   const listItem = {
     hidden: { opacity: 0, y: 6 },
     visible: { opacity: 1, y: 0, transition: { duration: 0.22, ease: 'easeOut' } },
-    exit: { opacity: 0, y: -4, transition: { duration: 0.12, ease: 'easeIn' } },
+    exit: { opacity: 0, y: -4, transition: { duration: 0.1, ease: 'easeIn' } },
   }
 
   return (
@@ -170,11 +166,13 @@ export default function NavMenu({ dark, toggleTheme, align = 'left' }) {
               position: 'absolute', top: 'calc(100% + 10px)',
               [align === 'right' ? 'right' : 'left']: 0,
               width: 260, maxWidth: '85vw',
+              borderRadius: 20,
+              overflow: 'hidden',
               zIndex: 2000,
-              willChange: 'opacity, transform',
+              willChange: 'height, opacity',
             }}
           >
-            <div style={{
+            <div ref={contentRef} style={{
               borderRadius: 20, padding: 10,
               ...glassStyle,
               fontFamily: pulseFonts.body
