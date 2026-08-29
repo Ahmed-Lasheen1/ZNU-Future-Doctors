@@ -69,19 +69,19 @@ export default function NavMenu({ dark, toggleTheme, align = 'left' }) {
   // near-black/near-white translucent fill, blurred + saturated,
   // rather than a flat solid dropdown. This now lives on a STATIC
   // (non-animated) inner layer — see the perf note below.
-  const glassStyle = dark
+    const glassStyle = dark
     ? {
-        background: 'rgba(28,28,30,0.55)',
-        border: '1px solid rgba(255,255,255,0.12)',
-        backdropFilter: 'blur(20px) saturate(160%)',
-        WebkitBackdropFilter: 'blur(20px) saturate(160%)',
+        background: 'rgba(28,28,30,0.22)',
+        border: '1px solid rgba(255,255,255,0.14)',
+        backdropFilter: 'blur(32px) saturate(180%)',
+        WebkitBackdropFilter: 'blur(32px) saturate(180%)',
         boxShadow: '0 20px 50px -12px rgba(0,0,0,0.5)',
       }
     : {
-        background: 'rgba(242,242,247,0.75)',
-        border: '1px solid rgba(0,0,0,0.08)',
-        backdropFilter: 'blur(20px) saturate(160%)',
-        WebkitBackdropFilter: 'blur(20px) saturate(160%)',
+        background: 'rgba(255,255,255,0.28)',
+        border: '1px solid rgba(255,255,255,0.5)',
+        backdropFilter: 'blur(32px) saturate(180%)',
+        WebkitBackdropFilter: 'blur(32px) saturate(180%)',
         boxShadow: '0 20px 50px -12px rgba(37,60,97,0.25)',
       }
 
