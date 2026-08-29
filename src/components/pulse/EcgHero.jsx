@@ -1,38 +1,13 @@
 import { useEffect, useState } from 'react'
 
-// The exact ZNU Pulse artwork — extracted pixel-for-pixel from the
-// real logo. Line keeps its real pale sky-blue color; the shadow is a
-// flat dark navy with a soft, properly-graduated alpha falloff, so it
-// composites naturally against any background.
 const HERO_WEBP = '/pulse-hero.webp'
 const HERO_PNG = '/pulse-hero.png'
 const HERO_WEBP_MOBILE = '/pulse-hero-mobile.webp'
 const HERO_PNG_MOBILE = '/pulse-hero-mobile.png'
-
-// Alpha-only silhouette of JUST the line (no shadow), pixel-aligned to
-// the hero image (same crop box, same pixel dimensions).
 const LINE_MASK = '/pulse-line-mask.png'
 
-// Native pixel size of both PNGs above.
 const ART_WIDTH = 879
 const ART_HEIGHT = 621
-
-// Width of the glowing band itself, in the same pixel units as the
-// artwork — kept fairly narrow (and the travel range only a little
-// past each edge) so the glow crosses the visible pulse for nearly
-// the whole cycle, with no dead "off-screen travel" time.
-const BAND_WIDTH = ART_WIDTH * 0.25
-const BEAM_DURATION = '7s'
-
-// The band's own bright center sits at ~50% of its width. To make the
-// light visibly linger over the pulse's central spike (the busiest,
-// most important part of the artwork, roughly at x≈430), the
-// mid-keyframe below places the rect's LEFT edge at this x so that
-// its bright center lands on the spike at the animation's temporal
-// midpoint — combined with the eased keySplines, the light decelerates
-// into that position and accelerates back out, rather than moving at
-// one constant speed the whole way across.
-const MID_X = 430 - BAND_WIDTH / 2
 
 function usePrefersReducedMotion() {
   const [reduced, setReduced] = useState(false)
@@ -46,10 +21,6 @@ function usePrefersReducedMotion() {
   return reduced
 }
 
-// Picks the right image URL for <image href> based on viewport width
-// and WebP support — done in JS (not <picture>/<source>, which can't
-// live inside <image>) so the mobile-sized asset is still used on
-// phones for bandwidth.
 function useHeroImageSrc() {
   const [src, setSrc] = useState(HERO_WEBP)
   useEffect(() => {
@@ -77,6 +48,25 @@ export default function EcgHero({ height = 220 }) {
       position: 'relative', width: '100%', height, maxHeight: '100%',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
     }}>
+      {/* حقن الـ CSS Animation المستند على GPU */}
+      <style>{`
+        @keyframes cometPass {
+          0% {
+            transform: translate3d(-200px, 0, 0);
+          }
+          50% {
+            transform: translate3d(320px, 0, 0);
+          }
+          100% {
+            transform: translate3d(900px, 0, 0);
+          }
+        }
+        .comet-beam {
+          animation: cometPass 7s cubic-bezier(0.2, 0.8, 0.3, 0.6) infinite;
+          will-change: transform;
+        }
+      `}</style>
+
       <svg
         viewBox={`0 0 ${ART_WIDTH} ${ART_HEIGHT}`}
         preserveAspectRatio="xMidYMid meet"
@@ -88,7 +78,6 @@ export default function EcgHero({ height = 220 }) {
             <image href={LINE_MASK} x="0" y="0" width={ART_WIDTH} height={ART_HEIGHT} />
           </mask>
 
-          {/* Shooting Star Gradient without White: Cyan/Sky-Blue bright head */}
           <linearGradient id="pulseBeamGradient">
             <stop offset="0%" stopColor="#0c3a58" stopOpacity="0" />
             <stop offset="30%" stopColor="#0e6a97" stopOpacity="0.3" />
@@ -98,8 +87,6 @@ export default function EcgHero({ height = 220 }) {
             <stop offset="100%" stopColor="#52e5ff" stopOpacity="0" />
           </linearGradient>
 
-          {/* Two-stage glow: a big soft outer bloom + a tighter, more
-              intense inner glow, for a genuinely "glowing" look. */}
           <filter id="pulseBeamHalo" x="-100%" y="-100%" width="300%" height="300%">
             <feGaussianBlur stdDeviation="16" />
           </filter>
@@ -113,33 +100,20 @@ export default function EcgHero({ height = 220 }) {
           </filter>
         </defs>
 
-        {/* The exact real artwork — real line color, real shadow */}
         <image href={heroSrc} x="0" y="0" width={ART_WIDTH} height={ART_HEIGHT} />
 
         {!reduced && (
           <g mask="url(#pulseLineMask)">
-            {/* Outer soft bloom */}
-            <rect y="0" width={BAND_WIDTH} height={ART_HEIGHT}
-              rx={BAND_WIDTH / 2} ry={ART_HEIGHT / 2}
-              fill="url(#pulseBeamGradient)" filter="url(#pulseBeamHalo)" opacity="0.95">
-              <animate attributeName="x"
-                values={`${-BAND_WIDTH};${MID_X};${ART_WIDTH}`}
-                keyTimes="0;0.5;1"
-                calcMode="spline"
-                keySplines="0.2 0.8 0.3 0.6; 0.7 0.4 0.8 0.2"
-                dur={BEAM_DURATION} repeatCount="indefinite" />
-            </rect>
-            {/* Inner bright core */}
-            <rect y="0" width={BAND_WIDTH} height={ART_HEIGHT}
-              rx={BAND_WIDTH / 2} ry={ART_HEIGHT / 2}
-              fill="url(#pulseBeamGradient)" filter="url(#pulseBeamGlow)">
-              <animate attributeName="x"
-                values={`${-BAND_WIDTH};${MID_X};${ART_WIDTH}`}
-                keyTimes="0;0.5;1"
-                calcMode="spline"
-                keySplines="0.2 0.8 0.3 0.6; 0.7 0.4 0.8 0.2"
-                dur={BEAM_DURATION} repeatCount="indefinite" />
-            </rect>
+            {/* مجموعة واحدة تحرك العنصرين معاً عبر CSS Transform */}
+            <g className="comet-beam">
+              <rect x="0" y="0" width={ART_WIDTH * 0.25} height={ART_HEIGHT}
+                rx={(ART_WIDTH * 0.25) / 2} ry={ART_HEIGHT / 2}
+                fill="url(#pulseBeamGradient)" filter="url(#pulseBeamHalo)" opacity="0.95" />
+              
+              <rect x="0" y="0" width={ART_WIDTH * 0.25} height={ART_HEIGHT}
+                rx={(ART_WIDTH * 0.25) / 2} ry={ART_HEIGHT / 2}
+                fill="url(#pulseBeamGradient)" filter="url(#pulseBeamGlow)" />
+            </g>
           </g>
         )}
       </svg>
