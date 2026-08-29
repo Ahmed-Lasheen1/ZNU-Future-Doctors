@@ -73,15 +73,15 @@ export default function NavMenu({ dark, toggleTheme, align = 'left' }) {
     ? {
         background: 'rgba(28,28,30,0.55)',
         border: '1px solid rgba(255,255,255,0.12)',
-        backdropFilter: 'blur(10px) saturate(160%)',
-        WebkitBackdropFilter: 'blur(10px) saturate(160%)',
+        backdropFilter: 'blur(20px) saturate(160%)',
+        WebkitBackdropFilter: 'blur(20px) saturate(160%)',
         boxShadow: '0 20px 50px -12px rgba(0,0,0,0.5)',
       }
     : {
         background: 'rgba(242,242,247,0.75)',
         border: '1px solid rgba(0,0,0,0.08)',
-        backdropFilter: 'blur(10px) saturate(160%)',
-        WebkitBackdropFilter: 'blur(10px) saturate(160%)',
+        backdropFilter: 'blur(20px) saturate(160%)',
+        WebkitBackdropFilter: 'blur(20px) saturate(160%)',
         boxShadow: '0 20px 50px -12px rgba(37,60,97,0.25)',
       }
 
