@@ -78,7 +78,7 @@ export default function NavMenu({ dark, toggleTheme }) {
             regardless of whether Tailwind processed this file. Bumped
             2.5x (20 -> 50) so the hamburger/X lines read as bigger,
             bolder strokes without changing the button's hit-box size. */}
-        <MenuToggleIcon open={open} width={70} height={70} stroke={dark ? '#38bdf8' : '#475569'} duration={400} />
+        <MenuToggleIcon open={open} width={100} height={100} stroke={dark ? '#38bdf8' : '#475569'} duration={400} />
       </button>
       <AnimatePresence mode="wait">
         {open && (
