@@ -88,14 +88,14 @@ export default function EcgHero({ height = 220 }) {
             <image href={LINE_MASK} x="0" y="0" width={ART_WIDTH} height={ART_HEIGHT} />
           </mask>
 
-          {/* Shooting Star Gradient: Fades from trailing tail to intense bright head */}
+          {/* Shooting Star Gradient without White: Cyan/Sky-Blue bright head */}
           <linearGradient id="pulseBeamGradient">
-            <stop offset="0%" stopColor="#0e6a97" stopOpacity="0" />
-            <stop offset="30%" stopColor="#0e93c9" stopOpacity="0.25" />
-            <stop offset="60%" stopColor="#3ad1ff" stopOpacity="0.6" />
-            <stop offset="88%" stopColor="#ffffff" stopOpacity="0.95" />
-            <stop offset="96%" stopColor="#ffffff" stopOpacity="1" />
-            <stop offset="100%" stopColor="#ffffff" stopOpacity="0" />
+            <stop offset="0%" stopColor="#0c3a58" stopOpacity="0" />
+            <stop offset="30%" stopColor="#0e6a97" stopOpacity="0.3" />
+            <stop offset="60%" stopColor="#0e93c9" stopOpacity="0.75" />
+            <stop offset="85%" stopColor="#3ad1ff" stopOpacity="0.95" />
+            <stop offset="96%" stopColor="#00f0ff" stopOpacity="1" />
+            <stop offset="100%" stopColor="#52e5ff" stopOpacity="0" />
           </linearGradient>
 
           {/* Two-stage glow: a big soft outer bloom + a tighter, more
@@ -118,7 +118,7 @@ export default function EcgHero({ height = 220 }) {
 
         {!reduced && (
           <g mask="url(#pulseLineMask)">
-            {/* Outer soft bloom مع تدوير الحواف rx و ry */}
+            {/* Outer soft bloom */}
             <rect y="0" width={BAND_WIDTH} height={ART_HEIGHT}
               rx={BAND_WIDTH / 2} ry={ART_HEIGHT / 2}
               fill="url(#pulseBeamGradient)" filter="url(#pulseBeamHalo)" opacity="0.95">
@@ -129,7 +129,7 @@ export default function EcgHero({ height = 220 }) {
                 keySplines="0.2 0.8 0.3 0.6; 0.7 0.4 0.8 0.2"
                 dur={BEAM_DURATION} repeatCount="indefinite" />
             </rect>
-            {/* Inner bright core مع تدوير الحواف rx و ry */}
+            {/* Inner bright core */}
             <rect y="0" width={BAND_WIDTH} height={ART_HEIGHT}
               rx={BAND_WIDTH / 2} ry={ART_HEIGHT / 2}
               fill="url(#pulseBeamGradient)" filter="url(#pulseBeamGlow)">
