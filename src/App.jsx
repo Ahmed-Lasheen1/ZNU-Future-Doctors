@@ -90,6 +90,15 @@ export function NavMenu({ dark, toggleTheme }) {
     user ? { heading: 'Profile', href: '/profile' } : { heading: 'Sign In', href: '/auth' },
   ]
 
+  // NOTE: this button and the footer below use plain inline styles,
+  // not Tailwind classes — tailwind.config.js's `content` array does
+  // not scan App.jsx/Home.jsx (only src/components/ui, src/components/
+  // pulse, Auth.tsx, ResetPassword.tsx, src/lib), so any Tailwind
+  // classes written directly in this file are silently dropped and do
+  // nothing. curved-menu.tsx and menu-toggle-icon.tsx live under
+  // src/components/ui/, which IS scanned, so their own Tailwind
+  // classes (rotation, layout, etc.) still work normally — only THIS
+  // file avoids Tailwind, matching how the rest of the app is styled.
   return (
     <>
       <button
@@ -97,13 +106,18 @@ export function NavMenu({ dark, toggleTheme }) {
         aria-label={open ? 'Close navigation menu' : 'Open navigation menu'}
         aria-haspopup="true"
         aria-expanded={open}
-        className="flex items-center justify-center w-10 h-10 rounded-[10px]"
         style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          width: 40, height: 40, borderRadius: 10, flexShrink: 0, padding: 0,
           background: dark ? 'rgba(56,189,248,0.1)' : '#f1f5f9',
-          border: `1px solid ${dark ? 'rgba(56,189,248,0.3)' : '#e2e8f0'}`
+          border: `1px solid ${dark ? 'rgba(56,189,248,0.3)' : '#e2e8f0'}`,
+          cursor: 'pointer'
         }}
       >
-        <MenuToggleIcon open={open} className="w-5 h-5" stroke={dark ? '#38bdf8' : '#475569'} duration={400} />
+        {/* width/height passed as real SVG attributes (not a Tailwind
+            className) so the icon always renders at the right size
+            regardless of whether Tailwind processed this file. */}
+        <MenuToggleIcon open={open} width={20} height={20} stroke={dark ? '#38bdf8' : '#475569'} duration={400} />
       </button>
       <AnimatePresence mode="wait">
         {open && (
@@ -111,13 +125,20 @@ export function NavMenu({ dark, toggleTheme }) {
             setIsActive={setOpen}
             navItems={navItems}
             footer={
-              <div className="w-full flex items-center justify-between px-10 md:px-24 py-5 border-t border-black/10">
+              <div style={{
+                width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                padding: '20px 40px', borderTop: '1px solid rgba(0,0,0,0.1)', boxSizing: 'border-box'
+              }}>
                 <button
                   onClick={toggleTheme}
                   aria-label={dark ? 'Switch to light mode' : 'Switch to dark mode'}
-                  className="flex items-center gap-2 text-sm font-bold text-black/70"
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 8,
+                    background: 'transparent', border: 'none', cursor: 'pointer',
+                    fontSize: 13, fontWeight: 700, color: 'rgba(0,0,0,0.7)', fontFamily: 'inherit', padding: 0
+                  }}
                 >
-                  <span className="text-lg">{dark ? '☀️' : '🌙'}</span>
+                  <span style={{ fontSize: 18 }}>{dark ? '☀️' : '🌙'}</span>
                   {dark ? 'Light mode' : 'Dark mode'}
                 </button>
 
@@ -126,12 +147,15 @@ export function NavMenu({ dark, toggleTheme }) {
                     onClick={() => goTo('/profile')}
                     role="button" tabIndex={0}
                     onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); goTo('/profile') } }}
-                    className="flex items-center gap-1.5 text-sm font-extrabold text-amber-600 cursor-pointer"
+                    style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 800, color: '#d97706', cursor: 'pointer' }}
                   >
                     ⭐ {profile?.points || 0} points
                   </div>
                 ) : (
-                  <button onClick={() => goTo('/auth')} className="text-sm font-extrabold text-sky-600">
+                  <button onClick={() => goTo('/auth')} style={{
+                    background: 'transparent', border: 'none', cursor: 'pointer',
+                    fontSize: 13, fontWeight: 800, color: '#0284c7', fontFamily: 'inherit', padding: 0
+                  }}>
                     Sign In →
                   </button>
                 )}
