@@ -63,14 +63,23 @@ function onActivateKeyDown(handler) {
   }
 }
 
+// ── Reveal order ───────────────────────────────────────────────────
+// The ECG hero is the very first thing to appear (right when
+// ENTRANCE_PAUSE ends), then the logo — everything else keeps its
+// original timing untouched. HERO_DELAY takes the slot ENTRANCE_PAUSE
+// used to sit in for the logo; LOGO_DELAY takes the slot the hero used
+// to sit in — a straight swap of the two start times rather than a
+// re-tuning of the rest of the page.
+const HERO_DELAY = ENTRANCE_PAUSE
+const LOGO_DELAY = ENTRANCE_PAUSE + 0.5
+
 // ── Brand block timeline ──────────────────────────────────────────
-// Logo icon slides in first; once it's mostly settled, "ZNU" and
-// "PULSE" cascade in one word at a time; the tagline line fades in
-// once both words have landed. All relative to ENTRANCE_PAUSE, the
-// same shared "moment to load" every other animated element on this
-// page also waits out first. Widened from the first pass so each step
-// reads as its own deliberate beat rather than a quick flurry.
-const BRAND_WORDS_START = ENTRANCE_PAUSE + 0.45
+// Logo icon slides in first (now at LOGO_DELAY, after the hero);
+// once it's mostly settled, "ZNU" and "PULSE" cascade in one word at
+// a time; the tagline line fades in once both words have landed —
+// all anchored to LOGO_DELAY so the brand cascade stays in sync with
+// wherever the logo itself now starts.
+const BRAND_WORDS_START = LOGO_DELAY + 0.45
 const BRAND_WORD_STAGGER = 0.2
 const BRAND_TAGLINE_DELAY = BRAND_WORDS_START + BRAND_WORD_STAGGER * 2 + 0.2
 
@@ -89,7 +98,7 @@ function ZnuPulseBrand({ dark, pt }) {
       <motion.div
         initial={{ opacity: 0, x: -20 }}
         animate={{ opacity: 1, x: 0 }}
-        transition={{ duration: 0.7, delay: ENTRANCE_PAUSE }}
+        transition={{ duration: 0.7, delay: LOGO_DELAY }}
         style={{
           width: 44, height: 44, flexShrink: 0,
           borderRadius: 12, overflow: 'hidden',
@@ -336,7 +345,7 @@ export default function Home({ dark, toggleTheme }) {
               <motion.div
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.7, delay: ENTRANCE_PAUSE }}
+                transition={{ duration: 0.7, delay: LOGO_DELAY }}
                 style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}
               >
                 <button onClick={toggleTheme} style={utilityBtnStyle} aria-label={dark ? 'Switch to light mode' : 'Switch to dark mode'}>{dark ? '☀️' : '🌙'}</button>
@@ -448,7 +457,7 @@ export default function Home({ dark, toggleTheme }) {
               <motion.div className="pulse-hero-panel"
                 initial={{ opacity: 0, scale: 0.85 }}
                 animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.85, delay: ENTRANCE_PAUSE + 0.5 }}
+                transition={{ duration: 0.85, delay: HERO_DELAY }}
                 style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
               >
                 <EcgHero height="100%" />
