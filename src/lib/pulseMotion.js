@@ -4,4 +4,4 @@
 // rather than everything popping in the instant React mounts. Kept in
 // one place so every animated element on Home stays in sync if this
 // value is ever tuned.
-export const ENTRANCE_PAUSE = 0.45
+export const ENTRANCE_PAUSE = 0.75
