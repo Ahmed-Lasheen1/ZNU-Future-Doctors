@@ -50,19 +50,6 @@ function moduleBlurb(name) {
 
 const statNumStyle = { fontFamily: pulseFonts.display, fontWeight: 800, fontSize: 30 }
 
-function initialOf(name) {
-  return name && name.trim() ? name.trim().charAt(0).toUpperCase() : '?'
-}
-
-function onActivateKeyDown(handler) {
-  return (e) => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault()
-      handler()
-    }
-  }
-}
-
 // ── Reveal order ───────────────────────────────────────────────────
 // The ECG hero is the very first thing to appear (right when
 // ENTRANCE_PAUSE ends), then the logo — everything else keeps its
@@ -258,14 +245,6 @@ export default function Home({ dark, toggleTheme }) {
       }}>{text}</motion.h2>
   )
 
-  const utilityBtnStyle = {
-    background: pt.surfaceFlat,
-    color: pt.cobalt,
-    border: `1px solid ${pt.border}`,
-    padding: '6px 14px', borderRadius: 10,
-    cursor: 'pointer', fontSize: 16, fontWeight: 700
-  }
-
   return (
     <div style={{ position: 'relative', minHeight: '100vh', overflowX: 'hidden' }}>
       <div style={{
@@ -342,50 +321,16 @@ export default function Home({ dark, toggleTheme }) {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
               <ZnuPulseBrand dark={dark} pt={pt} />
 
+              {/* Theme toggle, search, and profile/sign-in used to live
+                  here as separate buttons — all folded into NavMenu now
+                  (its nav list + footer row). This is the only header
+                  control left on the right. */}
               <motion.div
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.7, delay: LOGO_DELAY }}
-                style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}
               >
-                <button onClick={toggleTheme} style={utilityBtnStyle} aria-label={dark ? 'Switch to light mode' : 'Switch to dark mode'}>{dark ? '☀️' : '🌙'}</button>
-                <NavMenu dark={dark} />
-                <button onClick={() => navigate('/search')} aria-label="Search" style={utilityBtnStyle}>🔍</button>
-
-                {user && profile ? (
-                  <div onClick={() => navigate('/profile')}
-                    role="button" tabIndex={0}
-                    onKeyDown={onActivateKeyDown(() => navigate('/profile'))}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: 10,
-                      background: pt.surfaceFlat,
-                      border: `1px solid ${pt.border}`,
-                      borderRadius: 20, padding: '6px 14px 6px 6px', cursor: 'pointer',
-                      transition: 'all 0.2s'
-                    }}
-                    onMouseEnter={e => e.currentTarget.style.borderColor = pt.cobaltBorder}
-                    onMouseLeave={e => e.currentTarget.style.borderColor = pt.border}>
-                    <div style={{
-                      width: 30, height: 30, borderRadius: '50%',
-                      background: `linear-gradient(135deg, ${pt.cobalt}, ${pt.indigo})`,
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: 13, fontWeight: 900, color: '#fff', flexShrink: 0
-                    }}>
-                      {initialOf(profile.name)}
-                    </div>
-                    <div style={{ textAlign: 'left' }}>
-                      <div style={{ color: pt.text, fontSize: 12, fontWeight: 700 }}>Dr. {profile.name}</div>
-                      <div style={{ color: pt.amber, fontSize: 10, fontWeight: 700 }}>⭐ {profile.points} points</div>
-                    </div>
-                  </div>
-                ) : (
-                  <button onClick={() => navigate('/auth')} style={{
-                    background: pt.cobaltSoft, color: pt.cobalt,
-                    border: `1px solid ${pt.cobaltBorder}`,
-                    padding: '8px 16px', borderRadius: 20,
-                    cursor: 'pointer', fontSize: 13, fontWeight: 700
-                  }}>Sign In →</button>
-                )}
+                <NavMenu dark={dark} toggleTheme={toggleTheme} />
               </motion.div>
             </div>
           </div>
