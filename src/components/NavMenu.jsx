@@ -331,15 +331,14 @@ export default function NavMenu({ dark, toggleTheme, align = 'left' }) {
 
                 <motion.div variants={listItem} style={{ height: 1, background: pt.border, margin: '6px 4px' }} />
 
-                {/* Theme switch — cinematic pill toggle instead of the
-                    old plain text row, controlled by this app's own
-                    dark/toggleTheme rather than next-themes. */}
+                                {/* Theme switch — cinematic pill toggle, no label,
+                    left-aligned in its row. Controlled by this app's
+                    own dark/toggleTheme rather than next-themes. */}
                 <motion.div variants={listItem} style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  display: 'flex', alignItems: 'center', justifyContent: 'flex-start',
                   padding: '6px 12px 10px'
                 }}>
-                  <CharFlipLabel text={dark ? 'Dark Mode' : 'Light Mode'} color={pt.text} fontSize={13} fontWeight={700} />
-                  <ThemeSwitch dark={dark} onToggle={toggleTheme} scale={0.6} />
+                  <ThemeSwitch dark={dark} onToggle={toggleTheme} scale={0.72} />
                 </motion.div>
 
                 {/* Sign out — last, only when signed in */}
