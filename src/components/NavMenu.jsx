@@ -1,5 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
-import { createPortal } from 'react-dom'
+import { useState, useRef, useEffect, useLayoutEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Search as SearchIcon, X } from 'lucide-react'
@@ -24,10 +23,12 @@ function initialOf(name) {
 }
 
 const BUTTON_SIZE = 44
+const PANEL_WIDTH = 280
+const PANEL_RADIUS = 24
 const ROW_RADIUS = 16
 
-// Same three-layer glass recipe as the cards / old panel — reused as a
-// per-row "chip" wrapper.
+// Same three-layer glass recipe as the cards / menu shell — reused as
+// a per-row "chip" wrapper.
 function GlassRow({ dark, radius = ROW_RADIUS, style = {}, hoverBg, children, onMouseEnter, onMouseLeave, ...rest }) {
   const [hovered, setHovered] = useState(false)
   return (
@@ -46,26 +47,33 @@ function GlassRow({ dark, radius = ROW_RADIUS, style = {}, hoverBg, children, on
   )
 }
 
-// `align` still reflects which side the trigger button lives on
-// (SmartHeader = left, Home.jsx = right) — used here to pick which
-// corner the fullscreen panel visually "grows from" via the clip-path
-// reveal, so the morph still reads as coming out of the button.
 export default function NavMenu({ dark, toggleTheme, align = 'left' }) {
   const [open, setOpen] = useState(false)
   const [searchValue, setSearchValue] = useState('')
   const navigate = useNavigate()
   const { user, profile, signOut } = useAuth()
+  const wrapperRef = useRef(null)
+  const contentRef = useRef(null)
+  const [contentHeight, setContentHeight] = useState(0)
   const pt = getPulseTheme(dark)
+
+  useLayoutEffect(() => {
+    if (open && contentRef.current) {
+      setContentHeight(contentRef.current.scrollHeight)
+    }
+  }, [open, user, profile])
 
   useEffect(() => {
     if (!open) return
+    function onClickOutside(e) {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target)) setOpen(false)
+    }
     function onEscape(e) { if (e.key === 'Escape') setOpen(false) }
+    document.addEventListener('mousedown', onClickOutside)
     document.addEventListener('keydown', onEscape)
-    const prevOverflow = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
     return () => {
+      document.removeEventListener('mousedown', onClickOutside)
       document.removeEventListener('keydown', onEscape)
-      document.body.style.overflow = prevOverflow
     }
   }, [open])
 
@@ -86,171 +94,208 @@ export default function NavMenu({ dark, toggleTheme, align = 'left' }) {
 
   const rowHover = dark ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.35)'
   const dangerHover = dark ? 'rgba(239,107,87,0.14)' : 'rgba(214,84,63,0.12)'
+  const openHeight = BUTTON_SIZE + contentHeight + 10
 
   const listContainer = {
     hidden: {},
-    visible: { transition: { delayChildren: 0.25, staggerChildren: 0.06 } },
-    exit: { transition: { staggerChildren: 0.02, staggerDirection: -1 } },
+    visible: { transition: { delayChildren: 0.28, staggerChildren: 0.05 } },
+    exit: { transition: { staggerChildren: 0.015, staggerDirection: -1 } },
   }
   const listItem = {
-    hidden: { opacity: 0, y: 14 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.35, ease: 'easeOut' } },
-    exit: { opacity: 0, y: -8, transition: { duration: 0.15 } },
+    hidden: { opacity: 0, y: 8 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.25, ease: 'easeOut' } },
+    exit: { opacity: 0, y: -4, transition: { duration: 0.12, ease: 'easeIn' } },
   }
 
-  // Origin point for the circular reveal — matches whichever corner
-  // the trigger button sits in, so the fullscreen panel still reads
-  // as "unfolding from the hamburger" rather than appearing generically.
-  const originX = align === 'right' ? 'calc(100% - 36px)' : '36px'
-
   return (
-    <>
-      <button
-        onClick={() => setOpen(o => !o)}
-        aria-label={open ? 'Close navigation menu' : 'Open navigation menu'}
-        aria-haspopup="true"
-        aria-expanded={open}
+    <div ref={wrapperRef} style={{ position: 'relative', width: BUTTON_SIZE, height: BUTTON_SIZE }}>
+      <motion.div
         style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          width: BUTTON_SIZE, height: BUTTON_SIZE, flexShrink: 0, padding: 0,
-          background: 'transparent', border: 'none', cursor: 'pointer',
-          WebkitTapHighlightColor: 'transparent', outline: 'none'
+          position: 'absolute', top: 0,
+          [align === 'right' ? 'right' : 'left']: 0,
+          maxWidth: '90vw',
+          overflow: 'hidden',
+          zIndex: 2000,
+          willChange: 'width, height, border-radius',
+        }}
+        animate={{
+          width: open ? PANEL_WIDTH : BUTTON_SIZE,
+          height: open ? openHeight : BUTTON_SIZE,
+          borderRadius: open ? PANEL_RADIUS : BUTTON_SIZE,
+        }}
+        whileHover={!open ? { scale: 1.06 } : undefined}
+        transition={{
+          duration: 0.7, ease: morphEase,
+          height: { duration: open ? 0.7 : 0.32, ease: morphEase },
+          borderRadius: { duration: 0.5, ease: morphEase },
+          scale: { duration: 0.25, ease: morphEase },
         }}
       >
-        <MenuToggleIcon open={open} width={44} height={44} stroke={dark ? '#38bdf8' : '#475569'} duration={400} />
-      </button>
+        <motion.div
+          aria-hidden
+          className="pointer-events-none"
+          style={{ position: 'absolute', inset: 0, borderRadius: 'inherit', ...liquidGlassBackdrop() }}
+          animate={{ opacity: open ? 1 : 0 }}
+          transition={{ duration: open ? 0.35 : 0.15, delay: open ? 0.12 : 0 }}
+        />
+        <motion.div
+          aria-hidden
+          className="pointer-events-none"
+          style={{ position: 'absolute', inset: 0, borderRadius: 'inherit', boxShadow: liquidGlassShadow(dark) }}
+          animate={{ opacity: open ? 1 : 0 }}
+          transition={{ duration: open ? 0.35 : 0.15, delay: open ? 0.12 : 0 }}
+        />
+        <motion.div
+          aria-hidden
+          className="pointer-events-none"
+          style={{ position: 'absolute', inset: 0, borderRadius: 'inherit', background: liquidGlassTint(dark) }}
+          animate={{ opacity: open ? 1 : 0 }}
+          transition={{ duration: open ? 0.35 : 0.15, delay: open ? 0.12 : 0 }}
+        />
 
-      {typeof document !== 'undefined' && createPortal(
-        <AnimatePresence>
-          {open && (
-            <motion.div
-              key="nav-overlay"
-              initial={{ clipPath: `circle(0% at ${originX} 36px)`, opacity: 0.7 }}
-              animate={{ clipPath: `circle(150% at ${originX} 36px)`, opacity: 1 }}
-              exit={{ clipPath: `circle(0% at ${originX} 36px)`, opacity: 0.7 }}
-              transition={{ duration: 0.65, ease: morphEase }}
-              style={{ position: 'fixed', inset: 0, zIndex: 3000, overflowY: 'auto' }}
-            >
-              {/* Full-screen glass base — same recipe as the old panel,
-                  plus a solid tint underneath so arbitrary page content
-                  can't show through too strongly at this scale. */}
-              <div aria-hidden style={{ position: 'absolute', inset: 0, ...liquidGlassBackdrop() }} />
-              <div aria-hidden style={{ position: 'absolute', inset: 0, boxShadow: liquidGlassShadow(dark) }} />
-              <div aria-hidden style={{ position: 'absolute', inset: 0, background: liquidGlassTint(dark) }} />
-              <div aria-hidden style={{ position: 'absolute', inset: 0, background: dark ? 'rgba(15,23,42,0.6)' : 'rgba(255,255,255,0.6)' }} />
+        <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column' }}>
+          {/* Collapsed state: hamburger. Open state: same button now
+              renders as an X in the top-right corner of the panel. */}
+          <div style={{
+            width: '100%', minHeight: BUTTON_SIZE, flexShrink: 0,
+            display: 'flex', alignItems: 'center',
+            justifyContent: open ? 'flex-end' : (align === 'right' ? 'flex-end' : 'flex-start'),
+            padding: open ? '4px 6px 0 0' : 0
+          }}>
+            {open ? (
+              <button
+                onClick={() => setOpen(false)}
+                aria-label="Close navigation menu"
+                style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  width: 36, height: 36, padding: 0,
+                  background: 'transparent', border: 'none', cursor: 'pointer',
+                  color: pt.text, WebkitTapHighlightColor: 'transparent', outline: 'none'
+                }}
+              >
+                <X size={22} />
+              </button>
+            ) : (
+              <button
+                onClick={() => setOpen(true)}
+                aria-label="Open navigation menu"
+                aria-haspopup="true"
+                aria-expanded={false}
+                style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  width: BUTTON_SIZE, height: BUTTON_SIZE, flexShrink: 0, padding: 0,
+                  background: 'transparent', border: 'none', cursor: 'pointer',
+                  WebkitTapHighlightColor: 'transparent', outline: 'none'
+                }}
+              >
+                <MenuToggleIcon open={false} width={44} height={44} stroke={dark ? '#38bdf8' : '#475569'} duration={400} />
+              </button>
+            )}
+          </div>
 
-              <div style={{
-                position: 'relative', zIndex: 1, minHeight: '100dvh',
-                display: 'flex', flexDirection: 'column',
-                padding: '20px 20px 24px', fontFamily: pulseFonts.body
-              }}>
-                <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>
-                  <button onClick={() => setOpen(false)} aria-label="Close navigation menu" style={{
-                    background: 'transparent', border: 'none', cursor: 'pointer', color: pt.text, padding: 8
-                  }}>
-                    <X size={26} />
-                  </button>
-                </div>
-
-                <motion.div
-                  variants={listContainer} initial="hidden" animate="visible" exit="exit"
-                  style={{ display: 'flex', flexDirection: 'column', gap: 10, flex: 1 }}
-                >
-                  {/* Profile / Sign In */}
-                  <motion.div variants={listItem}>
-                    {user ? (
-                      <GlassRow dark={dark} radius={18} hoverBg={rowHover} onClick={() => goTo('/profile')}
-                        role="button" tabIndex={0}
-                        onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); goTo('/profile') } }}
-                        style={{ cursor: 'pointer' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '16px 18px' }}>
+          <AnimatePresence>
+            {open && (
+              <motion.div
+                ref={contentRef}
+                variants={listContainer}
+                initial="hidden" animate="visible" exit="exit"
+                style={{ width: PANEL_WIDTH, padding: '0 14px 16px', fontFamily: pulseFonts.body, display: 'flex', flexDirection: 'column', gap: 10 }}
+              >
+                {/* Profile / Sign In */}
+                <motion.div variants={listItem}>
+                  {user ? (
+                    <GlassRow dark={dark} radius={18} hoverBg={rowHover} onClick={() => goTo('/profile')}
+                      role="button" tabIndex={0}
+                      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); goTo('/profile') } }}
+                      style={{ cursor: 'pointer' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px' }}>
+                        <div style={{
+                          width: 42, height: 42, borderRadius: '50%', flexShrink: 0,
+                          background: `linear-gradient(135deg, ${pt.cobalt}, ${pt.indigo})`,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          fontSize: 16, fontWeight: 900, color: '#fff'
+                        }}>{initialOf(profile?.name)}</div>
+                        <div style={{ minWidth: 0, flex: 1 }}>
                           <div style={{
-                            width: 48, height: 48, borderRadius: '50%', flexShrink: 0,
-                            background: `linear-gradient(135deg, ${pt.cobalt}, ${pt.indigo})`,
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            fontSize: 18, fontWeight: 900, color: '#fff'
-                          }}>{initialOf(profile?.name)}</div>
-                          <div style={{ minWidth: 0, flex: 1 }}>
-                            <div style={{ color: pt.text, fontWeight: 800, fontSize: 16 }}>Dr. {profile?.name || '...'}</div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: pt.amber, fontSize: 13, fontWeight: 700, marginTop: 4 }}>
-                              ⭐ {profile?.points || 0} points
-                            </div>
+                            color: pt.text, fontWeight: 800, fontSize: 14,
+                            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'
+                          }}>Dr. {profile?.name || '...'}</div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 5, color: pt.amber, fontSize: 12, fontWeight: 700, marginTop: 3 }}>
+                            ⭐ {profile?.points || 0} points
                           </div>
                         </div>
-                      </GlassRow>
-                    ) : (
-                      <GlassRow dark={dark} radius={18} hoverBg="rgba(255,255,255,0.08)" onClick={() => goTo('/auth')}
-                        role="button" tabIndex={0} style={{ cursor: 'pointer' }}>
-                        <div style={{
-                          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                          padding: '16px', color: '#fff', fontWeight: 800, fontSize: 15,
-                          background: `linear-gradient(135deg, ${pt.cobalt}cc, ${pt.indigo}cc)`
-                        }}>Sign In →</div>
-                      </GlassRow>
-                    )}
-                  </motion.div>
+                      </div>
+                    </GlassRow>
+                  ) : (
+                    <GlassRow dark={dark} radius={18} hoverBg="rgba(255,255,255,0.08)" onClick={() => goTo('/auth')}
+                      role="button" tabIndex={0} style={{ cursor: 'pointer' }}>
+                      <div style={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                        padding: '14px', color: '#fff', fontWeight: 800, fontSize: 14,
+                        background: `linear-gradient(135deg, ${pt.cobalt}cc, ${pt.indigo}cc)`
+                      }}>Sign In →</div>
+                    </GlassRow>
+                  )}
+                </motion.div>
 
-                  {/* Search */}
-                  <motion.div variants={listItem}>
-                    <GlassRow dark={dark} radius={16} hoverBg={rowHover}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '14px 16px' }}>
-                        <SearchIcon size={18} color={pt.faint} style={{ flexShrink: 0, cursor: 'pointer' }} onClick={submitSearch} />
-                        <input
-                          value={searchValue}
-                          onChange={e => setSearchValue(e.target.value)}
-                          onKeyDown={e => { if (e.key === 'Enter') submitSearch() }}
-                          placeholder="Search..."
-                          style={{
-                            flex: 1, minWidth: 0, background: 'transparent', border: 'none', outline: 'none',
-                            color: pt.text, fontSize: 15, fontFamily: 'inherit', fontWeight: 600
-                          }}
-                        />
+                {/* Search bar */}
+                <motion.div variants={listItem}>
+                  <GlassRow dark={dark} radius={16} hoverBg={rowHover}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '12px 14px' }}>
+                      <SearchIcon size={16} color={pt.faint} style={{ flexShrink: 0, cursor: 'pointer' }} onClick={submitSearch} />
+                      <input
+                        value={searchValue}
+                        onChange={e => setSearchValue(e.target.value)}
+                        onKeyDown={e => { if (e.key === 'Enter') submitSearch() }}
+                        placeholder="Search..."
+                        style={{
+                          flex: 1, minWidth: 0, background: 'transparent', border: 'none', outline: 'none',
+                          color: pt.text, fontSize: 14, fontFamily: 'inherit', fontWeight: 600
+                        }}
+                      />
+                    </div>
+                  </GlassRow>
+                </motion.div>
+
+                {/* Navigation */}
+                {navItems.map(item => (
+                  <motion.div key={item.href} variants={listItem}>
+                    <GlassRow dark={dark} radius={16} hoverBg={rowHover} onClick={() => goTo(item.href)}
+                      role="button" tabIndex={0}
+                      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); goTo(item.href) } }}
+                      style={{ cursor: 'pointer' }}>
+                      <div style={{ padding: '13px 16px' }}>
+                        <span style={{ color: pt.text, fontSize: 14, fontWeight: item.href === '/' ? 800 : 600, fontFamily: 'inherit' }}>
+                          {item.label}
+                        </span>
                       </div>
                     </GlassRow>
                   </motion.div>
+                ))}
 
-                  {/* Navigation */}
-                  {navItems.map(item => (
-                    <motion.div key={item.href} variants={listItem}>
-                      <GlassRow dark={dark} radius={16} hoverBg={rowHover} onClick={() => goTo(item.href)}
-                        role="button" tabIndex={0}
-                        onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); goTo(item.href) } }}
-                        style={{ cursor: 'pointer' }}>
-                        <div style={{ padding: '16px 18px' }}>
-                          <span style={{ color: pt.text, fontSize: 15, fontWeight: item.href === '/' ? 800 : 600, fontFamily: 'inherit' }}>
-                            {item.label}
-                          </span>
-                        </div>
-                      </GlassRow>
-                    </motion.div>
-                  ))}
-
-                  {/* Spacer pushes theme switch + sign out to the bottom */}
-                  <div style={{ flex: 1 }} />
-
-                  <motion.div variants={listItem} style={{ display: 'flex', justifyContent: 'center', padding: '6px 0 4px' }}>
-                    <ThemeSwitch dark={dark} onToggle={toggleTheme} scale={0.75} stretchX={1.3} />
-                  </motion.div>
-
-                  {user && (
-                    <motion.div variants={listItem}>
-                      <GlassRow dark={dark} radius={16} hoverBg={dangerHover} onClick={handleSignOut}
-                        role="button" tabIndex={0}
-                        onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleSignOut() } }}
-                        style={{ cursor: 'pointer' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, padding: '16px' }}>
-                          🚪 <span style={{ color: pt.danger, fontSize: 15, fontWeight: 700 }}>Sign Out</span>
-                        </div>
-                      </GlassRow>
-                    </motion.div>
-                  )}
+                {/* Theme switch */}
+                <motion.div variants={listItem} style={{ display: 'flex', justifyContent: 'center', padding: '4px 0' }}>
+                  <ThemeSwitch dark={dark} onToggle={toggleTheme} scale={0.62} stretchX={1.3} />
                 </motion.div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>,
-        document.body
-      )}
-    </>
+
+                {/* Sign out */}
+                {user && (
+                  <motion.div variants={listItem}>
+                    <GlassRow dark={dark} radius={16} hoverBg={dangerHover} onClick={handleSignOut}
+                      role="button" tabIndex={0}
+                      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleSignOut() } }}
+                      style={{ cursor: 'pointer' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '13px' }}>
+                        🚪 <span style={{ color: pt.danger, fontSize: 14, fontWeight: 700 }}>Sign Out</span>
+                      </div>
+                    </GlassRow>
+                  </motion.div>
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </motion.div>
+    </div>
   )
 }
