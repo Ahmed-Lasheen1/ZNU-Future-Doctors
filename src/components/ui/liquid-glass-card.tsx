@@ -5,7 +5,7 @@ import { motion } from "framer-motion"
 import { cn } from "@/lib/utils"
 import { ENTRANCE_PAUSE } from "@/lib/pulseMotion"
 import LiquidGlassFilter from "@/components/LiquidGlassFilter"
-import { liquidGlassShadow, liquidGlassBackdrop, liquidGlassTint } from "@/lib/liquidGlass"
+import { liquidGlassShadow, liquidGlassBackdrop } from "@/lib/liquidGlass"
 
 interface LiquidGlassCardProps {
   children: ReactNode
@@ -57,31 +57,18 @@ export default function LiquidGlassCard({
         )}
         style={{ borderRadius, height: "100%" }}
       >
-        {/* Distorted glass backdrop — the actual "liquid" refraction
-            where supported. Chained with a plain blur so Safari (which
-            ignores the SVG url() filter reference in backdrop-filter)
-            still degrades to a normal frosted-glass blur. */}
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-0 -z-10 overflow-hidden rounded-[inherit]"
-          style={liquidGlassBackdrop(filterId)}
-        />
-
-        {/* Tint layer — the part that actually hides what's behind the
-            card, independent of whether the blur/distortion filter is
-            supported in this browser. See liquidGlass.js for why this
-            is necessary. */}
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-0 z-0 rounded-[inherit]"
-          style={{ background: liquidGlassTint(!!dark) }}
-        />
-
-        {/* Rim-light / inset-shadow layer — the lens edge. */}
+        {/* Lens-shadow/rim layer */}
         <div
           aria-hidden
           className="pointer-events-none absolute inset-0 z-0 rounded-[inherit]"
           style={{ boxShadow: liquidGlassShadow(!!dark) }}
+        />
+
+        {/* Distorted glass backdrop — the actual "liquid" refraction */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 -z-10 overflow-hidden rounded-[inherit]"
+          style={liquidGlassBackdrop(filterId)}
         />
 
         <div className="relative z-10" style={contentStyle}>
