@@ -3,6 +3,8 @@ import { supabase } from '../../supabase'
 import { getTheme, inputStyle } from '../../theme'
 import InlineMessage from '../../components/InlineMessage'
 import ModuleSelect from './ModuleSelect'
+import IconPicker from '../../components/admin/IconPicker'
+import { ModuleIcon } from '../../lib/medicalIcons'
 import { btnStyle, miniBtn, cancelBtnStyle } from './adminStyles'
 
 export default function LessonsTab({ dark, modules, subjects, lessons, fetchLessons }) {
@@ -15,21 +17,22 @@ export default function LessonsTab({ dark, modules, subjects, lessons, fetchLess
   const [lessonModuleId, setLessonModuleId] = useState('')
   const [lessonSubjectId, setLessonSubjectId] = useState('')
   const [lessonTitle, setLessonTitle] = useState('')
+  const [lessonIcon, setLessonIcon] = useState('')
 
   function editLesson(l) {
     setEditingLessonId(l.id)
     setLessonModuleId(l.module_id); setLessonSubjectId(l.subject_id)
-    setLessonTitle(l.title)
+    setLessonTitle(l.title); setLessonIcon(l.icon || '')
   }
   function resetLessonForm() {
-    setEditingLessonId(null); setLessonTitle('')
+    setEditingLessonId(null); setLessonTitle(''); setLessonIcon('')
   }
   async function saveLesson() {
     if (!lessonTitle || !lessonSubjectId || !lessonModuleId) return showMsg('❌ Pick a module, subject, and title first')
     // Summaries are now managed entirely from the Summaries tab (which
     // can link a summary to this lesson) rather than from a URL field
     // stored directly on the lesson.
-    const payload = { title: lessonTitle, subject_id: lessonSubjectId, module_id: lessonModuleId }
+    const payload = { title: lessonTitle, subject_id: lessonSubjectId, module_id: lessonModuleId, icon: lessonIcon || null }
     if (editingLessonId) {
       const { error } = await supabase.from('lessons').update(payload).eq('id', editingLessonId)
       if (!error) { showMsg('✅ Lesson updated!'); resetLessonForm(); fetchLessons() }
@@ -67,6 +70,7 @@ export default function LessonsTab({ dark, modules, subjects, lessons, fetchLess
           </select>
         )}
         <input placeholder="Lesson title" value={lessonTitle} onChange={e => setLessonTitle(e.target.value)} style={inStyle} />
+        <IconPicker value={lessonIcon} onChange={setLessonIcon} inStyle={inStyle} c={c} />
         <div style={{ display: 'flex', gap: 8 }}>
           <button onClick={saveLesson} style={{ ...btnStyle, flex: 1 }}>{editingLessonId ? 'Save Changes' : 'Add Lesson'}</button>
           {editingLessonId && <button onClick={resetLessonForm} style={cancelBtnStyle(c)}>Cancel</button>}
@@ -88,7 +92,12 @@ export default function LessonsTab({ dark, modules, subjects, lessons, fetchLess
                   <div style={{ color: c.sub, fontSize: 12, fontWeight: 700, marginBottom: 6 }}>{sub.name}</div>
                   {subLessons.map(l => (
                     <div key={l.id} style={{ background: c.card, padding: '12px 16px', borderRadius: 12, border: `1px solid ${c.border}`, marginBottom: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ color: c.text, fontWeight: 600 }}>{l.title}</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <span style={{ display: 'inline-flex' }}>
+                          <ModuleIcon value={l.icon || '📘'} size={18} color="#34d399" />
+                        </span>
+                        <span style={{ color: c.text, fontWeight: 600 }}>{l.title}</span>
+                      </div>
                       <div style={{ display: 'flex', gap: 8 }}>
                         <button onClick={() => editLesson(l)} aria-label={`Edit lesson: ${l.title}`} style={{ ...miniBtn, borderColor: '#38bdf8', color: '#38bdf8' }}>✏️</button>
                         <button onClick={() => deleteLesson(l.id)} aria-label={`Delete lesson: ${l.title}`} style={{ ...miniBtn, borderColor: '#ef4444', color: '#ef4444' }}>🗑</button>

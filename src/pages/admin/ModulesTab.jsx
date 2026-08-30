@@ -2,9 +2,9 @@ import { useState } from 'react'
 import { supabase } from '../../supabase'
 import { getTheme, inputStyle } from '../../theme'
 import InlineMessage from '../../components/InlineMessage'
-import { btnStyle, miniBtn, cancelBtnStyle } from './adminStyles'
 import IconPicker from '../../components/admin/IconPicker'
 import { ModuleIcon } from '../../lib/medicalIcons'
+import { btnStyle, miniBtn, cancelBtnStyle } from './adminStyles'
 
 export default function ModulesTab({ dark, modules, fetchModules }) {
   const c = getTheme(dark)
@@ -64,7 +64,9 @@ export default function ModulesTab({ dark, modules, fetchModules }) {
       <div style={{ background: c.card, padding: '20px', borderRadius: '16px', border: `1px solid ${c.border}`, marginBottom: 16 }}>
         <h3 style={{ color: '#38bdf8', marginBottom: 16 }}>{editingModuleId ? '✏️ Edit Module' : '➕ Add Module'}</h3>
         <input placeholder="Module name" value={modName} onChange={e => setModName(e.target.value)} style={inStyle} />
-                <IconPicker value={modIcon} onChange={setModIcon} inStyle={inStyle} c={c} />
+
+        <IconPicker value={modIcon} onChange={setModIcon} inStyle={inStyle} c={c} />
+
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
           <div>
             <label style={{ color: c.sub, fontSize: 12, display: 'block', marginBottom: 4 }}>Color</label>
@@ -90,7 +92,9 @@ export default function ModulesTab({ dark, modules, fetchModules }) {
           {activeModules.map(mod => (
             <div key={mod.id} style={{ background: c.card, padding: '12px 16px', borderRadius: 12, border: `1px solid ${c.border}`, marginBottom: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <span style={{ display: 'inline-flex' }}><ModuleIcon value={mod.icon} size={24} color={mod.color} /></span>
+                <span style={{ display: 'inline-flex' }}>
+                  <ModuleIcon value={mod.icon} size={24} color={mod.color} />
+                </span>
                 <div style={{ color: mod.color, fontWeight: 700 }}>{mod.name}</div>
               </div>
               <div style={{ display: 'flex', gap: 8 }}>
@@ -109,7 +113,9 @@ export default function ModulesTab({ dark, modules, fetchModules }) {
           {completedModules.map(mod => (
             <div key={mod.id} style={{ background: c.card, padding: '12px 16px', borderRadius: 12, border: `1px solid ${c.border}`, marginBottom: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <span style={{ display: 'inline-flex' }}><ModuleIcon value={mod.icon} size={24} color={mod.color} /></span>
+                <span style={{ display: 'inline-flex' }}>
+                  <ModuleIcon value={mod.icon} size={24} color={mod.color} />
+                </span>
                 <div style={{ color: mod.color, fontWeight: 700 }}>{mod.name}</div>
               </div>
               <div style={{ display: 'flex', gap: 8 }}>

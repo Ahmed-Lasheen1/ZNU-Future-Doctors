@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { supabase } from '../../supabase'
 import { getTheme, inputStyle } from '../../theme'
-import IconPicker from '../../components/admin/IconPicker'
-import { ModuleIcon } from '../../lib/medicalIcons'
 import InlineMessage from '../../components/InlineMessage'
 import ModuleSelect from './ModuleSelect'
+import IconPicker from '../../components/admin/IconPicker'
+import { ModuleIcon } from '../../lib/medicalIcons'
 import { btnStyle, miniBtn, cancelBtnStyle } from './adminStyles'
 
 export default function SubjectsTab({ dark, modules, subjects, fetchSubjects }) {
@@ -68,13 +68,10 @@ export default function SubjectsTab({ dark, modules, subjects, fetchSubjects }) 
         <ModuleSelect modules={modules} value={subModuleId} onChange={e => setSubModuleId(e.target.value)} inStyle={inStyle} />
         <input placeholder="Subject name" value={subName} onChange={e => setSubName(e.target.value)} style={inStyle} />
 
-                <IconPicker value={subIcon} onChange={setSubIcon} inStyle={inStyle} c={c} />
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 10 }}>
-          <div>
-            <label style={{ color: c.sub, fontSize: 12, display: 'block', marginBottom: 4 }}>Color</label>
-            <input type="color" value={subColor} onChange={e => setSubColor(e.target.value)} style={{ ...inStyle, padding: 4, height: 42 }} />
-          </div>
-        </div>
+        <IconPicker value={subIcon} onChange={setSubIcon} inStyle={inStyle} c={c} />
+
+        <label style={{ color: c.sub, fontSize: 12, display: 'block', marginBottom: 4 }}>Color</label>
+        <input type="color" value={subColor} onChange={e => setSubColor(e.target.value)} style={{ ...inStyle, padding: 4, height: 42, marginBottom: 12 }} />
 
         <select value={subType} onChange={e => setSubType(e.target.value)} style={inStyle}>
           <option value="both">Theory + Practical</option>
@@ -99,7 +96,9 @@ export default function SubjectsTab({ dark, modules, subjects, fetchSubjects }) 
                     width: 22, height: 22, borderRadius: 6, flexShrink: 0,
                     background: sub.color || '#34d399', display: 'inline-block'
                   }} />
-                  <ModuleIcon value={sub.icon || '📖'} size={18} color={sub.color || '#34d399'} />
+                  <span style={{ display: 'inline-flex' }}>
+                    <ModuleIcon value={sub.icon || '📖'} size={18} color={sub.color || '#34d399'} />
+                  </span>
                   <span style={{ color: c.text, fontWeight: 600 }}>{sub.name}</span>
                   <span style={{ color: c.sub, fontSize: 12 }}>· {sub.type}</span>
                 </div>
