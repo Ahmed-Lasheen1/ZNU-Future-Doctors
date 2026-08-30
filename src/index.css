@@ -18,17 +18,6 @@
    (state toggled, the panel mounted) but was never actually visible —
    it had no position/size/background CSS to render with. */
 
-/* iOS blank-bar fix: html/body are pinned to the viewport and never
-   scroll themselves, so there's nothing for Safari to "rubber-band"
-   past and reveal a blank background behind. #root becomes the actual
-   scroll container instead — a standard pattern for iOS home-screen
-   PWAs. html gets an explicit background too, as a fallback in case
-   anything ever paints before body's own background does (e.g. the
-   very first frame after adding to the Home Screen). */
-html {
-  background: #0a0f1e;
-}
-
 * {
   margin: 0;
   padding: 0;
@@ -37,27 +26,9 @@ html {
 
 body {
   font-family: 'Segoe UI', sans-serif;
-  background: #0a0f1e;
+  background: #0f172a;
   color: #e2e8f0;
   direction: ltr;
-  overscroll-behavior-y: none;
-}
-
-html, body {
-  height: 100%;
-  height: -webkit-fill-available;
-  position: fixed;
-  inset: 0;
-  width: 100%;
-  overflow: hidden;
-}
-
-#root {
-  position: absolute;
-  inset: 0;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  overscroll-behavior-y: none;
 }
 
 .app {
