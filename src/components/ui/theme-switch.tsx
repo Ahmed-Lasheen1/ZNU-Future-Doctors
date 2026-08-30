@@ -13,23 +13,16 @@ interface Particle {
 interface ThemeSwitchProps {
   dark: boolean
   onToggle: () => void
-  // Scales the whole switch down while keeping every pixel value below
-  // (track size, thumb size, shadows, particle sizes) exactly as in the
-  // source design — a wrapper with fixed scaled dimensions clips the
-  // transform so it doesn't leave extra empty layout space around it.
+  // Uniform size (applies to both axes).
   scale?: number
+  // Extra horizontal-only stretch, applied on top of `scale`. >1
+  // elongates the pill (and the thumb's travel distance along with
+  // it, since it's the same coordinate space) without changing its
+  // height — a true stretch rather than scaling the whole switch up.
+  stretchX?: number
 }
 
-// Adapted from the reference "cinematic theme switcher". The source
-// component drove dark/light itself via next-themes' useTheme() hook;
-// this app already owns dark-mode state in App.jsx (`dark` + a
-// `toggleTheme` callback passed down through every page), so this
-// version is fully controlled via props instead — no next-themes
-// dependency, no internal theme hook, no SSR hydration guard (this is
-// a client-only Vite app). Every visual layer — track gradient/inset
-// shadows, glossy overlays, spring-physics thumb slide, and the
-// particle burst fired on toggle — is unchanged from the source.
-export default function ThemeSwitch({ dark, onToggle, scale = 1 }: ThemeSwitchProps) {
+export default function ThemeSwitch({ dark, onToggle, scale = 1, stretchX = 1 }: ThemeSwitchProps) {
   const [particles, setParticles] = useState<Particle[]>([])
   const [isAnimating, setIsAnimating] = useState(false)
   const isDark = dark
@@ -54,8 +47,8 @@ export default function ThemeSwitch({ dark, onToggle, scale = 1 }: ThemeSwitchPr
   }
 
   return (
-    <div style={{ width: BASE_W * scale, height: BASE_H * scale, position: 'relative', display: 'inline-block' }}>
-      <div style={{ transform: `scale(${scale})`, transformOrigin: 'top left' }}>
+    <div style={{ width: BASE_W * scale * stretchX, height: BASE_H * scale, position: 'relative', display: 'inline-block' }}>
+      <div style={{ transform: `scale(${scale * stretchX}, ${scale})`, transformOrigin: 'top left' }}>
         <svg className="absolute w-0 h-0">
           <defs>
             <filter id="grain-light">

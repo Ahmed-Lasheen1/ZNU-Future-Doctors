@@ -329,16 +329,11 @@ export default function NavMenu({ dark, toggleTheme, align = 'left' }) {
                   </motion.button>
                 ))}
 
-                <motion.div variants={listItem} style={{ height: 1, background: pt.border, margin: '6px 4px' }} />
-
-                                {/* Theme switch — cinematic pill toggle, no label,
-                    left-aligned in its row. Controlled by this app's
-                    own dark/toggleTheme rather than next-themes. */}
                 <motion.div variants={listItem} style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'flex-start',
                   padding: '6px 12px 10px'
                 }}>
-                  <ThemeSwitch dark={dark} onToggle={toggleTheme} scale={0.72} />
+                  <ThemeSwitch dark={dark} onToggle={toggleTheme} scale={0.6} stretchX={1.35} />
                 </motion.div>
 
                 {/* Sign out — last, only when signed in */}
