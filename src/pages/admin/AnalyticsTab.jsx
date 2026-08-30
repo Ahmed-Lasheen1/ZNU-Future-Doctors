@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../../supabase'
 import { getTheme } from '../../theme'
 import { watchOnlineCount } from '../../lib/onlinePresence'
+import { ModuleIcon } from '../../lib/medicalIcons'
 
 function StatCard({ label, value, color, c, loading }) {
   return (
@@ -125,8 +126,8 @@ export default function AnalyticsTab({ dark, modules }) {
                 color: c.text, fontWeight: 600, fontSize: 13,
                 overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'
               }}>{row.question}</div>
-              <div style={{ color: c.sub, fontSize: 11, marginTop: 4 }}>
-                {mod ? `${mod.icon} ${mod.name}` : ''} · {row.incorrect_count}/{row.total_attempts} wrong
+              <div style={{ color: c.sub, fontSize: 11, marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
+                {mod && <><ModuleIcon value={mod.icon} size={11} color={c.sub} /> {mod.name} ·</>} {row.incorrect_count}/{row.total_attempts} wrong
               </div>
             </div>
             <div style={{
