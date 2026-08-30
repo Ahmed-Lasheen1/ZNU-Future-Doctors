@@ -339,7 +339,7 @@ export default function Home({ dark, toggleTheme }) {
             <div className="pulse-dash-grid">
               <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                 <StatTile dark={dark} pt={pt} delay={msFor(WEEKLY_REPORT_START)}>
-                  <div style={{ ...pulseType.sectionLabel, color: pt.text, marginBottom: 8 }}>
+                  <div style={{ ...pulseType.sectionLabel, fontSize: 16, color: pt.text, marginBottom: 8 }}>
                     📊 Weekly Report
                   </div>
                   <div style={{
