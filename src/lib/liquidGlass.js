@@ -40,22 +40,3 @@ export function liquidGlassBackdrop() {
     WebkitBackdropFilter: 'blur(20px) saturate(180%)',
   }
 }
-
-// The decorative "liquid" layer — a soft, off-center highlight blob
-// that slowly drifts and rotates (see .liquid-sheen in index.css).
-// mix-blend-mode differs by theme because `overlay` and `soft-light`
-// behave asymmetrically on light vs. dark base colors — soft-light
-// reads as a gentle highlight on light surfaces, overlay preserves
-// enough contrast to still look like a highlight (not a wash) on dark
-// surfaces.
-export function liquidGlassSheenStyle(dark) {
-  return dark
-    ? {
-        background: 'radial-gradient(circle at 30% 30%, rgba(255,255,255,0.22), transparent 60%)',
-        mixBlendMode: 'overlay',
-      }
-    : {
-        background: 'radial-gradient(circle at 30% 30%, rgba(255,255,255,0.55), transparent 60%)',
-        mixBlendMode: 'soft-light',
-      }
-}
