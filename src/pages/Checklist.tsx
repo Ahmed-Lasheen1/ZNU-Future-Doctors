@@ -14,8 +14,14 @@ import type { ChecklistTask } from '../types/checklist'
 
 const statNumStyle = { fontFamily: pulseFonts.display, fontWeight: 800, fontSize: 30 }
 
-// Consistent vertical rhythm between the major sections on this page.
-const SECTION_GAP = 18
+// Consistent vertical rhythm between sections. IMPORTANT: this is
+// applied via a plain wrapping <div style={{ marginBottom }}> around
+// each LiquidGlassCard, NOT via LiquidGlassCard's own `style` prop —
+// that prop lands on an inner content div sitting inside an
+// overflow-hidden box, so margin passed there gets silently clipped
+// and never actually pushes cards apart. See liquid-glass-card.tsx.
+const SECTION_GAP = 22
+const TASK_GAP = 16
 
 export default function Checklist({ dark }: { dark: boolean }) {
   const { user } = useAuth()
@@ -24,10 +30,8 @@ export default function Checklist({ dark }: { dark: boolean }) {
 
   // ToastProvider.jsx is plain JS — its context default (`() => {}`)
   // has no params, so TS infers useToast() as a zero-arg function and
-  // flags every `showToast('message')` call as "expected 0 arguments,
-  // got 1". The actual runtime function (see ToastProvider.jsx)
-  // really does take (message, type?) — this cast just tells TS the
-  // truth without needing to touch the shared provider file.
+  // flags every showToast('message') call as "expected 0 arguments,
+  // got 1". This cast tells TS the real runtime signature.
   const showToast = useToast() as (message: string, type?: 'success' | 'error') => void
 
   const pt = getPulseTheme(dark)
@@ -48,10 +52,7 @@ export default function Checklist({ dark }: { dark: boolean }) {
 
   useEffect(() => { if (activeModule) fetchTasks() }, [activeModule, user])
 
-  // "Signed in — synced to your account" used to be a permanent glass
-  // card on the page at all times. Now it's a one-time toast, fired
-  // the first time we know `user` is truthy on this page visit
-  // (guarded so it can't refire on every re-render/task change).
+  // One-time "signed in" toast instead of a permanent card.
   const notifiedSignedInRef = useRef(false)
   useEffect(() => {
     if (user && !notifiedSignedInRef.current) {
@@ -158,7 +159,7 @@ export default function Checklist({ dark }: { dark: boolean }) {
 
         {modulesError && <ErrorBanner />}
 
-        <div style={{ textAlign: 'center', padding: '10px 0 20px' }}>
+        <div style={{ textAlign: 'center', padding: '10px 0 24px' }}>
           <div style={{ fontSize: 40, marginBottom: 8 }}>🎯</div>
           <h1 style={{
             fontFamily: pulseFonts.display, fontWeight: 800, fontSize: 24,
@@ -171,20 +172,17 @@ export default function Checklist({ dark }: { dark: boolean }) {
           <NotifyPermissionButton dark={dark} label="🔔 Enable deadline reminders" />
         </div>
 
-        {/* Only shown for guests now — signed-in confirmation moved to
-            a one-time toast (see notifiedSignedInRef above). */}
         {!user && (
-          <LiquidGlassCard dark={dark} delay={0} style={{ padding: '12px 18px', marginBottom: SECTION_GAP, textAlign: 'center' }}>
-            <span style={{ color: pt.cobalt, fontSize: 13, fontWeight: 600 }}>
-              💡 <span style={{ cursor: 'pointer', textDecoration: 'underline' }} onClick={() => navigate('/auth')}>Sign in</span> to save your checklist across devices
-            </span>
-          </LiquidGlassCard>
+          <div style={{ marginBottom: SECTION_GAP }}>
+            <LiquidGlassCard dark={dark} delay={0} style={{ padding: '12px 18px', textAlign: 'center' }}>
+              <span style={{ color: pt.cobalt, fontSize: 13, fontWeight: 600 }}>
+                💡 <span style={{ cursor: 'pointer', textDecoration: 'underline' }} onClick={() => navigate('/auth')}>Sign in</span> to save your checklist across devices
+              </span>
+            </LiquidGlassCard>
+          </div>
         )}
 
-        {/* Module row — centered and wraps into its own natural grid
-            instead of scrolling off to the left. Style override passed
-            as a prop rather than editing the shared ModuleTabs
-            component, since Schedule/MCQ/Files also use it. */}
+        {/* Module row — centered and wrapping. */}
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: SECTION_GAP }}>
           <ModuleTabs
             modules={activeModulesList}
@@ -202,44 +200,48 @@ export default function Checklist({ dark }: { dark: boolean }) {
         </div>
 
         {totalTasks > 0 && (
-          <LiquidGlassCard dark={dark} delay={80} style={{ padding: '22px 24px', marginBottom: SECTION_GAP }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 12 }}>
-              <span style={{ color: pt.text, fontWeight: 700, fontSize: 14 }}>Overall Progress</span>
-              <span style={{ ...statNumStyle, fontSize: 20, color: pt.amber }}>{doneTasks}/{totalTasks}</span>
-            </div>
-            <div style={{
-              background: dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)',
-              borderRadius: 20, height: 7, overflow: 'hidden',
-              boxShadow: dark ? 'inset 0 1px 2px rgba(0,0,0,0.4)' : 'inset 0 1px 2px rgba(0,0,0,0.08)'
-            }}>
+          <div style={{ marginBottom: SECTION_GAP }}>
+            <LiquidGlassCard dark={dark} delay={80} style={{ padding: '22px 24px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 12 }}>
+                <span style={{ color: pt.text, fontWeight: 700, fontSize: 14 }}>Overall Progress</span>
+                <span style={{ ...statNumStyle, fontSize: 20, color: pt.amber }}>{doneTasks}/{totalTasks}</span>
+              </div>
               <div style={{
-                height: '100%', borderRadius: 20,
-                background: percent === 100 ? `linear-gradient(90deg, ${pt.cobalt}, ${pt.indigo})` : `linear-gradient(90deg, ${pt.amber}, ${pt.terracotta})`,
-                width: `${percent}%`, transition: 'width 0.5s ease'
-              }} />
-            </div>
-            <div style={{ textAlign: 'center', marginTop: 12, color: percent === 100 ? pt.cobalt : pt.amber, fontWeight: 700, fontSize: 13 }}>
-              {percent}% {percent === 100 ? '🎉 Ready for exam!' : 'completed'}
-            </div>
-          </LiquidGlassCard>
+                background: dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)',
+                borderRadius: 20, height: 7, overflow: 'hidden',
+                boxShadow: dark ? 'inset 0 1px 2px rgba(0,0,0,0.4)' : 'inset 0 1px 2px rgba(0,0,0,0.08)'
+              }}>
+                <div style={{
+                  height: '100%', borderRadius: 20,
+                  background: percent === 100 ? `linear-gradient(90deg, ${pt.cobalt}, ${pt.indigo})` : `linear-gradient(90deg, ${pt.amber}, ${pt.terracotta})`,
+                  width: `${percent}%`, transition: 'width 0.5s ease'
+                }} />
+              </div>
+              <div style={{ textAlign: 'center', marginTop: 12, color: percent === 100 ? pt.cobalt : pt.amber, fontWeight: 700, fontSize: 13 }}>
+                {percent}% {percent === 100 ? '🎉 Ready for exam!' : 'completed'}
+              </div>
+            </LiquidGlassCard>
+          </div>
         )}
 
-        <LiquidGlassCard dark={dark} delay={140} style={{ padding: '18px 20px', marginBottom: SECTION_GAP }}>
-          <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
-            <input
-              placeholder="Add a topic to study..."
-              value={newTask} onChange={e => setNewTask(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && addTask()}
-              style={{ ...inStyle, flex: 1 }} />
-            <button onClick={addTask} style={{ ...glassPrimaryBtn(pt, dark, false), width: 'auto', padding: '0 20px', marginBottom: 0 }}>
-              + Add
-            </button>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ color: pt.faint, fontSize: 12, whiteSpace: 'nowrap' }}>📅 Deadline:</span>
-            <input type="date" value={newDeadline} onChange={e => setNewDeadline(e.target.value)} style={{ ...inStyle, flex: 1 }} />
-          </div>
-        </LiquidGlassCard>
+        <div style={{ marginBottom: SECTION_GAP }}>
+          <LiquidGlassCard dark={dark} delay={140} style={{ padding: '18px 20px' }}>
+            <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
+              <input
+                placeholder="Add a topic to study..."
+                value={newTask} onChange={e => setNewTask(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && addTask()}
+                style={{ ...inStyle, flex: 1 }} />
+              <button onClick={addTask} style={{ ...glassPrimaryBtn(pt, dark, false), width: 'auto', padding: '0 20px', marginBottom: 0 }}>
+                + Add
+              </button>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ color: pt.faint, fontSize: 12, whiteSpace: 'nowrap' }}>📅 Deadline:</span>
+              <input type="date" value={newDeadline} onChange={e => setNewDeadline(e.target.value)} style={{ ...inStyle, flex: 1 }} />
+            </div>
+          </LiquidGlassCard>
+        </div>
 
         {!modulesLoaded && <p style={{ color: pt.sub, textAlign: 'center' }}>Loading...</p>}
 
@@ -253,52 +255,55 @@ export default function Checklist({ dark }: { dark: boolean }) {
           const overdue = isOverdue(task.deadline) && !task.done
           const dueSoon = isDueSoon(task.deadline) && !task.done && !overdue
           const dotColor = task.done ? pt.cobalt : overdue ? pt.danger : dueSoon ? pt.amber : pt.faint
+          const isLast = i === tasks.length - 1
 
           return (
-            <LiquidGlassCard key={task.id} dark={dark} delay={240 + i * 90} style={{ padding: '16px 20px', marginBottom: 14 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                <div
-                  role="checkbox" aria-checked={task.done} aria-label={task.text} tabIndex={0}
-                  onClick={() => toggleTask(task)}
-                  onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleTask(task) } }}
-                  style={{
-                    width: 26, height: 26, borderRadius: '50%', flexShrink: 0,
-                    background: task.done ? `${pt.cobalt}22` : 'transparent',
-                    border: `1px solid ${task.done ? pt.cobaltBorder : pt.border}`,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    cursor: 'pointer', color: pt.cobalt, fontWeight: 900, fontSize: 13
-                  }}
-                >{task.done && '✓'}</div>
+            <div key={task.id} style={{ marginBottom: isLast ? 0 : TASK_GAP }}>
+              <LiquidGlassCard dark={dark} delay={240 + i * 90} style={{ padding: '16px 20px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                  <div
+                    role="checkbox" aria-checked={task.done} aria-label={task.text} tabIndex={0}
+                    onClick={() => toggleTask(task)}
+                    onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleTask(task) } }}
+                    style={{
+                      width: 26, height: 26, borderRadius: '50%', flexShrink: 0,
+                      background: task.done ? `${pt.cobalt}22` : 'transparent',
+                      border: `1px solid ${task.done ? pt.cobaltBorder : pt.border}`,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      cursor: 'pointer', color: pt.cobalt, fontWeight: 900, fontSize: 13
+                    }}
+                  >{task.done && '✓'}</div>
 
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{
-                    color: task.done ? pt.sub : overdue ? pt.danger : pt.text,
-                    textDecoration: task.done ? 'line-through' : 'none',
-                    fontSize: 14, fontWeight: 600
-                  }}>{task.text}</div>
-                  {task.deadline && (
+                  <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{
-                      fontSize: 11, marginTop: 2,
-                      color: overdue ? pt.danger : dueSoon ? pt.amber : pt.faint,
-                      fontWeight: overdue || dueSoon ? 700 : 500
-                    }}>
-                      {overdue ? '⚠️ Overdue: ' : dueSoon ? '⏰ Due soon: ' : '📅 '}{task.deadline}
-                    </div>
-                  )}
+                      color: task.done ? pt.sub : overdue ? pt.danger : pt.text,
+                      textDecoration: task.done ? 'line-through' : 'none',
+                      fontSize: 14, fontWeight: 600
+                    }}>{task.text}</div>
+                    {task.deadline && (
+                      <div style={{
+                        fontSize: 11, marginTop: 2,
+                        color: overdue ? pt.danger : dueSoon ? pt.amber : pt.faint,
+                        fontWeight: overdue || dueSoon ? 700 : 500
+                      }}>
+                        {overdue ? '⚠️ Overdue: ' : dueSoon ? '⏰ Due soon: ' : '📅 '}{task.deadline}
+                      </div>
+                    )}
+                  </div>
+
+                  <span style={{ width: 8, height: 8, borderRadius: '50%', background: dotColor, flexShrink: 0 }} />
+
+                  <button
+                    onClick={() => deleteTask(task)}
+                    aria-label={`Delete task: ${task.text}`}
+                    style={{
+                      background: 'transparent', border: 'none', color: pt.danger,
+                      cursor: 'pointer', fontSize: 15, padding: '4px 6px', flexShrink: 0
+                    }}
+                  >🗑</button>
                 </div>
-
-                <span style={{ width: 8, height: 8, borderRadius: '50%', background: dotColor, flexShrink: 0 }} />
-
-                <button
-                  onClick={() => deleteTask(task)}
-                  aria-label={`Delete task: ${task.text}`}
-                  style={{
-                    background: 'transparent', border: 'none', color: pt.danger,
-                    cursor: 'pointer', fontSize: 15, padding: '4px 6px', flexShrink: 0
-                  }}
-                >🗑</button>
-              </div>
-            </LiquidGlassCard>
+              </LiquidGlassCard>
+            </div>
           )
         })}
       </div>
