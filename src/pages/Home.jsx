@@ -492,27 +492,27 @@ export default function Home({ dark, toggleTheme }) {
               {toolCards.map((card, i) => {
                 const accentColor = card.accent === 'amber' ? pt.amber : pt.indigo
                 const Icon = card.Icon
-  return (
-    <LiquidGlassCard key={i} dark={dark} delay={msFor(TOOLS_START) + i * 110}
-      onClick={() => navigate(card.to)}
-      style={{ borderRadius: 22, padding: '18px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
-        <div style={{
-          width: 38, height: 38, borderRadius: '50%', flexShrink: 0,
-          background: `${accentColor}22`,
-          display: 'flex', alignItems: 'center', justifyContent: 'center'
-        }}>
-          <Icon color={accentColor} size={19} />
-        </div>
-        <div style={{ minWidth: 0 }}>
-          <div style={{ color: pt.text, fontWeight: 700, fontSize: 13 }}>{card.title}</div>
-          <div style={{ color: pt.sub, fontSize: 11, marginTop: 1 }}>{card.sub}</div>
-        </div>
-      </div>
-      <div style={{ color: pt.faint, fontSize: 16, flexShrink: 0 }}>→</div>
-    </LiquidGlassCard>
-  )
-})}
+                return (
+                  <LiquidGlassCard key={i} dark={dark} delay={msFor(TOOLS_START) + i * 110}
+                    onClick={() => navigate(card.to)}
+                    style={{ borderRadius: 22, padding: '18px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
+                      <div style={{
+                        width: 38, height: 38, borderRadius: '50%', flexShrink: 0,
+                        background: `${accentColor}22`,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center'
+                      }}>
+                        <Icon color={accentColor} size={19} />
+                      </div>
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ color: pt.text, fontWeight: 700, fontSize: 13 }}>{card.title}</div>
+                        <div style={{ color: pt.sub, fontSize: 11, marginTop: 1 }}>{card.sub}</div>
+                      </div>
+                    </div>
+                    <div style={{ color: pt.faint, fontSize: 16, flexShrink: 0 }}>→</div>
+                  </LiquidGlassCard>
+                )
+              })}
             </div>
           </div>
 
