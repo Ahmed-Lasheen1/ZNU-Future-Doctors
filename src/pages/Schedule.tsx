@@ -92,8 +92,7 @@ export default function Schedule({ dark }: { dark: boolean }) {
             onClose={() => setViewer(null)}
             src={getDriveOrRawUrl(viewer.url)}
             iframeTitle={viewer.title}
-            allow="autoplay"
-          />
+            allow="autoplay" allowFullScreen={undefined}          />
         )}
 
         <div style={{ textAlign: 'center', padding: '10px 0 24px' }}>
