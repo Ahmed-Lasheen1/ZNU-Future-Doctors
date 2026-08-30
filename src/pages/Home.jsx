@@ -337,7 +337,16 @@ export default function Home({ dark, toggleTheme }) {
         <div className="pulse-fold">
           {modulesError && <div className="pulse-wide"><ErrorBanner /></div>}
 
-          <div className="pulse-wide">
+          <div className="pulse-wide" style={{
+            position: 'sticky',
+            top: 0,
+            zIndex: 500,
+            paddingTop: 12,
+            paddingBottom: 12,
+            background: dark ? 'rgba(10, 15, 30, 0.75)' : 'rgba(240, 249, 255, 0.75)',
+            backdropFilter: 'blur(12px)',
+            WebkitBackdropFilter: 'blur(12px)',
+          }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
               <ZnuPulseBrand dark={dark} pt={pt} />
 
@@ -352,10 +361,9 @@ export default function Home({ dark, toggleTheme }) {
                 transition={{ duration: 0.7, delay: LOGO_DELAY }}
               >
                 <NavMenu dark={dark} toggleTheme={toggleTheme} align="right" />
-              </motion.div>
-            </div>
-          </div>
-
+               </motion.div>
+             </div>
+           </div>
           <motion.div className="pulse-wide"
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
