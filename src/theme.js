@@ -21,9 +21,10 @@ export const brand = {
   teal: '#34d399',
 }
 
-// Theme-aware neutral text tiers — matches the Dark/Light Glass Card
-// palette used across the Pulse pages (Home, Checklist), so a heading
-// on Profile/MCQ/Admin reads with the same contrast as one on Home.
+// Theme-aware neutral text tiers — matches the high-contrast Dark/Light
+// Glass Card palette used across the Pulse pages (see getPulseTheme in
+// premiumTheme.js), so a heading on Profile/MCQ/Admin reads with the
+// same weight/contrast as one on Home/Checklist.
 export function getTheme(dark) {
   return {
     card: dark ? 'linear-gradient(135deg, #1e293b, #0f2540)' : '#fff',
@@ -31,13 +32,20 @@ export function getTheme(dark) {
     border: dark ? '#1e3a5f' : '#e2e8f0',
 
     // Primary / secondary / muted text tiers
-    text: dark ? '#FFFFFF' : '#0F172A',       // primary
-    sub: dark ? '#94A3B8' : '#475569',        // secondary
-    textMuted: dark ? '#94A3B8' : '#475569',  // muted / metadata
+    // Dark: Pure White primary, Bright Ice Gray secondary (bumped up
+    // from the old muted slate-blue so labels/metadata stay legible
+    // on dark glass/cards).
+    // Light: Midnight Black primary (bumped from near-black slate) for
+    // max weight against light surfaces, Dark Navy Gray secondary.
+    text: dark ? '#FFFFFF' : '#030712',       // primary
+    sub: dark ? '#E2E8F0' : '#1E293B',        // secondary
+    textMuted: dark ? '#E2E8F0' : '#1E293B',  // muted / metadata
 
-    // Theme-aware accent, for anything that used to hardcode a blue
-    // link/highlight color inline.
-    accent: dark ? '#38BDF8' : '#2563EB',
+    // Theme-aware accent — Bright Cyan in dark mode, Electric
+    // Cyan/Blue in light mode (replaces the old soft purple-leaning
+    // blue), for anything that used to hardcode a blue link/highlight
+    // color inline.
+    accent: dark ? '#38BDF8' : '#0284C7',
 
     input: dark ? '#0f172a' : '#f8fafc',
     bgPage: dark ? '#0f172a' : '#f8fafc',
