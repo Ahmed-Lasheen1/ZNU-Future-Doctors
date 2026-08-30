@@ -13,7 +13,7 @@ import { getGuestHistory } from '../lib/reviewStorage'
 import { loadSavedActiveExam } from '../lib/activeExam'
 import { ENTRANCE_PAUSE } from '../lib/pulseMotion'
 import NotifyPermissionButton from '../components/NotifyPermissionButton'
-import PulseCard from '../components/pulse/PulseCard'
+import LiquidGlassCard from '@/components/ui/liquid-glass-card'
 import EcgHero from '../components/pulse/EcgHero'
 
 const LOGO_SRC = '/icon-192.png'
@@ -142,9 +142,9 @@ function ZnuPulseBrand({ dark, pt }) {
 
 function StatTile({ dark, pt, delay, children, accent }) {
   return (
-    <PulseCard dark={dark} delay={delay} accent={accent} style={{ padding: '18px 20px' }}>
+    <LiquidGlassCard dark={dark} delay={delay} accent={accent} style={{ padding: '18px 20px' }}>
       {children}
-    </PulseCard>
+    </LiquidGlassCard>
   )
 }
 
