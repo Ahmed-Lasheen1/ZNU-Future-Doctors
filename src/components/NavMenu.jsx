@@ -97,14 +97,26 @@ export default function NavMenu({ dark, toggleTheme, align = 'left' }) {
     navigate('/')
   }
 
-  // Liquid-glass panel — same backdrop distortion + layered inset
-  // "lens" shadow recipe as the Home cards, plus a hairline border
-  // (see note above on why this panel keeps one and the cards don't).
+  // Redesigned from a full-screen slide-in curved menu to a small glass
+  // dropdown, sharing the Home cards' backdrop-distortion recipe
+  // (src/lib/liquidGlass.js) but with its own opaque-enough backing
+  // tint layered on top — a floating dropdown has to stay legible over
+  // arbitrary page content, where a card sitting in a fixed grid
+  // doesn't need that. The trigger button stays visible after opening —
+  // the panel is a normal `position: absolute` popover anchored to it,
+  // not a portal — so it never covers the whole screen.
   const glassStyle = {
-    ...liquidGlassBackdrop(filterId),
-    border: dark ? '1px solid rgba(255,255,255,0.12)' : '1px solid rgba(255,255,255,0.5)',
-    boxShadow: liquidGlassShadow(dark),
-  }
+  ...liquidGlassBackdrop(filterId),
+  // Unlike the Home cards, this panel needs a real backing tint —
+  // it's a functional dropdown that has to stay readable no matter
+  // what's scrolling behind it (page content, images, the ECG hero),
+  // not a card sitting in a fixed layout. Kept local to NavMenu rather
+  // than added to src/lib/liquidGlass.js so the cards stay exactly as
+  // transparent as the liquid-glass spec.
+  background: dark ? 'rgba(18,22,32,0.82)' : 'rgba(255,255,255,0.88)',
+  border: dark ? '1px solid rgba(255,255,255,0.12)' : '1px solid rgba(255,255,255,0.6)',
+  boxShadow: liquidGlassShadow(dark),
+}
 
   const rowHover = dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)'
 
