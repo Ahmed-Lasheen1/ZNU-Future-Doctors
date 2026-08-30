@@ -5,7 +5,7 @@ import { useAuth } from '../contexts'
 import { MenuToggleIcon } from './ui/menu-toggle-icon'
 import { getPulseTheme, pulseFonts } from '../premiumTheme'
 import LiquidGlassFilter from './LiquidGlassFilter'
-import { liquidGlassShadow, liquidGlassBackdrop } from '../lib/liquidGlass'
+import { liquidGlassShadow, liquidGlassBackdrop, liquidGlassTint } from '../lib/liquidGlass'
 
 // Nav list — same as before, minus "Review". Leaderboard is reachable
 // here too (as a normal nav item) in addition to the dedicated
@@ -23,19 +23,15 @@ function initialOf(name) {
   return name && name.trim() ? name.trim().charAt(0).toUpperCase() : '?'
 }
 
-// Redesigned from a full-screen slide-in curved menu to a small glass
-// dropdown, matching the "liquid glass" material used on Home's
-// LiquidGlassCard (src/components/ui/liquid-glass-card.tsx) — same
-// feTurbulence/feDisplacementMap recipe, shared via src/lib/liquidGlass.js
-// so the two never drift out of sync.
+// Small glass dropdown, matching the "liquid glass" material used on
+// Home's LiquidGlassCard (src/components/ui/liquid-glass-card.tsx) —
+// same feTurbulence/feDisplacementMap recipe, shared via
+// src/lib/liquidGlass.js so the two never drift out of sync.
 //
-// This panel now uses the EXACT same layering as LiquidGlassCard: a
-// backdrop-distortion layer, a lens-shadow layer, then content on top
-// — no added background tint, no added border. Previously this panel
-// had its own opaque backing tint layered on top (for legibility over
-// arbitrary scrolling page content), but that made it look like a
-// visibly different material from the Home cards. Removed so the menu
-// and the cards read as the exact same glass.
+// Layering matches LiquidGlassCard exactly: backdrop-distortion layer,
+// tint layer (the part that actually hides page content behind it —
+// see liquidGlass.js for why this exists), lens-shadow layer, then
+// real content on top.
 //
 // The trigger button stays visible after opening — the panel is a
 // normal `position: absolute` popover anchored to it, not a portal —
@@ -170,12 +166,9 @@ export default function NavMenu({ dark, toggleTheme, align = 'left' }) {
               willChange: 'height, opacity',
             }}
           >
-            {/* Same three-layer structure as LiquidGlassCard:
-                1. backdrop-distortion layer (the actual "liquid" refraction)
-                2. lens-shadow/rim layer
-                3. real content on top
-                No added tint, no added border — this is the exact card recipe. */}
-                        <div style={{ position: 'relative', borderRadius: panelRadius, height: '100%' }}>
+            {/* Same layer structure as LiquidGlassCard: backdrop-
+                distortion, tint (actual hiding), lens-shadow, content. */}
+            <div style={{ position: 'relative', borderRadius: panelRadius, height: '100%' }}>
               <div
                 aria-hidden
                 className="pointer-events-none"
@@ -185,9 +178,6 @@ export default function NavMenu({ dark, toggleTheme, align = 'left' }) {
                   ...liquidGlassBackdrop(filterId)
                 }}
               />
-              {/* Tint layer — actually hides page content behind the
-                  menu, independent of browser support for the SVG
-                  distortion filter. See liquidGlass.js for why. */}
               <div
                 aria-hidden
                 className="pointer-events-none"
