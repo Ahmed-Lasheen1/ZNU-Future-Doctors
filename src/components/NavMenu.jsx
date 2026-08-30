@@ -5,7 +5,7 @@ import { useAuth } from '../contexts'
 import { MenuToggleIcon } from './ui/menu-toggle-icon'
 import { getPulseTheme, pulseFonts } from '../premiumTheme'
 import LiquidGlassFilter from './LiquidGlassFilter'
-import { liquidGlassShadow, liquidGlassBackdrop, liquidGlassTint } from '../lib/liquidGlass'
+import { liquidGlassShadow, liquidGlassBackdrop } from '../lib/liquidGlass'
 
 // Nav list — same as before, minus "Review". Leaderboard is reachable
 // here too (as a normal nav item) in addition to the dedicated
@@ -27,9 +27,16 @@ function initialOf(name) {
 // dropdown, matching the "liquid glass" material used on Home's
 // LiquidGlassCard (src/components/ui/liquid-glass-card.tsx) — same
 // feTurbulence/feDisplacementMap recipe, shared via src/lib/liquidGlass.js
-// so the two never drift out of sync. The trigger button stays visible
-// after opening — the panel is a normal `position: absolute` popover
-// anchored to it, not a portal — so it never covers the whole screen.
+// so the two never drift out of sync. Deliberately no background tint
+// here either (matching the liquid-glass spec's transparent fill) — a
+// hairline border is kept on this panel specifically, since a fully
+// transparent, borderless dropdown loses its edge against whatever
+// content is scrolling underneath it; the Home cards don't need that
+// because they aren't floating over other content.
+//
+// The trigger button stays visible after opening — the panel is a
+// normal `position: absolute` popover anchored to it, not a portal —
+// so it never covers the whole screen.
 //
 // `align` controls which edge of the button the panel hangs from:
 // 'left' (default) grows the panel rightward from the button's left
@@ -47,9 +54,9 @@ export default function NavMenu({ dark, toggleTheme, align = 'left' }) {
   const pt = getPulseTheme(dark)
 
   // Unique id for this menu instance's glass distortion filter — a
-  // page can have more than one NavMenu mounted at once (SmartHeader's
-  // + Home's own), so a hard-coded id would make the second instance's
-  // backdrop-filter silently reference the first instance's filter.
+  // page can have more than one NavMenu mounted at once, so a
+  // hard-coded id would make a second instance's backdrop-filter
+  // silently reference the first instance's filter.
   const rawFilterId = useId().replace(/[^a-zA-Z0-9]/g, '')
   const filterId = `navmenu-glass-${rawFilterId}`
 
@@ -90,14 +97,11 @@ export default function NavMenu({ dark, toggleTheme, align = 'left' }) {
     navigate('/')
   }
 
-  // Liquid-glass panel — same recipe as the Home cards (turbulence +
-  // displacement backdrop, layered inset "lens" shadow), plus a
-  // hairline border kept for a floating dropdown's usability (a card
-  // sitting in a grid doesn't need a defining edge; a popover menu
-  // benefits from one so it reads clearly against whatever's under it).
+  // Liquid-glass panel — same backdrop distortion + layered inset
+  // "lens" shadow recipe as the Home cards, plus a hairline border
+  // (see note above on why this panel keeps one and the cards don't).
   const glassStyle = {
     ...liquidGlassBackdrop(filterId),
-    background: liquidGlassTint(dark),
     border: dark ? '1px solid rgba(255,255,255,0.12)' : '1px solid rgba(255,255,255,0.5)',
     boxShadow: liquidGlassShadow(dark),
   }
