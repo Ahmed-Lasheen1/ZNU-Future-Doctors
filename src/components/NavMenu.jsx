@@ -86,7 +86,7 @@ function GlassRow({ dark, radius = ROW_RADIUS, style = {}, hoverBg, children, on
       ))}
     </span>
   )
-}
+
 export default function NavMenu({ dark, toggleTheme, align = 'left' }) {
   const [open, setOpen] = useState(false)
   const [searchValue, setSearchValue] = useState('')
