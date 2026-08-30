@@ -6,9 +6,11 @@ import { MenuToggleIcon } from './ui/menu-toggle-icon'
 import { getPulseTheme, pulseFonts } from '../premiumTheme'
 import { liquidGlassShadow, liquidGlassBackdrop, liquidGlassTint } from '../lib/liquidGlass'
 
-// Nav list — same as before, minus "Review". Leaderboard is reachable
-// here too (as a normal nav item) in addition to the dedicated
-// profile/points row at the top of the panel.
+// Liquid-morph easing — same curve used by the reference floating-menu
+// component (fast start, soft settle), applied here to the shell's
+// width/height/border-radius instead of a plain height-grow dropdown.
+const morphEase = [0.22, 1, 0.36, 1]
+
 const navItems = [
   { label: 'Home', href: '/' },
   { label: 'Search', href: '/search' },
@@ -22,40 +24,38 @@ function initialOf(name) {
   return name && name.trim() ? name.trim().charAt(0).toUpperCase() : '?'
 }
 
+const BUTTON_SIZE = 44
+const PANEL_WIDTH = 260
+const PANEL_RADIUS = 20
+
 // Small glass dropdown, matching the "liquid glass" material used on
-// Home's LiquidGlassCard (src/components/ui/liquid-glass-card.tsx) —
-// same blur+saturate backdrop and animated sheen, shared via
-// src/lib/liquidGlass.js so the two never drift out of sync.
+// Home's LiquidGlassCard. The dropdown SHELL itself now liquid-morphs
+// open/closed (width/height/border-radius animating from the button's
+// own 44x44 circle up to the full panel) instead of appearing as a
+// separate panel that just grows in height below a static button —
+// same idea as the reference "liquid morph floating menu" component,
+// applied to this exact glass panel/content instead of its own design.
 //
-// The trigger button stays visible after opening — the panel is a
-// normal `position: absolute` popover anchored to it, not a portal —
-// so it never covers the whole screen.
-//
-// `align` controls which edge of the button the panel hangs from:
-// 'left' (default) grows the panel rightward from the button's left
-// edge — used where the button itself sits on the left of the screen
-// (SmartHeader). Pass align="right" where the button sits on the
-// right (Home.jsx) so the panel grows leftward instead of overflowing
-// off the viewport edge.
+// `align` still controls which edge the panel grows from: 'left'
+// (default) grows rightward from the button's left edge (SmartHeader);
+// 'right' grows leftward (Home.jsx), so it never overflows the
+// viewport edge.
 export default function NavMenu({ dark, toggleTheme, align = 'left' }) {
   const [open, setOpen] = useState(false)
   const navigate = useNavigate()
   const { user, profile, signOut } = useAuth()
   const wrapperRef = useRef(null)
   const contentRef = useRef(null)
-  const [panelHeight, setPanelHeight] = useState(0)
+  const [contentHeight, setContentHeight] = useState(0)
   const pt = getPulseTheme(dark)
-  const panelRadius = 20
 
-  // Measures the panel's real content height so the outer wrapper can
-  // animate `height` from 0 up to it — this is what makes the panel
-  // look like it's extending/unrolling straight down out of the
-  // button, rather than popping in at full size. Re-measures whenever
-  // the content that affects height changes while open (e.g. signing
-  // in adds the "Sign Out" row).
+  // Measures the panel's real content height so the shell can animate
+  // `height` from the button's 44px up to BUTTON_SIZE + contentHeight —
+  // this is what makes the whole thing look like it's unrolling/morphing
+  // straight out of the button rather than popping in at full size.
   useLayoutEffect(() => {
     if (open && contentRef.current) {
-      setPanelHeight(contentRef.current.scrollHeight)
+      setContentHeight(contentRef.current.scrollHeight)
     }
   }, [open, user, profile])
 
@@ -86,28 +86,15 @@ export default function NavMenu({ dark, toggleTheme, align = 'left' }) {
 
   const rowHover = dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)'
 
-  // Height starts at 0 (fully collapsed into the button) and animates
-  // up to the real measured content height — this is the "extending
-  // from the button" unrolling effect. Exit reverses it back to 0.
-  const panelVariants = {
-    hidden: { height: 0, opacity: 0 },
-    visible: {
-      height: panelHeight,
-      opacity: 1,
-      transition: { height: { type: 'spring', stiffness: 300, damping: 30, mass: 0.9 }, opacity: { duration: 0.2 } },
-    },
-    exit: {
-      height: 0,
-      opacity: 0,
-      transition: { height: { type: 'spring', stiffness: 340, damping: 34, mass: 0.7 }, opacity: { duration: 0.15 } },
-    },
-  }
+  const openHeight = BUTTON_SIZE + contentHeight + 10
 
-  // Staggered cascade for the rows inside the panel — each row fades
-  // + slides up slightly, one after another, as the panel unrolls.
+  // Staggered cascade for the rows inside the panel — unchanged from
+  // before, just now starts a beat later (0.32s) so the rows fade in
+  // once the shell has visibly begun morphing into its full size,
+  // rather than racing the shape change.
   const listContainer = {
     hidden: {},
-    visible: { transition: { delayChildren: 0.1, staggerChildren: 0.045 } },
+    visible: { transition: { delayChildren: 0.32, staggerChildren: 0.045 } },
     exit: { transition: { staggerChildren: 0.015, staggerDirection: -1 } },
   }
   const listItem = {
@@ -117,162 +104,184 @@ export default function NavMenu({ dark, toggleTheme, align = 'left' }) {
   }
 
   return (
-    <div ref={wrapperRef} style={{ position: 'relative', display: 'inline-block' }}>
-      <button
-        onClick={() => setOpen(o => !o)}
-        aria-label={open ? 'Close navigation menu' : 'Open navigation menu'}
-        aria-haspopup="true"
-        aria-expanded={open}
+    <div ref={wrapperRef} style={{ position: 'relative', width: BUTTON_SIZE, height: BUTTON_SIZE }}>
+      <motion.div
         style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          width: 44, height: 44, flexShrink: 0, padding: 0,
-          background: 'transparent',
-          border: 'none',
-          cursor: 'pointer',
-          WebkitTapHighlightColor: 'transparent',
-          outline: 'none'
+          position: 'absolute', top: 0,
+          [align === 'right' ? 'right' : 'left']: 0,
+          maxWidth: '85vw',
+          overflow: 'hidden',
+          zIndex: 2000,
+          willChange: 'width, height, border-radius',
+        }}
+        animate={{
+          width: open ? PANEL_WIDTH : BUTTON_SIZE,
+          height: open ? openHeight : BUTTON_SIZE,
+          borderRadius: open ? PANEL_RADIUS : BUTTON_SIZE,
+        }}
+        whileHover={!open ? { scale: 1.06 } : undefined}
+        transition={{
+          duration: 0.7, ease: morphEase,
+          height: { duration: open ? 0.7 : 0.32, ease: morphEase },
+          borderRadius: { duration: 0.5, ease: morphEase },
+          scale: { duration: 0.25, ease: morphEase },
         }}
       >
-        <MenuToggleIcon open={open} width={44} height={44} stroke={dark ? '#38bdf8' : '#475569'} duration={400} />
-      </button>
+        {/* Glass fill/shadow/tint — fully transparent while closed, so
+            the collapsed state is still just the bare hamburger icon
+            (exact same look as before). Fades in as the shell morphs
+            open, like the dark circle reveal in the reference
+            component, but using this app's existing glass material. */}
+        <motion.div
+          aria-hidden
+          className="pointer-events-none"
+          style={{ position: 'absolute', inset: 0, borderRadius: 'inherit', ...liquidGlassBackdrop() }}
+          animate={{ opacity: open ? 1 : 0 }}
+          transition={{ duration: open ? 0.35 : 0.15, delay: open ? 0.12 : 0 }}
+        />
+        <motion.div
+          aria-hidden
+          className="pointer-events-none"
+          style={{ position: 'absolute', inset: 0, borderRadius: 'inherit', boxShadow: liquidGlassShadow(dark) }}
+          animate={{ opacity: open ? 1 : 0 }}
+          transition={{ duration: open ? 0.35 : 0.15, delay: open ? 0.12 : 0 }}
+        />
+        <motion.div
+          aria-hidden
+          className="pointer-events-none"
+          style={{ position: 'absolute', inset: 0, borderRadius: 'inherit', background: liquidGlassTint(dark) }}
+          animate={{ opacity: open ? 1 : 0 }}
+          transition={{ duration: open ? 0.35 : 0.15, delay: open ? 0.12 : 0 }}
+        />
 
-      <AnimatePresence>
-        {open && (
-          <motion.div
-            variants={panelVariants}
-            initial="hidden"
-            animate="visible"
-            exit="exit"
-            style={{
-              position: 'absolute', top: 'calc(100% + 10px)',
-              [align === 'right' ? 'right' : 'left']: 0,
-              width: 260, maxWidth: '85vw',
-              borderRadius: panelRadius,
-              overflow: 'hidden',
-              zIndex: 2000,
-              willChange: 'height, opacity',
-              ...liquidGlassBackdrop(),
-            }}
-          >
-            <div style={{ position: 'relative', borderRadius: panelRadius, height: '100%' }}>
-              {/* Lens-shadow/rim layer */}
-              <div
-                aria-hidden
-                className="pointer-events-none"
-                style={{ position: 'absolute', inset: 0, zIndex: 0, borderRadius: panelRadius, boxShadow: liquidGlassShadow(dark) }}
-              />
-                            {/* Lens-shadow/rim layer */}
-              <div
-                aria-hidden
-                className="pointer-events-none"
-                style={{ position: 'absolute', inset: 0, zIndex: 0, borderRadius: panelRadius, boxShadow: liquidGlassShadow(dark) }}
-              />
-              {/* Neutral tint — see liquid-glass-card.tsx for why */}
-              <div
-                aria-hidden
-                className="pointer-events-none"
-                style={{ position: 'absolute', inset: 0, zIndex: 0, borderRadius: panelRadius, background: liquidGlassTint(dark) }}
-              />
-              
+        <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column' }}>
+          {/* Toggle button — exact same MenuToggleIcon component, size,
+              stroke color and rotate/dash animation as before. Only its
+              container changed (now lives inside the morphing shell
+              instead of sitting next to a separate panel). */}
+          <div style={{
+            width: BUTTON_SIZE, height: BUTTON_SIZE, flexShrink: 0,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            alignSelf: align === 'right' ? 'flex-end' : 'flex-start'
+          }}>
+            <button
+              onClick={() => setOpen(o => !o)}
+              aria-label={open ? 'Close navigation menu' : 'Open navigation menu'}
+              aria-haspopup="true"
+              aria-expanded={open}
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                width: 44, height: 44, flexShrink: 0, padding: 0,
+                background: 'transparent',
+                border: 'none',
+                cursor: 'pointer',
+                WebkitTapHighlightColor: 'transparent',
+                outline: 'none'
+              }}
+            >
+              <MenuToggleIcon open={open} width={44} height={44} stroke={dark ? '#38bdf8' : '#475569'} duration={400} />
+            </button>
+          </div>
 
-              <div ref={contentRef} style={{
-                position: 'relative', zIndex: 1,
-                borderRadius: panelRadius, padding: 10,
-                fontFamily: pulseFonts.body
-              }}>
-                <motion.div variants={listContainer} initial="hidden" animate="visible" exit="exit">
-                  {/* Profile / Sign In — first thing in the panel */}
-                  <motion.div variants={listItem}>
-                    {user ? (
-                      <div
-                        onClick={() => goTo('/profile')}
-                        role="button" tabIndex={0}
-                        onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); goTo('/profile') } }}
-                        style={{
-                          display: 'flex', alignItems: 'center', gap: 12,
-                          padding: '10px 12px', borderRadius: 14, cursor: 'pointer', marginBottom: 6
-                        }}
-                        onMouseEnter={e => { e.currentTarget.style.background = rowHover }}
-                        onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
-                      >
-                        <div style={{
-                          width: 40, height: 40, borderRadius: '50%', flexShrink: 0,
-                          background: `linear-gradient(135deg, ${pt.cobalt}, ${pt.indigo})`,
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          fontSize: 16, fontWeight: 900, color: '#fff'
-                        }}>{initialOf(profile?.name)}</div>
-                        <div style={{ minWidth: 0, flex: 1 }}>
-                          <div style={{
-                            color: pt.text, fontWeight: 800, fontSize: 13,
-                            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'
-                          }}>Dr. {profile?.name || '...'}</div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: pt.amber, fontSize: 12, fontWeight: 700, marginTop: 2 }}>
-                            ⭐ {profile?.points || 0} points
-                          </div>
-                        </div>
-                      </div>
-                    ) : (
-                      <button onClick={() => goTo('/auth')} style={{
-                        width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                        padding: '12px', marginBottom: 6, borderRadius: 14,
-                        background: `linear-gradient(135deg, ${pt.cobalt}, ${pt.indigo})`,
-                        border: 'none', cursor: 'pointer',
-                        color: '#fff', fontWeight: 800, fontSize: 13, fontFamily: 'inherit'
-                      }}>Sign In →</button>
-                    )}
-                  </motion.div>
-
-                  <motion.div variants={listItem} style={{ height: 1, background: pt.border, margin: '6px 4px' }} />
-
-                  {/* Navigation */}
-                  {navItems.map(item => (
-                    <motion.button key={item.href} variants={listItem} onClick={() => goTo(item.href)} style={{
-                      width: '100%', textAlign: 'left', background: 'transparent', border: 'none',
-                      padding: '10px 12px', borderRadius: 12, cursor: 'pointer',
-                      color: pt.text, fontSize: 13, fontWeight: 600, fontFamily: 'inherit'
-                    }}
+          <AnimatePresence>
+            {open && (
+              <motion.div
+                ref={contentRef}
+                variants={listContainer}
+                initial="hidden" animate="visible" exit="exit"
+                style={{ width: PANEL_WIDTH, padding: '0 10px 10px', fontFamily: pulseFonts.body }}
+              >
+                {/* Profile / Sign In — first thing in the panel */}
+                <motion.div variants={listItem}>
+                  {user ? (
+                    <div
+                      onClick={() => goTo('/profile')}
+                      role="button" tabIndex={0}
+                      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); goTo('/profile') } }}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 12,
+                        padding: '10px 12px', borderRadius: 14, cursor: 'pointer', marginBottom: 6
+                      }}
                       onMouseEnter={e => { e.currentTarget.style.background = rowHover }}
                       onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
-                    >{item.label}</motion.button>
-                  ))}
+                    >
+                      <div style={{
+                        width: 40, height: 40, borderRadius: '50%', flexShrink: 0,
+                        background: `linear-gradient(135deg, ${pt.cobalt}, ${pt.indigo})`,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: 16, fontWeight: 900, color: '#fff'
+                      }}>{initialOf(profile?.name)}</div>
+                      <div style={{ minWidth: 0, flex: 1 }}>
+                        <div style={{
+                          color: pt.text, fontWeight: 800, fontSize: 13,
+                          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'
+                        }}>Dr. {profile?.name || '...'}</div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: pt.amber, fontSize: 12, fontWeight: 700, marginTop: 2 }}>
+                          ⭐ {profile?.points || 0} points
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <button onClick={() => goTo('/auth')} style={{
+                      width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                      padding: '12px', marginBottom: 6, borderRadius: 14,
+                      background: `linear-gradient(135deg, ${pt.cobalt}, ${pt.indigo})`,
+                      border: 'none', cursor: 'pointer',
+                      color: '#fff', fontWeight: 800, fontSize: 13, fontFamily: 'inherit'
+                    }}>Sign In →</button>
+                  )}
+                </motion.div>
 
-                  <motion.div variants={listItem} style={{ height: 1, background: pt.border, margin: '6px 4px' }} />
+                <motion.div variants={listItem} style={{ height: 1, background: pt.border, margin: '6px 4px' }} />
 
-                  {/* Theme toggle */}
-                  <motion.button variants={listItem} onClick={toggleTheme} style={{
-                    width: '100%', display: 'flex', alignItems: 'center', gap: 10,
-                    background: 'transparent', border: 'none',
+                {/* Navigation */}
+                {navItems.map(item => (
+                  <motion.button key={item.href} variants={listItem} onClick={() => goTo(item.href)} style={{
+                    width: '100%', textAlign: 'left', background: 'transparent', border: 'none',
                     padding: '10px 12px', borderRadius: 12, cursor: 'pointer',
-                    color: pt.text, fontSize: 13, fontWeight: 700, fontFamily: 'inherit'
+                    color: pt.text, fontSize: 13, fontWeight: 600, fontFamily: 'inherit'
                   }}
                     onMouseEnter={e => { e.currentTarget.style.background = rowHover }}
                     onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
-                  >
-                    <span style={{ fontSize: 16 }}>{dark ? '☀️' : '🌙'}</span>
-                    {dark ? 'Light mode' : 'Dark mode'}
-                  </motion.button>
+                  >{item.label}</motion.button>
+                ))}
 
-                  {/* Sign out — last, only when signed in */}
-                  {user && (
-                    <>
-                      <motion.div variants={listItem} style={{ height: 1, background: pt.border, margin: '6px 4px' }} />
-                      <motion.button variants={listItem} onClick={handleSignOut} style={{
-                        width: '100%', textAlign: 'left', display: 'flex', alignItems: 'center', gap: 10,
-                        background: 'transparent', border: 'none',
-                        padding: '10px 12px', borderRadius: 12, cursor: 'pointer',
-                        color: pt.danger, fontSize: 13, fontWeight: 700, fontFamily: 'inherit'
-                      }}
-                        onMouseEnter={e => { e.currentTarget.style.background = dark ? 'rgba(239,107,87,0.1)' : 'rgba(214,84,63,0.08)' }}
-                        onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
-                      >🚪 Sign Out</motion.button>
-                    </>
-                  )}
-                </motion.div>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+                <motion.div variants={listItem} style={{ height: 1, background: pt.border, margin: '6px 4px' }} />
+
+                {/* Theme toggle */}
+                <motion.button variants={listItem} onClick={toggleTheme} style={{
+                  width: '100%', display: 'flex', alignItems: 'center', gap: 10,
+                  background: 'transparent', border: 'none',
+                  padding: '10px 12px', borderRadius: 12, cursor: 'pointer',
+                  color: pt.text, fontSize: 13, fontWeight: 700, fontFamily: 'inherit'
+                }}
+                  onMouseEnter={e => { e.currentTarget.style.background = rowHover }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
+                >
+                  <span style={{ fontSize: 16 }}>{dark ? '☀️' : '🌙'}</span>
+                  {dark ? 'Light mode' : 'Dark mode'}
+                </motion.button>
+
+                {/* Sign out — last, only when signed in */}
+                {user && (
+                  <>
+                    <motion.div variants={listItem} style={{ height: 1, background: pt.border, margin: '6px 4px' }} />
+                    <motion.button variants={listItem} onClick={handleSignOut} style={{
+                      width: '100%', textAlign: 'left', display: 'flex', alignItems: 'center', gap: 10,
+                      background: 'transparent', border: 'none',
+                      padding: '10px 12px', borderRadius: 12, cursor: 'pointer',
+                      color: pt.danger, fontSize: 13, fontWeight: 700, fontFamily: 'inherit'
+                    }}
+                      onMouseEnter={e => { e.currentTarget.style.background = dark ? 'rgba(239,107,87,0.1)' : 'rgba(214,84,63,0.08)' }}
+                      onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
+                    >🚪 Sign Out</motion.button>
+                  </>
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </motion.div>
     </div>
   )
 }
