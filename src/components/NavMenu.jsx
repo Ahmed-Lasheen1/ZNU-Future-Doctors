@@ -27,12 +27,15 @@ function initialOf(name) {
 // dropdown, matching the "liquid glass" material used on Home's
 // LiquidGlassCard (src/components/ui/liquid-glass-card.tsx) — same
 // feTurbulence/feDisplacementMap recipe, shared via src/lib/liquidGlass.js
-// so the two never drift out of sync. Deliberately no background tint
-// here either (matching the liquid-glass spec's transparent fill) — a
-// hairline border is kept on this panel specifically, since a fully
-// transparent, borderless dropdown loses its edge against whatever
-// content is scrolling underneath it; the Home cards don't need that
-// because they aren't floating over other content.
+// so the two never drift out of sync.
+//
+// This panel now uses the EXACT same layering as LiquidGlassCard: a
+// backdrop-distortion layer, a lens-shadow layer, then content on top
+// — no added background tint, no added border. Previously this panel
+// had its own opaque backing tint layered on top (for legibility over
+// arbitrary scrolling page content), but that made it look like a
+// visibly different material from the Home cards. Removed so the menu
+// and the cards read as the exact same glass.
 //
 // The trigger button stays visible after opening — the panel is a
 // normal `position: absolute` popover anchored to it, not a portal —
@@ -59,6 +62,7 @@ export default function NavMenu({ dark, toggleTheme, align = 'left' }) {
   // silently reference the first instance's filter.
   const rawFilterId = useId().replace(/[^a-zA-Z0-9]/g, '')
   const filterId = `navmenu-glass-${rawFilterId}`
+  const panelRadius = 20
 
   // Measures the panel's real content height so the outer wrapper can
   // animate `height` from 0 up to it — this is what makes the panel
@@ -96,27 +100,6 @@ export default function NavMenu({ dark, toggleTheme, align = 'left' }) {
     await signOut()
     navigate('/')
   }
-
-  // Redesigned from a full-screen slide-in curved menu to a small glass
-  // dropdown, sharing the Home cards' backdrop-distortion recipe
-  // (src/lib/liquidGlass.js) but with its own opaque-enough backing
-  // tint layered on top — a floating dropdown has to stay legible over
-  // arbitrary page content, where a card sitting in a fixed grid
-  // doesn't need that. The trigger button stays visible after opening —
-  // the panel is a normal `position: absolute` popover anchored to it,
-  // not a portal — so it never covers the whole screen.
-  const glassStyle = {
-  ...liquidGlassBackdrop(filterId),
-  // Unlike the Home cards, this panel needs a real backing tint —
-  // it's a functional dropdown that has to stay readable no matter
-  // what's scrolling behind it (page content, images, the ECG hero),
-  // not a card sitting in a fixed layout. Kept local to NavMenu rather
-  // than added to src/lib/liquidGlass.js so the cards stay exactly as
-  // transparent as the liquid-glass spec.
-  background: dark ? 'rgba(18,22,32,0.82)' : 'rgba(255,255,255,0.88)',
-  border: dark ? '1px solid rgba(255,255,255,0.12)' : '1px solid rgba(255,255,255,0.6)',
-  boxShadow: liquidGlassShadow(dark),
-}
 
   const rowHover = dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)'
 
@@ -181,105 +164,127 @@ export default function NavMenu({ dark, toggleTheme, align = 'left' }) {
               position: 'absolute', top: 'calc(100% + 10px)',
               [align === 'right' ? 'right' : 'left']: 0,
               width: 260, maxWidth: '85vw',
-              borderRadius: 20,
+              borderRadius: panelRadius,
               overflow: 'hidden',
               zIndex: 2000,
               willChange: 'height, opacity',
             }}
           >
-            <div ref={contentRef} style={{
-              borderRadius: 20, padding: 10,
-              ...glassStyle,
-              fontFamily: pulseFonts.body
-            }}>
-              <motion.div variants={listContainer} initial="hidden" animate="visible" exit="exit">
-                {/* Profile / Sign In — first thing in the panel */}
-                <motion.div variants={listItem}>
-                  {user ? (
-                    <div
-                      onClick={() => goTo('/profile')}
-                      role="button" tabIndex={0}
-                      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); goTo('/profile') } }}
-                      style={{
-                        display: 'flex', alignItems: 'center', gap: 12,
-                        padding: '10px 12px', borderRadius: 14, cursor: 'pointer', marginBottom: 6
-                      }}
-                      onMouseEnter={e => { e.currentTarget.style.background = rowHover }}
-                      onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
-                    >
-                      <div style={{
-                        width: 40, height: 40, borderRadius: '50%', flexShrink: 0,
-                        background: `linear-gradient(135deg, ${pt.cobalt}, ${pt.indigo})`,
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: 16, fontWeight: 900, color: '#fff'
-                      }}>{initialOf(profile?.name)}</div>
-                      <div style={{ minWidth: 0, flex: 1 }}>
+            {/* Same three-layer structure as LiquidGlassCard:
+                1. backdrop-distortion layer (the actual "liquid" refraction)
+                2. lens-shadow/rim layer
+                3. real content on top
+                No added tint, no added border — this is the exact card recipe. */}
+            <div style={{ position: 'relative', borderRadius: panelRadius, height: '100%' }}>
+              <div
+                aria-hidden
+                className="pointer-events-none"
+                style={{
+                  position: 'absolute', inset: 0, zIndex: -1,
+                  overflow: 'hidden', borderRadius: panelRadius,
+                  ...liquidGlassBackdrop(filterId)
+                }}
+              />
+              <div
+                aria-hidden
+                className="pointer-events-none"
+                style={{ position: 'absolute', inset: 0, zIndex: 0, borderRadius: panelRadius, boxShadow: liquidGlassShadow(dark) }}
+              />
+
+              <div ref={contentRef} style={{
+                position: 'relative', zIndex: 1,
+                borderRadius: panelRadius, padding: 10,
+                fontFamily: pulseFonts.body
+              }}>
+                <motion.div variants={listContainer} initial="hidden" animate="visible" exit="exit">
+                  {/* Profile / Sign In — first thing in the panel */}
+                  <motion.div variants={listItem}>
+                    {user ? (
+                      <div
+                        onClick={() => goTo('/profile')}
+                        role="button" tabIndex={0}
+                        onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); goTo('/profile') } }}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: 12,
+                          padding: '10px 12px', borderRadius: 14, cursor: 'pointer', marginBottom: 6
+                        }}
+                        onMouseEnter={e => { e.currentTarget.style.background = rowHover }}
+                        onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
+                      >
                         <div style={{
-                          color: pt.text, fontWeight: 800, fontSize: 13,
-                          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'
-                        }}>Dr. {profile?.name || '...'}</div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: pt.amber, fontSize: 12, fontWeight: 700, marginTop: 2 }}>
-                          ⭐ {profile?.points || 0} points
+                          width: 40, height: 40, borderRadius: '50%', flexShrink: 0,
+                          background: `linear-gradient(135deg, ${pt.cobalt}, ${pt.indigo})`,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          fontSize: 16, fontWeight: 900, color: '#fff'
+                        }}>{initialOf(profile?.name)}</div>
+                        <div style={{ minWidth: 0, flex: 1 }}>
+                          <div style={{
+                            color: pt.text, fontWeight: 800, fontSize: 13,
+                            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'
+                          }}>Dr. {profile?.name || '...'}</div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: pt.amber, fontSize: 12, fontWeight: 700, marginTop: 2 }}>
+                            ⭐ {profile?.points || 0} points
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ) : (
-                    <button onClick={() => goTo('/auth')} style={{
-                      width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                      padding: '12px', marginBottom: 6, borderRadius: 14,
-                      background: `linear-gradient(135deg, ${pt.cobalt}, ${pt.indigo})`,
-                      border: 'none', cursor: 'pointer',
-                      color: '#fff', fontWeight: 800, fontSize: 13, fontFamily: 'inherit'
-                    }}>Sign In →</button>
-                  )}
-                </motion.div>
+                    ) : (
+                      <button onClick={() => goTo('/auth')} style={{
+                        width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                        padding: '12px', marginBottom: 6, borderRadius: 14,
+                        background: `linear-gradient(135deg, ${pt.cobalt}, ${pt.indigo})`,
+                        border: 'none', cursor: 'pointer',
+                        color: '#fff', fontWeight: 800, fontSize: 13, fontFamily: 'inherit'
+                      }}>Sign In →</button>
+                    )}
+                  </motion.div>
 
-                <motion.div variants={listItem} style={{ height: 1, background: pt.border, margin: '6px 4px' }} />
+                  <motion.div variants={listItem} style={{ height: 1, background: pt.border, margin: '6px 4px' }} />
 
-                {/* Navigation */}
-                {navItems.map(item => (
-                  <motion.button key={item.href} variants={listItem} onClick={() => goTo(item.href)} style={{
-                    width: '100%', textAlign: 'left', background: 'transparent', border: 'none',
+                  {/* Navigation */}
+                  {navItems.map(item => (
+                    <motion.button key={item.href} variants={listItem} onClick={() => goTo(item.href)} style={{
+                      width: '100%', textAlign: 'left', background: 'transparent', border: 'none',
+                      padding: '10px 12px', borderRadius: 12, cursor: 'pointer',
+                      color: pt.text, fontSize: 13, fontWeight: 600, fontFamily: 'inherit'
+                    }}
+                      onMouseEnter={e => { e.currentTarget.style.background = rowHover }}
+                      onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
+                    >{item.label}</motion.button>
+                  ))}
+
+                  <motion.div variants={listItem} style={{ height: 1, background: pt.border, margin: '6px 4px' }} />
+
+                  {/* Theme toggle */}
+                  <motion.button variants={listItem} onClick={toggleTheme} style={{
+                    width: '100%', display: 'flex', alignItems: 'center', gap: 10,
+                    background: 'transparent', border: 'none',
                     padding: '10px 12px', borderRadius: 12, cursor: 'pointer',
-                    color: pt.text, fontSize: 13, fontWeight: 600, fontFamily: 'inherit'
+                    color: pt.text, fontSize: 13, fontWeight: 700, fontFamily: 'inherit'
                   }}
                     onMouseEnter={e => { e.currentTarget.style.background = rowHover }}
                     onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
-                  >{item.label}</motion.button>
-                ))}
+                  >
+                    <span style={{ fontSize: 16 }}>{dark ? '☀️' : '🌙'}</span>
+                    {dark ? 'Light mode' : 'Dark mode'}
+                  </motion.button>
 
-                <motion.div variants={listItem} style={{ height: 1, background: pt.border, margin: '6px 4px' }} />
-
-                {/* Theme toggle */}
-                <motion.button variants={listItem} onClick={toggleTheme} style={{
-                  width: '100%', display: 'flex', alignItems: 'center', gap: 10,
-                  background: 'transparent', border: 'none',
-                  padding: '10px 12px', borderRadius: 12, cursor: 'pointer',
-                  color: pt.text, fontSize: 13, fontWeight: 700, fontFamily: 'inherit'
-                }}
-                  onMouseEnter={e => { e.currentTarget.style.background = rowHover }}
-                  onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
-                >
-                  <span style={{ fontSize: 16 }}>{dark ? '☀️' : '🌙'}</span>
-                  {dark ? 'Light mode' : 'Dark mode'}
-                </motion.button>
-
-                {/* Sign out — last, only when signed in */}
-                {user && (
-                  <>
-                    <motion.div variants={listItem} style={{ height: 1, background: pt.border, margin: '6px 4px' }} />
-                    <motion.button variants={listItem} onClick={handleSignOut} style={{
-                      width: '100%', textAlign: 'left', display: 'flex', alignItems: 'center', gap: 10,
-                      background: 'transparent', border: 'none',
-                      padding: '10px 12px', borderRadius: 12, cursor: 'pointer',
-                      color: pt.danger, fontSize: 13, fontWeight: 700, fontFamily: 'inherit'
-                    }}
-                      onMouseEnter={e => { e.currentTarget.style.background = dark ? 'rgba(239,107,87,0.1)' : 'rgba(214,84,63,0.08)' }}
-                      onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
-                    >🚪 Sign Out</motion.button>
-                  </>
-                )}
-              </motion.div>
+                  {/* Sign out — last, only when signed in */}
+                  {user && (
+                    <>
+                      <motion.div variants={listItem} style={{ height: 1, background: pt.border, margin: '6px 4px' }} />
+                      <motion.button variants={listItem} onClick={handleSignOut} style={{
+                        width: '100%', textAlign: 'left', display: 'flex', alignItems: 'center', gap: 10,
+                        background: 'transparent', border: 'none',
+                        padding: '10px 12px', borderRadius: 12, cursor: 'pointer',
+                        color: pt.danger, fontSize: 13, fontWeight: 700, fontFamily: 'inherit'
+                      }}
+                        onMouseEnter={e => { e.currentTarget.style.background = dark ? 'rgba(239,107,87,0.1)' : 'rgba(214,84,63,0.08)' }}
+                        onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
+                      >🚪 Sign Out</motion.button>
+                    </>
+                  )}
+                </motion.div>
+              </div>
             </div>
           </motion.div>
         )}
