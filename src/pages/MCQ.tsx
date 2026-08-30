@@ -12,6 +12,7 @@ import QuestionSourceBadge from '../components/QuestionSourceBadge'
 import LiquidGlassCard from '@/components/ui/liquid-glass-card'
 import PulseBackground from '../components/pulse/PulseBackground'
 import PulseGlassRow from '../components/pulse/PulseGlassRow'
+import AutoGrid from '../components/AutoGrid'
 import { fetchModuleStages } from '../lib/moduleStages'
 import {
   getGuestFlags, toggleGuestFlag,
@@ -708,7 +709,7 @@ export default function MCQ({ dark }: { dark: boolean }) {
 
         {/* Practice by Subject */}
         <h3 style={{ ...pulseType.sectionLabel, color: pt.textMuted, marginBottom: 16 }}>Practice by Subject</h3>
-        <div className="auto-grid" style={{ ['--auto-grid-cols' as any]: moduleSubjects.length === 1 ? 1 : moduleSubjects.length === 2 ? 2 : moduleSubjects.length === 3 ? 3 : 4 }}>
+        <AutoGrid>
           {moduleSubjects.map((sub, i) => {
             const subQs = questions.filter(q =>
               q.subject_id === sub.id &&
@@ -728,7 +729,7 @@ export default function MCQ({ dark }: { dark: boolean }) {
               </LiquidGlassCard>
             )
           })}
-        </div>
+        </AutoGrid>
       </div>
     </div>
   )
