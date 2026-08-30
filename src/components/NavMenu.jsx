@@ -325,7 +325,9 @@ export default function NavMenu({ dark, toggleTheme, align = 'left' }) {
                       onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); goTo(item.href) } }}
                       style={{ cursor: 'pointer' }}>
                       <div style={{ padding: '10px 12px' }}>
-                        <CharFlipLabel text={item.label} color={pt.text} fontSize={13} fontWeight={600} />
+                        <span style={{ color: pt.text, fontSize: 13, fontWeight: 600, fontFamily: 'inherit' }}>
+                          {item.label}
+                        </span>
                       </div>
                     </GlassRow>
                   </motion.div>
@@ -347,7 +349,9 @@ export default function NavMenu({ dark, toggleTheme, align = 'left' }) {
                       onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleSignOut() } }}
                       style={{ cursor: 'pointer' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px' }}>
-                        🚪 <CharFlipLabel text="Sign Out" color={pt.danger} fontSize={13} fontWeight={700} />
+                        🚪 <span style={{ color: pt.danger, fontSize: 13, fontWeight: 700, fontFamily: 'inherit' }}>
+                          Sign Out
+                        </span>
                       </div>
                     </GlassRow>
                   </motion.div>
