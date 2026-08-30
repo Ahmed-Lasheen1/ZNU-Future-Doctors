@@ -16,6 +16,7 @@ import NotifyPermissionButton from '../components/NotifyPermissionButton'
 import LiquidGlassCard from '@/components/ui/liquid-glass-card'
 import EcgHero from '../components/pulse/EcgHero'
 import { ScheduleIcon, ChecklistIcon, AnonQAIcon, LeaderboardIcon } from '@/components/ui/tool-icons'
+import { ModuleIcon } from '../lib/medicalIcons'
 
 const LOGO_SRC = '/icon-192.png'
 
@@ -471,8 +472,10 @@ export default function Home({ dark, toggleTheme }) {
                       <div style={{
                         width: 46, height: 46, borderRadius: '50%', flexShrink: 0,
                         background: `${mod.color}22`, border: `1px solid ${mod.color}55`,
-                        display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20
-                      }}>{mod.icon}</div>
+                        display: 'flex', alignItems: 'center', justifyContent: 'center'
+                      }}>
+                        <ModuleIcon value={mod.icon} size={20} color={mod.color} />
+                      </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ color: pt.text, fontWeight: 700, fontSize: 14 }}>{mod.name}</div>
                         <div style={{ color: pt.sub, fontSize: 11, marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{moduleBlurb(mod.name)}</div>
@@ -540,7 +543,9 @@ export default function Home({ dark, toggleTheme }) {
                 <LiquidGlassCard key={mod.id} dark={dark} delay={msFor(COMPLETED_MODULES_START) + i * 110}
                   onClick={() => navigate(`/module/${mod.id}`)}
                   style={{ padding: 'clamp(20px, 2vw, 28px)', textAlign: 'center' }}>
-                  <div style={{ fontSize: 'clamp(28px, 3vw, 42px)', marginBottom: 8, filter: 'grayscale(0.5)' }}>{mod.icon}</div>
+                  <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8, filter: 'grayscale(0.5)' }}>
+                    <ModuleIcon value={mod.icon} size={38} color={pt.faint} />
+                  </div>
                   <div style={{ color: pt.sub, fontSize: 'clamp(13px, 1.1vw, 16px)', fontWeight: 700, marginBottom: 8 }}>{mod.name}</div>
                   <div style={{
                     display: 'inline-block', background: `${pt.faint}20`, color: pt.faint,
