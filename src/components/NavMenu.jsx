@@ -1,16 +1,21 @@
 import { useState, useRef, useEffect, useLayoutEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
+import { Search as SearchIcon } from 'lucide-react'
 import { useAuth } from '../contexts'
 import { MenuToggleIcon } from './ui/menu-toggle-icon'
+import ThemeSwitch from './ui/theme-switch'
 import { getPulseTheme, pulseFonts } from '../premiumTheme'
 import { liquidGlassShadow, liquidGlassBackdrop, liquidGlassTint } from '../lib/liquidGlass'
 
 const morphEase = [0.22, 1, 0.36, 1]
 
+// "Search" used to be a plain nav-link row in this list. It's now its
+// own dedicated search-bar row (rendered separately, right before
+// Home) — so it's removed from here to avoid the same destination
+// appearing twice.
 const navItems = [
   { label: 'Home', href: '/' },
-  { label: 'Search', href: '/search' },
   { label: 'Schedules', href: '/schedule' },
   { label: 'Checklist', href: '/checklist' },
   { label: 'Anonymous Q&A', href: '/anon-questions' },
@@ -26,18 +31,14 @@ const PANEL_WIDTH = 260
 const PANEL_RADIUS = 20
 
 // ── Per-character flip-reveal label ─────────────────────────────────
-// Exact same hover mechanics and timing math as MenuButton in the
-// reference liquid-morph-floating-menu component: each character is
-// wrapped in a fixed-height overflow-hidden cell containing the real
-// character stacked on top of a duplicate of itself; on hover the
-// inner stack translates up 50% (one line-height) so the duplicate
-// scrolls into view — staggered 30ms per character index. A hover
-// mid-animation is "locked" for `lockDuration = 30 * chars.length +
-// 300` ms (animatingRef) so a fast mouse-out during the stagger can't
-// cut it short; if the mouse leaves while locked, the leave is queued
-// (pendingLeaveRef) and applied the instant the lock releases — same
-// as the source component. Only the color/font is swapped to match
-// this menu's own row styling; the calculation is untouched.
+// Same hover mechanics/timing as the reference liquid-morph menu's
+// MenuButton: each character sits in a fixed-height overflow-hidden
+// cell over a duplicate of itself; on hover the inner stack slides up
+// one line-height so the duplicate scrolls into view, staggered 30ms
+// per character. A hover mid-animation is locked for
+// `lockDuration = 30 * chars.length + 300` ms so a fast mouse-out
+// can't cut the stagger short; a leave during the lock is queued and
+// applied the instant it releases.
 function CharFlipLabel({ text, color, fontSize = 13, fontWeight = 600 }) {
   const [hovered, setHovered] = useState(false)
   const animatingRef = useRef(false)
@@ -100,6 +101,7 @@ function CharFlipLabel({ text, color, fontSize = 13, fontWeight = 600 }) {
 
 export default function NavMenu({ dark, toggleTheme, align = 'left' }) {
   const [open, setOpen] = useState(false)
+  const [searchValue, setSearchValue] = useState('')
   const navigate = useNavigate()
   const { user, profile, signOut } = useAuth()
   const wrapperRef = useRef(null)
@@ -130,6 +132,19 @@ export default function NavMenu({ dark, toggleTheme, align = 'left' }) {
   function goTo(path) {
     setOpen(false)
     navigate(path)
+  }
+
+  // Quick search — Enter or tapping the icon sends the student to the
+  // full Search page. The typed text rides along as router state
+  // (`initialQuery`) rather than a URL param, since Search.jsx isn't
+  // currently wired to read a query param; if you want it to actually
+  // prefill and auto-run the search, Search.jsx's initial state would
+  // need a small addition to read `location.state?.initialQuery`.
+  function submitSearch() {
+    const q = searchValue.trim()
+    setOpen(false)
+    navigate('/search', q ? { state: { initialQuery: q } } : undefined)
+    setSearchValue('')
   }
 
   async function handleSignOut() {
@@ -274,7 +289,33 @@ export default function NavMenu({ dark, toggleTheme, align = 'left' }) {
 
                 <motion.div variants={listItem} style={{ height: 1, background: pt.border, margin: '6px 4px' }} />
 
-                {/* Navigation — labels use the per-character flip hover */}
+                {/* Search bar — right before Home */}
+                <motion.div variants={listItem} style={{
+                  display: 'flex', alignItems: 'center', gap: 8,
+                  padding: '8px 12px', borderRadius: 12, marginBottom: 2
+                }}
+                  onMouseEnter={e => { e.currentTarget.style.background = rowHover }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
+                >
+                  <SearchIcon
+                    size={15}
+                    color={pt.faint}
+                    style={{ flexShrink: 0, cursor: 'pointer' }}
+                    onClick={submitSearch}
+                  />
+                  <input
+                    value={searchValue}
+                    onChange={e => setSearchValue(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter') submitSearch() }}
+                    placeholder="Search..."
+                    style={{
+                      flex: 1, minWidth: 0, background: 'transparent', border: 'none', outline: 'none',
+                      color: pt.text, fontSize: 13, fontFamily: 'inherit', fontWeight: 600
+                    }}
+                  />
+                </motion.div>
+
+                {/* Navigation */}
                 {navItems.map(item => (
                   <motion.button key={item.href} variants={listItem} onClick={() => goTo(item.href)} style={{
                     width: '100%', textAlign: 'left', background: 'transparent', border: 'none',
@@ -290,19 +331,16 @@ export default function NavMenu({ dark, toggleTheme, align = 'left' }) {
 
                 <motion.div variants={listItem} style={{ height: 1, background: pt.border, margin: '6px 4px' }} />
 
-                {/* Theme toggle */}
-                <motion.button variants={listItem} onClick={toggleTheme} style={{
-                  width: '100%', display: 'flex', alignItems: 'center', gap: 10,
-                  background: 'transparent', border: 'none',
-                  padding: '10px 12px', borderRadius: 12, cursor: 'pointer',
-                  fontFamily: 'inherit'
-                }}
-                  onMouseEnter={e => { e.currentTarget.style.background = rowHover }}
-                  onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
-                >
-                  <span style={{ fontSize: 16 }}>{dark ? '☀️' : '🌙'}</span>
-                  <CharFlipLabel text={dark ? 'Light mode' : 'Dark mode'} color={pt.text} fontSize={13} fontWeight={700} />
-                </motion.button>
+                {/* Theme switch — cinematic pill toggle instead of the
+                    old plain text row, controlled by this app's own
+                    dark/toggleTheme rather than next-themes. */}
+                <motion.div variants={listItem} style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  padding: '6px 12px 10px'
+                }}>
+                  <CharFlipLabel text={dark ? 'Dark Mode' : 'Light Mode'} color={pt.text} fontSize={13} fontWeight={700} />
+                  <ThemeSwitch dark={dark} onToggle={toggleTheme} scale={0.6} />
+                </motion.div>
 
                 {/* Sign out — last, only when signed in */}
                 {user && (
