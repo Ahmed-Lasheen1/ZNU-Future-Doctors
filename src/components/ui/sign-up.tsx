@@ -3,8 +3,6 @@ import { useState, useRef, useEffect } from "react"
 import { Lock, Eye, EyeOff, ArrowLeft, GraduationCap, Mail } from "lucide-react"
 import { motion } from "framer-motion"
 import confetti from "canvas-confetti"
-import PulseBackground from "@/components/pulse/PulseBackground"
-import { liquidGlassBackdrop, liquidGlassShadow, liquidGlassTint } from "@/lib/liquidGlass"
 
 export type AccountType = "university" | "personal"
 export type AuthMode = "signin" | "signup"
@@ -15,11 +13,6 @@ export type AuthMode = "signin" | "signup"
 export type AuthStep = "form" | "verify"
 
 interface AuthComponentProps {
-  // Passed through from Auth.tsx (which receives it from the router,
-  // like every other page) so this page's glass surfaces use the same
-  // liquidGlass.js recipe/tokens as the rest of the app instead of a
-  // parallel, hand-tuned one.
-  dark: boolean
   brandName?: string
   logoSrc?: string
   mode: AuthMode
@@ -44,33 +37,71 @@ interface AuthComponentProps {
   onContinueAsGuest: () => void
 }
 
+// Exact gradient sampled from the ZNU Pulse logo artwork itself
+// (icon-192.png / favicon.svg) — a clean vertical (top → bottom)
+// blend from light sky-blue down to deep navy, reproduced here stop
+// for stop rather than approximated.
+const PAGE_BG = {
+  background: [
+    "linear-gradient(180deg,",
+    "#a6d2ef 0%,",
+    "#97bcd7 15%,",
+    "#81a6c3 30%,",
+    "#6c8fad 45%,",
+    "#497194 60%,",
+    "#274e79 75%,",
+    "#042a59 90%,",
+    "#010c4a 100%)",
+  ].join(" "),
+}
+
 // This app runs with Tailwind's preflight/base reset turned OFF
 // (tailwind.config.js → corePlugins.preflight: false), and
 // src/index.css separately sets a global `input, textarea, select {
 // border: 1px solid ...; padding: 10px; margin-top: 8px }` rule for
 // the rest of the app. Neither is scoped to this page, so every raw
 // <input>/<button> here needs an explicit reset or it silently
-// inherits that global box model / the browser's native button chrome.
+// inherits that global box model / the browser's native button chrome
+// — that's what was showing up as a black rectangle inside each pill
+// and a plain gray system button around "Continue without account".
 const RESET_INPUT = "appearance-none border-0 outline-none bg-transparent p-0 m-0 rounded-none"
 const RESET_BTN = "appearance-none border-0 bg-transparent p-0 m-0 cursor-pointer"
 
-// ── Glass layer stack — the SAME recipe as PulseGlassRow.tsx, used
-// ── everywhere else in the app (NavMenu, LiquidGlassCard, Profile,
-// ── Checklist, Review, Search, etc). This page previously defined its
-// ── own separate GLASS_BASE/GlassLayers (visible white/15 border +
-// ── flat drop-shadow) instead of reusing lib/liquidGlass.js — that's
-// ── been replaced here so Auth's glass matches every other page
-// ── instead of diverging from it. The background gradient behind it
-// ── is unchanged (PulseBackground renders the exact same gradient
-// ── this page always used), so the recipe transfers directly.
-function GlassLayers({ dark, tint }: { dark: boolean; tint?: string }) {
-  return (
-    <>
-      <div aria-hidden className="pointer-events-none absolute inset-0" style={liquidGlassBackdrop()} />
-      <div aria-hidden className="pointer-events-none absolute inset-0" style={{ boxShadow: liquidGlassShadow(dark) }} />
-      <div aria-hidden className="pointer-events-none absolute inset-0" style={{ background: tint ?? liquidGlassTint(dark) }} />
-    </>
-  )
+// ── Glassmorphism recipe, modeled on the minimal "Vercel/Linear" style
+// ── instead of the busier "iOS lens" style tried before ──────────────
+// That earlier version (specular streak + shimmer sweep + dual-inset
+// bevel) was closer to a skeuomorphic lens than clean modern glass.
+// The recipe is genuinely just: a thin border (white/15), a light
+// fill (white/10), backdrop-blur, and a soft drop shadow. No corner
+// glow either — tried one, but every surface on this page is a thin
+// pill/bar, and a spot-glow on something that skinny just reads as a
+// stray bright patch, not a highlight (only makes sense on big card
+// shapes with room for it). No shimmer-on-hover theatrics either;
+// hover just brightens the fill and border slightly, same as a plain
+// modern UI kit would.
+//
+// The one thing this page still needs that a hero-on-a-dark-photo
+// doesn't: a thin dark tint UNDER the light glass, since this page's
+// gradient runs light sky-blue at the top. Without it, white/10 glass
+// on a light background washes out. Everything else follows the
+// simpler recipe as-is.
+const GLASS_BASE = cn(
+  "relative isolate overflow-hidden",
+  "border border-white/15",
+  "bg-white/10",
+  "backdrop-blur-xl",
+  "shadow-[0_8px_32px_rgba(0,0,10,0.35),inset_0_1px_1px_rgba(255,255,255,0.30)]",
+)
+
+// A single flat contrast layer that sits inside every glass surface,
+// behind the actual content. (An earlier version also added a
+// corner "ambient glow" radial-gradient for extra depth — removed:
+// every surface on this page is a thin pill/bar, and a spot-glow on
+// something that skinny just reads as a stray bright patch rather
+// than a subtle highlight. It only makes sense on large card shapes,
+// which this page doesn't have.)
+function GlassLayers({ tint = "rgba(8,16,36,0.24)" }: { tint?: string }) {
+  return <div aria-hidden className="pointer-events-none absolute inset-0" style={{ background: tint }} />
 }
 
 function BlurFade({ children, delay = 0, className }: { children: React.ReactNode; delay?: number; className?: string }) {
@@ -84,39 +115,39 @@ function BlurFade({ children, delay = 0, className }: { children: React.ReactNod
   )
 }
 
-function GlassPill({ dark, children, className }: { dark: boolean; children: React.ReactNode; className?: string }) {
+function GlassPill({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
-    <div className="relative isolate overflow-hidden rounded-full">
-      <GlassLayers dark={dark} />
+    <div className={cn(GLASS_BASE, "rounded-full")}>
+      <GlassLayers />
       <div className={cn("relative z-10", className)}>{children}</div>
     </div>
   )
 }
 
-function GlassButton({ dark, children, onClick, type = "button", disabled, className }: {
-  dark: boolean; children: React.ReactNode; onClick?: () => void; type?: "button" | "submit"; disabled?: boolean; className?: string
+function GlassButton({ children, onClick, type = "button", disabled, className }: {
+  children: React.ReactNode; onClick?: () => void; type?: "button" | "submit"; disabled?: boolean; className?: string
 }) {
   return (
     <button type={type} onClick={onClick} disabled={disabled} className={cn(
-      RESET_BTN, "relative isolate overflow-hidden w-full rounded-full py-3.5 font-semibold text-sm text-center transition-all",
+      RESET_BTN, GLASS_BASE, "w-full rounded-full py-3.5 font-semibold text-sm text-center transition-all",
       disabled
         ? "opacity-40 grayscale cursor-not-allowed"
-        : "text-white hover:scale-[1.01] active:scale-[0.98]",
+        : "text-white hover:bg-white/15 hover:border-white/30 hover:scale-[1.01] active:scale-[0.98]",
       className
     )}>
-      <GlassLayers dark={dark} tint={disabled ? undefined : "rgba(30,90,180,0.22)"} />
+      <GlassLayers tint="rgba(30,90,180,0.22)" />
       <span className="relative z-10">{children}</span>
     </button>
   )
 }
 
-function GhostButton({ dark, children, onClick, className }: { dark: boolean; children: React.ReactNode; onClick?: () => void; className?: string }) {
+function GhostButton({ children, onClick, className }: { children: React.ReactNode; onClick?: () => void; className?: string }) {
   return (
     <button type="button" onClick={onClick} className={cn(
-      RESET_BTN, "relative isolate overflow-hidden w-full rounded-full py-2.5 text-xs font-semibold text-white/90 text-center transition-all",
+      RESET_BTN, GLASS_BASE, "w-full rounded-full py-2.5 text-xs font-semibold text-white/90 text-center transition-all hover:bg-white/15 hover:border-white/30",
       className
     )}>
-      <GlassLayers dark={dark} />
+      <GlassLayers />
       <span className="relative z-10">{children}</span>
     </button>
   )
@@ -143,13 +174,14 @@ function TextLink({ children, onClick, className }: { children: React.ReactNode;
 // switch. Same recipe as everything else; the selected state just
 // picks up the sky-blue tint so it reads as "active" without breaking
 // the glass look.
-function GlassToggle({ dark, children, active, onClick }: { dark: boolean; children: React.ReactNode; active: boolean; onClick: () => void }) {
+function GlassToggle({ children, active, onClick }: { children: React.ReactNode; active: boolean; onClick: () => void }) {
   return (
     <button onClick={onClick} className={cn(
-      RESET_BTN, "relative isolate overflow-hidden flex-1 flex items-center justify-center gap-1.5 rounded-full py-2 text-xs font-bold transition-all",
-      active ? "text-sky-100" : "text-white/70 hover:text-white/90"
+      RESET_BTN, GLASS_BASE,
+      "flex-1 flex items-center justify-center gap-1.5 rounded-full py-2 text-xs font-bold transition-all",
+      active ? "text-sky-100 border-sky-200/60" : "text-white/70 hover:text-white/90 hover:bg-white/15"
     )}>
-      <GlassLayers dark={dark} tint={active ? "rgba(30,90,180,0.22)" : undefined} />
+      <GlassLayers tint={active ? "rgba(30,90,180,0.22)" : "rgba(8,16,36,0.24)"} />
       <span className="relative z-10 flex items-center gap-1.5">{children}</span>
     </button>
   )
@@ -163,7 +195,6 @@ function fireConfetti() {
 
 export function AuthComponent(props: AuthComponentProps) {
   const {
-    dark,
     brandName = "ZNU PULSE", logoSrc = "/icon-192.png",
     mode, onToggleMode, step, accountType, onAccountTypeChange,
     name, onNameChange, email, onEmailChange,
@@ -193,8 +224,7 @@ export function AuthComponent(props: AuthComponentProps) {
   const handleSubmit = mode === "signin" ? onSubmitSignIn : onSubmitSignup
 
   return (
-    <div className="fixed inset-0 overflow-y-auto flex items-center justify-center">
-      <PulseBackground />
+    <div className="fixed inset-0 overflow-y-auto flex items-center justify-center" style={PAGE_BG}>
       {/* Two-column on large/landscape screens: big branding on the
           left takes advantage of the extra width, form stays a
           comfortable fixed width on the right. Single column on
@@ -231,8 +261,8 @@ export function AuthComponent(props: AuthComponentProps) {
           </BlurFade>
 
           {message && (
-            <div className="relative isolate overflow-hidden text-center text-xs font-semibold rounded-xl py-2.5 px-4 mb-4">
-              <GlassLayers dark={dark} tint={isSuccess ? "rgba(16,120,90,0.28)" : "rgba(140,20,20,0.28)"} />
+            <div className={cn(GLASS_BASE, "text-center text-xs font-semibold rounded-xl py-2.5 px-4 mb-4")}>
+              <GlassLayers tint={isSuccess ? "rgba(16,120,90,0.28)" : "rgba(140,20,20,0.28)"} />
               <span className={cn("relative z-10", isSuccess ? "text-emerald-100" : "text-red-100")}>{message}</span>
             </div>
           )}
@@ -244,7 +274,7 @@ export function AuthComponent(props: AuthComponentProps) {
               <p className={cn("text-center text-xs text-white/85", TEXT_LEGIBLE)}>
                 We sent a 6-digit code to <strong className="text-white">{email}</strong>
               </p>
-              <GlassPill dark={dark} className="flex items-center justify-center px-5 py-3.5">
+              <GlassPill className="flex items-center justify-center px-5 py-3.5">
                 <input ref={otpRef} inputMode="numeric" maxLength={6} value={otp}
                   onChange={e => onOtpChange(e.target.value.replace(/\D/g, ""))}
                   onKeyDown={e => e.key === "Enter" && onSubmitVerify()}
@@ -252,8 +282,8 @@ export function AuthComponent(props: AuthComponentProps) {
                   name="otp" id="otp" autoComplete="one-time-code"
                   className={cn(RESET_INPUT, "w-full text-center text-xl font-bold tracking-[0.5em] text-white placeholder:text-white/40")} />
               </GlassPill>
-              <GlassButton dark={dark} onClick={onSubmitVerify} disabled={loading}>{loading ? "Verifying..." : "Verify & Continue"}</GlassButton>
-              <GhostButton dark={dark} onClick={onResendCode}>Resend code</GhostButton>
+              <GlassButton onClick={onSubmitVerify} disabled={loading}>{loading ? "Verifying..." : "Verify & Continue"}</GlassButton>
+              <GhostButton onClick={onResendCode}>Resend code</GhostButton>
               <div className="text-center">
                 <TextLink onClick={() => props.onStepChange("form")}>
                   <span className="inline-flex items-center gap-1.5"><ArrowLeft className="w-3.5 h-3.5" /> Go back</span>
@@ -268,7 +298,7 @@ export function AuthComponent(props: AuthComponentProps) {
               </BlurFade>
 
               <BlurFade delay={0.08}>
-                <GlassPill dark={dark} className="flex items-center px-5 py-3.5">
+                <GlassPill className="flex items-center px-5 py-3.5">
                   <input type="email" value={email} onChange={e => onEmailChange(e.target.value)}
                     onKeyDown={e => e.key === "Enter" && handleSubmit()}
                     placeholder="Email address"
@@ -278,7 +308,7 @@ export function AuthComponent(props: AuthComponentProps) {
               </BlurFade>
 
               <BlurFade delay={0.14}>
-                <GlassPill dark={dark} className="flex items-center px-5 py-3.5 gap-2">
+                <GlassPill className="flex items-center px-5 py-3.5 gap-2">
                   <Lock className="w-4 h-4 text-white/60 flex-shrink-0" />
                   <input type={showPw ? "text" : "password"} value={password}
                     onChange={e => onPasswordChange(e.target.value)}
@@ -297,13 +327,13 @@ export function AuthComponent(props: AuthComponentProps) {
               </div>
 
               <BlurFade delay={0.2}>
-                <GlassButton dark={dark} onClick={handleSubmit} disabled={loading}>
+                <GlassButton onClick={handleSubmit} disabled={loading}>
                   {loading ? "Signing in..." : "Sign In"}
                 </GlassButton>
               </BlurFade>
 
               <div className="space-y-2 pt-1">
-                <GhostButton dark={dark} onClick={onToggleMode}>Don't have an account? Sign Up</GhostButton>
+                <GhostButton onClick={onToggleMode}>Don't have an account? Sign Up</GhostButton>
                 <div className="text-center pt-1">
                   <TextLink onClick={onContinueAsGuest} className="text-white/70">Continue without account →</TextLink>
                 </div>
@@ -318,16 +348,16 @@ export function AuthComponent(props: AuthComponentProps) {
               </BlurFade>
 
               <BlurFade delay={0.05} className="flex gap-2">
-                <GlassToggle dark={dark} active={accountType === "university"} onClick={() => onAccountTypeChange("university")}>
+                <GlassToggle active={accountType === "university"} onClick={() => onAccountTypeChange("university")}>
                   <GraduationCap className="w-3.5 h-3.5" /> University
                 </GlassToggle>
-                <GlassToggle dark={dark} active={accountType === "personal"} onClick={() => onAccountTypeChange("personal")}>
+                <GlassToggle active={accountType === "personal"} onClick={() => onAccountTypeChange("personal")}>
                   <Mail className="w-3.5 h-3.5" /> Personal Gmail
                 </GlassToggle>
               </BlurFade>
 
               <BlurFade delay={0.08}>
-                <GlassPill dark={dark} className="flex items-center px-5 py-3.5">
+                <GlassPill className="flex items-center px-5 py-3.5">
                   <input value={name} onChange={e => onNameChange(e.target.value)} placeholder="Your name"
                     name="name" id="name" autoComplete="name"
                     className={cn(RESET_INPUT, "flex-1 text-sm text-white placeholder:text-white/50")} />
@@ -335,7 +365,7 @@ export function AuthComponent(props: AuthComponentProps) {
               </BlurFade>
 
               <BlurFade delay={0.11}>
-                <GlassPill dark={dark} className="flex items-center px-5 py-3.5">
+                <GlassPill className="flex items-center px-5 py-3.5">
                   <input type="email" value={email} onChange={e => onEmailChange(e.target.value)}
                     placeholder={accountType === "university" ? "ZNU email (@med.znu.edu.eg)" : "you@gmail.com"}
                     name="email" id="signup-email" autoComplete="username" inputMode="email"
@@ -344,14 +374,14 @@ export function AuthComponent(props: AuthComponentProps) {
               </BlurFade>
 
               {accountType === "university" && universityCodePreview && (
-                <div className="relative isolate overflow-hidden text-xs text-sky-100 rounded-xl px-4 py-2">
-                  <GlassLayers dark={dark} tint="rgba(30,90,180,0.20)" />
+                <div className={cn(GLASS_BASE, "text-xs text-sky-100 rounded-xl px-4 py-2")}>
+                  <GlassLayers tint="rgba(30,90,180,0.20)" />
                   <span className="relative z-10">🎓 University Code: <strong>{universityCodePreview}</strong></span>
                 </div>
               )}
 
               <BlurFade delay={0.14}>
-                <GlassPill dark={dark} className="flex items-center px-5 py-3.5 gap-2">
+                <GlassPill className="flex items-center px-5 py-3.5 gap-2">
                   <Lock className="w-4 h-4 text-white/60 flex-shrink-0" />
                   <input type={showPw ? "text" : "password"} value={password}
                     onChange={e => onPasswordChange(e.target.value)}
@@ -365,7 +395,7 @@ export function AuthComponent(props: AuthComponentProps) {
               </BlurFade>
 
               <BlurFade delay={0.17}>
-                <GlassPill dark={dark} className="flex items-center px-5 py-3.5 gap-2">
+                <GlassPill className="flex items-center px-5 py-3.5 gap-2">
                   <Lock className="w-4 h-4 text-white/60 flex-shrink-0" />
                   <input type={showConfirmPw ? "text" : "password"} value={confirmPassword}
                     onChange={e => onConfirmPasswordChange(e.target.value)}
@@ -380,13 +410,13 @@ export function AuthComponent(props: AuthComponentProps) {
               </BlurFade>
 
               <BlurFade delay={0.2}>
-                <GlassButton dark={dark} onClick={handleSubmit} disabled={loading}>
+                <GlassButton onClick={handleSubmit} disabled={loading}>
                   {loading ? "Creating account..." : "Create Account"}
                 </GlassButton>
               </BlurFade>
 
               <div className="space-y-2 pt-1">
-                <GhostButton dark={dark} onClick={onToggleMode}>Already have an account? Sign In</GhostButton>
+                <GhostButton onClick={onToggleMode}>Already have an account? Sign In</GhostButton>
                 <div className="text-center pt-1">
                   <TextLink onClick={onContinueAsGuest} className="text-white/70">Continue without account →</TextLink>
                 </div>

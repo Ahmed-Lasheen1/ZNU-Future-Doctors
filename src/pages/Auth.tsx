@@ -5,7 +5,7 @@ import { containsProfanity } from "../lib/moderation"
 import { AuthComponent, type AccountType, type AuthMode, type AuthStep } from "@/components/ui/sign-up"
 import "../styles/shadcn-theme.css"
 
-export default function Auth({ dark }: { dark: boolean }) {
+export default function Auth() {
   const navigate = useNavigate()
   const [mode, setMode] = useState<AuthMode>("signin")
   const [step, setStep] = useState<AuthStep>("form")
@@ -108,7 +108,6 @@ export default function Auth({ dark }: { dark: boolean }) {
 
   return (
     <AuthComponent
-      dark={dark}
       mode={mode}
       onToggleMode={() => { setMode(mode === "signup" ? "signin" : "signup"); resetAll() }}
       step={step}

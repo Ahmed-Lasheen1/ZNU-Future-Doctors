@@ -7,7 +7,6 @@ import ErrorBanner from '../components/ErrorBanner'
 import LiquidGlassCard from '@/components/ui/liquid-glass-card'
 import PulseBackground from '../components/pulse/PulseBackground'
 import PulseGlassRow from '../components/pulse/PulseGlassRow'
-import AutoGrid from '../components/AutoGrid'
 import SummaryOverlay from '../components/SummaryOverlay'
 import { useToast } from '../components/ToastProvider'
 import { useModules } from '../contexts'
@@ -16,6 +15,8 @@ import { ModuleIcon, ExamIcon, NotesIcon } from '../lib/medicalIcons'
 interface PageModule { id: string; name: string; icon?: string | null; color: string }
 interface Subject { id: string; name: string; icon?: string | null; color?: string | null }
 interface Lesson { id: string; title: string; icon?: string | null; summary_url?: string | null }
+
+function gridCols(n: number) { return n === 1 ? 1 : n === 2 ? 2 : n === 3 ? 3 : 4 }
 
 export default function SubjectPage({ dark }: { dark: boolean }) {
   const pt = getPulseTheme(dark)
@@ -135,7 +136,7 @@ export default function SubjectPage({ dark }: { dark: boolean }) {
         )}
 
         {lessons.length > 0 && (
-          <AutoGrid>
+          <div className="auto-grid" style={{ ['--auto-grid-cols' as any]: gridCols(lessons.length) }}>
             {lessons.map((lesson, i) => (
               <LiquidGlassCard key={lesson.id} dark={dark} delay={i * 80}
                 onClick={() => navigate(`/module/${moduleId}/subject/${subjectId}/lesson/${lesson.id}`)}
@@ -146,7 +147,7 @@ export default function SubjectPage({ dark }: { dark: boolean }) {
                 <div style={{ ...pulseType.cardTitle, fontSize: 'clamp(13px, 1.1vw, 16px)', color: pt.textPrimary }}>{lesson.title}</div>
               </LiquidGlassCard>
             ))}
-          </AutoGrid>
+          </div>
         )}
       </div>
     </div>

@@ -7,7 +7,6 @@ import ErrorBanner from '../components/ErrorBanner'
 import LiquidGlassCard from '@/components/ui/liquid-glass-card'
 import PulseBackground from '../components/pulse/PulseBackground'
 import PulseGlassRow from '../components/pulse/PulseGlassRow'
-import AutoGrid from '../components/AutoGrid'
 import SummaryOverlay from '../components/SummaryOverlay'
 import { useModules } from '../contexts'
 import { fetchModuleStages, stageMetaFrom } from '../lib/moduleStages'
@@ -18,6 +17,8 @@ interface PageModule { id: string; name: string; icon?: string | null; color: st
 interface PageSubject { id: string; module_id: string; name: string; icon?: string | null; color?: string | null }
 interface ExamStage { value: string; title: string; emoji: string; color: string }
 interface Summary { id: string; title: string; url: string }
+
+function gridCols(n: number) { return n === 1 ? 1 : n === 2 ? 2 : n === 3 ? 3 : 4 }
 
 export default function StagePage({ dark }: { dark: boolean }) {
   const pt = getPulseTheme(dark)
@@ -117,7 +118,7 @@ export default function StagePage({ dark }: { dark: boolean }) {
           <div style={{ marginBottom: 32 }}>
             <h2 style={{ ...pulseType.sectionLabel, color: pt.textMuted, marginBottom: 16 }}>📁 Study Materials</h2>
             {filteredFileCards.length > 0 && (
-              <AutoGrid>
+              <div className="auto-grid" style={{ ['--auto-grid-cols' as any]: gridCols(filteredFileCards.length) }}>
                 {filteredFileCards.map((card, i) => (
                   <LiquidGlassCard key={i} dark={dark} delay={i * 80}
                     onClick={() => navigate(`/files?type=${card.type}&module=${moduleId}`)}
@@ -126,7 +127,7 @@ export default function StagePage({ dark }: { dark: boolean }) {
                     <div style={{ ...pulseType.cardTitle, fontSize: 'clamp(13px, 1.1vw, 16px)', color: pt.textPrimary }}>{card.title}</div>
                   </LiquidGlassCard>
                 ))}
-              </AutoGrid>
+              </div>
             )}
 
             {driveUrl && (
@@ -152,7 +153,7 @@ export default function StagePage({ dark }: { dark: boolean }) {
         {subjects.length > 0 && (
           <div style={{ marginBottom: 32 }}>
             <h2 style={{ ...pulseType.sectionLabel, color: pt.textMuted, marginBottom: 16 }}>📖 Study by Lesson</h2>
-            <AutoGrid>
+            <div className="auto-grid" style={{ ['--auto-grid-cols' as any]: gridCols(subjects.length) }}>
               {subjects.map((sub, i) => (
                 <LiquidGlassCard key={sub.id} dark={dark} delay={i * 80}
                   onClick={() => navigate(`/module/${moduleId}/subject/${sub.id}`)}
@@ -163,7 +164,7 @@ export default function StagePage({ dark }: { dark: boolean }) {
                   <div style={{ ...pulseType.cardTitle, fontSize: 'clamp(13px, 1.1vw, 16px)', color: pt.textPrimary }}>{sub.name}</div>
                 </LiquidGlassCard>
               ))}
-            </AutoGrid>
+            </div>
           </div>
         )}
 
