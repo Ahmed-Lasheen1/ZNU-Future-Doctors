@@ -153,7 +153,7 @@ export default function Home({ dark, toggleTheme }) {
   const pt = getPulseTheme(dark)
   const navigate = useNavigate()
   const { user, profile } = useAuth()
-  const { modules, modulesError } = useModules()
+  const { modules, modulesLoaded, modulesError } = useModules()
   const [announcement, setAnnouncement] = useState('')
   const [streak, setStreak] = useState(0)
   const [pausedExam, setPausedExam] = useState(null)
@@ -443,8 +443,25 @@ export default function Home({ dark, toggleTheme }) {
                   Active Modules
                 </motion.div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                  {activeModules.length === 0 && (
-                    <div style={{ color: pt.sub, fontSize: 13 }}>No active modules yet.</div>
+                  {/* Gated on modulesLoaded, not just an empty array —
+                      `modules` starts as [] before the Supabase fetch
+                      resolves, so activeModules.length === 0 is briefly
+                      true on every load even when modules genuinely
+                      exist. Without this check, this message flashed
+                      in instantly (it has no entrance delay of its
+                      own) then vanished the moment real data arrived —
+                      exactly the "shows first, then disappears" bug.
+                      Animated with the same timing as the rest of this
+                      group so a truly-empty state still fits the
+                      page's reveal choreography instead of popping in
+                      unstyled. */}
+                  {modulesLoaded && activeModules.length === 0 && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 16 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.7, delay: ACTIVE_MODULES_START }}
+                      style={{ color: pt.sub, fontSize: 13 }}
+                    >No active modules yet.</motion.div>
                   )}
                   {activeModules.map((mod, i) => (
                     <PulseCard key={mod.id} dark={dark} delay={msFor(ACTIVE_MODULES_START) + i * 110} accent={mod.color}
