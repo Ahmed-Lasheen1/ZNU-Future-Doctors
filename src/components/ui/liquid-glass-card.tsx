@@ -1,11 +1,10 @@
 "use client"
 
-import { useId, type CSSProperties, type ReactNode, type KeyboardEvent } from "react"
+import { type CSSProperties, type ReactNode, type KeyboardEvent } from "react"
 import { motion } from "framer-motion"
 import { cn } from "@/lib/utils"
 import { ENTRANCE_PAUSE } from "@/lib/pulseMotion"
-import LiquidGlassFilter from "@/components/LiquidGlassFilter"
-import { liquidGlassShadow, liquidGlassBackdrop } from "@/lib/liquidGlass"
+import { liquidGlassShadow, liquidGlassBackdrop, liquidGlassSheenStyle } from "@/lib/liquidGlass"
 
 interface LiquidGlassCardProps {
   children: ReactNode
@@ -25,8 +24,6 @@ export default function LiquidGlassCard({
   style = {},
 }: LiquidGlassCardProps) {
   const interactive = !!onClick
-  const rawId = useId().replace(/[^a-zA-Z0-9]/g, "")
-  const filterId = `liquid-glass-${rawId}`
 
   function handleKeyDown(e: KeyboardEvent<HTMLDivElement>) {
     if (!interactive) return
@@ -55,7 +52,7 @@ export default function LiquidGlassCard({
           "relative isolate overflow-hidden transition-transform duration-300",
           interactive && "hover:scale-105"
         )}
-        style={{ borderRadius, height: "100%" }}
+        style={{ borderRadius, height: "100%", ...liquidGlassBackdrop() }}
       >
         {/* Lens-shadow/rim layer */}
         <div
@@ -64,18 +61,17 @@ export default function LiquidGlassCard({
           style={{ boxShadow: liquidGlassShadow(!!dark) }}
         />
 
-        {/* Distorted glass backdrop — the actual "liquid" refraction */}
+        {/* Animated sheen — see src/lib/liquidGlass.js for why this
+            replaces the old SVG-distortion approach. */}
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-0 -z-10 overflow-hidden rounded-[inherit]"
-          style={liquidGlassBackdrop(filterId)}
+          className="liquid-sheen pointer-events-none absolute z-0"
+          style={liquidGlassSheenStyle(!!dark)}
         />
 
         <div className="relative z-10" style={contentStyle}>
           {children}
         </div>
-
-        <LiquidGlassFilter id={filterId} />
       </div>
     </motion.div>
   )

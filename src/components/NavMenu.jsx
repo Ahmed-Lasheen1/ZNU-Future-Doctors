@@ -1,11 +1,10 @@
-import { useState, useRef, useId, useEffect, useLayoutEffect } from 'react'
+import { useState, useRef, useEffect, useLayoutEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '../contexts'
 import { MenuToggleIcon } from './ui/menu-toggle-icon'
 import { getPulseTheme, pulseFonts } from '../premiumTheme'
-import LiquidGlassFilter from './LiquidGlassFilter'
-import { liquidGlassShadow, liquidGlassBackdrop } from '../lib/liquidGlass'
+import { liquidGlassShadow, liquidGlassBackdrop, liquidGlassSheenStyle } from '../lib/liquidGlass'
 
 // Nav list — same as before, minus "Review". Leaderboard is reachable
 // here too (as a normal nav item) in addition to the dedicated
@@ -25,13 +24,8 @@ function initialOf(name) {
 
 // Small glass dropdown, matching the "liquid glass" material used on
 // Home's LiquidGlassCard (src/components/ui/liquid-glass-card.tsx) —
-// same feTurbulence/feDisplacementMap recipe, shared via
+// same blur+saturate backdrop and animated sheen, shared via
 // src/lib/liquidGlass.js so the two never drift out of sync.
-//
-// Layering matches LiquidGlassCard exactly: backdrop-distortion layer,
-// tint layer (the part that actually hides page content behind it —
-// see liquidGlass.js for why this exists), lens-shadow layer, then
-// real content on top.
 //
 // The trigger button stays visible after opening — the panel is a
 // normal `position: absolute` popover anchored to it, not a portal —
@@ -51,13 +45,6 @@ export default function NavMenu({ dark, toggleTheme, align = 'left' }) {
   const contentRef = useRef(null)
   const [panelHeight, setPanelHeight] = useState(0)
   const pt = getPulseTheme(dark)
-
-  // Unique id for this menu instance's glass distortion filter — a
-  // page can have more than one NavMenu mounted at once, so a
-  // hard-coded id would make a second instance's backdrop-filter
-  // silently reference the first instance's filter.
-  const rawFilterId = useId().replace(/[^a-zA-Z0-9]/g, '')
-  const filterId = `navmenu-glass-${rawFilterId}`
   const panelRadius = 20
 
   // Measures the panel's real content height so the outer wrapper can
@@ -164,24 +151,21 @@ export default function NavMenu({ dark, toggleTheme, align = 'left' }) {
               overflow: 'hidden',
               zIndex: 2000,
               willChange: 'height, opacity',
+              ...liquidGlassBackdrop(),
             }}
           >
-            {/* Same layer structure as LiquidGlassCard: backdrop-
-                distortion, tint (actual hiding), lens-shadow, content. */}
-                        <div style={{ position: 'relative', borderRadius: panelRadius, height: '100%' }}>
+            <div style={{ position: 'relative', borderRadius: panelRadius, height: '100%' }}>
+              {/* Lens-shadow/rim layer */}
               <div
                 aria-hidden
                 className="pointer-events-none"
                 style={{ position: 'absolute', inset: 0, zIndex: 0, borderRadius: panelRadius, boxShadow: liquidGlassShadow(dark) }}
               />
+              {/* Animated sheen — same recipe as LiquidGlassCard */}
               <div
                 aria-hidden
-                className="pointer-events-none"
-                style={{
-                  position: 'absolute', inset: 0, zIndex: -1,
-                  overflow: 'hidden', borderRadius: panelRadius,
-                  ...liquidGlassBackdrop(filterId)
-                }}
+                className="liquid-sheen pointer-events-none"
+                style={{ position: 'absolute', zIndex: 0, ...liquidGlassSheenStyle(dark) }}
               />
 
               <div ref={contentRef} style={{
@@ -282,8 +266,6 @@ export default function NavMenu({ dark, toggleTheme, align = 'left' }) {
           </motion.div>
         )}
       </AnimatePresence>
-
-      <LiquidGlassFilter id={filterId} />
     </div>
   )
 }

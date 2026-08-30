@@ -160,3 +160,23 @@ h1, h2, h3 {
     display: none;
   }
 }
+/* ============================================================
+   Liquid-glass sheen — a slow-moving soft highlight blob used by
+   LiquidGlassCard (Home page cards) and NavMenu's dropdown panel to
+   give the glass a "liquid" quality without relying on live pixel
+   distortion (see src/lib/liquidGlass.js for why). Defined once here
+   so every card/panel shares one keyframe definition instead of each
+   needing its own <style> tag.
+   ============================================================ */
+@keyframes liquidSheenMove {
+  0%   { transform: translate(-10%, -10%) rotate(0deg); }
+  50%  { transform: translate(10%, 10%) rotate(180deg); }
+  100% { transform: translate(-10%, -10%) rotate(360deg); }
+}
+
+.liquid-sheen {
+  inset: -40%;
+  border-radius: 50%;
+  animation: liquidSheenMove 14s ease-in-out infinite;
+  will-change: transform;
+}

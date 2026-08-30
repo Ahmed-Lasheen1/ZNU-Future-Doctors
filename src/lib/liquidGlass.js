@@ -2,13 +2,23 @@
 // LiquidGlassCard (Home page cards) and the inline-style NavMenu
 // dropdown panel, so tuning the glass look only ever happens here.
 //
-// Matches the reference liquid-glass-button spec: no background tint,
-// no extra fallback blur layered on top of the SVG filter — the glass
-// look comes entirely from the backdrop distortion + the inset "lens"
-// shadow below it. Safari doesn't support the SVG url() filter
-// reference inside backdrop-filter at all, so its -webkit- prefixed
-// property falls back to a plain blur (no distortion in Safari — a
-// real browser limitation) rather than showing nothing.
+// APPROACH CHANGE: previously this used backdrop-filter: url(#svg-id)
+// to literally warp/distort the pixels behind the glass via an SVG
+// feTurbulence/feDisplacementMap filter. That's the "real" liquid-glass
+// technique, but browser support for referencing an SVG filter from
+// backdrop-filter is inconsistent — unsupported in Firefox/Safari, and
+// inconsistent across Chromium versions — so it either didn't render
+// at all, or rendered differently per browser, no matter how the
+// filter's own parameters were tuned.
+//
+// This version uses only `blur()` + `saturate()`, which are
+// universally supported standard backdrop-filter functions — this is
+// what actually hides/obscures background content, reliably, on every
+// browser. The "liquid" character now comes from a separate animated
+// sheen layer (see liquidGlassSheenStyle + the .liquid-sheen keyframes
+// in src/index.css) — a slow-moving soft highlight, which is how most
+// production "liquid glass" UIs fake the effect without relying on
+// live pixel distortion.
 
 export const LIQUID_GLASS_SHADOW_DARK =
   '0 0 6px rgba(0,0,0,0.03), 0 2px 6px rgba(0,0,0,0.08), inset 3px 3px 0.5px -3px rgba(0,0,0,0.9), inset -3px -3px 0.5px -3px rgba(0,0,0,0.85), inset 1px 1px 1px -0.5px rgba(0,0,0,0.6), inset -1px -1px 1px -0.5px rgba(0,0,0,0.6), inset 0 0 6px 6px rgba(0,0,0,0.12), inset 0 0 2px 2px rgba(0,0,0,0.06), 0 0 12px rgba(255,255,255,0.15)'
@@ -20,9 +30,32 @@ export function liquidGlassShadow(dark) {
   return dark ? LIQUID_GLASS_SHADOW_DARK : LIQUID_GLASS_SHADOW_LIGHT
 }
 
-export function liquidGlassBackdrop(filterId) {
+// Real, universally-supported backdrop blur — this is what actually
+// obscures whatever is behind the glass. saturate(180%) is what gives
+// frosted glass its characteristic "richer colors showing through a
+// hazy pane" look rather than a flat gray blur.
+export function liquidGlassBackdrop() {
   return {
-    backdropFilter: `url(#${filterId})`,
-    WebkitBackdropFilter: 'blur(10px)',
+    backdropFilter: 'blur(20px) saturate(180%)',
+    WebkitBackdropFilter: 'blur(20px) saturate(180%)',
   }
+}
+
+// The decorative "liquid" layer — a soft, off-center highlight blob
+// that slowly drifts and rotates (see .liquid-sheen in index.css).
+// mix-blend-mode differs by theme because `overlay` and `soft-light`
+// behave asymmetrically on light vs. dark base colors — soft-light
+// reads as a gentle highlight on light surfaces, overlay preserves
+// enough contrast to still look like a highlight (not a wash) on dark
+// surfaces.
+export function liquidGlassSheenStyle(dark) {
+  return dark
+    ? {
+        background: 'radial-gradient(circle at 30% 30%, rgba(255,255,255,0.22), transparent 60%)',
+        mixBlendMode: 'overlay',
+      }
+    : {
+        background: 'radial-gradient(circle at 30% 30%, rgba(255,255,255,0.55), transparent 60%)',
+        mixBlendMode: 'soft-light',
+      }
 }
