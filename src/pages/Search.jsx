@@ -4,6 +4,7 @@ import { supabase } from '../supabase'
 import { getTheme } from '../theme'
 import { useModules } from '../App'
 import ErrorBanner from '../components/ErrorBanner'
+import { ModuleIcon } from '../lib/medicalIcons'
 
 const typeMeta = {
   module: { icon: '🏥', label: 'Module', color: '#38bdf8' },
@@ -152,9 +153,14 @@ export default function Search({ dark }) {
                     color: c.text, fontWeight: 600, fontSize: 14,
                     overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'
                   }}>{r.title}</div>
-                  <div style={{ color: c.sub, fontSize: 12, marginTop: 2 }}>
-                    {meta.label}{r.module ? ` · ${r.module.icon} ${r.module.name}` : ''}
-                  </div>
+                  <div style={{ color: c.sub, fontSize: 12, marginTop: 2, display: 'flex', alignItems: 'center', gap: 4 }}>
+                    {meta.label}
+                    {r.module && (
+                     <>
+                      · <ModuleIcon value={r.module.icon} size={12} color={c.sub} /> {r.module.name}
+                    </>
+                  )}
+                </div>
                 </div>
               </div>
             )
