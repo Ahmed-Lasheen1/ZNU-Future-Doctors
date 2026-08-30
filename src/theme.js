@@ -21,10 +21,9 @@ export const brand = {
   teal: '#34d399',
 }
 
-// Theme-aware neutral text tiers — same hierarchy in both modes, only
-// the actual hex values change per theme. Matches the values used
-// across the Pulse glass pages (Home, Checklist) so the whole app
-// reads as one consistent typographic voice.
+// Theme-aware neutral text tiers — matches the Dark/Light Glass Card
+// palette used across the Pulse pages (Home, Checklist), so a heading
+// on Profile/MCQ/Admin reads with the same contrast as one on Home.
 export function getTheme(dark) {
   return {
     card: dark ? 'linear-gradient(135deg, #1e293b, #0f2540)' : '#fff',
@@ -32,9 +31,13 @@ export function getTheme(dark) {
     border: dark ? '#1e3a5f' : '#e2e8f0',
 
     // Primary / secondary / muted text tiers
-    text: dark ? '#F4F7FB' : '#172033',       // primary
-    sub: dark ? '#D6E0EC' : '#40516A',        // secondary
-    textMuted: dark ? '#AFC0D3' : '#687A91',  // muted / metadata
+    text: dark ? '#FFFFFF' : '#0F172A',       // primary
+    sub: dark ? '#94A3B8' : '#475569',        // secondary
+    textMuted: dark ? '#94A3B8' : '#475569',  // muted / metadata
+
+    // Theme-aware accent, for anything that used to hardcode a blue
+    // link/highlight color inline.
+    accent: dark ? '#38BDF8' : '#2563EB',
 
     input: dark ? '#0f172a' : '#f8fafc',
     bgPage: dark ? '#0f172a' : '#f8fafc',
