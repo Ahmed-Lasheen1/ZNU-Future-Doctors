@@ -50,7 +50,7 @@ function PageLoader({ dark }) {
   const c = getTheme(dark)
   return (
     <div style={{
-      minHeight: '50vh', display: 'flex', alignItems: 'center', justifyContent: 'center'
+      minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center'
     }}>
       <div style={{ color: c.sub, fontSize: 14, fontWeight: 600 }}>Loading...</div>
     </div>
