@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../supabase'
 import { useAuth, useModules } from '../contexts'
@@ -13,6 +13,11 @@ import { useToast } from '../components/ToastProvider'
 import type { ChecklistTask } from '../types/checklist'
 
 const statNumStyle = { fontFamily: pulseFonts.display, fontWeight: 800, fontSize: 30 }
+
+// Consistent vertical rhythm between the major sections on this page —
+// was a mix of 16/20/24 before, which is where a lot of the "off"
+// feeling was coming from.
+const SECTION_GAP = 18
 
 export default function Checklist({ dark }: { dark: boolean }) {
   const { user } = useAuth()
@@ -36,6 +41,19 @@ export default function Checklist({ dark }: { dark: boolean }) {
   }, [modulesLoaded, modules])
 
   useEffect(() => { if (activeModule) fetchTasks() }, [activeModule, user])
+
+  // "Signed in — synced to your account" used to be a permanent glass
+  // card sitting on the page at all times. That's status the student
+  // only needs confirming once, not a fixture — now it's a one-time
+  // toast, fired the first time we know `user` is truthy on this page
+  // visit (guarded so it can't refire on every re-render/task change).
+  const notifiedSignedInRef = useRef(false)
+  useEffect(() => {
+    if (user && !notifiedSignedInRef.current) {
+      notifiedSignedInRef.current = true
+      showToast('✅ Signed in — checklist synced to your account')
+    }
+  }, [user, showToast])
 
   async function fetchTasks() {
     if (user) {
@@ -87,10 +105,6 @@ export default function Checklist({ dark }: { dark: boolean }) {
     if (!user) localStorage.setItem(`checklist_${activeModule}`, JSON.stringify(updated))
   }
 
-  // Parses a "YYYY-MM-DD" date-input value as a LOCAL calendar date —
-  // same reasoning as the original Checklist.jsx: `new Date(dateString)`
-  // treats a bare date string as UTC midnight, which can shift the day
-  // boundary by the user's UTC offset.
   function parseLocalDate(dateStr: string) {
     const [y, m, d] = dateStr.split('-').map(Number)
     return new Date(y, m - 1, d)
@@ -110,9 +124,6 @@ export default function Checklist({ dark }: { dark: boolean }) {
     return diff >= 0 && diff <= 2 * 24 * 60 * 60 * 1000
   }
 
-  // Fires a local browser notification (only if permission was already
-  // granted) at most once per day, summarizing any overdue/due-soon
-  // tasks. Only triggers while the app is actually open.
   useEffect(() => {
     if (!('Notification' in window) || Notification.permission !== 'granted') return
     if (tasks.length === 0) return
@@ -142,7 +153,7 @@ export default function Checklist({ dark }: { dark: boolean }) {
 
         {modulesError && <ErrorBanner />}
 
-        <div style={{ textAlign: 'center', padding: '10px 0 24px' }}>
+        <div style={{ textAlign: 'center', padding: '10px 0 20px' }}>
           <div style={{ fontSize: 40, marginBottom: 8 }}>🎯</div>
           <h1 style={{
             fontFamily: pulseFonts.display, fontWeight: 800, fontSize: 24,
@@ -151,26 +162,45 @@ export default function Checklist({ dark }: { dark: boolean }) {
           <p style={{ color: pt.sub, fontSize: 13 }}>Track what's left before exam day</p>
         </div>
 
-        <NotifyPermissionButton dark={dark} label="🔔 Enable deadline reminders" />
+        <div style={{ marginBottom: SECTION_GAP }}>
+          <NotifyPermissionButton dark={dark} label="🔔 Enable deadline reminders" />
+        </div>
 
+        {/* Only shown for guests now — signed-in confirmation moved to
+            a one-time toast (see notifiedSignedInRef above), so this
+            section no longer takes up permanent space once signed in. */}
         {!user && (
-          <LiquidGlassCard dark={dark} delay={0} style={{ padding: '12px 18px', marginBottom: 16, textAlign: 'center' }}>
+          <LiquidGlassCard dark={dark} delay={0} style={{ padding: '12px 18px', marginBottom: SECTION_GAP, textAlign: 'center' }}>
             <span style={{ color: pt.cobalt, fontSize: 13, fontWeight: 600 }}>
               💡 <span style={{ cursor: 'pointer', textDecoration: 'underline' }} onClick={() => navigate('/auth')}>Sign in</span> to save your checklist across devices
             </span>
           </LiquidGlassCard>
         )}
 
-        {user && (
-          <LiquidGlassCard dark={dark} delay={0} style={{ padding: '12px 18px', marginBottom: 16, textAlign: 'center' }}>
-            <span style={{ color: pt.cobalt, fontSize: 13, fontWeight: 700 }}>✅ Signed in — checklist synced to your account</span>
-          </LiquidGlassCard>
-        )}
-
-        <ModuleTabs modules={activeModulesList} activeModule={activeModule} onSelect={setActiveModule} dark={dark} />
+        {/* Module row — centered and wraps into its own natural grid
+            instead of scrolling off to the left with empty space on
+            the right. ModuleTabs is shared with other pages, so this
+            is done via a style override rather than editing the
+            shared component (which would affect Schedule/MCQ/Files
+            too). */}
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: SECTION_GAP }}>
+          <ModuleTabs
+            modules={activeModulesList}
+            activeModule={activeModule}
+            onSelect={setActiveModule}
+            dark={dark}
+            style={{
+              justifyContent: 'center',
+              flexWrap: 'wrap',
+              overflowX: 'visible',
+              marginBottom: 0,
+              rowGap: 10,
+            }}
+          />
+        </div>
 
         {totalTasks > 0 && (
-          <LiquidGlassCard dark={dark} delay={80} style={{ padding: '20px 22px', marginBottom: 20 }}>
+          <LiquidGlassCard dark={dark} delay={80} style={{ padding: '20px 22px', marginBottom: SECTION_GAP }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 10 }}>
               <span style={{ color: pt.text, fontWeight: 700, fontSize: 14 }}>Overall Progress</span>
               <span style={{ ...statNumStyle, fontSize: 20, color: pt.amber }}>{doneTasks}/{totalTasks}</span>
@@ -188,7 +218,7 @@ export default function Checklist({ dark }: { dark: boolean }) {
           </LiquidGlassCard>
         )}
 
-        <LiquidGlassCard dark={dark} delay={140} style={{ padding: '18px 20px', marginBottom: 20 }}>
+        <LiquidGlassCard dark={dark} delay={140} style={{ padding: '18px 20px', marginBottom: SECTION_GAP }}>
           <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
             <input
               placeholder="Add a topic to study..."
