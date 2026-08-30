@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '../contexts'
 import { MenuToggleIcon } from './ui/menu-toggle-icon'
 import { getPulseTheme, pulseFonts } from '../premiumTheme'
-import { liquidGlassShadow, liquidGlassBackdrop } from '../lib/liquidGlass'
+import { liquidGlassShadow, liquidGlassBackdrop, liquidGlassTint } from '../lib/liquidGlass'
 
 // Nav list — same as before, minus "Review". Leaderboard is reachable
 // here too (as a normal nav item) in addition to the dedicated
@@ -160,6 +160,18 @@ export default function NavMenu({ dark, toggleTheme, align = 'left' }) {
                 aria-hidden
                 className="pointer-events-none"
                 style={{ position: 'absolute', inset: 0, zIndex: 0, borderRadius: panelRadius, boxShadow: liquidGlassShadow(dark) }}
+              />
+                            {/* Lens-shadow/rim layer */}
+              <div
+                aria-hidden
+                className="pointer-events-none"
+                style={{ position: 'absolute', inset: 0, zIndex: 0, borderRadius: panelRadius, boxShadow: liquidGlassShadow(dark) }}
+              />
+              {/* Neutral tint — see liquid-glass-card.tsx for why */}
+              <div
+                aria-hidden
+                className="pointer-events-none"
+                style={{ position: 'absolute', inset: 0, zIndex: 0, borderRadius: panelRadius, background: liquidGlassTint(dark) }}
               />
               
 

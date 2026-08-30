@@ -4,7 +4,7 @@ import { type CSSProperties, type ReactNode, type KeyboardEvent } from "react"
 import { motion } from "framer-motion"
 import { cn } from "@/lib/utils"
 import { ENTRANCE_PAUSE } from "@/lib/pulseMotion"
-import { liquidGlassShadow, liquidGlassBackdrop } from "@/lib/liquidGlass"
+import { liquidGlassShadow, liquidGlassBackdrop, liquidGlassTint } from "@/lib/liquidGlass"
 
 interface LiquidGlassCardProps {
   children: ReactNode
@@ -59,6 +59,15 @@ export default function LiquidGlassCard({
           aria-hidden
           className="pointer-events-none absolute inset-0 z-0 rounded-[inherit]"
           style={{ boxShadow: liquidGlassShadow(!!dark) }}
+        />
+                {/* Neutral tint — pulls the glass color back toward grey/
+            white instead of inheriting the page background's hue
+            (saturate() in liquidGlassBackdrop amplifies whatever
+            color sits behind the glass). See liquidGlass.js. */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 z-0 rounded-[inherit]"
+          style={{ background: liquidGlassTint(!!dark) }}
         />
 
         <div className="relative z-10" style={contentStyle}>
