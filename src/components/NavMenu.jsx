@@ -55,7 +55,35 @@ function GlassRow({ dark, radius = ROW_RADIUS, style = {}, hoverBg, children, on
   )
 }
 
+// ── Per-character flip-reveal label ─────────────────────────────────
+function CharFlipLabel({ text, color, fontSize = 13, fontWeight = 600 }) {
+  const [hovered, setHovered] = useState(false)
+  const animatingRef = useRef(false)
+  const pendingLeaveRef = useRef(false)
+  const chars = text.split('')
+  const lockDuration = 30 * chars.length + 300
 
+  const handleEnter = useCallback(() => {
+    pendingLeaveRef.current = false
+    if (hovered) return
+    setHovered(true)
+    animatingRef.current = true
+    setTimeout(() => {
+      animatingRef.current = false
+      if (pendingLeaveRef.current) {
+        pendingLeaveRef.current = false
+        setHovered(false)
+      }
+    }, lockDuration)
+  }, [hovered, lockDuration])
+
+  const handleLeave = useCallback(() => {
+    if (animatingRef.current) {
+      pendingLeaveRef.current = true
+    } else {
+      setHovered(false)
+    }
+  }, [])
 
   return (
     <span
@@ -86,6 +114,7 @@ function GlassRow({ dark, radius = ROW_RADIUS, style = {}, hoverBg, children, on
       ))}
     </span>
   )
+}
 
 export default function NavMenu({ dark, toggleTheme, align = 'left' }) {
   const [open, setOpen] = useState(false)
@@ -296,9 +325,7 @@ export default function NavMenu({ dark, toggleTheme, align = 'left' }) {
                       onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); goTo(item.href) } }}
                       style={{ cursor: 'pointer' }}>
                       <div style={{ padding: '10px 12px' }}>
-                        <span style={{ color: pt.text, fontSize: 13, fontWeight: 600, fontFamily: 'inherit' }}>
-                          {item.label}
-                        </span>
+                        <CharFlipLabel text={item.label} color={pt.text} fontSize={13} fontWeight={600} />
                       </div>
                     </GlassRow>
                   </motion.div>
@@ -320,10 +347,8 @@ export default function NavMenu({ dark, toggleTheme, align = 'left' }) {
                       onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleSignOut() } }}
                       style={{ cursor: 'pointer' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px' }}>
-                        🚪 <span style={{ color: pt.danger, fontSize: 13, fontWeight: 700, fontFamily: 'inherit' }}>
-                          Sign Out
-                       </span>
-                     </div>
+                        🚪 <CharFlipLabel text="Sign Out" color={pt.danger} fontSize={13} fontWeight={700} />
+                      </div>
                     </GlassRow>
                   </motion.div>
                 )}
