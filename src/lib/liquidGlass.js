@@ -27,17 +27,18 @@ export function liquidGlassShadow(dark) {
   return dark ? LIQUID_GLASS_SHADOW_DARK : LIQUID_GLASS_SHADOW_LIGHT
 }
 
-// Chains the SVG turbulence/displacement filter with a very light
-// blur — just enough to soften filter edge artifacts, NOT enough to
-// wash out the turbulence warp itself (the previous 4px value was
-// smoothing the distortion away almost entirely). Safari ignores the
-// `url(#id)` reference inside backdrop-filter, so its -webkit- prefixed
-// property is set to a plain blur as a graceful fallback (no
-// distortion in Safari — that's a real browser limitation, not a bug
-// here) instead of no blur at all.
+// Chains the SVG turbulence/displacement filter with a real blur pass
+// (not just a 1px edge-softener) — the filter's own internal blur
+// steps handle the "liquid" look, but this outer blur is what actually
+// keeps background content from being legible through the glass.
+// Safari ignores the `url(#id)` reference inside backdrop-filter
+// entirely, so its -webkit- prefixed property is set to a stronger
+// plain blur as a graceful fallback (no distortion in Safari — that's
+// a real browser limitation, not a bug here) so it still reads as
+// "frosted" there too, just without the warp.
 export function liquidGlassBackdrop(filterId) {
   return {
-    backdropFilter: `url(#${filterId}) blur(1px)`,
-    WebkitBackdropFilter: 'blur(10px)',
+    backdropFilter: `url(#${filterId}) blur(6px)`,
+    WebkitBackdropFilter: 'blur(16px)',
   }
 }
