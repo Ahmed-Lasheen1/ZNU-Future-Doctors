@@ -15,6 +15,7 @@ import { ENTRANCE_PAUSE } from '../lib/pulseMotion'
 import NotifyPermissionButton from '../components/NotifyPermissionButton'
 import LiquidGlassCard from '@/components/ui/liquid-glass-card'
 import EcgHero from '../components/pulse/EcgHero'
+import { ScheduleIcon, ChecklistIcon, AnonQAIcon, LeaderboardIcon } from '@/components/ui/tool-icons'
 
 const LOGO_SRC = '/icon-192.png'
 
@@ -31,10 +32,10 @@ const LOGO_BG = [
 ].join(' ')
 
 const toolCards = [
-  { emoji: '📅', title: 'Schedules', sub: 'Plan your study time', to: '/schedule', accent: 'indigo' },
-  { emoji: '🎯', title: 'Checklist', sub: 'Track your progress', to: '/checklist', accent: 'amber' },
-  { emoji: '💬', title: 'Anonymous Q&A', sub: 'Ask. Learn. Grow.', to: '/anon-questions', accent: 'indigo' },
-  { emoji: '🏆', title: 'Leaderboard', sub: 'See where you stand', to: '/profile?tab=leaderboard', accent: 'amber' },
+  { Icon: ScheduleIcon, title: 'Schedules', sub: 'Plan your study time', to: '/schedule', accent: 'indigo' },
+  { Icon: ChecklistIcon, title: 'Checklist', sub: 'Track your progress', to: '/checklist', accent: 'amber' },
+  { Icon: AnonQAIcon, title: 'Anonymous Q&A', sub: 'Ask. Learn. Grow.', to: '/anon-questions', accent: 'indigo' },
+  { Icon: LeaderboardIcon, title: 'Leaderboard', sub: 'See where you stand', to: '/profile?tab=leaderboard', accent: 'amber' },
 ]
 
 const MODULE_BLURBS = {
@@ -490,25 +491,28 @@ export default function Home({ dark, toggleTheme }) {
             <div className="pulse-tools-grid">
               {toolCards.map((card, i) => {
                 const accentColor = card.accent === 'amber' ? pt.amber : pt.indigo
-                return (
-                  <LiquidGlassCard key={i} dark={dark} delay={msFor(TOOLS_START) + i * 110}
-                    onClick={() => navigate(card.to)}
-                    style={{ borderRadius: 22, padding: '18px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
-                      <div style={{
-                        width: 38, height: 38, borderRadius: '50%', flexShrink: 0,
-                        background: `${accentColor}22`,
-                        display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18
-                      }}>{card.emoji}</div>
-                      <div style={{ minWidth: 0 }}>
-                        <div style={{ color: pt.text, fontWeight: 700, fontSize: 13 }}>{card.title}</div>
-                        <div style={{ color: pt.sub, fontSize: 11, marginTop: 1 }}>{card.sub}</div>
-                      </div>
-                    </div>
-                    <div style={{ color: pt.faint, fontSize: 16, flexShrink: 0 }}>→</div>
-                  </LiquidGlassCard>
-                )
-              })}
+                const Icon = card.Icon
+  return (
+    <LiquidGlassCard key={i} dark={dark} delay={msFor(TOOLS_START) + i * 110}
+      onClick={() => navigate(card.to)}
+      style={{ borderRadius: 22, padding: '18px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
+        <div style={{
+          width: 38, height: 38, borderRadius: '50%', flexShrink: 0,
+          background: `${accentColor}22`,
+          display: 'flex', alignItems: 'center', justifyContent: 'center'
+        }}>
+          <Icon color={accentColor} size={19} />
+        </div>
+        <div style={{ minWidth: 0 }}>
+          <div style={{ color: pt.text, fontWeight: 700, fontSize: 13 }}>{card.title}</div>
+          <div style={{ color: pt.sub, fontSize: 11, marginTop: 1 }}>{card.sub}</div>
+        </div>
+      </div>
+      <div style={{ color: pt.faint, fontSize: 16, flexShrink: 0 }}>→</div>
+    </LiquidGlassCard>
+  )
+})}
             </div>
           </div>
 
