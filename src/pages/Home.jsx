@@ -68,11 +68,11 @@ const TOOLS_START = ACTIVE_MODULES_START + 0.6               // 5. Tools
 const FOOTER_DELAY = TOOLS_START + 0.5
 const COMPLETED_MODULES_START = TOOLS_START + 0.6             // 6. Completed Modules
 
-// PulseCard's own entrance formula is `ENTRANCE_PAUSE + (delay/1000) *
-// 1.5` (see PulseCard.jsx) — this converts "I want this card's group
-// to start at N seconds" into the millisecond `delay` prop that
-// formula expects, so every group below is defined by WHEN it starts
-// rather than by a hand-picked ms number.
+// LiquidGlassCard's own entrance formula is `ENTRANCE_PAUSE +
+// (delay/1000) * 1.5` (see liquid-glass-card.tsx) — this converts "I
+// want this card's group to start at N seconds" into the millisecond
+// `delay` prop that formula expects, so every group below is defined
+// by WHEN it starts rather than by a hand-picked ms number.
 function msFor(targetSeconds) {
   return Math.round(((targetSeconds - ENTRANCE_PAUSE) / 1.5) * 1000)
 }
@@ -140,9 +140,9 @@ function ZnuPulseBrand({ dark, pt }) {
   )
 }
 
-function StatTile({ dark, pt, delay, children, accent }) {
+function StatTile({ dark, pt, delay, children }) {
   return (
-    <LiquidGlassCard dark={dark} delay={delay} accent={accent} style={{ padding: '18px 20px' }}>
+    <LiquidGlassCard dark={dark} delay={delay} style={{ padding: '18px 20px' }}>
       {children}
     </LiquidGlassCard>
   )
@@ -368,7 +368,7 @@ export default function Home({ dark, toggleTheme }) {
                   column starts from WEEKLY_REPORT_START, with the same
                   internal stagger between tiles as before. */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                <StatTile dark={dark} pt={pt} delay={msFor(WEEKLY_REPORT_START)} accent={pt.cobalt}>
+                <StatTile dark={dark} pt={pt} delay={msFor(WEEKLY_REPORT_START)}>
                   <div style={{ color: pt.faint, fontSize: 11, fontWeight: 700, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 8 }}>
                     📊 Weekly Report
                   </div>
@@ -383,19 +383,19 @@ export default function Home({ dark, toggleTheme }) {
                   </div>
                 </StatTile>
 
-                <StatTile dark={dark} pt={pt} delay={msFor(WEEKLY_REPORT_START) + 60} accent={pt.indigo}>
+                <StatTile dark={dark} pt={pt} delay={msFor(WEEKLY_REPORT_START) + 60}>
                   <div style={{ ...statNumStyle, color: pt.text }}>{weeklySummary ? weeklySummary.totalAttempted : 0}</div>
                   <div style={{ color: pt.sub, fontSize: 12, marginTop: 4 }}>Questions attempted</div>
                 </StatTile>
 
                 <div className="pulse-stat-row-2">
-                  <StatTile dark={dark} pt={pt} delay={msFor(WEEKLY_REPORT_START) + 120} accent={pt.indigo}>
+                  <StatTile dark={dark} pt={pt} delay={msFor(WEEKLY_REPORT_START) + 120}>
                     <div style={{ color: pt.indigo, fontWeight: 800, fontSize: 15 }}>
                       {weeklySummary?.topSubjectName || '—'}
                     </div>
                     <div style={{ color: pt.sub, fontSize: 11, marginTop: 4 }}>Most practiced</div>
                   </StatTile>
-                  <StatTile dark={dark} pt={pt} delay={msFor(WEEKLY_REPORT_START) + 150} accent={pt.terracotta}>
+                  <StatTile dark={dark} pt={pt} delay={msFor(WEEKLY_REPORT_START) + 150}>
                     <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, color: pt.terracotta }}>
                       <span style={{ fontSize: 16 }}>🔥</span>
                       <span style={{ fontFamily: pulseFonts.display, fontWeight: 800, fontSize: 22 }}>{streak}</span>
@@ -405,7 +405,7 @@ export default function Home({ dark, toggleTheme }) {
                 </div>
 
                 {(pausedExam || announcement) && (
-                  <PulseCard dark={dark} delay={msFor(WEEKLY_REPORT_START) + 200} accent={pt.cobalt}
+                  <LiquidGlassCard dark={dark} delay={msFor(WEEKLY_REPORT_START) + 200}
                     onClick={pausedExam ? () => navigate('/mcq') : undefined}
                     style={{ padding: '16px 20px' }}>
                     {pausedExam ? (
@@ -417,7 +417,7 @@ export default function Home({ dark, toggleTheme }) {
                         {announcement}
                       </div>
                     )}
-                  </PulseCard>
+                  </LiquidGlassCard>
                 )}
               </div>
 
@@ -464,7 +464,7 @@ export default function Home({ dark, toggleTheme }) {
                     >No active modules yet.</motion.div>
                   )}
                   {activeModules.map((mod, i) => (
-                    <PulseCard key={mod.id} dark={dark} delay={msFor(ACTIVE_MODULES_START) + i * 110} accent={mod.color}
+                    <LiquidGlassCard key={mod.id} dark={dark} delay={msFor(ACTIVE_MODULES_START) + i * 110}
                       onClick={() => navigate(`/module/${mod.id}`)}
                       style={{ borderRadius: 999, padding: '10px 18px 10px 10px', display: 'flex', alignItems: 'center', gap: 14 }}>
                       <div style={{
@@ -477,7 +477,7 @@ export default function Home({ dark, toggleTheme }) {
                         <div style={{ color: pt.sub, fontSize: 11, marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{moduleBlurb(mod.name)}</div>
                       </div>
                       <span style={{ width: 8, height: 8, borderRadius: '50%', background: mod.color, display: 'inline-block', flexShrink: 0 }} />
-                    </PulseCard>
+                    </LiquidGlassCard>
                   ))}
                 </div>
               </div>
@@ -491,7 +491,7 @@ export default function Home({ dark, toggleTheme }) {
               {toolCards.map((card, i) => {
                 const accentColor = card.accent === 'amber' ? pt.amber : pt.indigo
                 return (
-                  <PulseCard key={i} dark={dark} delay={msFor(TOOLS_START) + i * 110} accent={accentColor}
+                  <LiquidGlassCard key={i} dark={dark} delay={msFor(TOOLS_START) + i * 110}
                     onClick={() => navigate(card.to)}
                     style={{ borderRadius: 22, padding: '18px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
@@ -506,7 +506,7 @@ export default function Home({ dark, toggleTheme }) {
                       </div>
                     </div>
                     <div style={{ color: pt.faint, fontSize: 16, flexShrink: 0 }}>→</div>
-                  </PulseCard>
+                  </LiquidGlassCard>
                 )
               })}
             </div>
@@ -533,7 +533,7 @@ export default function Home({ dark, toggleTheme }) {
             {sectionTitle('✓ Completed Modules', COMPLETED_MODULES_START)}
             <AutoGrid>
               {completedModules.map((mod, i) => (
-                <PulseCard key={mod.id} dark={dark} delay={msFor(COMPLETED_MODULES_START) + i * 110}
+                <LiquidGlassCard key={mod.id} dark={dark} delay={msFor(COMPLETED_MODULES_START) + i * 110}
                   onClick={() => navigate(`/module/${mod.id}`)}
                   style={{ padding: 'clamp(20px, 2vw, 28px)', textAlign: 'center' }}>
                   <div style={{ fontSize: 'clamp(28px, 3vw, 42px)', marginBottom: 8, filter: 'grayscale(0.5)' }}>{mod.icon}</div>
@@ -542,7 +542,7 @@ export default function Home({ dark, toggleTheme }) {
                     display: 'inline-block', background: `${pt.faint}20`, color: pt.faint,
                     border: `1px solid ${pt.faint}40`, borderRadius: 20, padding: '2px 10px', fontSize: 11, fontWeight: 700
                   }}>✓ Completed</div>
-                </PulseCard>
+                </LiquidGlassCard>
               ))}
             </AutoGrid>
           </div>

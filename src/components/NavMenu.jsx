@@ -1,9 +1,11 @@
-import { useState, useRef, useEffect, useLayoutEffect } from 'react'
+import { useState, useRef, useId, useEffect, useLayoutEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '../contexts'
 import { MenuToggleIcon } from './ui/menu-toggle-icon'
 import { getPulseTheme, pulseFonts } from '../premiumTheme'
+import LiquidGlassFilter from './LiquidGlassFilter'
+import { liquidGlassShadow, liquidGlassBackdrop, liquidGlassTint } from '../lib/liquidGlass'
 
 // Nav list — same as before, minus "Review". Leaderboard is reachable
 // here too (as a normal nav item) in addition to the dedicated
@@ -23,9 +25,11 @@ function initialOf(name) {
 
 // Redesigned from a full-screen slide-in curved menu to a small glass
 // dropdown, matching the "liquid glass" material used on Home's
-// PulseCard. The trigger button stays visible after opening — the
-// panel is a normal `position: absolute` popover anchored to it, not
-// a portal — so it never covers the whole screen.
+// LiquidGlassCard (src/components/ui/liquid-glass-card.tsx) — same
+// feTurbulence/feDisplacementMap recipe, shared via src/lib/liquidGlass.js
+// so the two never drift out of sync. The trigger button stays visible
+// after opening — the panel is a normal `position: absolute` popover
+// anchored to it, not a portal — so it never covers the whole screen.
 //
 // `align` controls which edge of the button the panel hangs from:
 // 'left' (default) grows the panel rightward from the button's left
@@ -41,6 +45,13 @@ export default function NavMenu({ dark, toggleTheme, align = 'left' }) {
   const contentRef = useRef(null)
   const [panelHeight, setPanelHeight] = useState(0)
   const pt = getPulseTheme(dark)
+
+  // Unique id for this menu instance's glass distortion filter — a
+  // page can have more than one NavMenu mounted at once (SmartHeader's
+  // + Home's own), so a hard-coded id would make the second instance's
+  // backdrop-filter silently reference the first instance's filter.
+  const rawFilterId = useId().replace(/[^a-zA-Z0-9]/g, '')
+  const filterId = `navmenu-glass-${rawFilterId}`
 
   // Measures the panel's real content height so the outer wrapper can
   // animate `height` from 0 up to it — this is what makes the panel
@@ -79,32 +90,20 @@ export default function NavMenu({ dark, toggleTheme, align = 'left' }) {
     navigate('/')
   }
 
-  // True frosted glass, blurred up further so text always reads
-  // clearly regardless of what's scrolling underneath the panel.
-  const glassStyle = dark
-    ? {
-        background: 'rgba(28,28,30,0.30)',
-        border: '1px solid rgba(255,255,255,0.14)',
-        backdropFilter: 'blur(70px) saturate(180%)',
-        WebkitBackdropFilter: 'blur(70px) saturate(180%)',
-        boxShadow: '0 20px 50px -12px rgba(0,0,0,0.5)',
-      }
-    : {
-        background: 'rgba(255,255,255,0.38)',
-        border: '1px solid rgba(255,255,255,0.55)',
-        backdropFilter: 'blur(70px) saturate(180%)',
-        WebkitBackdropFilter: 'blur(70px) saturate(180%)',
-        boxShadow: '0 20px 50px -12px rgba(37,60,97,0.25)',
-      }
+  // Liquid-glass panel — same recipe as the Home cards (turbulence +
+  // displacement backdrop, layered inset "lens" shadow), plus a
+  // hairline border kept for a floating dropdown's usability (a card
+  // sitting in a grid doesn't need a defining edge; a popover menu
+  // benefits from one so it reads clearly against whatever's under it).
+  const glassStyle = {
+    ...liquidGlassBackdrop(filterId),
+    background: liquidGlassTint(dark),
+    border: dark ? '1px solid rgba(255,255,255,0.12)' : '1px solid rgba(255,255,255,0.5)',
+    boxShadow: liquidGlassShadow(dark),
+  }
 
   const rowHover = dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)'
 
-  // PERF NOTE: backdrop-filter has to resample everything behind it.
-  // The glass/blur (glassStyle) sits on a plain, non-animated inner
-  // div; only the OUTER wrapper's `height` and `opacity` animate —
-  // the browser just reveals progressively more of an already-blurred
-  // texture rather than recomputing blur every frame.
-  //
   // Height starts at 0 (fully collapsed into the button) and animates
   // up to the real measured content height — this is the "extending
   // from the button" unrolling effect. Exit reverses it back to 0.
@@ -269,6 +268,8 @@ export default function NavMenu({ dark, toggleTheme, align = 'left' }) {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <LiquidGlassFilter id={filterId} />
     </div>
   )
 }
