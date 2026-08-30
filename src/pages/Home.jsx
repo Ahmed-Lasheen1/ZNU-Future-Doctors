@@ -397,9 +397,7 @@ export default function Home({ dark, toggleTheme }) {
             overlap the hero/stat cards underneath it on first paint.
             Includes the safe-area inset too, since the header itself
             grew by that amount via its own paddingTop above. */}
-        <div style={{
-          height: `calc(${HEADER_PAD_TOP} + ${HEADER_CONTENT_HEIGHT}px + ${HEADER_PAD_BOTTOM}px)`
-        }} />
+        <div style={{ height: 'calc(76px + env(safe-area-inset-top))' }} />
 
         <div className="pulse-fold">
           {modulesError && <div className="pulse-wide"><ErrorBanner /></div>}
