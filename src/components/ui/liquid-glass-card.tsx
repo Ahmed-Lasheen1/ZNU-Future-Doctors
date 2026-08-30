@@ -4,7 +4,7 @@ import { type CSSProperties, type ReactNode, type KeyboardEvent } from "react"
 import { motion } from "framer-motion"
 import { cn } from "@/lib/utils"
 import { ENTRANCE_PAUSE } from "@/lib/pulseMotion"
-import { liquidGlassShadow, liquidGlassBackdrop, liquidGlassSheenStyle } from "@/lib/liquidGlass"
+import { liquidGlassShadow, liquidGlassBackdrop } from "@/lib/liquidGlass"
 
 interface LiquidGlassCardProps {
   children: ReactNode
@@ -59,14 +59,6 @@ export default function LiquidGlassCard({
           aria-hidden
           className="pointer-events-none absolute inset-0 z-0 rounded-[inherit]"
           style={{ boxShadow: liquidGlassShadow(!!dark) }}
-        />
-
-        {/* Animated sheen — see src/lib/liquidGlass.js for why this
-            replaces the old SVG-distortion approach. */}
-        <div
-          aria-hidden
-          className="liquid-sheen pointer-events-none absolute z-0"
-          style={liquidGlassSheenStyle(!!dark)}
         />
 
         <div className="relative z-10" style={contentStyle}>
