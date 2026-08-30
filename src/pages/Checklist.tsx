@@ -14,16 +14,22 @@ import type { ChecklistTask } from '../types/checklist'
 
 const statNumStyle = { fontFamily: pulseFonts.display, fontWeight: 800, fontSize: 30 }
 
-// Consistent vertical rhythm between the major sections on this page —
-// was a mix of 16/20/24 before, which is where a lot of the "off"
-// feeling was coming from.
+// Consistent vertical rhythm between the major sections on this page.
 const SECTION_GAP = 18
 
 export default function Checklist({ dark }: { dark: boolean }) {
   const { user } = useAuth()
   const navigate = useNavigate()
   const { modules, modulesLoaded, modulesError } = useModules()
-  const showToast = useToast()
+
+  // ToastProvider.jsx is plain JS — its context default (`() => {}`)
+  // has no params, so TS infers useToast() as a zero-arg function and
+  // flags every `showToast('message')` call as "expected 0 arguments,
+  // got 1". The actual runtime function (see ToastProvider.jsx)
+  // really does take (message, type?) — this cast just tells TS the
+  // truth without needing to touch the shared provider file.
+  const showToast = useToast() as (message: string, type?: 'success' | 'error') => void
+
   const pt = getPulseTheme(dark)
 
   const [activeModule, setActiveModule] = useState<string | null>(null)
@@ -43,10 +49,9 @@ export default function Checklist({ dark }: { dark: boolean }) {
   useEffect(() => { if (activeModule) fetchTasks() }, [activeModule, user])
 
   // "Signed in — synced to your account" used to be a permanent glass
-  // card sitting on the page at all times. That's status the student
-  // only needs confirming once, not a fixture — now it's a one-time
-  // toast, fired the first time we know `user` is truthy on this page
-  // visit (guarded so it can't refire on every re-render/task change).
+  // card on the page at all times. Now it's a one-time toast, fired
+  // the first time we know `user` is truthy on this page visit
+  // (guarded so it can't refire on every re-render/task change).
   const notifiedSignedInRef = useRef(false)
   useEffect(() => {
     if (user && !notifiedSignedInRef.current) {
@@ -167,8 +172,7 @@ export default function Checklist({ dark }: { dark: boolean }) {
         </div>
 
         {/* Only shown for guests now — signed-in confirmation moved to
-            a one-time toast (see notifiedSignedInRef above), so this
-            section no longer takes up permanent space once signed in. */}
+            a one-time toast (see notifiedSignedInRef above). */}
         {!user && (
           <LiquidGlassCard dark={dark} delay={0} style={{ padding: '12px 18px', marginBottom: SECTION_GAP, textAlign: 'center' }}>
             <span style={{ color: pt.cobalt, fontSize: 13, fontWeight: 600 }}>
@@ -178,11 +182,9 @@ export default function Checklist({ dark }: { dark: boolean }) {
         )}
 
         {/* Module row — centered and wraps into its own natural grid
-            instead of scrolling off to the left with empty space on
-            the right. ModuleTabs is shared with other pages, so this
-            is done via a style override rather than editing the
-            shared component (which would affect Schedule/MCQ/Files
-            too). */}
+            instead of scrolling off to the left. Style override passed
+            as a prop rather than editing the shared ModuleTabs
+            component, since Schedule/MCQ/Files also use it. */}
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: SECTION_GAP }}>
           <ModuleTabs
             modules={activeModulesList}
@@ -200,19 +202,23 @@ export default function Checklist({ dark }: { dark: boolean }) {
         </div>
 
         {totalTasks > 0 && (
-          <LiquidGlassCard dark={dark} delay={80} style={{ padding: '20px 22px', marginBottom: SECTION_GAP }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 10 }}>
+          <LiquidGlassCard dark={dark} delay={80} style={{ padding: '22px 24px', marginBottom: SECTION_GAP }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 12 }}>
               <span style={{ color: pt.text, fontWeight: 700, fontSize: 14 }}>Overall Progress</span>
               <span style={{ ...statNumStyle, fontSize: 20, color: pt.amber }}>{doneTasks}/{totalTasks}</span>
             </div>
-            <div style={{ background: dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)', borderRadius: 20, height: 10, overflow: 'hidden' }}>
+            <div style={{
+              background: dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)',
+              borderRadius: 20, height: 7, overflow: 'hidden',
+              boxShadow: dark ? 'inset 0 1px 2px rgba(0,0,0,0.4)' : 'inset 0 1px 2px rgba(0,0,0,0.08)'
+            }}>
               <div style={{
                 height: '100%', borderRadius: 20,
                 background: percent === 100 ? `linear-gradient(90deg, ${pt.cobalt}, ${pt.indigo})` : `linear-gradient(90deg, ${pt.amber}, ${pt.terracotta})`,
                 width: `${percent}%`, transition: 'width 0.5s ease'
               }} />
             </div>
-            <div style={{ textAlign: 'center', marginTop: 10, color: percent === 100 ? pt.cobalt : pt.amber, fontWeight: 700, fontSize: 13 }}>
+            <div style={{ textAlign: 'center', marginTop: 12, color: percent === 100 ? pt.cobalt : pt.amber, fontWeight: 700, fontSize: 13 }}>
               {percent}% {percent === 100 ? '🎉 Ready for exam!' : 'completed'}
             </div>
           </LiquidGlassCard>
@@ -249,7 +255,7 @@ export default function Checklist({ dark }: { dark: boolean }) {
           const dotColor = task.done ? pt.cobalt : overdue ? pt.danger : dueSoon ? pt.amber : pt.faint
 
           return (
-            <LiquidGlassCard key={task.id} dark={dark} delay={240 + i * 90} style={{ padding: '14px 18px', marginBottom: 10 }}>
+            <LiquidGlassCard key={task.id} dark={dark} delay={240 + i * 90} style={{ padding: '16px 20px', marginBottom: 14 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
                 <div
                   role="checkbox" aria-checked={task.done} aria-label={task.text} tabIndex={0}
