@@ -1,0 +1,152 @@
+// src/pages/LessonPage.tsx
+import { useEffect, useState } from 'react'
+import { useParams, useNavigate } from 'react-router-dom'
+import { supabase } from '../supabase'
+import { getPulseTheme, pulseFonts, pulseType } from '../premiumTheme'
+import ErrorBanner from '../components/ErrorBanner'
+import LiquidGlassCard from '@/components/ui/liquid-glass-card'
+import PulseBackground from '../components/pulse/PulseBackground'
+import PulseGlassRow from '../components/pulse/PulseGlassRow'
+import SummaryOverlay from '../components/SummaryOverlay'
+import { useModules } from '../contexts'
+import { ModuleIcon, ExamIcon, NotesIcon } from '../lib/medicalIcons'
+
+interface PageModule { id: string; name: string; icon?: string | null; color: string }
+interface Lesson { id: string; title: string; icon?: string | null }
+interface Summary { id: string; title: string; url: string }
+
+export default function LessonPage({ dark }: { dark: boolean }) {
+  const pt = getPulseTheme(dark)
+  const { moduleId, subjectId, lessonId } = useParams()
+  const navigate = useNavigate()
+  const { modules, modulesLoaded, modulesError } = useModules() as { modules: PageModule[]; modulesLoaded: boolean; modulesError: boolean }
+  const module = modules.find(m => m.id === moduleId) || null
+  const [lesson, setLesson] = useState<Lesson | null>(null)
+  const [questionCount, setQuestionCount] = useState(0)
+  const [summaries, setSummaries] = useState<Summary[]>([])
+  const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState(false)
+  const [selectedSummary, setSelectedSummary] = useState<Summary | null>(null)
+  const [showSummaryPicker, setShowSummaryPicker] = useState(false)
+
+  useEffect(() => {
+    setLoading(true)
+    Promise.all([
+      supabase.from('lessons').select('*').eq('id', lessonId).single(),
+      supabase.from('questions').select('id', { count: 'exact', head: true }).eq('lesson_id', lessonId),
+      supabase.from('summaries').select('*').eq('lesson_id', lessonId).order('created_at')
+    ]).then(([lessonRes, countRes, summaryRes]) => {
+      if (lessonRes.data) setLesson(lessonRes.data)
+      if (countRes.count != null) setQuestionCount(countRes.count)
+      if (summaryRes.data) setSummaries(summaryRes.data)
+      if (lessonRes.error || summaryRes.error) setLoadError(true)
+      setLoading(false)
+    })
+  }, [lessonId])
+
+  if (!module) return (
+    <div style={{ position: 'relative', minHeight: '100vh' }}>
+      <PulseBackground />
+      <div style={{ position: 'relative', zIndex: 1, padding: 24, textAlign: 'center', color: pt.sub }}>
+        {(loadError || modulesError)
+          ? <ErrorBanner message="Couldn't load this — check your connection." />
+          : !modulesLoaded ? 'Loading...' : "This module doesn't exist or was removed."}
+      </div>
+    </div>
+  )
+
+  if (selectedSummary) return (
+    <SummaryOverlay onBack={() => setSelectedSummary(null)} title={selectedSummary.title} titleColor="#34d399" url={selectedSummary.url} eyebrow={undefined} />
+  )
+
+  const hoverTint = dark ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.35)'
+
+  function openSummary() {
+    if (summaries.length === 0) return
+    if (summaries.length === 1) setSelectedSummary(summaries[0])
+    else setShowSummaryPicker(prev => !prev)
+  }
+
+  return (
+    <div style={{ position: 'relative', minHeight: '100vh' }}>
+      <PulseBackground />
+      <div className="pulse-wide" style={{ position: 'relative', zIndex: 1, padding: '24px 20px 100px', fontFamily: pulseFonts.body }}>
+
+        <div style={{ marginBottom: 8 }}>
+          <PulseGlassRow dark={dark} radius={999} hoverTint={hoverTint} onClick={() => navigate(`/module/${moduleId}/subject/${subjectId}`)}
+            role="button" tabIndex={0}
+            onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate(`/module/${moduleId}/subject/${subjectId}`) } }}>
+            <div style={{ padding: '8px 18px', ...pulseType.small, fontWeight: 700, color: pt.sub }}>← Back</div>
+          </PulseGlassRow>
+        </div>
+
+        {loading && <p style={{ color: pt.sub, textAlign: 'center' }}>Loading...</p>}
+        {loadError && <ErrorBanner />}
+
+        {lesson && (
+          <>
+            <div style={{ textAlign: 'center', padding: '10px 0 30px' }}>
+              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}>
+                <ModuleIcon value={lesson.icon || '📘'} size={44} color="#34d399" />
+              </div>
+              <h1 style={{ ...pulseType.pageTitle, fontSize: 24, color: '#34d399', marginBottom: 6 }}>{lesson.title}</h1>
+              <div style={{ color: pt.sub, fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                <ModuleIcon value={module.icon} size={14} color={pt.sub} /> {module.name}
+              </div>
+            </div>
+
+            <div style={{ marginBottom: 32 }}>
+              <h2 style={{ ...pulseType.sectionLabel, color: pt.textMuted, marginBottom: 16 }}>📝 Summary</h2>
+              {summaries.length > 0 ? (
+                <LiquidGlassCard dark={dark} delay={0} onClick={openSummary} style={{ padding: 24, textAlign: 'center' }}>
+                  <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}>
+                    <NotesIcon color="#34d399" size={30} />
+                  </div>
+                  <div style={{ ...pulseType.cardTitle, color: pt.textPrimary }}>
+                    {summaries.length === 1 ? 'Open Lesson Summary' : 'Summaries'}
+                  </div>
+                  {summaries.length > 1 && (
+                    <div style={{ ...pulseType.small, color: pt.textMuted, marginTop: 4 }}>{summaries.length} available</div>
+                  )}
+                </LiquidGlassCard>
+              ) : (
+                <LiquidGlassCard dark={dark} delay={0} style={{ padding: 32, textAlign: 'center' }}>
+                  <p style={{ color: pt.sub, fontSize: 13 }}>No summary added yet 🚧</p>
+                </LiquidGlassCard>
+              )}
+
+              {showSummaryPicker && summaries.length > 1 && (
+                <div style={{ display: 'grid', gap: 10, marginTop: 12 }}>
+                  {summaries.map((s, i) => (
+                    <LiquidGlassCard key={s.id} dark={dark} delay={i * 60} onClick={() => setSelectedSummary(s)}
+                      style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <NotesIcon color="#34d399" size={16} />
+                      <span style={{ color: pt.textPrimary, fontSize: 13, fontWeight: 600 }}>{s.title}</span>
+                    </LiquidGlassCard>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div style={{ marginBottom: 32 }}>
+              <h2 style={{ ...pulseType.sectionLabel, color: pt.textMuted, marginBottom: 16 }}>🧪 Practice</h2>
+              {questionCount > 0 ? (
+                <LiquidGlassCard dark={dark} delay={0} onClick={() => navigate(`/mcq?module=${moduleId}&lesson=${lessonId}`)} style={{ padding: 24, textAlign: 'center' }}>
+                  <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}>
+                    <ExamIcon color="#e2725b" size={30} />
+                  </div>
+                  <div style={{ ...pulseType.cardTitle, color: pt.textPrimary }}>Practice This Lesson</div>
+                  <div style={{ ...pulseType.small, color: pt.textMuted, marginTop: 4 }}>{questionCount} question{questionCount === 1 ? '' : 's'}</div>
+                </LiquidGlassCard>
+              ) : (
+                <LiquidGlassCard dark={dark} delay={0} style={{ padding: 32, textAlign: 'center' }}>
+                  <p style={{ color: pt.sub, fontSize: 13 }}>No questions tagged to this lesson yet 🚧</p>
+                </LiquidGlassCard>
+              )}
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
