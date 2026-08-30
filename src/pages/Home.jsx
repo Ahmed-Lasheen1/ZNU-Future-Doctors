@@ -15,22 +15,17 @@ import { ENTRANCE_PAUSE } from '../lib/pulseMotion'
 import NotifyPermissionButton from '../components/NotifyPermissionButton'
 import LiquidGlassCard from '@/components/ui/liquid-glass-card'
 import EcgHero from '../components/pulse/EcgHero'
+import PulseBackground from '../components/pulse/PulseBackground'
 import { ScheduleIcon, ChecklistIcon, AnonQAIcon, LeaderboardIcon } from '@/components/ui/tool-icons'
 import { ModuleIcon } from '../lib/medicalIcons'
 
 const LOGO_SRC = '/icon-192.png'
 
-const LOGO_BG = [
-  'linear-gradient(180deg,',
-  '#a6d2ef 0%,',
-  '#97bcd7 15%,',
-  '#81a6c3 30%,',
-  '#6c8fad 45%,',
-  '#497194 60%,',
-  '#274e79 75%,',
-  '#042a59 90%,',
-  '#010c4a 100%)',
-].join(' ')
+// NOTE: the background gradient itself (formerly a local LOGO_BG
+// constant here) now lives in src/components/pulse/PulseBackground.jsx
+// as PULSE_BG, so every page can share the exact same gradient
+// instead of each page redefining its own copy. The gradient values
+// are byte-for-byte identical — only its location changed.
 
 const toolCards = [
   { Icon: ScheduleIcon, title: 'Schedules', sub: 'Plan your study time', to: '/schedule', accent: 'indigo' },
@@ -267,21 +262,9 @@ export default function Home({ dark, toggleTheme }) {
 
   return (
     <div style={{ position: 'relative', minHeight: '100vh', overflowX: 'hidden' }}>
-      {/* Full-screen background gradient. Uses 100dvh (dynamic
-          viewport height) rather than relying only on inset:0 — on
-          iOS Safari, the address bar / bottom toolbar collapse and
-          expand as you scroll, which changes the REAL usable viewport
-          height live. A plain fixed+inset:0 div can get sized against
-          the viewport height at load time and not keep up, leaving a
-          gap at the bottom (showing the body background) once the
-          toolbar collapses and reveals more screen. 100dvh tracks that
-          change continuously. */}
-      <div style={{
-        position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-        height: '100dvh',
-        zIndex: 0, pointerEvents: 'none',
-        background: LOGO_BG,
-      }} />
+      {/* Full-screen background gradient. See PulseBackground.jsx for
+          the 100dvh reasoning (iOS Safari toolbar collapse behavior). */}
+      <PulseBackground />
 
       {/* Fixed header — logo/name/menu float over the page and never
           move on scroll. pointerEvents:'none' on the outer wrapper so
@@ -332,20 +315,6 @@ export default function Home({ dark, toggleTheme }) {
         fontFamily: pulseFonts.body
       }}>
         <style>{`
-          .pulse-wide {
-            width: 100%;
-            max-width: 1800px;
-            margin: 0 auto;
-            padding: 0 20px;
-            box-sizing: border-box;
-          }
-          @media (min-width: 900px) {
-            .pulse-wide { padding: 0 40px; }
-          }
-          @media (min-width: 1400px) {
-            .pulse-wide { padding: 0 64px; }
-          }
-
           .pulse-fold {
             min-height: 100vh;
             min-height: 100svh;

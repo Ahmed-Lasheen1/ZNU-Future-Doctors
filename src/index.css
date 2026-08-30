@@ -106,6 +106,31 @@ h1, h2, h3 {
   .page-container { max-width: 1160px; }
 }
 
+/* ============================================================
+   .pulse-wide — the ZNU Pulse content-width container.
+   MOVED HERE from Home.jsx's inline <style> tag, where it only
+   existed while Home.jsx was mounted, making it unusable on every
+   other page even though it's meant to be the shared page-width
+   rhythm for the whole site (per Home's own design language). The
+   CSS itself is unchanged — only its location moved, so Home looks
+   identical and every other page can now use the same class.
+   ============================================================ */
+.pulse-wide {
+  width: 100%;
+  max-width: 1800px;
+  margin: 0 auto;
+  padding: 0 20px;
+  box-sizing: border-box;
+}
+
+@media (min-width: 900px) {
+  .pulse-wide { padding: 0 40px; }
+}
+
+@media (min-width: 1400px) {
+  .pulse-wide { padding: 0 64px; }
+}
+
 /* Card grids: 2 columns on phones, wider cards (not just more of
    them) as the screen grows, so cards actually look bigger on a
    laptop/iPad instead of just multiplying into a dense wall. */
