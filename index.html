@@ -2,7 +2,20 @@
 <html lang="en" dir="ltr">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- viewport-fit=cover lets the page draw all the way under the
+         iPhone notch / status bar / home indicator instead of stopping
+         short of them — without this, iOS reserves that space and
+         fills it with a solid (usually white) bar in standalone PWA
+         mode. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+
+    <!-- Makes "Add to Home Screen" launch as a standalone app (no
+         Safari chrome) and lets the status bar overlay the page
+         transparently instead of painting its own solid bar. -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="ZNU Pulse" />
+
     <!-- Cache-busted with ?v=2 — browsers cache favicons unusually
          aggressively (often ignoring a normal hard-reload), so bump
          this query string again next time the icon changes. The SVG

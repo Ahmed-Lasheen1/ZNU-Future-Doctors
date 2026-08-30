@@ -267,8 +267,19 @@ export default function Home({ dark, toggleTheme }) {
 
   return (
     <div style={{ position: 'relative', minHeight: '100vh', overflowX: 'hidden' }}>
+      {/* Full-screen background gradient. Uses 100dvh (dynamic
+          viewport height) rather than relying only on inset:0 — on
+          iOS Safari, the address bar / bottom toolbar collapse and
+          expand as you scroll, which changes the REAL usable viewport
+          height live. A plain fixed+inset:0 div can get sized against
+          the viewport height at load time and not keep up, leaving a
+          gap at the bottom (showing the body background) once the
+          toolbar collapses and reveals more screen. 100dvh tracks that
+          change continuously. */}
       <div style={{
-        position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none',
+        position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+        height: '100dvh',
+        zIndex: 0, pointerEvents: 'none',
         background: LOGO_BG,
       }} />
 
@@ -278,7 +289,12 @@ export default function Home({ dark, toggleTheme }) {
           block clicks on cards underneath; 'auto' on the inner row
           restores clicking for the logo/menu themselves. No
           background — it's meant to overlay transparently, not sit on
-          a bar. */}
+          a bar.
+          paddingTop uses env(safe-area-inset-top) so on an iPhone
+          (notch/Dynamic Island) the logo/menu sit below the status
+          bar/notch rather than under it — this only has any effect
+          once index.html's viewport meta includes viewport-fit=cover,
+          which lets the page draw under the notch in the first place. */}
       <div style={{
         position: 'fixed',
         top: 0,
@@ -287,7 +303,11 @@ export default function Home({ dark, toggleTheme }) {
         zIndex: 500,
         pointerEvents: 'none',
       }}>
-        <div className="pulse-wide" style={{ paddingTop: 16, paddingBottom: 16, pointerEvents: 'auto' }}>
+        <div className="pulse-wide" style={{
+          paddingTop: 'max(16px, env(safe-area-inset-top))',
+          paddingBottom: 16,
+          pointerEvents: 'auto'
+        }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
             <ZnuPulseBrand dark={dark} pt={pt} />
 
@@ -334,6 +354,10 @@ export default function Home({ dark, toggleTheme }) {
             justify-content: center;
             gap: clamp(16px, 3vh, 40px);
             padding: clamp(14px, 2.5vh, 28px) 0 clamp(24px, 4vh, 56px);
+            /* Bottom safe-area padding so content isn't tucked under
+               the iPhone home indicator when this page is the
+               shorter/first fold. */
+            padding-bottom: max(clamp(24px, 4vh, 56px), env(safe-area-inset-bottom));
             box-sizing: border-box;
           }
 
@@ -370,8 +394,10 @@ export default function Home({ dark, toggleTheme }) {
         `}</style>
 
         {/* Spacer so the now-fixed header (out of normal flow) doesn't
-            overlap the hero/stat cards underneath it on first paint. */}
-        <div style={{ height: 76 }} />
+            overlap the hero/stat cards underneath it on first paint.
+            Includes the safe-area inset too, since the header itself
+            grew by that amount via its own paddingTop above. */}
+        <div style={{ height: 'calc(76px + env(safe-area-inset-top))' }} />
 
         <div className="pulse-fold">
           {modulesError && <div className="pulse-wide"><ErrorBanner /></div>}
@@ -556,7 +582,7 @@ export default function Home({ dark, toggleTheme }) {
 
         {/* 6. Completed Modules group — last in the sequence. */}
         {completedModules.length > 0 && (
-          <div className="pulse-wide" style={{ paddingBottom: 100 }}>
+          <div className="pulse-wide" style={{ paddingBottom: 'max(100px, env(safe-area-inset-bottom))' }}>
             {sectionTitle('✓ Completed Modules', COMPLETED_MODULES_START)}
             <AutoGrid>
               {completedModules.map((mod, i) => (
