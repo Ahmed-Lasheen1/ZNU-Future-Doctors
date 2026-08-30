@@ -18,12 +18,6 @@ interface ThemeSwitchProps {
   stretchX?: number
 }
 
-// Colors now come from getPulseTheme(dark) — the same tokens used by
-// every glass card and the menu shell (pt.canvas/pt.surfaceFlat for
-// the track, pt.cobalt/pt.indigo for the thumb, pt.amber for the sun,
-// pt.border for hairlines) — instead of the reference component's own
-// hardcoded slate/amber palette. Shadow/particle/grain STRUCTURE is
-// unchanged; only the color values feeding into them are swapped.
 export default function ThemeSwitch({ dark, onToggle, scale = 1, stretchX = 1 }: ThemeSwitchProps) {
   const [particles, setParticles] = useState<Particle[]>([])
   const [isAnimating, setIsAnimating] = useState(false)
@@ -77,13 +71,15 @@ export default function ThemeSwitch({ dark, onToggle, scale = 1, stretchX = 1 }:
           onClick={handleToggle}
           className="relative flex h-[64px] w-[104px] items-center rounded-full p-[6px] transition-all duration-300 focus:outline-none"
           style={{
+            // Lighter track in both modes — dark mode no longer bottoms
+            // out near-black, light mode stays a bright, airy surface.
             background: isDark
-              ? `radial-gradient(ellipse at top left, ${pt.surfaceRaised} 0%, ${pt.canvas} 40%, ${pt.canvasAlt} 100%)`
-              : `radial-gradient(ellipse at top left, #ffffff 0%, ${pt.surfaceFlat} 40%, ${pt.canvasAlt} 100%)`,
+              ? `radial-gradient(ellipse at top left, ${pt.surfaceRaised} 0%, ${pt.surfaceFlat} 50%, ${pt.canvas} 100%)`
+              : `radial-gradient(ellipse at top left, #ffffff 0%, #ffffff 45%, ${pt.surfaceFlat} 100%)`,
             boxShadow: isDark
-              ? `inset 5px 5px 12px rgba(0, 0, 0, 0.9), inset -5px -5px 12px rgba(74,102,144,0.4), inset 8px 8px 16px rgba(0, 0, 0, 0.7), inset -8px -8px 16px rgba(58,82,122,0.2), inset 0 2px 4px rgba(0, 0, 0, 1), inset 0 -2px 4px rgba(74,102,144,0.4), inset 0 0 20px rgba(0, 0, 0, 0.6), 0 1px 1px rgba(255, 255, 255, 0.05), 0 2px 4px rgba(0, 0, 0, 0.4), 0 8px 16px rgba(0, 0, 0, 0.4), 0 16px 32px rgba(0, 0, 0, 0.3), 0 24px 48px rgba(0, 0, 0, 0.2)`
-              : `inset 5px 5px 12px rgba(175,192,214,0.5), inset -5px -5px 12px rgba(255, 255, 255, 1), inset 8px 8px 16px rgba(175,192,214,0.3), inset -8px -8px 16px rgba(255, 255, 255, 0.9), inset 0 2px 4px rgba(175,192,214,0.4), inset 0 -2px 4px rgba(255, 255, 255, 1), inset 0 0 20px rgba(199,211,227,0.3), 0 1px 2px rgba(255, 255, 255, 1), 0 2px 4px rgba(0, 0, 0, 0.1), 0 8px 16px rgba(0, 0, 0, 0.08), 0 16px 32px rgba(0, 0, 0, 0.06), 0 24px 48px rgba(0, 0, 0, 0.04)`,
-            border: `2px solid ${pt.borderStrong}99`,
+              ? `inset 3px 3px 8px rgba(0,0,0,0.5), inset -3px -3px 8px rgba(90,120,165,0.35), inset 0 2px 4px rgba(0,0,0,0.5), inset 0 -2px 4px rgba(90,120,165,0.3), 0 2px 4px rgba(0,0,0,0.3), 0 8px 16px rgba(0,0,0,0.25), 0 16px 32px rgba(0,0,0,0.18)`
+              : `inset 3px 3px 8px rgba(175,192,214,0.35), inset -3px -3px 8px rgba(255,255,255,1), inset 0 2px 4px rgba(175,192,214,0.3), inset 0 -2px 4px rgba(255,255,255,1), 0 2px 4px rgba(0,0,0,0.06), 0 8px 16px rgba(0,0,0,0.05), 0 16px 32px rgba(0,0,0,0.04)`,
+            border: `2px solid ${pt.border}`,
             position: 'relative',
           }}
           aria-label={`Switch to ${isDark ? 'light' : 'dark'} mode`}
@@ -93,19 +89,19 @@ export default function ThemeSwitch({ dark, onToggle, scale = 1, stretchX = 1 }:
         >
           <div className="absolute inset-[3px] rounded-full pointer-events-none" style={{
             boxShadow: isDark
-              ? 'inset 0 2px 6px rgba(0, 0, 0, 0.9), inset 0 -1px 3px rgba(74,102,144,0.3)'
-              : 'inset 0 2px 6px rgba(175,192,214,0.4), inset 0 -1px 3px rgba(255, 255, 255, 0.8)',
+              ? 'inset 0 2px 5px rgba(0,0,0,0.5), inset 0 -1px 2px rgba(90,120,165,0.25)'
+              : 'inset 0 2px 5px rgba(175,192,214,0.3), inset 0 -1px 2px rgba(255,255,255,0.8)',
           }} />
 
           <div className="absolute inset-0 rounded-full pointer-events-none" style={{
             background: isDark
-              ? `radial-gradient(ellipse at top, rgba(74,102,144,0.15) 0%, transparent 50%), linear-gradient(to bottom, rgba(74,102,144,0.2) 0%, transparent 30%, transparent 70%, rgba(0, 0, 0, 0.3) 100%)`
-              : `radial-gradient(ellipse at top, rgba(255, 255, 255, 0.8) 0%, transparent 50%), linear-gradient(to bottom, rgba(255, 255, 255, 0.7) 0%, transparent 30%, transparent 70%, rgba(175,192,214,0.15) 100%)`,
+              ? `radial-gradient(ellipse at top, rgba(90,120,165,0.12) 0%, transparent 50%), linear-gradient(to bottom, rgba(90,120,165,0.15) 0%, transparent 30%, transparent 70%, rgba(0,0,0,0.15) 100%)`
+              : `radial-gradient(ellipse at top, rgba(255,255,255,0.8) 0%, transparent 50%), linear-gradient(to bottom, rgba(255,255,255,0.7) 0%, transparent 30%, transparent 70%, rgba(175,192,214,0.12) 100%)`,
             mixBlendMode: 'overlay',
           }} />
 
           <div className="absolute inset-0 rounded-full pointer-events-none" style={{
-            boxShadow: isDark ? 'inset 0 0 15px rgba(0, 0, 0, 0.5)' : 'inset 0 0 15px rgba(175,192,214,0.2)',
+            boxShadow: isDark ? 'inset 0 0 12px rgba(0,0,0,0.3)' : 'inset 0 0 12px rgba(175,192,214,0.15)',
           }} />
 
           <div className="absolute inset-0 flex items-center justify-between px-4">
@@ -116,19 +112,22 @@ export default function ThemeSwitch({ dark, onToggle, scale = 1, stretchX = 1 }:
           <motion.div
             className="relative z-10 flex h-[44px] w-[44px] items-center justify-center rounded-full overflow-hidden"
             style={{
+              // Cobalt only — no indigo, so no purple cast. Lightened
+              // with a soft highlight stop instead of dropping straight
+              // to the dark canvas color.
               background: isDark
-                ? `linear-gradient(145deg, ${pt.cobalt} 0%, ${pt.indigo} 50%, ${pt.canvasAlt} 100%)`
+                ? `linear-gradient(145deg, #7fb0ff 0%, ${pt.cobalt} 55%, #2a5cd8 100%)`
                 : `linear-gradient(145deg, #ffffff 0%, #fefefe 50%, ${pt.surfaceFlat} 100%)`,
               boxShadow: isDark
-                ? `inset 2px 2px 4px rgba(255,255,255,0.15), inset -2px -2px 4px rgba(0, 0, 0, 0.8), inset 0 1px 1px rgba(255, 255, 255, 0.15), 0 1px 2px rgba(255, 255, 255, 0.1), 0 8px 32px rgba(0, 0, 0, 0.6), 0 4px 12px rgba(0, 0, 0, 0.5), 0 2px 4px rgba(0, 0, 0, 0.4)`
-                : `inset 2px 2px 4px rgba(199,211,227,0.3), inset -2px -2px 4px rgba(255, 255, 255, 1), inset 0 1px 2px rgba(255, 255, 255, 1), 0 1px 2px rgba(255, 255, 255, 1), 0 8px 32px rgba(0, 0, 0, 0.18), 0 4px 12px rgba(0, 0, 0, 0.12), 0 2px 4px rgba(0, 0, 0, 0.08)`,
-              border: isDark ? `2px solid ${pt.cobaltBorder}` : '2px solid rgba(255, 255, 255, 0.9)',
+                ? `inset 2px 2px 4px rgba(255,255,255,0.35), inset -2px -2px 4px rgba(0,0,0,0.25), 0 1px 2px rgba(255,255,255,0.15), 0 6px 20px rgba(76,134,255,0.35), 0 3px 8px rgba(0,0,0,0.3)`
+                : `inset 2px 2px 4px rgba(199,211,227,0.3), inset -2px -2px 4px rgba(255,255,255,1), inset 0 1px 2px rgba(255,255,255,1), 0 1px 2px rgba(255,255,255,1), 0 8px 32px rgba(0,0,0,0.18), 0 4px 12px rgba(0,0,0,0.12), 0 2px 4px rgba(0,0,0,0.08)`,
+              border: isDark ? '2px solid rgba(255,255,255,0.4)' : '2px solid rgba(255,255,255,0.9)',
             }}
             animate={{ x: isDark ? 46 : 0 }}
             transition={{ type: 'spring', stiffness: 300, damping: 20 }}
           >
             <div className="absolute inset-0 rounded-full pointer-events-none" style={{
-              background: 'linear-gradient(to bottom, rgba(255, 255, 255, 0.4) 0%, transparent 40%, rgba(0, 0, 0, 0.1) 100%)',
+              background: 'linear-gradient(to bottom, rgba(255,255,255,0.45) 0%, transparent 40%, rgba(0,0,0,0.06) 100%)',
               mixBlendMode: 'overlay',
             }} />
 
@@ -139,7 +138,7 @@ export default function ThemeSwitch({ dark, onToggle, scale = 1, stretchX = 1 }:
                   style={{
                     width: '10px', height: '10px',
                     background: isDark
-                      ? `radial-gradient(circle, ${pt.cobalt}80 0%, ${pt.cobalt}00 70%)`
+                      ? `radial-gradient(circle, #7fb0ff80 0%, #7fb0ff00 70%)`
                       : `radial-gradient(circle, ${pt.amber}b3 0%, ${pt.amber}00 70%)`,
                     mixBlendMode: 'normal',
                   }}
