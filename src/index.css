@@ -25,7 +25,7 @@
 }
 
 body {
-  font-family: 'Segoe UI', sans-serif;
+  font-family: 'Sora', 'Segoe UI', sans-serif;
   background: #0f172a;
   color: #e2e8f0;
   direction: ltr;
@@ -87,9 +87,6 @@ h1, h2, h3 {
 
 /* ============================================================
    Responsive layout utilities.
-   Mobile stays exactly as before; tablet/laptop get more room
-   so the site doesn't look like a narrow phone strip stretched
-   across a big screen.
    ============================================================ */
 
 .page-container {
@@ -106,15 +103,6 @@ h1, h2, h3 {
   .page-container { max-width: 1160px; }
 }
 
-/* ============================================================
-   .pulse-wide — the ZNU Pulse content-width container.
-   MOVED HERE from Home.jsx's inline <style> tag, where it only
-   existed while Home.jsx was mounted, making it unusable on every
-   other page even though it's meant to be the shared page-width
-   rhythm for the whole site (per Home's own design language). The
-   CSS itself is unchanged — only its location moved, so Home looks
-   identical and every other page can now use the same class.
-   ============================================================ */
 .pulse-wide {
   width: 100%;
   max-width: 1800px;
@@ -131,9 +119,6 @@ h1, h2, h3 {
   .pulse-wide { padding: 0 64px; }
 }
 
-/* Card grids: 2 columns on phones, wider cards (not just more of
-   them) as the screen grows, so cards actually look bigger on a
-   laptop/iPad instead of just multiplying into a dense wall. */
 .card-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -148,14 +133,6 @@ h1, h2, h3 {
   .card-grid { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 20px; }
 }
 
-/* ============================================================
-   AutoGrid (src/components/AutoGrid.jsx).
-   Column count comes from the component as a CSS variable based on
-   how many cards are passed in: 1 card = 100% wide, 2 = 50% each,
-   3 = 33.3% each, 4+ wraps at a max of 4 per row on desktop.
-   Mobile always caps at 2 columns regardless of --auto-grid-cols,
-   via min() in the media query below.
-   ============================================================ */
 .auto-grid {
   display: grid;
   gap: 14px;
@@ -173,26 +150,12 @@ h1, h2, h3 {
   .auto-grid { gap: 20px; }
 }
 
-/* ============================================================
-   SmartHeader (the top bar on every page except Home).
-   On narrow phones there isn't room for Back + Menu + Search +
-   the "ZNU Future Doctors" title + theme toggle + points/sign-in
-   all in one row, so the title (the least essential piece — the
-   student already knows what app they're in) steps aside first.
-   ============================================================ */
 @media (max-width: 480px) {
   .smart-header-title {
     display: none;
   }
 }
-/* ============================================================
-   Liquid-glass sheen — a slow-moving soft highlight blob used by
-   LiquidGlassCard (Home page cards) and NavMenu's dropdown panel to
-   give the glass a "liquid" quality without relying on live pixel
-   distortion (see src/lib/liquidGlass.js for why). Defined once here
-   so every card/panel shares one keyframe definition instead of each
-   needing its own <style> tag.
-   ============================================================ */
+
 @keyframes liquidSheenMove {
   0%   { transform: translate(-10%, -10%) rotate(0deg); }
   50%  { transform: translate(10%, 10%) rotate(180deg); }

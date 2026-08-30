@@ -4,7 +4,7 @@ import { motion } from 'framer-motion'
 import { useAuth, useModules } from '../contexts'
 import NavMenu from '../components/NavMenu'
 import { getTheme } from '../theme'
-import { getPulseTheme, pulseFonts } from '../premiumTheme'
+import { getPulseTheme, pulseFonts, pulseType } from '../premiumTheme'
 import { supabase } from '../supabase'
 import ErrorBanner from '../components/ErrorBanner'
 import AutoGrid from '../components/AutoGrid'
@@ -20,12 +20,6 @@ import { ScheduleIcon, ChecklistIcon, AnonQAIcon, LeaderboardIcon } from '@/comp
 import { ModuleIcon } from '../lib/medicalIcons'
 
 const LOGO_SRC = '/icon-192.png'
-
-// NOTE: the background gradient itself (formerly a local LOGO_BG
-// constant here) now lives in src/components/pulse/PulseBackground.jsx
-// as PULSE_BG, so every page can share the exact same gradient
-// instead of each page redefining its own copy. The gradient values
-// are byte-for-byte identical — only its location changed.
 
 const toolCards = [
   { Icon: ScheduleIcon, title: 'Schedules', sub: 'Plan your study time', to: '/schedule', accent: 'indigo' },
@@ -46,40 +40,27 @@ function moduleBlurb(name) {
   return key ? MODULE_BLURBS[key] : 'Master the essentials of this module.'
 }
 
-const statNumStyle = { fontFamily: pulseFonts.display, fontWeight: 800, fontSize: 30 }
+// Major dashboard-number style (weekly accuracy %, questions attempted,
+// streak) — sourced from the shared typography hierarchy, scaled down
+// from the full `display` size since these sit inside compact stat
+// tiles rather than as a page hero number.
+const statNumStyle = { ...pulseType.display, fontSize: 28, lineHeight: 1.1 }
 
 // ── Reveal order ───────────────────────────────────────────────────
-// Six explicit groups, in this order: hero → logo → weekly report →
-// active modules → tools → completed modules. Each _START constant is
-// the earlier group's start plus a fixed gap, so nudging one value
-// shifts everything after it in sequence rather than needing every
-// number re-tuned by hand. NOTIFY_DELAY and FOOTER_DELAY aren't part
-// of the named sequence but sit naturally between the groups they're
-// positioned next to in the page.
-const HERO_DELAY = ENTRANCE_PAUSE                        // 1. Hero
-const LOGO_DELAY = ENTRANCE_PAUSE + 0.5                   // 2. Logo (+ NavMenu)
+const HERO_DELAY = ENTRANCE_PAUSE
+const LOGO_DELAY = ENTRANCE_PAUSE + 0.5
 const NOTIFY_DELAY = LOGO_DELAY + 0.3
-const WEEKLY_REPORT_START = LOGO_DELAY + 0.6               // 3. Weekly Report
-const ACTIVE_MODULES_START = WEEKLY_REPORT_START + 0.6      // 4. Active Modules
-const TOOLS_START = ACTIVE_MODULES_START + 0.6               // 5. Tools
+const WEEKLY_REPORT_START = LOGO_DELAY + 0.6
+const ACTIVE_MODULES_START = WEEKLY_REPORT_START + 0.6
+const TOOLS_START = ACTIVE_MODULES_START + 0.6
 const FOOTER_DELAY = TOOLS_START + 0.5
-const COMPLETED_MODULES_START = TOOLS_START + 0.6             // 6. Completed Modules
+const COMPLETED_MODULES_START = TOOLS_START + 0.6
 
-// LiquidGlassCard's own entrance formula is `ENTRANCE_PAUSE +
-// (delay/1000) * 1.5` (see liquid-glass-card.tsx) — this converts "I
-// want this card's group to start at N seconds" into the millisecond
-// `delay` prop that formula expects, so every group below is defined
-// by WHEN it starts rather than by a hand-picked ms number.
 function msFor(targetSeconds) {
   return Math.round(((targetSeconds - ENTRANCE_PAUSE) / 1.5) * 1000)
 }
 
 // ── Brand block timeline ──────────────────────────────────────────
-// Logo icon slides in first (at LOGO_DELAY); once it's mostly
-// settled, "ZNU" and "PULSE" cascade in one word at a time; the
-// tagline line fades in once both words have landed — all anchored to
-// LOGO_DELAY so the brand cascade stays in sync with wherever the
-// logo itself starts.
 const BRAND_WORDS_START = LOGO_DELAY + 0.45
 const BRAND_WORD_STAGGER = 0.2
 const BRAND_TAGLINE_DELAY = BRAND_WORDS_START + BRAND_WORD_STAGGER * 2 + 0.2
@@ -115,8 +96,9 @@ function ZnuPulseBrand({ dark, pt }) {
           animate="visible"
           variants={brandWordsContainer}
           style={{
+            ...pulseType.sectionTitle,
             fontFamily: pulseFonts.display, fontWeight: 800, fontSize: 20, letterSpacing: 1.2,
-            color: pt.text, lineHeight: 1
+            color: pt.textPrimary, lineHeight: 1
           }}
         >
           <motion.span variants={brandWordItem} style={{ display: 'inline-block' }}>ZNU</motion.span>
@@ -128,8 +110,9 @@ function ZnuPulseBrand({ dark, pt }) {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.55, delay: BRAND_TAGLINE_DELAY }}
           style={{
-            fontFamily: pulseFonts.body, fontWeight: 700, fontSize: 9, letterSpacing: 2.5,
-            color: pt.faint, marginTop: 5, textTransform: 'uppercase'
+            ...pulseType.sectionLabel,
+            fontSize: 9, letterSpacing: 2.5,
+            color: pt.textMuted, marginTop: 5,
           }}
         >For Future Doctors</motion.div>
       </div>
@@ -243,41 +226,26 @@ export default function Home({ dark, toggleTheme }) {
   const activeModules = modules.filter(m => m.status === 'active')
   const completedModules = modules.filter(m => m.status === 'completed')
 
-  // Same fade-up entrance language used across the rest of this page's
-  // motion.div elements — kept as a helper since it's reused for both
-  // section title instances (Tools, Completed Modules), each with its
-  // own place in the 6-group reveal order via the delaySeconds arg.
+  // Section eyebrow labels ("⚡ TOOLS", "✓ COMPLETED MODULES") — now
+  // driven entirely by the shared sectionLabel typography token
+  // (Sora, 600 weight, uppercase, +0.16em tracking) instead of local
+  // ad-hoc sizing, so every uppercase label in the app matches.
   const sectionTitle = (text, delaySeconds) => (
     <motion.h2
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.7, delay: delaySeconds }}
       style={{
-        color: pt.faint,
-        fontSize: 12, fontWeight: 700, letterSpacing: 2.5,
-        marginBottom: 16, textTransform: 'uppercase',
-        fontFamily: pulseFonts.body
+        ...pulseType.sectionLabel,
+        color: pt.textMuted,
+        marginBottom: 16,
       }}>{text}</motion.h2>
   )
 
   return (
     <div style={{ position: 'relative', minHeight: '100vh', overflowX: 'hidden' }}>
-      {/* Full-screen background gradient. See PulseBackground.jsx for
-          the 100dvh reasoning (iOS Safari toolbar collapse behavior). */}
       <PulseBackground />
 
-      {/* Fixed header — logo/name/menu float over the page and never
-          move on scroll. pointerEvents:'none' on the outer wrapper so
-          the empty space around the row (full viewport width) doesn't
-          block clicks on cards underneath; 'auto' on the inner row
-          restores clicking for the logo/menu themselves. No
-          background — it's meant to overlay transparently, not sit on
-          a bar.
-          paddingTop uses env(safe-area-inset-top) so on an iPhone
-          (notch/Dynamic Island) the logo/menu sit below the status
-          bar/notch rather than under it — this only has any effect
-          once index.html's viewport meta includes viewport-fit=cover,
-          which lets the page draw under the notch in the first place. */}
       <div style={{
         position: 'fixed',
         top: 0,
@@ -294,11 +262,6 @@ export default function Home({ dark, toggleTheme }) {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
             <ZnuPulseBrand dark={dark} pt={pt} />
 
-            {/* Theme toggle, search, and profile/sign-in used to live
-                here as separate buttons — all folded into NavMenu now
-                (its nav list + footer row). This is the only header
-                control left on the right. Paired with the logo's own
-                LOGO_DELAY so both sides of the header land together. */}
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
@@ -323,9 +286,6 @@ export default function Home({ dark, toggleTheme }) {
             justify-content: center;
             gap: clamp(16px, 3vh, 40px);
             padding: clamp(14px, 2.5vh, 28px) 0 clamp(24px, 4vh, 56px);
-            /* Bottom safe-area padding so content isn't tucked under
-               the iPhone home indicator when this page is the
-               shorter/first fold. */
             padding-bottom: max(clamp(24px, 4vh, 56px), env(safe-area-inset-bottom));
             box-sizing: border-box;
           }
@@ -362,10 +322,6 @@ export default function Home({ dark, toggleTheme }) {
           }
         `}</style>
 
-        {/* Spacer so the now-fixed header (out of normal flow) doesn't
-            overlap the hero/stat cards underneath it on first paint.
-            Includes the safe-area inset too, since the header itself
-            grew by that amount via its own paddingTop above. */}
         <div style={{ height: 'calc(76px + env(safe-area-inset-top))' }} />
 
         <div className="pulse-fold">
@@ -381,43 +337,40 @@ export default function Home({ dark, toggleTheme }) {
 
           <div className="pulse-wide">
             <div className="pulse-dash-grid">
-              {/* 3. Weekly Report group — every stat tile in this
-                  column starts from WEEKLY_REPORT_START, with the same
-                  internal stagger between tiles as before. */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                 <StatTile dark={dark} pt={pt} delay={msFor(WEEKLY_REPORT_START)}>
-                  <div style={{ color: pt.faint, fontSize: 11, fontWeight: 700, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 8 }}>
+                  <div style={{ ...pulseType.sectionLabel, color: pt.textMuted, marginBottom: 8 }}>
                     📊 Weekly Report
                   </div>
                   <div style={{
                     ...statNumStyle,
-                    color: weeklySummary ? (weeklySummary.accuracy >= 60 ? pt.cobalt : pt.danger) : pt.text
+                    color: weeklySummary ? (weeklySummary.accuracy >= 60 ? pt.cobalt : pt.danger) : pt.textPrimary
                   }}>
                     {weeklySummary ? `${weeklySummary.accuracy}%` : '—'}
                   </div>
-                  <div style={{ color: pt.sub, fontSize: 12, marginTop: 4 }}>
+                  <div style={{ ...pulseType.small, color: pt.textSecondary, marginTop: 4 }}>
                     {weeklySummary ? 'Accuracy this week' : 'No questions logged this week'}
                   </div>
                 </StatTile>
 
                 <StatTile dark={dark} pt={pt} delay={msFor(WEEKLY_REPORT_START) + 60}>
-                  <div style={{ ...statNumStyle, color: pt.text }}>{weeklySummary ? weeklySummary.totalAttempted : 0}</div>
-                  <div style={{ color: pt.sub, fontSize: 12, marginTop: 4 }}>Questions attempted</div>
+                  <div style={{ ...statNumStyle, color: pt.textPrimary }}>{weeklySummary ? weeklySummary.totalAttempted : 0}</div>
+                  <div style={{ ...pulseType.small, color: pt.textSecondary, marginTop: 4 }}>Questions attempted</div>
                 </StatTile>
 
                 <div className="pulse-stat-row-2">
                   <StatTile dark={dark} pt={pt} delay={msFor(WEEKLY_REPORT_START) + 120}>
-                    <div style={{ color: pt.indigo, fontWeight: 800, fontSize: 15 }}>
+                    <div style={{ ...pulseType.cardTitle, fontSize: 15, color: pt.indigo }}>
                       {weeklySummary?.topSubjectName || '—'}
                     </div>
-                    <div style={{ color: pt.sub, fontSize: 11, marginTop: 4 }}>Most practiced</div>
+                    <div style={{ ...pulseType.small, fontSize: 11, color: pt.textMuted, marginTop: 4 }}>Most practiced</div>
                   </StatTile>
                   <StatTile dark={dark} pt={pt} delay={msFor(WEEKLY_REPORT_START) + 150}>
                     <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, color: pt.terracotta }}>
                       <span style={{ fontSize: 16 }}>🔥</span>
-                      <span style={{ fontFamily: pulseFonts.display, fontWeight: 800, fontSize: 22 }}>{streak}</span>
+                      <span style={{ ...pulseType.display, fontSize: 22, lineHeight: 1 }}>{streak}</span>
                     </div>
-                    <div style={{ color: pt.sub, fontSize: 11, marginTop: 4 }}>Day streak</div>
+                    <div style={{ ...pulseType.small, fontSize: 11, color: pt.textMuted, marginTop: 4 }}>Day streak</div>
                   </StatTile>
                 </div>
 
@@ -426,11 +379,11 @@ export default function Home({ dark, toggleTheme }) {
                     onClick={pausedExam ? () => navigate('/mcq') : undefined}
                     style={{ padding: '16px 20px' }}>
                     {pausedExam ? (
-                      <div style={{ color: pt.cobalt, fontWeight: 800, fontSize: 14 }}>
+                      <div style={{ ...pulseType.cardTitle, fontSize: 14, color: pt.cobalt }}>
                         ⏸ Continue where you left off →
                       </div>
                     ) : (
-                      <div style={{ color: pt.text, fontWeight: 700, fontSize: 13, lineHeight: 1.5 }}>
+                      <div style={{ ...pulseType.bodyEmphasis, fontSize: 13, color: pt.textPrimary, lineHeight: 1.5 }}>
                         {announcement}
                       </div>
                     )}
@@ -438,7 +391,6 @@ export default function Home({ dark, toggleTheme }) {
                 )}
               </div>
 
-              {/* 1. Hero — first thing to appear on the whole page. */}
               <motion.div className="pulse-hero-panel"
                 initial={{ opacity: 0, scale: 0.85 }}
                 animate={{ opacity: 1, scale: 1 }}
@@ -448,36 +400,23 @@ export default function Home({ dark, toggleTheme }) {
                 <EcgHero height="100%" />
               </motion.div>
 
-              {/* 4. Active Modules group. */}
               <div>
                 <motion.div
                   initial={{ opacity: 0, y: 16 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.7, delay: ACTIVE_MODULES_START }}
-                  style={{ display: 'flex', alignItems: 'center', gap: 8, color: pt.cobalt, fontSize: 11, fontWeight: 700, letterSpacing: 2.5, textTransform: 'uppercase', marginBottom: 14 }}
+                  style={{ display: 'flex', alignItems: 'center', gap: 8, color: pt.cobalt, marginBottom: 14, ...pulseType.sectionLabel }}
                 >
                   <span style={{ width: 6, height: 6, borderRadius: '50%', background: pt.cobalt, display: 'inline-block' }} />
                   Active Modules
                 </motion.div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                  {/* Gated on modulesLoaded, not just an empty array —
-                      `modules` starts as [] before the Supabase fetch
-                      resolves, so activeModules.length === 0 is briefly
-                      true on every load even when modules genuinely
-                      exist. Without this check, this message flashed
-                      in instantly (it has no entrance delay of its
-                      own) then vanished the moment real data arrived —
-                      exactly the "shows first, then disappears" bug.
-                      Animated with the same timing as the rest of this
-                      group so a truly-empty state still fits the
-                      page's reveal choreography instead of popping in
-                      unstyled. */}
                   {modulesLoaded && activeModules.length === 0 && (
                     <motion.div
                       initial={{ opacity: 0, y: 16 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.7, delay: ACTIVE_MODULES_START }}
-                      style={{ color: pt.sub, fontSize: 13 }}
+                      style={{ ...pulseType.body, color: pt.textSecondary }}
                     >No active modules yet.</motion.div>
                   )}
                   {activeModules.map((mod, i) => (
@@ -492,8 +431,8 @@ export default function Home({ dark, toggleTheme }) {
                         <ModuleIcon value={mod.icon} size={20} color={mod.color} />
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ color: pt.text, fontWeight: 700, fontSize: 14 }}>{mod.name}</div>
-                        <div style={{ color: pt.sub, fontSize: 11, marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{moduleBlurb(mod.name)}</div>
+                        <div style={{ ...pulseType.cardTitle, color: pt.textPrimary }}>{mod.name}</div>
+                        <div style={{ ...pulseType.small, color: pt.textMuted, marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{moduleBlurb(mod.name)}</div>
                       </div>
                       <span style={{ width: 8, height: 8, borderRadius: '50%', background: mod.color, display: 'inline-block', flexShrink: 0 }} />
                     </LiquidGlassCard>
@@ -503,7 +442,6 @@ export default function Home({ dark, toggleTheme }) {
             </div>
           </div>
 
-          {/* 5. Tools group. */}
           <div className="pulse-wide">
             {sectionTitle('⚡ Tools', TOOLS_START)}
             <div className="pulse-tools-grid">
@@ -523,11 +461,11 @@ export default function Home({ dark, toggleTheme }) {
                         <Icon color={accentColor} size={19} />
                       </div>
                       <div style={{ minWidth: 0 }}>
-                        <div style={{ color: pt.text, fontWeight: 700, fontSize: 13 }}>{card.title}</div>
-                        <div style={{ color: pt.sub, fontSize: 11, marginTop: 1 }}>{card.sub}</div>
+                        <div style={{ ...pulseType.cardTitle, fontSize: 13, color: pt.textPrimary }}>{card.title}</div>
+                        <div style={{ ...pulseType.small, fontSize: 11, color: pt.textMuted, marginTop: 1 }}>{card.sub}</div>
                       </div>
                     </div>
-                    <div style={{ color: pt.faint, fontSize: 16, flexShrink: 0 }}>→</div>
+                    <div style={{ color: pt.textMuted, fontSize: 16, flexShrink: 0 }}>→</div>
                   </LiquidGlassCard>
                 )
               })}
@@ -541,7 +479,7 @@ export default function Home({ dark, toggleTheme }) {
             style={{ display: 'flex', alignItems: 'center', gap: 14, justifyContent: 'center' }}
           >
             <div style={{ height: 1, background: pt.border, flex: 1, maxWidth: 120 }} />
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: pt.faint, fontSize: 13, fontWeight: 600 }}>
+            <div style={{ ...pulseType.small, display: 'flex', alignItems: 'center', gap: 8, color: pt.textMuted }}>
               <img src={LOGO_SRC} alt="" style={{ width: 18, height: 18, borderRadius: 4, objectFit: 'cover' }} />
               Keep the pulse. Shape the future.
             </div>
@@ -549,7 +487,6 @@ export default function Home({ dark, toggleTheme }) {
           </motion.div>
         </div>
 
-        {/* 6. Completed Modules group — last in the sequence. */}
         {completedModules.length > 0 && (
           <div className="pulse-wide" style={{ paddingBottom: 'max(100px, env(safe-area-inset-bottom))' }}>
             {sectionTitle('✓ Completed Modules', COMPLETED_MODULES_START)}
@@ -559,12 +496,13 @@ export default function Home({ dark, toggleTheme }) {
                   onClick={() => navigate(`/module/${mod.id}`)}
                   style={{ padding: 'clamp(20px, 2vw, 28px)', textAlign: 'center' }}>
                   <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8, filter: 'grayscale(0.5)' }}>
-                    <ModuleIcon value={mod.icon} size={38} color={pt.faint} />
+                    <ModuleIcon value={mod.icon} size={38} color={pt.textMuted} />
                   </div>
-                  <div style={{ color: pt.sub, fontSize: 'clamp(13px, 1.1vw, 16px)', fontWeight: 700, marginBottom: 8 }}>{mod.name}</div>
+                  <div style={{ ...pulseType.cardTitle, fontSize: 'clamp(13px, 1.1vw, 16px)', color: pt.textSecondary, marginBottom: 8 }}>{mod.name}</div>
                   <div style={{
-                    display: 'inline-block', background: `${pt.faint}20`, color: pt.faint,
-                    border: `1px solid ${pt.faint}40`, borderRadius: 20, padding: '2px 10px', fontSize: 11, fontWeight: 700
+                    ...pulseType.small, fontSize: 11,
+                    display: 'inline-block', background: `${pt.textMuted}20`, color: pt.textMuted,
+                    border: `1px solid ${pt.textMuted}40`, borderRadius: 20, padding: '2px 10px'
                   }}>✓ Completed</div>
                 </LiquidGlassCard>
               ))}

@@ -1,30 +1,36 @@
-// ZNU Pulse — additive design tokens for the Home page redesign only.
-// This file does NOT replace src/theme.js — every other page in the
-// app keeps using getTheme() from theme.js exactly as before. Only
-// Home.jsx imports from here.
-//
-// Palette rules baked into these tokens (per design brief):
+// ZNU Pulse — additive design tokens for the Home page redesign
+// (and now shared glass pages like Checklist). Palette rules baked
+// into these tokens (per design brief):
 //  - No near-black dark mode / no near-white light mode — richer
 //    middle-tone navy-slate (dark) and cool soft-gray (light) canvases
 //    with a clearly separated raised-surface tone.
-//  - No green/emerald/mint/lime/teal-green anywhere. Accent system is
-//    cobalt blue (primary), indigo/violet (secondary), terracotta or
-//    controlled amber (warm emphasis), blue-slate (neutral).
+//  - No green/emerald/mint/lime/teal-green anywhere in the Home hero
+//    palette itself. Accent system is cobalt blue (primary),
+//    indigo/violet (secondary), terracotta or controlled amber (warm
+//    emphasis), blue-slate (neutral). `success` below reuses the
+//    green already used elsewhere in the app (ScoreRing, InlineMessage,
+//    MCQ correct-answer states) as a semantic token — Home itself
+//    doesn't render success states, so this doesn't touch the hero look.
+import { FONT_FAMILY, type as pulseType } from './lib/typography'
 
+// pulseFonts kept for backward compatibility with existing call sites
+// (`pulseFonts.display`, `pulseFonts.body`) — both now resolve to
+// Sora, replacing the previous Plus Jakarta Sans / Inter split.
 export const pulseFonts = {
-  display: "'Plus Jakarta Sans', 'Segoe UI', sans-serif",
-  body: "'Inter', 'Segoe UI', sans-serif",
+  display: FONT_FAMILY,
+  body: FONT_FAMILY,
 }
 
-// Semantic weight scale for the Home typography refinement — regular
-// for body/description, medium for supporting UI labels, semibold for
-// section labels/card titles, bold reserved for primary metrics and
-// major headings only.
+export { pulseType }
+
+// Semantic weight scale — regular for body/description, medium for
+// supporting UI labels, semibold for section labels/card titles, bold
+// reserved for primary metrics and major headings only.
 export const pulseWeights = {
   regular: 400,
-  medium: 600,
-  semibold: 700,
-  bold: 800,
+  medium: 500,
+  semibold: 600,
+  bold: 700,
 }
 
 export function getPulseTheme(dark) {
@@ -39,24 +45,32 @@ export function getPulseTheme(dark) {
         border: '#3A527A66',
         borderStrong: '#4A6690',
 
-        // Text — primary/secondary already near the target opacity
-        // band; `faint` (tertiary/metadata) is brightened slightly so
-        // section labels and the tagline stay legible against the
-        // gradient/glass instead of washing out.
-        text: '#E8EEF7',
-        sub: '#C7D3E8',
-        faint: '#A9BADC',
+        // Text — theme-aware hierarchy per typography spec. `text`/
+        // `sub`/`faint` kept as the original short names for backward
+        // compatibility with existing call sites; textPrimary/
+        // textSecondary/textMuted are the same values under clearer
+        // semantic names for new code.
+        text: '#F4F7FB',
+        sub: '#D6E0EC',
+        faint: '#AFC0D3',
+        textPrimary: '#F4F7FB',
+        textSecondary: '#D6E0EC',
+        textMuted: '#AFC0D3',
 
-        // Accents — no green anywhere
+        // Accents
         cobalt: '#4C86FF',
         cobaltSoft: 'rgba(76,134,255,0.16)',
         cobaltBorder: 'rgba(76,134,255,0.4)',
+        textAccent: '#4C86FF',
         indigo: '#8E7CF6',
         indigoSoft: 'rgba(142,124,246,0.16)',
         terracotta: '#E2725B',
         terracottaSoft: 'rgba(226,114,91,0.16)',
         amber: '#D6A24A',
+        warning: '#D6A24A',
         danger: '#EF6B57',
+        error: '#EF6B57',
+        success: '#4ADE80',
 
         // ECG mark
         ecgBase: '#3A5170',
@@ -72,19 +86,26 @@ export function getPulseTheme(dark) {
         border: '#C7D3E3',
         borderStrong: '#AFC0D6',
 
-        text: '#15243A',
-        sub: '#3E4D63',
-        faint: '#4B5A72',
+        text: '#172033',
+        sub: '#40516A',
+        faint: '#687A91',
+        textPrimary: '#172033',
+        textSecondary: '#40516A',
+        textMuted: '#687A91',
 
         cobalt: '#2A5CD8',
         cobaltSoft: 'rgba(42,92,216,0.10)',
         cobaltBorder: 'rgba(42,92,216,0.35)',
+        textAccent: '#2A5CD8',
         indigo: '#6C5CE3',
         indigoSoft: 'rgba(108,92,227,0.10)',
         terracotta: '#C85D46',
         terracottaSoft: 'rgba(200,93,70,0.12)',
         amber: '#B9812E',
+        warning: '#B9812E',
         danger: '#D6543F',
+        error: '#D6543F',
+        success: '#16A34A',
 
         ecgBase: '#C7D3E3',
         ecgLine: '#1E3F91',
@@ -92,14 +113,7 @@ export function getPulseTheme(dark) {
       }
 }
 
-// Liquid-glass card treatment. Recipe borrowed from a classic
-// "glassmorphism hero" pattern — very transparent tinted fill,
-// hairline border at ~10% opacity, a strong backdrop blur, and a
-// large soft drop shadow (shadow-2xl-style) — rather than the earlier
-// heavier gradient-fill glass. This reads as true frosted glass over
-// the page's canvas gradient instead of a solid card with a blur
-// filter slapped on. Used only by the ZNU Pulse Home redesign
-// (Home.jsx + src/components/pulse/*) — no other page opts in.
+// Liquid-glass card treatment — unchanged, out of typography scope.
 export function pulseGlass(dark) {
   return dark
     ? {

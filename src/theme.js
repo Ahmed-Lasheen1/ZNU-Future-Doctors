@@ -1,5 +1,9 @@
 // Central design tokens for ZNU Future Doctors.
 // Change a color here and it updates everywhere the theme is used.
+import { FONT_FAMILY, type as textType } from './lib/typography'
+
+export const fontFamily = FONT_FAMILY
+export { textType }
 
 export const brand = {
   blue: '#38bdf8',
@@ -17,15 +21,24 @@ export const brand = {
   teal: '#34d399',
 }
 
+// Theme-aware neutral text tiers — same hierarchy in both modes, only
+// the actual hex values change per theme. Matches the values used
+// across the Pulse glass pages (Home, Checklist) so the whole app
+// reads as one consistent typographic voice.
 export function getTheme(dark) {
   return {
     card: dark ? 'linear-gradient(135deg, #1e293b, #0f2540)' : '#fff',
     cardFlat: dark ? '#1e293b' : '#fff',
     border: dark ? '#1e3a5f' : '#e2e8f0',
-    text: dark ? '#e2e8f0' : '#1e293b',
-    sub: dark ? '#94a3b8' : '#64748b',
+
+    // Primary / secondary / muted text tiers
+    text: dark ? '#F4F7FB' : '#172033',       // primary
+    sub: dark ? '#D6E0EC' : '#40516A',        // secondary
+    textMuted: dark ? '#AFC0D3' : '#687A91',  // muted / metadata
+
     input: dark ? '#0f172a' : '#f8fafc',
     bgPage: dark ? '#0f172a' : '#f8fafc',
+    fontFamily: FONT_FAMILY,
     ...brand,
   }
 }
@@ -36,7 +49,7 @@ export function inputStyle(theme) {
     width: '100%', padding: '12px', marginBottom: '12px',
     borderRadius: '10px', border: `1px solid ${theme.border}`,
     background: theme.input, color: theme.text,
-    fontSize: 14, fontFamily: 'inherit', boxSizing: 'border-box', outline: 'none'
+    fontSize: 14, fontFamily: FONT_FAMILY, boxSizing: 'border-box', outline: 'none'
   }
 }
 
@@ -45,7 +58,7 @@ export function buttonStyle(theme, color = theme.blue) {
   return {
     width: '100%', padding: '12px', background: color, border: 'none',
     borderRadius: '10px', fontWeight: 'bold', cursor: 'pointer',
-    color: '#0f172a', fontFamily: 'inherit', fontSize: 14
+    color: '#0f172a', fontFamily: FONT_FAMILY, fontSize: 14
   }
 }
 
@@ -58,6 +71,6 @@ export function backBtnStyle() {
     border: '2px solid rgba(255,255,255,0.15)',
     borderRadius: 10, padding: '6px 14px',
     color: '#94a3b8', cursor: 'pointer',
-    fontSize: 12, fontWeight: 700, fontFamily: 'inherit'
+    fontSize: 12, fontWeight: 700, fontFamily: FONT_FAMILY
   }
 }

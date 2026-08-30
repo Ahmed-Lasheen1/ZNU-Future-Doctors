@@ -2,25 +2,12 @@
 <html lang="en" dir="ltr">
   <head>
     <meta charset="UTF-8" />
-    <!-- viewport-fit=cover lets the page draw all the way under the
-         iPhone notch / status bar / home indicator instead of stopping
-         short of them — without this, iOS reserves that space and
-         fills it with a solid (usually white) bar in standalone PWA
-         mode. -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 
-    <!-- Makes "Add to Home Screen" launch as a standalone app (no
-         Safari chrome) and lets the status bar overlay the page
-         transparently instead of painting its own solid bar. -->
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="ZNU Pulse" />
 
-    <!-- Cache-busted with ?v=2 — browsers cache favicons unusually
-         aggressively (often ignoring a normal hard-reload), so bump
-         this query string again next time the icon changes. The SVG
-         and existing 192px PNG cover modern and legacy PNG consumers
-         without referring to non-existent asset files. -->
     <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2" />
     <link rel="icon" type="image/png" href="/icon-192.png?v=2" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=2" />
@@ -37,12 +24,13 @@
     <meta name="twitter:title" content="ZNU Pulse" />
     <meta name="twitter:description" content="Your integrated medical study platform for ZNU medical students." />
 
-    <!-- Display font for the ZNU Pulse Home page (src/pages/Home.jsx /
-         premiumTheme.js). Every other page keeps its existing font
-         (Segoe UI, set in src/index.css), so this is purely additive. -->
+    <!-- Sora is now the app's single typeface (display + body) across
+         every page and both themes — replaces the previous Plus
+         Jakarta Sans + Inter combination used only on the Pulse pages,
+         and the plain Segoe UI system font used elsewhere. -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 
     <title>ZNU Pulse</title>
   </head>
