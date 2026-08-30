@@ -10,10 +10,6 @@ import { liquidGlassShadow, liquidGlassBackdrop, liquidGlassTint } from '../lib/
 
 const morphEase = [0.22, 1, 0.36, 1]
 
-// "Search" used to be a plain nav-link row in this list. It's now its
-// own dedicated search-bar row (rendered separately, right before
-// Home) — so it's removed from here to avoid the same destination
-// appearing twice.
 const navItems = [
   { label: 'Home', href: '/' },
   { label: 'Schedules', href: '/schedule' },
@@ -29,16 +25,37 @@ function initialOf(name) {
 const BUTTON_SIZE = 44
 const PANEL_WIDTH = 260
 const PANEL_RADIUS = 20
+const ROW_RADIUS = 14
+
+// ── Glass row wrapper ────────────────────────────────────────────────
+// Same three-layer glass recipe used by the outer menu shell and by
+// LiquidGlassCard on Home (backdrop blur+saturate, a lens-shadow/rim
+// layer, and a neutral tint to cancel the saturate() color cast) —
+// just scaled down to a per-row treatment instead of a whole panel.
+// Each row becomes its own small glass "chip" sitting on top of the
+// panel's own glass, rather than a flat hover-only background.
+function GlassRow({ dark, radius = ROW_RADIUS, style = {}, hoverBg, children, onMouseEnter, onMouseLeave, ...rest }) {
+  const [hovered, setHovered] = useState(false)
+
+  return (
+    <div
+      {...rest}
+      onMouseEnter={e => { setHovered(true); onMouseEnter?.(e) }}
+      onMouseLeave={e => { setHovered(false); onMouseLeave?.(e) }}
+      style={{ position: 'relative', overflow: 'hidden', borderRadius: radius, ...style }}
+    >
+      <div aria-hidden className="pointer-events-none" style={{ position: 'absolute', inset: 0, borderRadius: 'inherit', ...liquidGlassBackdrop() }} />
+      <div aria-hidden className="pointer-events-none" style={{ position: 'absolute', inset: 0, borderRadius: 'inherit', boxShadow: liquidGlassShadow(dark) }} />
+      <div aria-hidden className="pointer-events-none" style={{ position: 'absolute', inset: 0, borderRadius: 'inherit', background: liquidGlassTint(dark) }} />
+      {hovered && (
+        <div aria-hidden className="pointer-events-none" style={{ position: 'absolute', inset: 0, borderRadius: 'inherit', background: hoverBg }} />
+      )}
+      <div style={{ position: 'relative', zIndex: 1 }}>{children}</div>
+    </div>
+  )
+}
 
 // ── Per-character flip-reveal label ─────────────────────────────────
-// Same hover mechanics/timing as the reference liquid-morph menu's
-// MenuButton: each character sits in a fixed-height overflow-hidden
-// cell over a duplicate of itself; on hover the inner stack slides up
-// one line-height so the duplicate scrolls into view, staggered 30ms
-// per character. A hover mid-animation is locked for
-// `lockDuration = 30 * chars.length + 300` ms so a fast mouse-out
-// can't cut the stagger short; a leave during the lock is queued and
-// applied the instant it releases.
 function CharFlipLabel({ text, color, fontSize = 13, fontWeight = 600 }) {
   const [hovered, setHovered] = useState(false)
   const animatingRef = useRef(false)
@@ -134,12 +151,6 @@ export default function NavMenu({ dark, toggleTheme, align = 'left' }) {
     navigate(path)
   }
 
-  // Quick search — Enter or tapping the icon sends the student to the
-  // full Search page. The typed text rides along as router state
-  // (`initialQuery`) rather than a URL param, since Search.jsx isn't
-  // currently wired to read a query param; if you want it to actually
-  // prefill and auto-run the search, Search.jsx's initial state would
-  // need a small addition to read `location.state?.initialQuery`.
   function submitSearch() {
     const q = searchValue.trim()
     setOpen(false)
@@ -153,7 +164,8 @@ export default function NavMenu({ dark, toggleTheme, align = 'left' }) {
     navigate('/')
   }
 
-  const rowHover = dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)'
+  const rowHover = dark ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.35)'
+  const dangerHover = dark ? 'rgba(239,107,87,0.14)' : 'rgba(214,84,63,0.12)'
   const openHeight = BUTTON_SIZE + contentHeight + 10
 
   const listContainer = {
@@ -244,114 +256,101 @@ export default function NavMenu({ dark, toggleTheme, align = 'left' }) {
                 ref={contentRef}
                 variants={listContainer}
                 initial="hidden" animate="visible" exit="exit"
-                style={{ width: PANEL_WIDTH, padding: '0 10px 10px', fontFamily: pulseFonts.body }}
+                style={{ width: PANEL_WIDTH, padding: '0 10px 10px', fontFamily: pulseFonts.body, display: 'flex', flexDirection: 'column', gap: 6 }}
               >
-                {/* Profile / Sign In — first thing in the panel */}
+                {/* Profile / Sign In */}
                 <motion.div variants={listItem}>
                   {user ? (
-                    <div
+                    <GlassRow
+                      dark={dark}
+                      radius={ROW_RADIUS}
+                      hoverBg={rowHover}
                       onClick={() => goTo('/profile')}
                       role="button" tabIndex={0}
                       onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); goTo('/profile') } }}
-                      style={{
-                        display: 'flex', alignItems: 'center', gap: 12,
-                        padding: '10px 12px', borderRadius: 14, cursor: 'pointer', marginBottom: 6
-                      }}
-                      onMouseEnter={e => { e.currentTarget.style.background = rowHover }}
-                      onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
+                      style={{ cursor: 'pointer' }}
                     >
-                      <div style={{
-                        width: 40, height: 40, borderRadius: '50%', flexShrink: 0,
-                        background: `linear-gradient(135deg, ${pt.cobalt}, ${pt.indigo})`,
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: 16, fontWeight: 900, color: '#fff'
-                      }}>{initialOf(profile?.name)}</div>
-                      <div style={{ minWidth: 0, flex: 1 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px' }}>
                         <div style={{
-                          color: pt.text, fontWeight: 800, fontSize: 13,
-                          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'
-                        }}>Dr. {profile?.name || '...'}</div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: pt.amber, fontSize: 12, fontWeight: 700, marginTop: 2 }}>
-                          ⭐ {profile?.points || 0} points
+                          width: 40, height: 40, borderRadius: '50%', flexShrink: 0,
+                          background: `linear-gradient(135deg, ${pt.cobalt}, ${pt.indigo})`,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          fontSize: 16, fontWeight: 900, color: '#fff'
+                        }}>{initialOf(profile?.name)}</div>
+                        <div style={{ minWidth: 0, flex: 1 }}>
+                          <div style={{
+                            color: pt.text, fontWeight: 800, fontSize: 13,
+                            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'
+                          }}>Dr. {profile?.name || '...'}</div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: pt.amber, fontSize: 12, fontWeight: 700, marginTop: 2 }}>
+                            ⭐ {profile?.points || 0} points
+                          </div>
                         </div>
                       </div>
-                    </div>
+                    </GlassRow>
                   ) : (
-                    <button onClick={() => goTo('/auth')} style={{
-                      width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                      padding: '12px', marginBottom: 6, borderRadius: 14,
-                      background: `linear-gradient(135deg, ${pt.cobalt}, ${pt.indigo})`,
-                      border: 'none', cursor: 'pointer',
-                      color: '#fff', fontWeight: 800, fontSize: 13, fontFamily: 'inherit'
-                    }}>Sign In →</button>
+                    <GlassRow dark={dark} radius={ROW_RADIUS} hoverBg="rgba(255,255,255,0.08)" onClick={() => goTo('/auth')} role="button" tabIndex={0} style={{ cursor: 'pointer' }}>
+                      <div style={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                        padding: '12px', color: '#fff', fontWeight: 800, fontSize: 13,
+                        background: `linear-gradient(135deg, ${pt.cobalt}cc, ${pt.indigo}cc)`
+                      }}>Sign In →</div>
+                    </GlassRow>
                   )}
                 </motion.div>
 
-                <motion.div variants={listItem} style={{ height: 1, background: pt.border, margin: '6px 4px' }} />
-
-                {/* Search bar — right before Home */}
-                <motion.div variants={listItem} style={{
-                  display: 'flex', alignItems: 'center', gap: 8,
-                  padding: '8px 12px', borderRadius: 12, marginBottom: 2
-                }}
-                  onMouseEnter={e => { e.currentTarget.style.background = rowHover }}
-                  onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
-                >
-                  <SearchIcon
-                    size={15}
-                    color={pt.faint}
-                    style={{ flexShrink: 0, cursor: 'pointer' }}
-                    onClick={submitSearch}
-                  />
-                  <input
-                    value={searchValue}
-                    onChange={e => setSearchValue(e.target.value)}
-                    onKeyDown={e => { if (e.key === 'Enter') submitSearch() }}
-                    placeholder="Search..."
-                    style={{
-                      flex: 1, minWidth: 0, background: 'transparent', border: 'none', outline: 'none',
-                      color: pt.text, fontSize: 13, fontFamily: 'inherit', fontWeight: 600
-                    }}
-                  />
+                {/* Search bar */}
+                <motion.div variants={listItem}>
+                  <GlassRow dark={dark} radius={ROW_RADIUS} hoverBg={rowHover}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px' }}>
+                      <SearchIcon size={15} color={pt.faint} style={{ flexShrink: 0, cursor: 'pointer' }} onClick={submitSearch} />
+                      <input
+                        value={searchValue}
+                        onChange={e => setSearchValue(e.target.value)}
+                        onKeyDown={e => { if (e.key === 'Enter') submitSearch() }}
+                        placeholder="Search..."
+                        style={{
+                          flex: 1, minWidth: 0, background: 'transparent', border: 'none', outline: 'none',
+                          color: pt.text, fontSize: 13, fontFamily: 'inherit', fontWeight: 600
+                        }}
+                      />
+                    </div>
+                  </GlassRow>
                 </motion.div>
 
                 {/* Navigation */}
                 {navItems.map(item => (
-                  <motion.button key={item.href} variants={listItem} onClick={() => goTo(item.href)} style={{
-                    width: '100%', textAlign: 'left', background: 'transparent', border: 'none',
-                    padding: '10px 12px', borderRadius: 12, cursor: 'pointer',
-                    fontFamily: 'inherit'
-                  }}
-                    onMouseEnter={e => { e.currentTarget.style.background = rowHover }}
-                    onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
-                  >
-                    <CharFlipLabel text={item.label} color={pt.text} fontSize={13} fontWeight={600} />
-                  </motion.button>
+                  <motion.div key={item.href} variants={listItem}>
+                    <GlassRow dark={dark} radius={ROW_RADIUS} hoverBg={rowHover} onClick={() => goTo(item.href)} role="button" tabIndex={0}
+                      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); goTo(item.href) } }}
+                      style={{ cursor: 'pointer' }}>
+                      <div style={{ padding: '10px 12px' }}>
+                        <CharFlipLabel text={item.label} color={pt.text} fontSize={13} fontWeight={600} />
+                      </div>
+                    </GlassRow>
+                  </motion.div>
                 ))}
 
-                <motion.div variants={listItem} style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'flex-start',
-                  padding: '6px 12px 10px'
-                }}>
-                  <ThemeSwitch dark={dark} onToggle={toggleTheme} scale={0.6} stretchX={1.35} />
+                {/* Theme switch */}
+                <motion.div variants={listItem}>
+                  <GlassRow dark={dark} radius={ROW_RADIUS} hoverBg="transparent">
+                    <div style={{ display: 'flex', alignItems: 'center', padding: '6px 12px' }}>
+                      <ThemeSwitch dark={dark} onToggle={toggleTheme} scale={0.6} stretchX={1.35} />
+                    </div>
+                  </GlassRow>
                 </motion.div>
 
-                {/* Sign out — last, only when signed in */}
+                {/* Sign out */}
                 {user && (
-                  <>
-                    <motion.div variants={listItem} style={{ height: 1, background: pt.border, margin: '6px 4px' }} />
-                    <motion.button variants={listItem} onClick={handleSignOut} style={{
-                      width: '100%', textAlign: 'left', display: 'flex', alignItems: 'center', gap: 10,
-                      background: 'transparent', border: 'none',
-                      padding: '10px 12px', borderRadius: 12, cursor: 'pointer',
-                      fontFamily: 'inherit'
-                    }}
-                      onMouseEnter={e => { e.currentTarget.style.background = dark ? 'rgba(239,107,87,0.1)' : 'rgba(214,84,63,0.08)' }}
-                      onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
-                    >
-                      🚪 <CharFlipLabel text="Sign Out" color={pt.danger} fontSize={13} fontWeight={700} />
-                    </motion.button>
-                  </>
+                  <motion.div variants={listItem}>
+                    <GlassRow dark={dark} radius={ROW_RADIUS} hoverBg={dangerHover} onClick={handleSignOut} role="button" tabIndex={0}
+                      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleSignOut() } }}
+                      style={{ cursor: 'pointer' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px' }}>
+                        🚪 <CharFlipLabel text="Sign Out" color={pt.danger} fontSize={13} fontWeight={700} />
+                      </div>
+                    </GlassRow>
+                  </motion.div>
                 )}
               </motion.div>
             )}
