@@ -50,8 +50,6 @@ html, body {
   inset: 0;
   width: 100%;
   overflow: hidden;
-  padding-top: env(safe-area-inset-top);
-  padding-bottom: env(safe-area-inset-bottom);
 }
 
 #root {
