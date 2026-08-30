@@ -1,3 +1,4 @@
+// src/App.jsx
 import { useState, useEffect, Suspense, lazy } from 'react'
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom'
 import { supabase } from './supabase'
@@ -6,7 +7,7 @@ import { fetchModulesSorted } from './lib/modules'
 import { subscribeOnlinePresence } from './lib/onlinePresence'
 import ErrorBoundary from './components/ErrorBoundary'
 import ToastProvider from './components/ToastProvider'
-import NavMenu from './components/NavMenu'
+import PulseHeader from './components/pulse/PulseHeader'
 import { ThemeContext, AuthContext, ModulesContext } from './contexts'
 import Home from './pages/Home'
 const Checklist = lazy(() => import('./pages/Checklist'))
@@ -63,31 +64,16 @@ function ScrollToTop() {
   return null
 }
 
-function SmartHeader({ dark, toggleTheme }) {
+// Home renders its own fixed, full-bleed brand header + NavMenu
+// directly inline (its content scrolls behind a transparent overlay).
+// Every other route gets the same brand identity — logo + "ZNU PULSE"
+// left, NavMenu right — via the shared PulseHeader component instead,
+// so both are visually the same design language without duplicating
+// Home's specific fixed-overlay layout onto pages that don't need it.
+function SiteHeader({ dark, toggleTheme }) {
   const location = useLocation()
   if (location.pathname === '/') return null
-
-  return (
-    <div style={{
-      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-      padding: '10px 16px',
-      background: dark ? 'rgba(10, 15, 30, 0.95)' : 'rgba(255,255,255,0.95)',
-      backdropFilter: 'blur(12px)',
-      position: 'sticky', top: 0, zIndex: 1000,
-      borderBottom: `1px solid ${dark ? 'rgba(56,189,248,0.2)' : '#e2e8f0'}`,
-    }}>
-      {/* The only header control now — search, theme toggle, and
-          profile/sign-in were removed from here and folded into the
-          curved menu itself (nav list + footer row). */}
-      <NavMenu dark={dark} toggleTheme={toggleTheme} />
-
-      <span className="smart-header-title" style={{ color: dark ? '#38bdf8' : '#0ea5e9', fontWeight: 900, fontSize: 16 }}>ZNU Future Doctors</span>
-
-      {/* Empty spacer matching the menu button's width, so the title
-          stays visually centered now that the right side is empty. */}
-      <div style={{ width: 40, height: 40 }} />
-    </div>
-  )
+  return <PulseHeader dark={dark} toggleTheme={toggleTheme} />
 }
 
 export default function App() {
@@ -180,7 +166,7 @@ export default function App() {
             fontFamily: "'Segoe UI', sans-serif"
           }}>
             <ScrollToTop />
-            <SmartHeader dark={dark} toggleTheme={() => setDark(!dark)} />
+            <SiteHeader dark={dark} toggleTheme={() => setDark(!dark)} />
             <div style={{ flex: 1 }}>
               <ErrorBoundary>
                 <Suspense fallback={<PageLoader dark={dark} />}>
