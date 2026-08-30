@@ -5,7 +5,7 @@ import { motion } from "framer-motion"
 import { cn } from "@/lib/utils"
 import { ENTRANCE_PAUSE } from "@/lib/pulseMotion"
 import LiquidGlassFilter from "@/components/LiquidGlassFilter"
-import { liquidGlassShadow, liquidGlassBackdrop } from "@/lib/liquidGlass"
+import { liquidGlassShadow, liquidGlassBackdrop, liquidGlassTint } from "@/lib/liquidGlass"
 
 interface LiquidGlassCardProps {
   children: ReactNode
@@ -16,26 +16,6 @@ interface LiquidGlassCardProps {
   style?: CSSProperties
 }
 
-// Liquid-glass card — same recipe as the liquid-glass-button spec
-// (feTurbulence + feDisplacementMap backdrop distortion, layered inset
-// shadows for the "lens" rim, plain `hover:scale-105 duration-300
-// transition` for the hover interaction — no lift, no spring, no tap
-// shrink, matching LiquidButton's own animation exactly). Adapted from
-// a button into a card container. Replaces
-// src/components/pulse/PulseCard.jsx everywhere on the Home page.
-//
-// Each instance renders its own hidden <filter> with a unique id (via
-// useId) so multiple cards on one page never collide — the original
-// spec hard-codes a single id, which only works for one button on the
-// page at a time.
-//
-// Shadow/backdrop values live in src/lib/liquidGlass.js so this
-// component and NavMenu.jsx's dropdown panel share one recipe.
-//
-// The entrance fade-up-on-mount below is Home.jsx's own page-reveal
-// choreography (see ENTRANCE_PAUSE / msFor in Home.jsx) — it isn't
-// part of the liquid-glass spec, and is unrelated to the hover
-// interaction fix.
 export default function LiquidGlassCard({
   children,
   dark,
@@ -56,10 +36,7 @@ export default function LiquidGlassCard({
     }
   }
 
-  // borderRadius is applied to the actual DOM node (so the glass
-  // clipping/backdrop matches pill or rounded cards); the rest of
-  // `style` is pure content layout and lands on the inner content div.
-  const { borderRadius = 18, ...contentStyle } = style
+  const { borderRadius = 18, ...contentStyle } = style as CSSProperties & { borderRadius?: number | string }
   const entranceDelay = ENTRANCE_PAUSE + (delay / 1000) * 1.5
 
   return (
@@ -80,14 +57,24 @@ export default function LiquidGlassCard({
         )}
         style={{ borderRadius, height: "100%" }}
       >
-        {/* Distorted glass backdrop — the actual "liquid" refraction.
-            Chained with a plain blur so Safari (which ignores the SVG
-            url() filter reference in backdrop-filter) still degrades
-            to a normal frosted-glass blur instead of no blur at all. */}
+        {/* Distorted glass backdrop — the actual "liquid" refraction
+            where supported. Chained with a plain blur so Safari (which
+            ignores the SVG url() filter reference in backdrop-filter)
+            still degrades to a normal frosted-glass blur. */}
         <div
           aria-hidden
           className="pointer-events-none absolute inset-0 -z-10 overflow-hidden rounded-[inherit]"
           style={liquidGlassBackdrop(filterId)}
+        />
+
+        {/* Tint layer — the part that actually hides what's behind the
+            card, independent of whether the blur/distortion filter is
+            supported in this browser. See liquidGlass.js for why this
+            is necessary. */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 z-0 rounded-[inherit]"
+          style={{ background: liquidGlassTint(!!dark) }}
         />
 
         {/* Rim-light / inset-shadow layer — the lens edge. */}

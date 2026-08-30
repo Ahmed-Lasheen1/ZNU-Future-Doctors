@@ -175,7 +175,7 @@ export default function NavMenu({ dark, toggleTheme, align = 'left' }) {
                 2. lens-shadow/rim layer
                 3. real content on top
                 No added tint, no added border — this is the exact card recipe. */}
-            <div style={{ position: 'relative', borderRadius: panelRadius, height: '100%' }}>
+                        <div style={{ position: 'relative', borderRadius: panelRadius, height: '100%' }}>
               <div
                 aria-hidden
                 className="pointer-events-none"
@@ -184,6 +184,14 @@ export default function NavMenu({ dark, toggleTheme, align = 'left' }) {
                   overflow: 'hidden', borderRadius: panelRadius,
                   ...liquidGlassBackdrop(filterId)
                 }}
+              />
+              {/* Tint layer — actually hides page content behind the
+                  menu, independent of browser support for the SVG
+                  distortion filter. See liquidGlass.js for why. */}
+              <div
+                aria-hidden
+                className="pointer-events-none"
+                style={{ position: 'absolute', inset: 0, zIndex: 0, borderRadius: panelRadius, background: liquidGlassTint(dark) }}
               />
               <div
                 aria-hidden
