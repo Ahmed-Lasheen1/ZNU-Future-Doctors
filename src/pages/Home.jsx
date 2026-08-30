@@ -272,6 +272,41 @@ export default function Home({ dark, toggleTheme }) {
         background: LOGO_BG,
       }} />
 
+      {/* Fixed header — logo/name/menu float over the page and never
+          move on scroll. pointerEvents:'none' on the outer wrapper so
+          the empty space around the row (full viewport width) doesn't
+          block clicks on cards underneath; 'auto' on the inner row
+          restores clicking for the logo/menu themselves. No
+          background — it's meant to overlay transparently, not sit on
+          a bar. */}
+      <div style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        zIndex: 500,
+        pointerEvents: 'none',
+      }}>
+        <div className="pulse-wide" style={{ paddingTop: 16, paddingBottom: 16, pointerEvents: 'auto' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+            <ZnuPulseBrand dark={dark} pt={pt} />
+
+            {/* Theme toggle, search, and profile/sign-in used to live
+                here as separate buttons — all folded into NavMenu now
+                (its nav list + footer row). This is the only header
+                control left on the right. Paired with the logo's own
+                LOGO_DELAY so both sides of the header land together. */}
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.7, delay: LOGO_DELAY }}
+            >
+              <NavMenu dark={dark} toggleTheme={toggleTheme} align="right" />
+            </motion.div>
+          </div>
+        </div>
+      </div>
+
       <div style={{
         position: 'relative', zIndex: 1,
         fontFamily: pulseFonts.body
@@ -334,36 +369,13 @@ export default function Home({ dark, toggleTheme }) {
           }
         `}</style>
 
+        {/* Spacer so the now-fixed header (out of normal flow) doesn't
+            overlap the hero/stat cards underneath it on first paint. */}
+        <div style={{ height: 76 }} />
+
         <div className="pulse-fold">
           {modulesError && <div className="pulse-wide"><ErrorBanner /></div>}
 
-          <div className="pulse-wide" style={{
-            position: 'sticky',
-            top: 0,
-            zIndex: 500,
-            paddingTop: 12,
-            paddingBottom: 12,
-            background: dark ? 'rgba(10, 15, 30, 0.75)' : 'rgba(240, 249, 255, 0.75)',
-            backdropFilter: 'blur(12px)',
-            WebkitBackdropFilter: 'blur(12px)',
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-              <ZnuPulseBrand dark={dark} pt={pt} />
-
-              {/* Theme toggle, search, and profile/sign-in used to live
-                  here as separate buttons — all folded into NavMenu now
-                  (its nav list + footer row). This is the only header
-                  control left on the right. Paired with the logo's own
-                  LOGO_DELAY so both sides of the header land together. */}
-              <motion.div
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.7, delay: LOGO_DELAY }}
-              >
-                <NavMenu dark={dark} toggleTheme={toggleTheme} align="right" />
-               </motion.div>
-             </div>
-           </div>
           <motion.div className="pulse-wide"
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
