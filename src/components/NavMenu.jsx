@@ -154,43 +154,28 @@ export default function NavMenu({ dark, toggleTheme, align = 'left' }) {
         />
 
         <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column' }}>
-          {/* Collapsed state: hamburger. Open state: same button now
-              renders as an X in the top-right corner of the panel. */}
-          <div style={{
-            width: '100%', minHeight: BUTTON_SIZE, flexShrink: 0,
-            display: 'flex', alignItems: 'center',
-            justifyContent: open ? 'flex-end' : (align === 'right' ? 'flex-end' : 'flex-start'),
-            padding: open ? '4px 6px 0 0' : 0
+                    <div style={{
+            width: BUTTON_SIZE, height: BUTTON_SIZE, flexShrink: 0,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            alignSelf: align === 'right' ? 'flex-end' : 'flex-start'
           }}>
-            {open ? (
-              <button
-                onClick={() => setOpen(false)}
-                aria-label="Close navigation menu"
-                style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  width: 36, height: 36, padding: 0,
-                  background: 'transparent', border: 'none', cursor: 'pointer',
-                  color: pt.text, WebkitTapHighlightColor: 'transparent', outline: 'none'
-                }}
-              >
-                <X size={22} />
-              </button>
-            ) : (
-              <button
-                onClick={() => setOpen(true)}
-                aria-label="Open navigation menu"
-                aria-haspopup="true"
-                aria-expanded={false}
-                style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  width: BUTTON_SIZE, height: BUTTON_SIZE, flexShrink: 0, padding: 0,
-                  background: 'transparent', border: 'none', cursor: 'pointer',
-                  WebkitTapHighlightColor: 'transparent', outline: 'none'
-                }}
-              >
-                <MenuToggleIcon open={false} width={44} height={44} stroke={dark ? '#38bdf8' : '#475569'} duration={400} />
-              </button>
-            )}
+            <button
+              onClick={() => setOpen(o => !o)}
+              aria-label={open ? 'Close navigation menu' : 'Open navigation menu'}
+              aria-haspopup="true"
+              aria-expanded={open}
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                width: 44, height: 44, flexShrink: 0, padding: 0,
+                background: 'transparent',
+                border: 'none',
+                cursor: 'pointer',
+                WebkitTapHighlightColor: 'transparent',
+                outline: 'none'
+              }}
+            >
+              <MenuToggleIcon open={open} width={44} height={44} stroke={dark ? '#38bdf8' : '#475569'} duration={400} />
+            </button>
           </div>
 
           <AnimatePresence>
