@@ -1,28 +1,33 @@
 import { getTheme } from '../theme'
+import { ModuleIcon } from '../lib/medicalIcons'
 
-// The horizontal row of module buttons ("🫀 Cardiology", "🧠 Neuro", ...)
-// repeated at the top of Checklist, MCQ, FilesPage and Schedule. Used to
-// be copy-pasted in all four — now it lives here once. Passing a
-// slightly different `onSelect` in each page still lets each page do
-// its own extra logic (e.g. resetting the active subject) on top of
-// picking the module.
+// The horizontal row of module buttons repeated at the top of
+// Checklist, MCQ, FilesPage and Schedule. `mod.icon` can now be either
+// a plain emoji or "icon:<key>" — ModuleIcon resolves either.
 export default function ModuleTabs({ modules, activeModule, onSelect, dark, style }) {
   const c = getTheme(dark)
 
   return (
     <div style={{ display: 'flex', gap: 8, overflowX: 'auto', marginBottom: 16, paddingBottom: 4, ...style }}>
-      {modules.map(mod => (
-        <button key={mod.id} onClick={() => onSelect(mod.id)} style={{
-          padding: '8px 16px', borderRadius: 10, whiteSpace: 'nowrap',
-          border: `2px solid ${activeModule === mod.id ? mod.color : c.border}`,
-          background: activeModule === mod.id ? `${mod.color}20` : 'transparent',
-          color: activeModule === mod.id ? mod.color : c.sub,
-          cursor: 'pointer', fontWeight: 700, fontSize: 13, fontFamily: 'inherit'
-        }}>
-          {mod.icon} {mod.name}
-          {mod.status === 'completed' && <span style={{ fontSize: 10, marginLeft: 4, color: c.sub }}>✓</span>}
-        </button>
-      ))}
+      {modules.map(mod => {
+        const active = activeModule === mod.id
+        return (
+          <button key={mod.id} onClick={() => onSelect(mod.id)} style={{
+            display: 'flex', alignItems: 'center', gap: 6,
+            padding: '8px 16px', borderRadius: 10, whiteSpace: 'nowrap',
+            border: `2px solid ${active ? mod.color : c.border}`,
+            background: active ? `${mod.color}20` : 'transparent',
+            color: active ? mod.color : c.sub,
+            cursor: 'pointer', fontWeight: 700, fontSize: 13, fontFamily: 'inherit'
+          }}>
+            <span style={{ display: 'inline-flex' }}>
+              <ModuleIcon value={mod.icon} size={14} color={active ? mod.color : c.sub} />
+            </span>
+            {mod.name}
+            {mod.status === 'completed' && <span style={{ fontSize: 10, marginLeft: 2, color: c.sub }}>✓</span>}
+          </button>
+        )
+      })}
     </div>
   )
 }

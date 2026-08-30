@@ -6,6 +6,7 @@ import ErrorBanner from '../components/ErrorBanner'
 import AnimatedCard from '../components/AnimatedCard'
 import SummaryOverlay from '../components/SummaryOverlay'
 import { useModules } from '../App'
+import { ModuleIcon, ExamIcon, NotesIcon } from '../lib/medicalIcons'
 
 export default function LessonPage({ dark }) {
   const c = getTheme(dark)
@@ -15,9 +16,6 @@ export default function LessonPage({ dark }) {
   const module = modules.find(m => m.id === moduleId) || null
   const [lesson, setLesson] = useState(null)
   const [questionCount, setQuestionCount] = useState(0)
-  // A lesson can now have more than one summary tagged to it (e.g. one
-  // per exam stage) — same "auto-open if there's only one" pattern
-  // already used on SubjectPage/StagePage.
   const [summaries, setSummaries] = useState([])
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState(false)
@@ -29,9 +27,6 @@ export default function LessonPage({ dark }) {
     Promise.all([
       supabase.from('lessons').select('*').eq('id', lessonId).single(),
       supabase.from('questions').select('id', { count: 'exact', head: true }).eq('lesson_id', lessonId),
-      // Summaries are now linked to a lesson via lesson_id (set from
-      // the admin Summaries tab) instead of a summary_url column
-      // stored directly on the lesson.
       supabase.from('summaries').select('*').eq('lesson_id', lessonId).order('created_at')
     ]).then(([lessonRes, countRes, summaryRes]) => {
       if (lessonRes.data) setLesson(lessonRes.data)
@@ -61,8 +56,6 @@ export default function LessonPage({ dark }) {
 
   function openSummary() {
     if (summaries.length === 0) return
-    // One summary → open it directly, no extra click, same convention
-    // used on SubjectPage/StagePage. Several → show the inline picker.
     if (summaries.length === 1) {
       setSelectedSummary(summaries[0])
     } else {
@@ -82,9 +75,13 @@ export default function LessonPage({ dark }) {
       {lesson && (
         <>
           <div style={{ textAlign: 'center', padding: '10px 0 30px' }}>
-            <div style={{ fontSize: 44, marginBottom: 8 }}>📘</div>
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}>
+              <ModuleIcon value={lesson.icon || '📘'} size={44} color="#34d399" />
+            </div>
             <h1 style={{ color: '#34d399', fontSize: 24, fontWeight: 900, marginBottom: 6 }}>{lesson.title}</h1>
-            <div style={{ color: c.sub, fontSize: 13 }}>{module.icon} {module.name}</div>
+            <div style={{ color: c.sub, fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+              <ModuleIcon value={module.icon} size={14} color={c.sub} /> {module.name}
+            </div>
           </div>
 
           <div style={{ marginBottom: 32 }}>
@@ -93,7 +90,9 @@ export default function LessonPage({ dark }) {
             </h2>
             {summaries.length > 0 ? (
               <AnimatedCard delay={100} color='#34d399' dark={dark} onClick={openSummary}>
-                <div style={{ fontSize: 30, marginBottom: 8 }}>📝</div>
+                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}>
+                  <NotesIcon color="#34d399" size={30} />
+                </div>
                 <div style={{ color: c.text, fontSize: 13, fontWeight: 700 }}>
                   {summaries.length === 1 ? 'Open Lesson Summary' : 'Summaries'}
                 </div>
@@ -120,7 +119,7 @@ export default function LessonPage({ dark }) {
                     }}
                     onMouseEnter={e => e.currentTarget.style.borderColor = '#34d399'}
                     onMouseLeave={e => e.currentTarget.style.borderColor = '#34d39940'}>
-                    <span style={{ fontSize: 16 }}>📝</span>
+                    <NotesIcon color="#34d399" size={16} />
                     <span style={{ color: c.text, fontSize: 13, fontWeight: 600 }}>{s.title}</span>
                   </div>
                 ))}
@@ -135,7 +134,9 @@ export default function LessonPage({ dark }) {
             {questionCount > 0 ? (
               <AnimatedCard delay={200} color='#e2725b' dark={dark}
                 onClick={() => navigate(`/mcq?module=${moduleId}&lesson=${lessonId}`)}>
-                <div style={{ fontSize: 30, marginBottom: 8 }}>🧪</div>
+                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}>
+                  <ExamIcon color="#e2725b" size={30} />
+                </div>
                 <div style={{ color: c.text, fontSize: 13, fontWeight: 700 }}>Practice This Lesson</div>
                 <div style={{ color: c.sub, fontSize: 12, marginTop: 4 }}>{questionCount} question{questionCount === 1 ? '' : 's'}</div>
               </AnimatedCard>

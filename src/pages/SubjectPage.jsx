@@ -8,6 +8,7 @@ import AutoGrid from '../components/AutoGrid'
 import SummaryOverlay from '../components/SummaryOverlay'
 import { useToast } from '../components/ToastProvider'
 import { useModules } from '../App'
+import { ModuleIcon, ExamIcon, NotesIcon } from '../lib/medicalIcons'
 
 export default function SubjectPage({ dark }) {
   const c = getTheme(dark)
@@ -27,11 +28,6 @@ export default function SubjectPage({ dark }) {
     setLoading(true)
     Promise.all([
       supabase.from('subjects').select('*').eq('id', subjectId).single(),
-      // Newest lessons on top — `position` exists in the schema but
-      // nothing in Admin actually sets it today (it's always 0), so
-      // sorting by it first was really just an alphabetical/insert-order
-      // tiebreaker in disguise. created_at descending is what "newest
-      // first" actually means.
       supabase.from('lessons').select('*').eq('subject_id', subjectId).order('created_at', { ascending: false })
     ]).then(([subRes, lessonRes]) => {
       if (subRes.data) setSubject(subRes.data)
@@ -66,8 +62,6 @@ export default function SubjectPage({ dark }) {
       showToast('No summaries added for this subject yet')
       return
     }
-    // One summary → open it directly, no extra click, same convention
-    // used on StagePage. Several → show the inline picker below.
     if (lessonsWithSummaries.length === 1) {
       const l = lessonsWithSummaries[0]
       setSelectedSummary({ title: l.title, url: l.summary_url })
@@ -83,14 +77,15 @@ export default function SubjectPage({ dark }) {
       </div>
 
       <div style={{ textAlign: 'center', padding: '10px 0 30px' }}>
-        <div style={{ fontSize: 44, marginBottom: 8 }}>{subject?.icon || '📖'}</div>
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}>
+          <ModuleIcon value={subject?.icon || '📖'} size={44} color={subject?.color || '#34d399'} />
+        </div>
         <h1 style={{ color: subject?.color || '#34d399', fontSize: 24, fontWeight: 900, marginBottom: 6 }}>{subject ? subject.name : ''}</h1>
-        <div style={{ color: c.sub, fontSize: 13 }}>{module.icon} {module.name}</div>
+        <div style={{ color: c.sub, fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+          <ModuleIcon value={module.icon} size={14} color={c.sub} /> {module.name}
+        </div>
       </div>
 
-      {/* All MCQs / All Summaries — subject-wide shortcuts so students
-          don't have to open every lesson individually to practice or
-          review everything at once. */}
       <div style={{ display: 'flex', gap: 12, marginBottom: 28 }}>
         <button onClick={() => navigate(`/mcq?module=${moduleId}&subject=${subjectId}`)} style={{
           flex: 1, background: '#e2725b20', border: '2px solid #e2725b60',
@@ -98,7 +93,7 @@ export default function SubjectPage({ dark }) {
           color: '#e2725b', fontFamily: 'inherit', fontWeight: 700, fontSize: 13,
           display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6
         }}>
-          <span style={{ fontSize: 22 }}>🧪</span>
+          <ExamIcon color="#e2725b" size={22} />
           All MCQs
         </button>
         <button onClick={openAllSummaries} style={{
@@ -107,7 +102,7 @@ export default function SubjectPage({ dark }) {
           color: '#34d399', fontFamily: 'inherit', fontWeight: 700, fontSize: 13,
           display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6
         }}>
-          <span style={{ fontSize: 22 }}>📝</span>
+          <NotesIcon color="#34d399" size={22} />
           All Summaries
         </button>
       </div>
@@ -125,7 +120,7 @@ export default function SubjectPage({ dark }) {
               }}
               onMouseEnter={e => e.currentTarget.style.borderColor = '#34d399'}
               onMouseLeave={e => e.currentTarget.style.borderColor = '#34d39940'}>
-              <span style={{ fontSize: 16 }}>📝</span>
+              <NotesIcon color="#34d399" size={16} />
               <span style={{ color: c.text, fontSize: 13, fontWeight: 600 }}>{l.title}</span>
             </div>
           ))}
@@ -146,7 +141,9 @@ export default function SubjectPage({ dark }) {
           {lessons.map((lesson, i) => (
             <AnimatedCard key={lesson.id} delay={i * 80} color='#34d399' dark={dark}
               onClick={() => navigate(`/module/${moduleId}/subject/${subjectId}/lesson/${lesson.id}`)}>
-              <div style={{ fontSize: 'clamp(28px, 3vw, 42px)', marginBottom: 8 }}>📘</div>
+              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}>
+                <ModuleIcon value={lesson.icon || '📘'} size={36} color="#34d399" />
+              </div>
               <div style={{ color: c.text, fontSize: 'clamp(13px, 1.1vw, 16px)', fontWeight: 700 }}>{lesson.title}</div>
             </AnimatedCard>
           ))}

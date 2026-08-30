@@ -8,6 +8,7 @@ import AutoGrid from '../components/AutoGrid'
 import { useModules } from '../App'
 import { fetchModuleStages } from '../lib/moduleStages'
 import { FILE_CARDS } from '../lib/fileCards'
+import { ModuleIcon, ExamIcon, NotesIcon } from '../lib/medicalIcons'
 
 export default function ModulePage({ dark }) {
   const c = getTheme(dark)
@@ -34,8 +35,6 @@ export default function ModulePage({ dark }) {
         if (data) setPresentFileTypes(new Set(data.map(f => f.type)))
         if (error) setLoadError(true)
       })
-    // A module can customize its own exam-stage set (see Admin →
-    // Stages) — falls back to the 4 global defaults if it hasn't.
     fetchModuleStages(moduleId).then(setExamStages)
     supabase.from('subjects').select('*').eq('module_id', moduleId).order('name')
       .then(({ data, error }) => {
@@ -66,7 +65,9 @@ export default function ModulePage({ dark }) {
         transform: visible ? 'translateY(0)' : 'translateY(-20px)',
         transition: 'all 0.5s ease'
       }}>
-        <div style={{ fontSize: 52, marginBottom: 10 }}>{module.icon}</div>
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 10 }}>
+          <ModuleIcon value={module.icon} size={52} color={module.color} />
+        </div>
         <h1 style={{ fontSize: 26, fontWeight: 900, color: module.color, marginBottom: 6 }}>{module.name}</h1>
         <div style={{
           display: 'inline-block',
@@ -79,7 +80,7 @@ export default function ModulePage({ dark }) {
         </div>
       </div>
 
-      {/* Exam Stage — the main way in, big cards, no small colored dots */}
+      {/* Exam Stage */}
       <div style={{ marginBottom: 32 }}>
         <h2 style={{ color: c.sub, fontSize: 13, fontWeight: 700, letterSpacing: 2, marginBottom: 16, textTransform: 'uppercase' }}>
           🎯 Exam Stage
@@ -95,10 +96,7 @@ export default function ModulePage({ dark }) {
         </AutoGrid>
       </div>
 
-      {/* Study by Lesson — subject cards, mirroring the Exam Stage
-          layout. Only shown once the module actually has subjects.
-          Each subject now uses its own admin-set icon/color (falling
-          back to the old teal book icon if one hasn't been set yet). */}
+      {/* Study by Lesson */}
       {subjects.length > 0 && (
         <div style={{ marginBottom: 32 }}>
           <h2 style={{ color: c.sub, fontSize: 13, fontWeight: 700, letterSpacing: 2, marginBottom: 16, textTransform: 'uppercase' }}>
@@ -108,7 +106,9 @@ export default function ModulePage({ dark }) {
             {subjects.map((sub, i) => (
               <AnimatedCard key={sub.id} delay={i * 80} color={sub.color || '#34d399'} dark={dark}
                 onClick={() => navigate(`/module/${moduleId}/subject/${sub.id}`)}>
-                <div style={{ fontSize: 'clamp(28px, 3vw, 42px)', marginBottom: 8 }}>{sub.icon || '📖'}</div>
+                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}>
+                  <ModuleIcon value={sub.icon || '📖'} size={38} color={sub.color || '#34d399'} />
+                </div>
                 <div style={{ color: c.text, fontSize: 'clamp(13px, 1.1vw, 16px)', fontWeight: 700 }}>{sub.name}</div>
               </AnimatedCard>
             ))}
@@ -116,7 +116,7 @@ export default function ModulePage({ dark }) {
         </div>
       )}
 
-      {/* Study Materials — only shown once something's actually there */}
+      {/* Study Materials */}
       {(filteredFileCards.length > 0 || driveUrl) && (
         <div style={{ marginBottom: 32 }}>
           <h2 style={{ color: c.sub, fontSize: 13, fontWeight: 700, letterSpacing: 2, marginBottom: 16, textTransform: 'uppercase' }}>
@@ -159,16 +159,16 @@ export default function ModulePage({ dark }) {
         </div>
       )}
 
-      {/* Smart Summaries — always a single card, same treatment as Practice.
-          Opens the module's summaries list, which shows its own empty
-          state if there's nothing there yet. */}
+      {/* Smart Summaries */}
       <div style={{ marginBottom: 32 }}>
         <h2 style={{ color: c.sub, fontSize: 13, fontWeight: 700, letterSpacing: 2, marginBottom: 16, textTransform: 'uppercase' }}>
           📝 Smart Summaries
         </h2>
         <AnimatedCard delay={200} color='#34d399' dark={dark}
           onClick={() => navigate(`/summaries?module=${moduleId}`)}>
-          <div style={{ fontSize: 30, marginBottom: 8 }}>📝</div>
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}>
+            <NotesIcon color="#34d399" size={30} />
+          </div>
           <div style={{ color: c.text, fontSize: 13, fontWeight: 700 }}>All Summaries</div>
           <div style={{ color: c.sub, fontSize: 12, marginTop: 4 }}>View summaries for this module</div>
         </AnimatedCard>
@@ -181,7 +181,9 @@ export default function ModulePage({ dark }) {
         </h2>
         <AnimatedCard delay={300} color='#e2725b' dark={dark}
           onClick={() => navigate(`/mcq?module=${moduleId}`)}>
-          <div style={{ fontSize: 30, marginBottom: 8 }}>🧪</div>
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}>
+            <ExamIcon color="#e2725b" size={30} />
+          </div>
           <div style={{ color: c.text, fontSize: 13, fontWeight: 700 }}>MCQ Bank</div>
           <div style={{ color: c.sub, fontSize: 12, marginTop: 4 }}>Practice questions for this module</div>
         </AnimatedCard>

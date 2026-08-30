@@ -9,6 +9,7 @@ import SummaryOverlay from '../components/SummaryOverlay'
 import { useModules } from '../App'
 import { fetchModuleStages, stageMetaFrom } from '../lib/moduleStages'
 import { FILE_CARDS } from '../lib/fileCards'
+import { ModuleIcon, ExamIcon, NotesIcon } from '../lib/medicalIcons'
 
 export default function StagePage({ dark }) {
   const c = getTheme(dark)
@@ -23,10 +24,6 @@ export default function StagePage({ dark }) {
   const [selectedSummary, setSelectedSummary] = useState(null)
   const [loadError, setLoadError] = useState(false)
   const [driveUrl, setDriveUrl] = useState('')
-  // Subjects aren't tagged to a specific exam stage in the schema (only
-  // questions/files/summaries are) — so "Study by Lesson" here shows
-  // the module's full subject list, same as ModulePage, rather than a
-  // stage-filtered subset that the data can't actually support yet.
   const [subjects, setSubjects] = useState([])
 
   useEffect(() => {
@@ -34,8 +31,6 @@ export default function StagePage({ dark }) {
   }, [moduleId])
 
   useEffect(() => {
-    // Stage-specific link takes priority (e.g. "drive_url_final"); falls
-    // back to the general "drive_url" if that stage has nothing set.
     supabase.from('site_settings').select('key, value').in('key', ['drive_url', `drive_url_${stage}`])
       .then(({ data }) => {
         if (!data) return
@@ -85,9 +80,6 @@ export default function StagePage({ dark }) {
   const filteredFileCards = FILE_CARDS.filter(card => presentFileTypes.has(card.type))
 
   function openSummaries() {
-    // One summary for this stage → open it directly, no extra click.
-    // Zero or several → send to the picker page (it shows the empty
-    // state itself if there's nothing there yet).
     if (summaries.length === 1) {
       setSelectedSummary(summaries[0])
     } else {
@@ -104,10 +96,12 @@ export default function StagePage({ dark }) {
       <div style={{ textAlign: 'center', padding: '10px 0 30px' }}>
         <div style={{ fontSize: 44, marginBottom: 8 }}>{meta.emoji}</div>
         <h1 style={{ color: meta.color, fontSize: 24, fontWeight: 900, marginBottom: 6 }}>{meta.title}</h1>
-        <div style={{ color: c.sub, fontSize: 13 }}>{module.icon} {module.name}</div>
+        <div style={{ color: c.sub, fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+          <ModuleIcon value={module.icon} size={14} color={c.sub} /> {module.name}
+        </div>
       </div>
 
-      {/* Study Materials — only what's tagged for this specific stage, plus the university Drive link */}
+      {/* Study Materials */}
       {(filteredFileCards.length > 0 || driveUrl) && (
         <div style={{ marginBottom: 32 }}>
           <h2 style={{ color: c.sub, fontSize: 13, fontWeight: 700, letterSpacing: 2, marginBottom: 16, textTransform: 'uppercase' }}>
@@ -150,10 +144,7 @@ export default function StagePage({ dark }) {
         </div>
       )}
 
-      {/* Study by Lesson — same subject cards as ModulePage. Subjects
-          aren't stage-specific in the schema, so this always shows the
-          module's full subject list regardless of which stage page
-          you're on; only shown once the module actually has subjects. */}
+      {/* Study by Lesson */}
       {subjects.length > 0 && (
         <div style={{ marginBottom: 32 }}>
           <h2 style={{ color: c.sub, fontSize: 13, fontWeight: 700, letterSpacing: 2, marginBottom: 16, textTransform: 'uppercase' }}>
@@ -163,7 +154,9 @@ export default function StagePage({ dark }) {
             {subjects.map((sub, i) => (
               <AnimatedCard key={sub.id} delay={i * 80} color={sub.color || '#34d399'} dark={dark}
                 onClick={() => navigate(`/module/${moduleId}/subject/${sub.id}`)}>
-                <div style={{ fontSize: 'clamp(28px, 3vw, 42px)', marginBottom: 8 }}>{sub.icon || '📖'}</div>
+                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}>
+                  <ModuleIcon value={sub.icon || '📖'} size={38} color={sub.color || '#34d399'} />
+                </div>
                 <div style={{ color: c.text, fontSize: 'clamp(13px, 1.1vw, 16px)', fontWeight: 700 }}>{sub.name}</div>
               </AnimatedCard>
             ))}
@@ -171,15 +164,15 @@ export default function StagePage({ dark }) {
         </div>
       )}
 
-      {/* Smart Summaries — opens the summary directly when there's only
-          one (the common case). Falls back to the picker page only when
-          there's more than one to choose from. */}
+      {/* Smart Summaries */}
       <div style={{ marginBottom: 32 }}>
         <h2 style={{ color: c.sub, fontSize: 13, fontWeight: 700, letterSpacing: 2, marginBottom: 16, textTransform: 'uppercase' }}>
           📝 Smart Summaries
         </h2>
         <AnimatedCard delay={200} color='#34d399' dark={dark} onClick={openSummaries}>
-          <div style={{ fontSize: 30, marginBottom: 8 }}>📝</div>
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}>
+            <NotesIcon color="#34d399" size={30} />
+          </div>
           <div style={{ color: c.text, fontSize: 13, fontWeight: 700 }}>Summaries</div>
           <div style={{ color: c.sub, fontSize: 12, marginTop: 4 }}>
             {summaries.length === 0 ? `${meta.title} summaries` : summaries.length === 1 ? summaries[0].title : `${summaries.length} available`}
@@ -194,7 +187,9 @@ export default function StagePage({ dark }) {
         </h2>
         <AnimatedCard delay={300} color='#e2725b' dark={dark}
           onClick={() => navigate(`/mcq?module=${moduleId}&stage=${stage}`)}>
-          <div style={{ fontSize: 30, marginBottom: 8 }}>🧪</div>
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}>
+            <ExamIcon color="#e2725b" size={30} />
+          </div>
           <div style={{ color: c.text, fontSize: 13, fontWeight: 700 }}>MCQ Bank</div>
           <div style={{ color: c.sub, fontSize: 12, marginTop: 4 }}>Practice {meta.title} questions</div>
         </AnimatedCard>
