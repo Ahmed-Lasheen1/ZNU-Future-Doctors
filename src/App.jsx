@@ -46,6 +46,15 @@ export { ThemeContext, AuthContext, ModulesContext, useTheme, useAuth, useModule
 // imports it from '../App' needs to change.
 export { default as NavMenu } from './components/NavMenu'
 
+// Dark/light values for the "real" page background — kept in sync with
+// both `<body>` (via the --app-bg CSS variable, see index.css) and the
+// browser chrome color (via the theme-color meta tag). iOS Safari
+// samples both of these for the address-bar/home-indicator strips
+// during rubber-band overscroll; previously body had one hardcoded
+// flat color and the meta tag had another, both different from Home's
+// gradient, which is what produced the mismatched top/bottom bars.
+const APP_BG = { dark: '#0a0f1e', light: '#f0f9ff' }
+
 function PageLoader({ dark }) {
   const c = getTheme(dark)
   return (
@@ -100,6 +109,19 @@ export default function App() {
 
   useEffect(() => {
     localStorage.setItem('znu_theme', dark ? 'dark' : 'light')
+  }, [dark])
+
+  // Keep body's real background AND the browser-chrome theme-color in
+  // sync with the current theme. This is the actual fix for the
+  // iOS Safari top/bottom bar mismatch: Safari samples both of these
+  // during rubber-band overscroll, and previously both were hardcoded
+  // to a single dark value regardless of theme or page, which never
+  // matched Home's gradient (or the light theme at all).
+  useEffect(() => {
+    const bg = dark ? APP_BG.dark : APP_BG.light
+    document.documentElement.style.setProperty('--app-bg', bg)
+    const meta = document.querySelector('meta[name="theme-color"]')
+    if (meta) meta.setAttribute('content', bg)
   }, [dark])
 
   const [user, setUser] = useState(null)

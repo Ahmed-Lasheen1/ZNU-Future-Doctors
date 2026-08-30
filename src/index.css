@@ -18,15 +18,36 @@
    (state toggled, the panel mounted) but was never actually visible —
    it had no position/size/background CSS to render with. */
 
+/* Theme-aware "real" page background — kept in sync with the app's
+   dark/light state via App.jsx (document.documentElement.style
+   .setProperty('--app-bg', ...)). This is what iOS Safari actually
+   samples for its top/bottom chrome color during rubber-band
+   overscroll — previously body had a hardcoded flat color (#0f172a)
+   that never matched Home's gradient or the light theme, so bouncing
+   past the top/bottom of the page flashed a visibly different solid
+   bar. Default here matches the dark-mode default in App.jsx. */
+:root {
+  --app-bg: #0a0f1e;
+}
+
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
 }
 
+html, body {
+  /* Stops the rubber-band bounce that exposes body's flat color at
+     the top/bottom edges on iOS Safari — this is the actual source of
+     the mismatched top/bottom bar, not a missing safe-area padding.
+     Does NOT affect normal scrolling in either direction. */
+  overscroll-behavior-y: none;
+  height: 100%;
+}
+
 body {
   font-family: 'Sora', 'Segoe UI', sans-serif;
-  background: #0f172a;
+  background: var(--app-bg);
   color: #e2e8f0;
   direction: ltr;
 }
