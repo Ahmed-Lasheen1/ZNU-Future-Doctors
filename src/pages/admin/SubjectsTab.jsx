@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { supabase } from '../../supabase'
 import { getTheme, inputStyle } from '../../theme'
+import IconPicker from '../../components/admin/IconPicker'
+import { ModuleIcon } from '../../lib/medicalIcons'
 import InlineMessage from '../../components/InlineMessage'
 import ModuleSelect from './ModuleSelect'
 import { btnStyle, miniBtn, cancelBtnStyle } from './adminStyles'
@@ -66,11 +68,8 @@ export default function SubjectsTab({ dark, modules, subjects, fetchSubjects }) 
         <ModuleSelect modules={modules} value={subModuleId} onChange={e => setSubModuleId(e.target.value)} inStyle={inStyle} />
         <input placeholder="Subject name" value={subName} onChange={e => setSubName(e.target.value)} style={inStyle} />
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-          <div>
-            <label style={{ color: c.sub, fontSize: 12, display: 'block', marginBottom: 4 }}>Icon (emoji)</label>
-            <input placeholder="📖" value={subIcon} onChange={e => setSubIcon(e.target.value)} style={inStyle} />
-          </div>
+                <IconPicker value={subIcon} onChange={setSubIcon} inStyle={inStyle} c={c} />
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 10 }}>
           <div>
             <label style={{ color: c.sub, fontSize: 12, display: 'block', marginBottom: 4 }}>Color</label>
             <input type="color" value={subColor} onChange={e => setSubColor(e.target.value)} style={{ ...inStyle, padding: 4, height: 42 }} />
@@ -100,7 +99,7 @@ export default function SubjectsTab({ dark, modules, subjects, fetchSubjects }) 
                     width: 22, height: 22, borderRadius: 6, flexShrink: 0,
                     background: sub.color || '#34d399', display: 'inline-block'
                   }} />
-                  <span style={{ fontSize: 18 }}>{sub.icon || '📖'}</span>
+                  <ModuleIcon value={sub.icon || '📖'} size={18} color={sub.color || '#34d399'} />
                   <span style={{ color: c.text, fontWeight: 600 }}>{sub.name}</span>
                   <span style={{ color: c.sub, fontSize: 12 }}>· {sub.type}</span>
                 </div>
