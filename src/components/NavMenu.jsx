@@ -174,7 +174,7 @@ export default function NavMenu({ dark, toggleTheme, align = 'left' }) {
                 outline: 'none'
               }}
             >
-              <MenuToggleIcon open={open} width={44} height={44} stroke={dark ? '#38bdf8' : '#475569'} duration={400} />
+              <MenuToggleIcon open={open} width={44} height={44} stroke={dark ? '#010c4a' : '#010c4a'} duration={400} />
             </button>
           </div>
 
