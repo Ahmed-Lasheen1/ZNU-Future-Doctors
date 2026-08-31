@@ -6,7 +6,7 @@ import { useAuth, useModules } from '../contexts'
 import { getPulseTheme, pulseFonts, pulseType } from '../premiumTheme'
 import { useToast } from '../components/ToastProvider'
 import ErrorBanner from '../components/ErrorBanner'
-import QuestionPalette from '../components/QuestionPalette'
+import QuestionRail from '../components/QuestionRail'
 import ScoreRing from '../components/ScoreRing'
 import QuestionSourceBadge from '../components/QuestionSourceBadge'
 import LiquidGlassCard from '@/components/ui/liquid-glass-card'
@@ -56,6 +56,7 @@ export default function MCQ({ dark }: { dark: boolean }) {
   const [timeLeft, setTimeLeft] = useState(0)
   const [flaggedIds, setFlaggedIds] = useState<Set<string>>(new Set())
   const [resumeData, setResumeData] = useState<any>(null)
+  const [currentIndex, setCurrentIndex] = useState(0)
   const timerRef = useRef<ReturnType<typeof setInterval>>()
   const quizStartedAtRef = useRef<number | null>(null)
   const [usingCache, setUsingCache] = useState(false)
@@ -210,6 +211,7 @@ export default function MCQ({ dark }: { dark: boolean }) {
   }
 
   async function toggleFlagFor(q: any) {
+    if (!q) return
     const isFlagged = flaggedIds.has(q.id)
     const next = new Set(flaggedIds)
     if (isFlagged) {
@@ -257,10 +259,11 @@ export default function MCQ({ dark }: { dark: boolean }) {
     setSubmitted(false)
     setQuizMode(type)
     setResumeData(null)
-    quizStartedAtRef.current = Date.now()
+    setCurrentIndex(0)
     loadFlagsFor(qs.map(q => q.id)).then(setFlaggedIds)
 
-    if (type === 'mock') startMockTimer(quizStartedAtRef.current)
+    if (type === 'mock') startMockTimer(quizStartedAtRef.current = Date.now())
+    else quizStartedAtRef.current = Date.now()
   }
 
   function startRetryQuiz(list: any[]) {
@@ -270,6 +273,7 @@ export default function MCQ({ dark }: { dark: boolean }) {
     setSubmitted(false)
     setQuizMode('retry')
     setResumeData(null)
+    setCurrentIndex(0)
     quizStartedAtRef.current = Date.now()
     loadFlagsFor(list.map(q => q.id)).then(setFlaggedIds)
   }
@@ -282,6 +286,7 @@ export default function MCQ({ dark }: { dark: boolean }) {
     setResults({})
     setSubmitted(false)
     setQuizMode(resumeData.quizMode)
+    setCurrentIndex(0)
     quizStartedAtRef.current = resumeData.startedAt
     loadFlagsFor((resumeData.quizQuestions || []).map((q: any) => q.id)).then(setFlaggedIds)
 
@@ -303,12 +308,16 @@ export default function MCQ({ dark }: { dark: boolean }) {
     setSubmitted(false)
     setTimeLeft(0)
     setFlaggedIds(new Set())
+    setCurrentIndex(0)
   }
 
   function selectAnswer(qi: number, opt: string) {
     if (submitted) return
     setAnswers(prev => ({ ...prev, [qi]: opt }))
   }
+
+  function goPrev() { setCurrentIndex(i => Math.max(0, i - 1)) }
+  function goNext() { setCurrentIndex(i => Math.min(quizQuestions.length - 1, i + 1)) }
 
   function tryAgain() {
     if (quizMode === 'retry') startRetryQuiz(quizQuestions)
@@ -425,6 +434,10 @@ export default function MCQ({ dark }: { dark: boolean }) {
     const timePercent = quizMode === 'mock' ? (timeLeft / (MOCK_MINUTES * 60)) * 100 : 100
     const answeredIndexes = new Set(Object.keys(answers).map(Number))
     const flaggedIndexes = new Set(quizQuestions.map((q, i) => flaggedIds.has(q.id) ? i : null).filter((i): i is number => i !== null))
+    const safeIndex = total > 0 ? Math.min(currentIndex, total - 1) : 0
+    const currentQuestion = total > 0 ? quizQuestions[safeIndex] : null
+    const answeredCount = Object.keys(answers).length
+    const isLastQuestion = safeIndex === total - 1
 
     if (total === 0) return (
       <div style={{ position: 'relative', minHeight: '100vh' }}>
@@ -443,7 +456,7 @@ export default function MCQ({ dark }: { dark: boolean }) {
     return (
       <div style={{ position: 'relative', minHeight: '100vh' }}>
         <PulseBackground />
-        <div className="pulse-wide" style={{ position: 'relative', zIndex: 1, padding: '24px 20px 100px', fontFamily: pulseFonts.body }}>
+        <div className="pulse-wide" style={{ position: 'relative', zIndex: 1, padding: '24px 20px 120px', fontFamily: pulseFonts.body }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
             <button onClick={stopQuiz} style={{
               background: dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)',
@@ -460,7 +473,6 @@ export default function MCQ({ dark }: { dark: boolean }) {
                 fontWeight: 900, fontSize: 16, fontFamily: 'monospace'
               }}>⏱ {formatTime(timeLeft)}</div>
             )}
-            <span style={{ color: pt.sub, fontSize: 13 }}>{Object.keys(answers).length}/{total}</span>
           </div>
 
           {quizMode === 'mock' && !submitted && (
@@ -474,19 +486,6 @@ export default function MCQ({ dark }: { dark: boolean }) {
                 width: `${timePercent}%`, transition: 'width 1s linear'
               }} />
             </div>
-          )}
-
-          {!submitted && !grading && (
-            <QuestionPalette
-              total={total}
-              answeredIndexes={answeredIndexes}
-              flaggedIndexes={flaggedIndexes}
-              dark={dark}
-              onGoTo={(i: number) => {
-                const el = document.getElementById(`mcq-question-${i}`)
-                if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
-              }}
-            />
           )}
 
           {grading && (
@@ -510,50 +509,98 @@ export default function MCQ({ dark }: { dark: boolean }) {
             </div>
           )}
 
-          {!grading && quizQuestions.map((q, qi) => {
+          {/* ── Active taking: single-question focus view ─────────── */}
+          {!submitted && !grading && currentQuestion && (
+            <>
+              <QuestionRail
+                total={total}
+                currentIndex={safeIndex}
+                answeredIndexes={answeredIndexes}
+                flaggedIndexes={flaggedIndexes}
+                onGoTo={setCurrentIndex}
+                dark={dark}
+                accent={MCQ_ACCENT}
+              />
+
+              <LiquidGlassCard dark={dark} delay={0} style={{ padding: '24px 24px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8, marginBottom: 14 }}>
+                  <span style={{ ...pulseType.small, color: pt.textMuted, fontWeight: 700 }}>
+                    Question {safeIndex + 1} of {total}
+                  </span>
+                  <button
+                    onClick={() => toggleFlagFor(currentQuestion)}
+                    aria-label={flaggedIds.has(currentQuestion.id) ? 'Remove flag' : 'Flag this question'}
+                    style={{
+                      background: 'transparent', border: 'none', cursor: 'pointer', fontSize: 20,
+                      color: flaggedIds.has(currentQuestion.id) ? pt.amber : pt.sub, flexShrink: 0, lineHeight: 1, padding: 0
+                    }}>🚩</button>
+                </div>
+
+                {currentQuestion.source && <div style={{ marginBottom: 12 }}><QuestionSourceBadge source={currentQuestion.source} /></div>}
+
+                <p style={{ ...pulseType.cardTitle, fontSize: 17, color: pt.textPrimary, margin: '0 0 18px' }}>
+                  {currentQuestion.question}
+                </p>
+
+                {optionTexts(currentQuestion).map((opt: string, ai: number) => {
+                  const label = optionLabels[ai]
+                  const selected = answers[safeIndex] === label
+                  return (
+                    <div key={ai} onClick={() => selectAnswer(safeIndex, label)} style={{
+                      display: 'flex', alignItems: 'center', gap: 12,
+                      background: selected ? `${pt.cobalt}18` : (dark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)'),
+                      border: `1.5px solid ${selected ? pt.cobalt : pt.border}`,
+                      borderRadius: 14, padding: '14px 16px', marginBottom: 10,
+                      cursor: 'pointer', transition: 'all 0.15s'
+                    }}>
+                      <span style={{
+                        width: 28, height: 28, borderRadius: '50%', flexShrink: 0,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        background: selected ? pt.cobalt : 'transparent',
+                        border: `1.5px solid ${selected ? pt.cobalt : pt.border}`,
+                        color: selected ? '#fff' : pt.sub, fontWeight: 800, fontSize: 12
+                      }}>{label.toUpperCase()}</span>
+                      <span style={{ color: selected ? pt.cobalt : pt.text, fontSize: 14, fontWeight: 600 }}>{opt}</span>
+                    </div>
+                  )
+                })}
+              </LiquidGlassCard>
+            </>
+          )}
+
+          {/* ── Submitted: full scrollable review list ─────────────── */}
+          {submitted && !grading && quizQuestions.map((q, qi) => {
             const result = results[q.id]
-            const isCorrect = submitted && result?.is_correct
+            const isCorrect = result?.is_correct
             const isLast = qi === quizQuestions.length - 1
             return (
-              <div key={qi} id={`mcq-question-${qi}`} style={{ marginBottom: isLast && submitted ? 0 : 16, scrollMarginTop: 20 }}>
+              <div key={qi} style={{ marginBottom: isLast ? 0 : 16 }}>
                 <LiquidGlassCard dark={dark} delay={0} style={{
                   padding: '20px 22px',
-                  boxShadow: submitted
-                    ? `inset 0 0 0 2px ${isCorrect ? '#4ade80' : answers[qi] ? '#f87171' : 'transparent'}`
-                    : undefined
+                  boxShadow: `inset 0 0 0 2px ${isCorrect ? '#4ade80' : answers[qi] ? '#f87171' : 'transparent'}`
                 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8, marginBottom: 10 }}>
-                    <p style={{ ...pulseType.cardTitle, color: pt.textPrimary, margin: 0, flex: 1 }}>
-                      {qi + 1}. {q.question}
-                    </p>
-                    {!submitted && (
-                      <button onClick={() => toggleFlagFor(q)} aria-label={flaggedIds.has(q.id) ? 'Remove flag' : 'Flag this question'} style={{
-                        background: 'transparent', border: 'none', cursor: 'pointer', fontSize: 18,
-                        color: flaggedIds.has(q.id) ? pt.amber : pt.sub, flexShrink: 0, lineHeight: 1, padding: 0
-                      }}>🚩</button>
-                    )}
-                  </div>
+                  <p style={{ ...pulseType.cardTitle, color: pt.textPrimary, margin: '0 0 10px' }}>
+                    {qi + 1}. {q.question}
+                  </p>
                   {q.source && <div style={{ marginBottom: 10 }}><QuestionSourceBadge source={q.source} /></div>}
                   {optionTexts(q).map((opt: string, ai: number) => {
                     const label = optionLabels[ai]
                     let bg = dark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)'
                     let border = pt.border
                     let color = pt.sub
-                    if (answers[qi] === label && !submitted) { bg = `${pt.cobalt}20`; border = pt.cobalt; color = pt.cobalt }
-                    if (submitted && result && label === result.correct_answer) { bg = 'rgba(74,222,128,0.16)'; border = '#4ade80'; color = '#4ade80' }
-                    if (submitted && result && answers[qi] === label && label !== result.correct_answer) { bg = 'rgba(248,113,113,0.16)'; border = '#f87171'; color = '#f87171' }
+                    if (result && label === result.correct_answer) { bg = 'rgba(74,222,128,0.16)'; border = '#4ade80'; color = '#4ade80' }
+                    if (result && answers[qi] === label && label !== result.correct_answer) { bg = 'rgba(248,113,113,0.16)'; border = '#f87171'; color = '#f87171' }
                     return (
-                      <div key={ai} onClick={() => selectAnswer(qi, label)} style={{
+                      <div key={ai} style={{
                         background: bg, border: `1px solid ${border}`,
                         borderRadius: 10, padding: '10px 14px', marginBottom: 8,
-                        cursor: submitted ? 'default' : 'pointer',
-                        color, fontSize: 13, fontWeight: 600, transition: 'all 0.15s'
+                        color, fontSize: 13, fontWeight: 600
                       }}>
                         {label.toUpperCase()}. {opt}
                       </div>
                     )
                   })}
-                  {submitted && result?.explanation && (
+                  {result?.explanation && (
                     <div style={{
                       background: dark ? 'rgba(56,189,248,0.10)' : 'rgba(2,132,199,0.06)',
                       borderRadius: 10, padding: '10px 14px', marginTop: 10, color: pt.sub, fontSize: 12
@@ -565,26 +612,47 @@ export default function MCQ({ dark }: { dark: boolean }) {
               </div>
             )
           })}
-
-          {!submitted && (
-            <button onClick={submitQuiz}
-              disabled={Object.keys(answers).length < total || grading}
-              style={{
-                background: (Object.keys(answers).length < total || grading) ? (dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)') : pt.cobalt,
-                color: (Object.keys(answers).length < total || grading) ? pt.sub : '#fff',
-                border: 'none', padding: '14px', borderRadius: 999,
-                cursor: (Object.keys(answers).length < total || grading) ? 'not-allowed' : 'pointer',
-                fontWeight: 700, fontSize: 16, width: '100%',
-                fontFamily: pulseFonts.body, marginTop: 20
-              }}>
-              {grading
-                ? 'Grading...'
-                : Object.keys(answers).length < total
-                  ? `Answer all questions (${Object.keys(answers).length}/${total})`
-                  : '✅ Submit'}
-            </button>
-          )}
         </div>
+
+        {/* ── Sticky bottom nav — only while actively taking the quiz ── */}
+        {!submitted && !grading && total > 0 && (
+          <div style={{
+            position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 200,
+            padding: '12px 20px max(12px, env(safe-area-inset-bottom))',
+            background: dark ? 'rgba(15,23,42,0.85)' : 'rgba(248,250,252,0.9)',
+            backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
+            borderTop: `1px solid ${pt.border}`,
+            display: 'flex', alignItems: 'center', gap: 10
+          }}>
+            <button onClick={goPrev} disabled={safeIndex === 0} style={{
+              background: dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)',
+              border: `1px solid ${pt.border}`, borderRadius: 999, padding: '11px 18px',
+              color: safeIndex === 0 ? pt.faint : pt.sub, cursor: safeIndex === 0 ? 'not-allowed' : 'pointer',
+              fontWeight: 700, fontSize: 13, fontFamily: pulseFonts.body
+            }}>← Prev</button>
+
+            <div style={{ flex: 1, textAlign: 'center', color: pt.sub, fontSize: 12, fontWeight: 700 }}>
+              {answeredCount}/{total} answered
+            </div>
+
+            {!isLastQuestion ? (
+              <button onClick={goNext} style={{
+                background: pt.cobalt, color: '#fff', border: 'none', borderRadius: 999,
+                padding: '11px 22px', cursor: 'pointer', fontWeight: 700, fontSize: 13, fontFamily: pulseFonts.body
+              }}>Next →</button>
+            ) : (
+              <button onClick={submitQuiz} disabled={answeredCount < total} style={{
+                background: answeredCount < total ? (dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)') : pt.cobalt,
+                color: answeredCount < total ? pt.sub : '#fff',
+                border: 'none', borderRadius: 999, padding: '11px 22px',
+                cursor: answeredCount < total ? 'not-allowed' : 'pointer',
+                fontWeight: 700, fontSize: 13, fontFamily: pulseFonts.body
+              }}>
+                {answeredCount < total ? `${total - answeredCount} left` : '✅ Submit'}
+              </button>
+            )}
+          </div>
+        )}
       </div>
     )
   }
@@ -666,7 +734,7 @@ export default function MCQ({ dark }: { dark: boolean }) {
           })}
         </div>
 
-        <div style={{ display: 'flex', gap: 8, overflowX: 'auto', marginBottom: 24, paddingBottom: 4 }}>
+        <div style={{ display: 'flex', gap: 8, overflowX: 'auto', marginBottom: 28, paddingBottom: 4 }}>
           <PulseGlassRow dark={dark} radius={999} active={activeSubject === 'all'}
             activeTint={`${MCQ_ACCENT}26`} hoverTint={hoverTint} onClick={() => setActiveSubject('all')}
             role="button" tabIndex={0}
@@ -688,27 +756,35 @@ export default function MCQ({ dark }: { dark: boolean }) {
 
         {loading && <p style={{ color: pt.sub, textAlign: 'center' }}>Loading...</p>}
 
-        {/* Mock Exam */}
-        <div style={{ marginBottom: 16 }}>
-          <LiquidGlassCard dark={dark} delay={0} style={{ padding: 24 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div>
-                <h3 style={{ ...pulseType.sectionLabel, fontSize: 15, color: MCQ_ACCENT, marginBottom: 6 }}>📝 Mock Exam</h3>
+        {/* Mock Exam — hero banner */}
+        <div style={{ marginBottom: 32 }}>
+          <LiquidGlassCard dark={dark} delay={0} style={{ padding: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 18, padding: '22px 24px', flexWrap: 'wrap' }}>
+              <div style={{
+                width: 60, height: 60, borderRadius: 18, flexShrink: 0,
+                background: `${MCQ_ACCENT}22`, border: `1px solid ${MCQ_ACCENT}55`,
+                display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28
+              }}>📝</div>
+              <div style={{ flex: 1, minWidth: 160 }}>
+                <h3 style={{ ...pulseType.sectionLabel, fontSize: 15, color: MCQ_ACCENT, marginBottom: 4 }}>Mock Exam</h3>
                 <p style={{ color: pt.sub, fontSize: 13 }}>
                   {Math.min(36, getFilteredQuestions('mock').length)} questions · ⏱ 36 minutes
                 </p>
               </div>
               <button onClick={() => startQuiz('mock')} style={{
-                background: MCQ_ACCENT, color: '#0f172a', border: 'none', padding: '10px 20px',
-                borderRadius: 999, fontWeight: 700, cursor: 'pointer', fontFamily: pulseFonts.body
-              }}>Start</button>
+                background: MCQ_ACCENT, color: '#0f172a', border: 'none', padding: '12px 24px',
+                borderRadius: 999, fontWeight: 800, cursor: 'pointer', fontFamily: pulseFonts.body, flexShrink: 0
+              }}>Start →</button>
             </div>
           </LiquidGlassCard>
         </div>
 
-        {/* Practice by Subject */}
+        {/* Practice by Subject — horizontal scroll-snap carousel */}
         <h3 style={{ ...pulseType.sectionLabel, color: pt.textMuted, marginBottom: 16 }}>Practice by Subject</h3>
-        <div className="auto-grid" style={{ ['--auto-grid-cols' as any]: moduleSubjects.length === 1 ? 1 : moduleSubjects.length === 2 ? 2 : moduleSubjects.length === 3 ? 3 : 4 }}>
+        <div style={{
+          display: 'flex', gap: 14, overflowX: 'auto', paddingBottom: 10,
+          scrollSnapType: 'x mandatory'
+        }}>
           {moduleSubjects.map((sub, i) => {
             const subQs = questions.filter(q =>
               q.subject_id === sub.id &&
@@ -716,18 +792,25 @@ export default function MCQ({ dark }: { dark: boolean }) {
               (activeStage === 'all' || (q.exam_stage || 'general') === activeStage)
             )
             return (
-              <LiquidGlassCard key={sub.id} dark={dark} delay={i * 70}
-                onClick={() => startQuiz('practice', sub.id)}
-                style={{ padding: 'clamp(16px, 1.6vw, 24px)' }}>
-                <div style={{ color: pt.textPrimary, fontWeight: 700, marginBottom: 6, fontSize: 'clamp(14px, 1.2vw, 17px)' }}>{sub.name}</div>
-                <div style={{ color: pt.textMuted, fontSize: 12, marginBottom: 10 }}>{subQs.length} questions</div>
-                <div style={{
-                  background: MCQ_ACCENT, color: '#0f172a', border: 'none', padding: '6px 12px',
-                  borderRadius: 999, fontWeight: 700, textAlign: 'center', fontSize: 12, fontFamily: pulseFonts.body
-                }}>Practice</div>
-              </LiquidGlassCard>
+              <div key={sub.id} style={{ flex: '0 0 auto', width: 'clamp(150px, 40vw, 220px)', scrollSnapAlign: 'start' }}>
+                <LiquidGlassCard dark={dark} delay={i * 70}
+                  onClick={() => startQuiz('practice', sub.id)}
+                  style={{ padding: '20px 18px', height: '100%' }}>
+                  <div style={{ color: pt.textPrimary, fontWeight: 700, marginBottom: 8, fontSize: 15 }}>{sub.name}</div>
+                  <div style={{ color: pt.textMuted, fontSize: 12, marginBottom: 16 }}>{subQs.length} questions</div>
+                  <div style={{
+                    background: MCQ_ACCENT, color: '#0f172a', border: 'none', padding: '7px 0',
+                    borderRadius: 999, fontWeight: 700, textAlign: 'center', fontSize: 12, fontFamily: pulseFonts.body
+                  }}>Practice</div>
+                </LiquidGlassCard>
+              </div>
             )
           })}
+          {moduleSubjects.length === 0 && !loading && (
+            <LiquidGlassCard dark={dark} delay={0} style={{ padding: 24, width: '100%', textAlign: 'center' }}>
+              <p style={{ color: pt.sub, fontSize: 13 }}>No subjects for this module yet 🚧</p>
+            </LiquidGlassCard>
+          )}
         </div>
       </div>
     </div>
