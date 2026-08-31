@@ -1,7 +1,3 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
 /* NOTE: preflight is disabled in tailwind.config.js
    (corePlugins.preflight: false), so @tailwind base injects almost
    nothing here — it will not reset the hand-written styles below.
