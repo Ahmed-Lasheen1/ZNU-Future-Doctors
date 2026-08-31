@@ -49,7 +49,7 @@ function moduleBlurb(name: string) {
 // 1.6–1.8px rounded strokes, no generic icon-library look) — built
 // specifically for this card instead of reusing emoji.
 
-function ReportChartIcon({ color, size = 18 }: { color: string; size?: number }) {
+function ReportChartIcon({ color, size = 20 }: { color: string; size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
       {/* Rising trend line behind the bars */}
@@ -70,7 +70,7 @@ function ReportChartIcon({ color, size = 18 }: { color: string; size?: number })
   )
 }
 
-function StreakFlameIcon({ color, size = 18 }: { color: string; size?: number }) {
+function StreakFlameIcon({ color, size = 20 }: { color: string; size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
       <path
@@ -90,10 +90,10 @@ function StreakFlameIcon({ color, size = 18 }: { color: string; size?: number })
 }
 
 // Major dashboard-number style (weekly accuracy %, questions attempted,
-// streak) — sourced from the shared typography hierarchy, scaled down
-// from the full `display` size since these sit inside compact stat
-// tiles rather than as a page hero number.
-const statNumStyle = { ...pulseType.display, fontSize: 28, lineHeight: 1.1 }
+// streak) — bumped up from the original compact tile size (28) now
+// that these numbers carry more visual weight inside a single merged
+// card rather than four separate ones.
+const statNumStyle = { ...pulseType.display, fontSize: 34, lineHeight: 1.05 }
 
 // ── Reveal order ───────────────────────────────────────────────────
 const HERO_DELAY = ENTRANCE_PAUSE
@@ -293,7 +293,8 @@ export default function Home({ dark, toggleTheme }: { dark: boolean; toggleTheme
           @media (max-width: 1000px) {
             .pulse-dash-grid { grid-template-columns: 1fr; }
           }
-          .pulse-report-grid { display: grid; grid-template-columns: 1fr 1fr; row-gap: 20px; column-gap: 12px; }
+          .pulse-report-col { display: flex; flex-direction: column; gap: 14px; height: 100%; }
+          .pulse-report-grid { display: grid; grid-template-columns: 1fr 1fr; row-gap: 26px; column-gap: 14px; }
           .pulse-tools-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
@@ -304,15 +305,15 @@ export default function Home({ dark, toggleTheme }: { dark: boolean; toggleTheme
           }
 
           .pulse-hero-panel {
-            min-height: clamp(130px, 34vw, 320px);
+            min-height: clamp(140px, 36vw, 340px);
           }
           @media (max-width: 640px) {
-            .pulse-hero-panel { min-height: clamp(110px, 46vw, 220px); }
+            .pulse-hero-panel { min-height: clamp(120px, 48vw, 230px); }
           }
 
           @media (max-width: 640px) {
             .pulse-fold { gap: 14px; }
-            .pulse-report-grid { row-gap: 16px; }
+            .pulse-report-grid { row-gap: 18px; }
           }
         `}</style>
 
@@ -331,11 +332,11 @@ export default function Home({ dark, toggleTheme }: { dark: boolean; toggleTheme
 
           <div className="pulse-wide">
             <div className="pulse-dash-grid">
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                <LiquidGlassCard dark={dark} delay={msFor(WEEKLY_REPORT_START)} style={{ padding: '20px 22px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 18 }}>
-                    <ReportChartIcon color={pt.cobalt} size={18} />
-                    <div style={{ ...pulseType.sectionLabel, fontSize: 14, color: pt.text }}>
+              <div className="pulse-report-col">
+                <LiquidGlassCard dark={dark} delay={msFor(WEEKLY_REPORT_START)} style={{ padding: '26px 26px', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 24 }}>
+                    <ReportChartIcon color={pt.cobalt} size={20} />
+                    <div style={{ ...pulseType.sectionLabel, fontSize: 15, color: pt.text }}>
                       Weekly Report
                     </div>
                   </div>
@@ -348,7 +349,7 @@ export default function Home({ dark, toggleTheme }: { dark: boolean; toggleTheme
                       }}>
                         {weeklySummary ? `${weeklySummary.accuracy}%` : '—'}
                       </div>
-                      <div style={{ ...pulseType.small, color: pt.textSecondary, marginTop: 4 }}>
+                      <div style={{ ...pulseType.small, color: pt.textSecondary, marginTop: 5 }}>
                         {weeklySummary ? 'Accuracy this week' : 'No questions logged this week'}
                       </div>
                     </div>
@@ -357,26 +358,26 @@ export default function Home({ dark, toggleTheme }: { dark: boolean; toggleTheme
                       <div style={{ ...statNumStyle, color: pt.textPrimary }}>
                         {weeklySummary ? weeklySummary.totalAttempted : 0}
                       </div>
-                      <div style={{ ...pulseType.small, color: pt.textSecondary, marginTop: 4 }}>
+                      <div style={{ ...pulseType.small, color: pt.textSecondary, marginTop: 5 }}>
                         Questions attempted
                       </div>
                     </div>
 
                     <div>
-                      <div style={{ ...pulseType.cardTitle, fontSize: 15, color: pt.indigo }}>
+                      <div style={{ ...pulseType.cardTitle, fontSize: 17, color: pt.indigo }}>
                         {weeklySummary?.topSubjectName || '—'}
                       </div>
-                      <div style={{ ...pulseType.small, fontSize: 11, color: pt.textMuted, marginTop: 4 }}>
+                      <div style={{ ...pulseType.small, fontSize: 11.5, color: pt.textMuted, marginTop: 5 }}>
                         Most practiced
                       </div>
                     </div>
 
                     <div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-                        <StreakFlameIcon color={pt.terracotta} size={17} />
-                        <span style={{ ...pulseType.display, fontSize: 22, lineHeight: 1, color: pt.terracotta }}>{streak}</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <StreakFlameIcon color={pt.terracotta} size={19} />
+                        <span style={{ ...pulseType.display, fontSize: 26, lineHeight: 1, color: pt.terracotta }}>{streak}</span>
                       </div>
-                      <div style={{ ...pulseType.small, fontSize: 11, color: pt.textMuted, marginTop: 4 }}>
+                      <div style={{ ...pulseType.small, fontSize: 11.5, color: pt.textMuted, marginTop: 5 }}>
                         Day streak
                       </div>
                     </div>
@@ -406,7 +407,7 @@ export default function Home({ dark, toggleTheme }: { dark: boolean; toggleTheme
                 transition={{ duration: 0.85, delay: HERO_DELAY }}
                 style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
               >
-                <EcgHero height={220} />
+                <EcgHero height={240} />
               </motion.div>
 
               <div>
