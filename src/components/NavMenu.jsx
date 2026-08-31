@@ -103,10 +103,9 @@ function FlipLabel({ label, color, weight = 600, size = 14 }) {
 // ── Liquid fill burst ───────────────────────────────────────────────
 // The reference's "dark circle growing from the bottom" moment,
 // reinterpreted as a soft glass-tinted bloom instead of a flat opaque
-// fill, so it reads as the glass itself flowing into the new shape
-// rather than a solid color wiping in. Mounted only while open
-// (AnimatePresence unmounts it on close) so it costs nothing at rest,
-// and only `transform`/`opacity` ever animate.
+// fill. Mounted only while open (AnimatePresence unmounts it on
+// close) so it costs nothing at rest, and only transform/opacity ever
+// animate — never touches layout.
 function LiquidBloom({ pt, open, align }) {
   return (
     <AnimatePresence>
@@ -174,6 +173,15 @@ function GlassRow({ dark, radius = ROW_RADIUS, style = {}, hoverBg, children, on
 
 export default function NavMenu({ dark, toggleTheme, align = 'left' }) {
   const [open, setOpen] = useState(false)
+  // Tracks whether the panel has FINISHED its width/height/radius
+  // morph. The heaviest layers to paint — the backdrop blur and the
+  // multi-term liquid-glass box-shadow — only render at full opacity
+  // once `settled` is true. While the box is actively resizing, those
+  // two layers stay hidden and the panel shows only the flat tint
+  // layer, which is nearly free to paint. This is what actually fixes
+  // the jank: blurring/shadowing a region that's changing size every
+  // frame is the expensive part, not the resize itself.
+  const [settled, setSettled] = useState(true)
   const [searchValue, setSearchValue] = useState('')
   const navigate = useNavigate()
   const { user, profile, signOut } = useAuth()
@@ -181,6 +189,15 @@ export default function NavMenu({ dark, toggleTheme, align = 'left' }) {
   const contentRef = useRef(null)
   const [contentHeight, setContentHeight] = useState(0)
   const pt = getPulseTheme(dark)
+
+  // Every place that used to call setOpen(...) now goes through this,
+  // so `settled` always drops the instant a resize starts and only
+  // comes back once framer-motion reports the morph is done (see
+  // onAnimationComplete below).
+  const setOpenAnimated = useCallback((next) => {
+    setSettled(false)
+    setOpen(next)
+  }, [])
 
   useLayoutEffect(() => {
     if (open && contentRef.current) {
@@ -191,28 +208,28 @@ export default function NavMenu({ dark, toggleTheme, align = 'left' }) {
   useEffect(() => {
     if (!open) return
     function onClickOutside(e) {
-      if (wrapperRef.current && !wrapperRef.current.contains(e.target)) setOpen(false)
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target)) setOpenAnimated(false)
     }
-    function onEscape(e) { if (e.key === 'Escape') setOpen(false) }
+    function onEscape(e) { if (e.key === 'Escape') setOpenAnimated(false) }
     document.addEventListener('mousedown', onClickOutside)
     document.addEventListener('keydown', onEscape)
     return () => {
       document.removeEventListener('mousedown', onClickOutside)
       document.removeEventListener('keydown', onEscape)
     }
-  }, [open])
+  }, [open, setOpenAnimated])
 
-  function goTo(path) { setOpen(false); navigate(path) }
+  function goTo(path) { setOpenAnimated(false); navigate(path) }
 
   function submitSearch() {
     const q = searchValue.trim()
-    setOpen(false)
+    setOpenAnimated(false)
     navigate('/search', q ? { state: { initialQuery: q } } : undefined)
     setSearchValue('')
   }
 
   async function handleSignOut() {
-    setOpen(false)
+    setOpenAnimated(false)
     await signOut()
     navigate('/')
   }
@@ -220,6 +237,7 @@ export default function NavMenu({ dark, toggleTheme, align = 'left' }) {
   const rowHover = dark ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.35)'
   const dangerHover = dark ? 'rgba(239,107,87,0.14)' : 'rgba(214,84,63,0.12)'
   const openHeight = BUTTON_SIZE + contentHeight + 10
+  const showHeavyLayers = open && settled
 
   const listContainer = {
     hidden: {},
@@ -244,8 +262,7 @@ export default function NavMenu({ dark, toggleTheme, align = 'left' }) {
           willChange: 'width, height, border-radius',
           // Forces this panel onto its own compositor layer so the
           // width/height morph doesn't force a repaint of the rest of
-          // the page on every frame — this is the main lever for
-          // keeping the open/close feeling like 60fps.
+          // the page on every frame.
           transform: 'translateZ(0)',
         }}
         animate={{
@@ -253,6 +270,7 @@ export default function NavMenu({ dark, toggleTheme, align = 'left' }) {
           height: open ? openHeight : BUTTON_SIZE,
           borderRadius: open ? PANEL_RADIUS : BUTTON_SIZE,
         }}
+        onAnimationComplete={() => setSettled(true)}
         whileHover={!open ? { scale: 1.06 } : undefined}
         whileTap={{ scale: 0.96 }}
         transition={{
@@ -263,31 +281,49 @@ export default function NavMenu({ dark, toggleTheme, align = 'left' }) {
           scale: { duration: 0.25, ease: morphEase },
         }}
       >
-        <motion.div
-          aria-hidden
-          className="pointer-events-none"
-          style={{ position: 'absolute', inset: 0, borderRadius: 'inherit', ...liquidGlassBackdrop() }}
-          animate={{ opacity: open ? 1 : 0 }}
-          transition={{ duration: open ? 0.35 : 0.15, delay: open ? 0.12 : 0 }}
-        />
-        <motion.div
-          aria-hidden
-          className="pointer-events-none"
-          style={{ position: 'absolute', inset: 0, borderRadius: 'inherit', boxShadow: liquidGlassShadow(dark) }}
-          animate={{ opacity: open ? 1 : 0 }}
-          transition={{ duration: open ? 0.35 : 0.15, delay: open ? 0.12 : 0 }}
-        />
+        {/* Cheap flat tint — present immediately, no delay. This is
+            what carries the glass's material color WHILE resizing,
+            so the panel never looks "empty" during the morph even
+            though blur/shadow aren't rendering yet. */}
         <motion.div
           aria-hidden
           className="pointer-events-none"
           style={{ position: 'absolute', inset: 0, borderRadius: 'inherit', background: liquidGlassTint(dark) }}
           animate={{ opacity: open ? 1 : 0 }}
-          transition={{ duration: open ? 0.35 : 0.15, delay: open ? 0.12 : 0 }}
+          transition={{ duration: 0.15 }}
         />
 
+        {/* Expensive layers — backdrop blur + the 9-term liquid-glass
+            box-shadow. Gated on `settled` so they only exist in the
+            DOM (and only get painted) once the resize has finished. */}
+        <AnimatePresence>
+          {showHeavyLayers && (
+            <>
+              <motion.div
+                aria-hidden
+                className="pointer-events-none"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                style={{ position: 'absolute', inset: 0, borderRadius: 'inherit', ...liquidGlassBackdrop() }}
+              />
+              <motion.div
+                aria-hidden
+                className="pointer-events-none"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                style={{ position: 'absolute', inset: 0, borderRadius: 'inherit', boxShadow: liquidGlassShadow(dark) }}
+              />
+            </>
+          )}
+        </AnimatePresence>
+
         {/* Liquid morph layers — the "flowing in" moment plus a slow
-            ambient sheen while the panel stays open. Sit below content
-            (zIndex 1 on the wrapper below) so rows always read clearly. */}
+            ambient sheen while the panel stays open. Transform/opacity
+            only, so these are unaffected by the settled-gating above. */}
         <LiquidBloom pt={pt} open={open} align={align} />
         <LiquidSheen pt={pt} open={open} />
 
@@ -298,7 +334,7 @@ export default function NavMenu({ dark, toggleTheme, align = 'left' }) {
             alignSelf: align === 'right' ? 'flex-end' : 'flex-start'
           }}>
             <motion.button
-              onClick={() => setOpen(o => !o)}
+              onClick={() => setOpenAnimated(o => !o)}
               aria-label={open ? 'Close navigation menu' : 'Open navigation menu'}
               aria-haspopup="true"
               aria-expanded={open}
