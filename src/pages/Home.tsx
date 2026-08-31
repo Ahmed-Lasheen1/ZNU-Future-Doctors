@@ -44,6 +44,49 @@ function moduleBlurb(name: string) {
   return key ? MODULE_BLURBS[key] : 'Master the essentials of this module.'
 }
 
+// ── Custom line-art icons for the Weekly Report card ────────────────
+// Drawn in the same convention as src/components/ui/tool-icons.tsx
+// (thin ~1.6-1.8px rounded strokes) — replaces the plain 📊 and 🔥
+// emoji with purpose-built glyphs instead.
+
+function WeeklyReportIcon({ color, size = 18 }: { color: string; size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <path
+        d="M4 9.5l4.5-3.5 4.5 2.5L19 3"
+        stroke={color}
+        strokeWidth="1.4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        opacity="0.5"
+      />
+      <path d="M4 20v-6.5" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
+      <path d="M9.5 20V11" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
+      <path d="M15 20v-9" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
+      <path d="M20 20V6" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+function StreakFlameIcon({ color, size = 16 }: { color: string; size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <path
+        d="M12 21c4.2 0 7-2.9 7-6.8 0-3-1.9-4.8-3-7.6-.9 2.6-2.7 2.8-2.7 5.3 0-2.8-1.9-4.6-.9-7.4C9.5 6.3 7 9.7 7 13.4 7 17.6 9.4 21 12 21Z"
+        stroke={color}
+        strokeWidth="1.6"
+        strokeLinejoin="round"
+        strokeLinecap="round"
+      />
+      <path
+        d="M12 21c1.7 0 3-1.3 3-3.1 0-1.6-1.1-2.5-1.6-3.6-.5 1.1-1.4 1.3-1.4 2.6 0-1.3-.9-2-.6-3.3-1.5 1-2.4 2.7-2.4 4.3 0 1.8 1.3 3.1 3 3.1Z"
+        fill={color}
+        opacity="0.35"
+      />
+    </svg>
+  )
+}
+
 // Major dashboard-number style (weekly accuracy %, questions attempted,
 // streak) — sourced from the shared typography hierarchy, scaled down
 // from the full `display` size since these sit inside compact stat
@@ -68,14 +111,6 @@ function msFor(targetSeconds: number) {
 const BRAND_WORDS_START = LOGO_DELAY + 0.45
 const BRAND_WORD_STAGGER = 0.2
 const BRAND_TAGLINE_DELAY = BRAND_WORDS_START + BRAND_WORD_STAGGER * 2 + 0.2
-
-function StatTile({ dark, delay, children }: { dark: boolean; delay: number; children: React.ReactNode }) {
-  return (
-    <LiquidGlassCard dark={dark} delay={delay} style={{ padding: '18px 20px' }}>
-      {children}
-    </LiquidGlassCard>
-  )
-}
 
 export default function Home({ dark, toggleTheme }: { dark: boolean; toggleTheme: () => void }) {
   const c = getTheme(dark)
@@ -256,7 +291,7 @@ export default function Home({ dark, toggleTheme }: { dark: boolean; toggleTheme
           @media (max-width: 1000px) {
             .pulse-dash-grid { grid-template-columns: 1fr; }
           }
-          .pulse-stat-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+          .pulse-report-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
           .pulse-tools-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
@@ -275,7 +310,7 @@ export default function Home({ dark, toggleTheme }: { dark: boolean; toggleTheme
 
           @media (max-width: 640px) {
             .pulse-fold { gap: 14px; }
-            .pulse-stat-row-2 { gap: 8px; }
+            .pulse-report-grid { gap: 8px; }
           }
         `}</style>
 
@@ -295,41 +330,44 @@ export default function Home({ dark, toggleTheme }: { dark: boolean; toggleTheme
           <div className="pulse-wide">
             <div className="pulse-dash-grid">
               <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                <StatTile dark={dark} delay={msFor(WEEKLY_REPORT_START)}>
-                  <div style={{ ...pulseType.sectionLabel, fontSize: 16, color: pt.text, marginBottom: 8 }}>
-                    📊 Weekly Report
-                  </div>
-                  <div style={{
-                    ...statNumStyle,
-                    color: weeklySummary ? (weeklySummary.accuracy >= 60 ? pt.cobalt : pt.danger) : pt.textPrimary
-                  }}>
-                    {weeklySummary ? `${weeklySummary.accuracy}%` : '—'}
-                  </div>
-                  <div style={{ ...pulseType.small, color: pt.textSecondary, marginTop: 4 }}>
-                    {weeklySummary ? 'Accuracy this week' : 'No questions logged this week'}
-                  </div>
-                </StatTile>
-
-                <StatTile dark={dark} delay={msFor(WEEKLY_REPORT_START) + 60}>
-                  <div style={{ ...statNumStyle, color: pt.textPrimary }}>{weeklySummary ? weeklySummary.totalAttempted : 0}</div>
-                  <div style={{ ...pulseType.small, color: pt.textSecondary, marginTop: 4 }}>Questions attempted</div>
-                </StatTile>
-
-                <div className="pulse-stat-row-2">
-                  <StatTile dark={dark} delay={msFor(WEEKLY_REPORT_START) + 120}>
-                    <div style={{ ...pulseType.cardTitle, fontSize: 15, color: pt.indigo }}>
-                      {weeklySummary?.topSubjectName || '—'}
+                <LiquidGlassCard dark={dark} delay={msFor(WEEKLY_REPORT_START)} style={{ padding: '18px 20px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+                    <WeeklyReportIcon color={pt.text} size={16} />
+                    <div style={{ ...pulseType.sectionLabel, fontSize: 16, color: pt.text }}>
+                      Weekly Report
                     </div>
-                    <div style={{ ...pulseType.small, fontSize: 11, color: pt.textMuted, marginTop: 4 }}>Most practiced</div>
-                  </StatTile>
-                  <StatTile dark={dark} delay={msFor(WEEKLY_REPORT_START) + 150}>
-                    <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, color: pt.terracotta }}>
-                      <span style={{ fontSize: 16 }}>🔥</span>
-                      <span style={{ ...pulseType.display, fontSize: 22, lineHeight: 1 }}>{streak}</span>
+                  </div>
+                  <div className="pulse-report-grid">
+                    <div>
+                      <div style={{
+                        ...statNumStyle,
+                        color: weeklySummary ? (weeklySummary.accuracy >= 60 ? pt.cobalt : pt.danger) : pt.textPrimary
+                      }}>
+                        {weeklySummary ? `${weeklySummary.accuracy}%` : '—'}
+                      </div>
+                      <div style={{ ...pulseType.small, color: pt.textSecondary, marginTop: 4 }}>
+                        {weeklySummary ? 'Accuracy this week' : 'No questions logged this week'}
+                      </div>
                     </div>
-                    <div style={{ ...pulseType.small, fontSize: 11, color: pt.textMuted, marginTop: 4 }}>Day streak</div>
-                  </StatTile>
-                </div>
+                    <div>
+                      <div style={{ ...statNumStyle, color: pt.textPrimary }}>{weeklySummary ? weeklySummary.totalAttempted : 0}</div>
+                      <div style={{ ...pulseType.small, color: pt.textSecondary, marginTop: 4 }}>Questions attempted</div>
+                    </div>
+                    <div>
+                      <div style={{ ...pulseType.cardTitle, fontSize: 15, color: pt.indigo }}>
+                        {weeklySummary?.topSubjectName || '—'}
+                      </div>
+                      <div style={{ ...pulseType.small, fontSize: 11, color: pt.textMuted, marginTop: 4 }}>Most practiced</div>
+                    </div>
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, color: pt.terracotta }}>
+                        <StreakFlameIcon color={pt.terracotta} size={16} />
+                        <span style={{ ...pulseType.display, fontSize: 22, lineHeight: 1 }}>{streak}</span>
+                      </div>
+                      <div style={{ ...pulseType.small, fontSize: 11, color: pt.textMuted, marginTop: 4 }}>Day streak</div>
+                    </div>
+                  </div>
+                </LiquidGlassCard>
 
                 {(pausedExam || announcement) && (
                   <LiquidGlassCard dark={dark} delay={msFor(WEEKLY_REPORT_START) + 200}
