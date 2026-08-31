@@ -1,3 +1,4 @@
+// src/pages/Home.tsx
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
@@ -16,28 +17,74 @@ import NotifyPermissionButton from '../components/NotifyPermissionButton'
 import LiquidGlassCard from '@/components/ui/liquid-glass-card'
 import EcgHero from '../components/pulse/EcgHero'
 import PulseBackground from '../components/pulse/PulseBackground'
+import PulseBrand from '../components/pulse/PulseBrand'
 import { ScheduleIcon, ChecklistIcon, AnonQAIcon, LeaderboardIcon } from '@/components/ui/tool-icons'
 import { ModuleIcon } from '../lib/medicalIcons'
 
-const LOGO_SRC = '/icon-192.png'
+interface HomeModule {
+  id: string; name: string; icon?: string | null; color: string; status: 'active' | 'completed'
+}
 
 const toolCards = [
   { Icon: ScheduleIcon, title: 'Schedules', sub: 'Plan your study time', to: '/schedule', accent: 'indigo' },
   { Icon: ChecklistIcon, title: 'Checklist', sub: 'Track your progress', to: '/checklist', accent: 'amber' },
   { Icon: AnonQAIcon, title: 'Anonymous Q&A', sub: 'Ask. Learn. Grow.', to: '/anon-questions', accent: 'indigo' },
   { Icon: LeaderboardIcon, title: 'Leaderboard', sub: 'See where you stand', to: '/profile?tab=leaderboard', accent: 'amber' },
-]
+] as const
 
-const MODULE_BLURBS = {
+const MODULE_BLURBS: Record<string, string> = {
   neuro: 'Explore the wonders of the nervous system',
   cardio: 'Understand the heart and blood vessels',
   respirat: 'Study the mechanics of breathing',
   digest: 'Learn the process of nourishment',
   gastro: 'Learn the process of nourishment',
 }
-function moduleBlurb(name) {
+function moduleBlurb(name: string) {
   const key = Object.keys(MODULE_BLURBS).find(k => name.toLowerCase().includes(k))
   return key ? MODULE_BLURBS[key] : 'Master the essentials of this module.'
+}
+
+// ── Custom line-art icons for the Weekly Report card ────────────────
+// Drawn in the same convention as src/components/ui/tool-icons.tsx
+// (thin ~1.6-1.8px rounded strokes) — replaces the plain 📊 and 🔥
+// emoji with purpose-built glyphs instead.
+
+function WeeklyReportIcon({ color, size = 18 }: { color: string; size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <path
+        d="M4 9.5l4.5-3.5 4.5 2.5L19 3"
+        stroke={color}
+        strokeWidth="1.4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        opacity="0.5"
+      />
+      <path d="M4 20v-6.5" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
+      <path d="M9.5 20V11" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
+      <path d="M15 20v-9" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
+      <path d="M20 20V6" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+function StreakFlameIcon({ color, size = 16 }: { color: string; size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <path
+        d="M12 21c4.2 0 7-2.9 7-6.8 0-3-1.9-4.8-3-7.6-.9 2.6-2.7 2.8-2.7 5.3 0-2.8-1.9-4.6-.9-7.4C9.5 6.3 7 9.7 7 13.4 7 17.6 9.4 21 12 21Z"
+        stroke={color}
+        strokeWidth="1.6"
+        strokeLinejoin="round"
+        strokeLinecap="round"
+      />
+      <path
+        d="M12 21c1.7 0 3-1.3 3-3.1 0-1.6-1.1-2.5-1.6-3.6-.5 1.1-1.4 1.3-1.4 2.6 0-1.3-.9-2-.6-3.3-1.5 1-2.4 2.7-2.4 4.3 0 1.8 1.3 3.1 3 3.1Z"
+        fill={color}
+        opacity="0.35"
+      />
+    </svg>
+  )
 }
 
 // Major dashboard-number style (weekly accuracy %, questions attempted,
@@ -56,7 +103,7 @@ const TOOLS_START = ACTIVE_MODULES_START + 0.6
 const FOOTER_DELAY = TOOLS_START + 0.5
 const COMPLETED_MODULES_START = TOOLS_START + 0.6
 
-function msFor(targetSeconds) {
+function msFor(targetSeconds: number) {
   return Math.round(((targetSeconds - ENTRANCE_PAUSE) / 1.5) * 1000)
 }
 
@@ -65,79 +112,16 @@ const BRAND_WORDS_START = LOGO_DELAY + 0.45
 const BRAND_WORD_STAGGER = 0.2
 const BRAND_TAGLINE_DELAY = BRAND_WORDS_START + BRAND_WORD_STAGGER * 2 + 0.2
 
-const brandWordsContainer = {
-  hidden: {},
-  visible: { transition: { delayChildren: BRAND_WORDS_START, staggerChildren: BRAND_WORD_STAGGER } },
-}
-const brandWordItem = {
-  hidden: { opacity: 0, y: 10 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: 'easeOut' } },
-}
-
-function ZnuPulseBrand({ dark, pt }) {
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-      <motion.div
-        initial={{ opacity: 0, x: -20 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ duration: 0.7, delay: LOGO_DELAY }}
-        style={{
-          width: 44, height: 44, flexShrink: 0,
-          borderRadius: 12, overflow: 'hidden',
-          background: pt.surfaceFlat, border: `1px solid ${pt.cobaltBorder}`,
-        }}
-      >
-        <img src={LOGO_SRC} alt="ZNU Pulse" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-      </motion.div>
-
-      <div>
-        <motion.div
-          initial="hidden"
-          animate="visible"
-          variants={brandWordsContainer}
-          style={{
-            ...pulseType.sectionTitle,
-            fontFamily: pulseFonts.display, fontWeight: 800, fontSize: 20, letterSpacing: 1.2,
-            color: pt.textPrimary, lineHeight: 1
-          }}
-        >
-          <motion.span variants={brandWordItem} style={{ display: 'inline-block' }}>ZNU</motion.span>
-          {' '}
-          <motion.span variants={brandWordItem} style={{ display: 'inline-block', color: pt.cobalt }}>PULSE</motion.span>
-        </motion.div>
-        <motion.div
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.55, delay: BRAND_TAGLINE_DELAY }}
-          style={{
-            ...pulseType.sectionLabel,
-            fontSize: 9, letterSpacing: 2.5,
-            color: pt.textMuted, marginTop: 5,
-          }}
-        >For Future Doctors</motion.div>
-      </div>
-    </div>
-  )
-}
-
-function StatTile({ dark, pt, delay, children }) {
-  return (
-    <LiquidGlassCard dark={dark} delay={delay} style={{ padding: '18px 20px' }}>
-      {children}
-    </LiquidGlassCard>
-  )
-}
-
-export default function Home({ dark, toggleTheme }) {
+export default function Home({ dark, toggleTheme }: { dark: boolean; toggleTheme: () => void }) {
   const c = getTheme(dark)
   const pt = getPulseTheme(dark)
   const navigate = useNavigate()
-  const { user, profile } = useAuth()
-  const { modules, modulesLoaded, modulesError } = useModules()
+  const { user, profile } = useAuth() as any
+  const { modules, modulesLoaded, modulesError } = useModules() as { modules: HomeModule[]; modulesLoaded: boolean; modulesError: boolean }
   const [announcement, setAnnouncement] = useState('')
   const [streak, setStreak] = useState(0)
-  const [pausedExam, setPausedExam] = useState(null)
-  const [weeklySummary, setWeeklySummary] = useState(null)
+  const [pausedExam, setPausedExam] = useState<any>(null)
+  const [weeklySummary, setWeeklySummary] = useState<{ totalAttempted: number; accuracy: number; topSubjectName: string | null } | null>(null)
 
   useEffect(() => {
     supabase.from('site_settings').select('value').eq('key', 'home_announcement').single()
@@ -148,9 +132,9 @@ export default function Home({ dark, toggleTheme }) {
     async function loadStreak() {
       if (user) {
         const { data } = await supabase.from('exam_history').select('completed_at').eq('user_id', user.id)
-        setStreak(computeStreak((data || []).map(r => r.completed_at)))
+        setStreak(computeStreak((data || []).map((r: any) => r.completed_at)))
       } else {
-        setStreak(computeStreak(getGuestHistory().map(r => r.completed_at)))
+        setStreak(computeStreak(getGuestHistory().map((r: any) => r.completed_at)))
       }
     }
     loadStreak()
@@ -163,7 +147,7 @@ export default function Home({ dark, toggleTheme }) {
   useEffect(() => {
     async function loadWeekly() {
       const weekAgoMs = Date.now() - 7 * 24 * 60 * 60 * 1000
-      let rows = []
+      let rows: any[] = []
       if (user) {
         const { data } = await supabase
           .from('exam_history')
@@ -172,7 +156,7 @@ export default function Home({ dark, toggleTheme }) {
           .gte('completed_at', new Date(weekAgoMs).toISOString())
         rows = data || []
       } else {
-        rows = getGuestHistory().filter(h => h.completed_at >= weekAgoMs)
+        rows = getGuestHistory().filter((h: any) => h.completed_at >= weekAgoMs)
       }
 
       if (rows.length === 0) { setWeeklySummary(null); return }
@@ -181,11 +165,11 @@ export default function Home({ dark, toggleTheme }) {
       const totalCorrect = rows.reduce((a, h) => a + h.correct, 0)
       const accuracy = totalAttempted > 0 ? Math.round((100 * totalCorrect) / totalAttempted) : 0
 
-      const bySubject = {}
+      const bySubject: Record<string, number> = {}
       rows.forEach(h => { if (h.subject_id) bySubject[h.subject_id] = (bySubject[h.subject_id] || 0) + h.total })
       const topSubjectId = Object.entries(bySubject).sort((a, b) => b[1] - a[1])[0]?.[0] || null
 
-      let topSubjectName = null
+      let topSubjectName: string | null = null
       if (topSubjectId) {
         const { data: subData } = await supabase.from('subjects').select('name').eq('id', topSubjectId).single()
         topSubjectName = subData?.name || null
@@ -203,8 +187,8 @@ export default function Home({ dark, toggleTheme }) {
       if (!data || data.length === 0) return
 
       const today = new Date(); today.setHours(0, 0, 0, 0)
-      const upcoming = data.filter(s => {
-        const diffDays = Math.round((new Date(s.date) - today) / (24 * 60 * 60 * 1000))
+      const upcoming = data.filter((s: any) => {
+        const diffDays = Math.round((new Date(s.date).getTime() - today.getTime()) / (24 * 60 * 60 * 1000))
         return diffDays >= 0 && diffDays <= 2
       })
       if (upcoming.length === 0) return
@@ -212,7 +196,7 @@ export default function Home({ dark, toggleTheme }) {
       const todayStr = today.toDateString()
       if (localStorage.getItem('exam_reminder_last_notify') === todayStr) return
 
-      upcoming.forEach(s => {
+      upcoming.forEach((s: any) => {
         const mod = modules.find(m => m.id === s.module_id)
         new Notification('📝 Upcoming Exam', {
           body: `${mod ? mod.name + ' — ' : ''}${s.title} is coming up soon!`
@@ -230,7 +214,7 @@ export default function Home({ dark, toggleTheme }) {
   // driven entirely by the shared sectionLabel typography token
   // (Sora, 600 weight, uppercase, +0.16em tracking) instead of local
   // ad-hoc sizing, so every uppercase label in the app matches.
-  const sectionTitle = (text, delaySeconds) => (
+  const sectionTitle = (text: string, delaySeconds: number) => (
     <motion.h2
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
@@ -260,7 +244,15 @@ export default function Home({ dark, toggleTheme }) {
           pointerEvents: 'auto'
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-            <ZnuPulseBrand dark={dark} pt={pt} />
+            <PulseBrand
+              dark={dark}
+              animation={{
+                logoDelay: LOGO_DELAY,
+                wordsStart: BRAND_WORDS_START,
+                wordStagger: BRAND_WORD_STAGGER,
+                taglineDelay: BRAND_TAGLINE_DELAY,
+              }}
+            />
 
             <motion.div
               initial={{ opacity: 0, x: 20 }}
@@ -299,7 +291,7 @@ export default function Home({ dark, toggleTheme }) {
           @media (max-width: 1000px) {
             .pulse-dash-grid { grid-template-columns: 1fr; }
           }
-          .pulse-stat-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+          .pulse-report-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
           .pulse-tools-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
@@ -318,7 +310,7 @@ export default function Home({ dark, toggleTheme }) {
 
           @media (max-width: 640px) {
             .pulse-fold { gap: 14px; }
-            .pulse-stat-row-2 { gap: 8px; }
+            .pulse-report-grid { gap: 8px; }
           }
         `}</style>
 
@@ -338,41 +330,44 @@ export default function Home({ dark, toggleTheme }) {
           <div className="pulse-wide">
             <div className="pulse-dash-grid">
               <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                <StatTile dark={dark} pt={pt} delay={msFor(WEEKLY_REPORT_START)}>
-                  <div style={{ ...pulseType.sectionLabel, fontSize: 16, color: pt.text, marginBottom: 8 }}>
-                    📊 Weekly Report
-                  </div>
-                  <div style={{
-                    ...statNumStyle,
-                    color: weeklySummary ? (weeklySummary.accuracy >= 60 ? pt.cobalt : pt.danger) : pt.textPrimary
-                  }}>
-                    {weeklySummary ? `${weeklySummary.accuracy}%` : '—'}
-                  </div>
-                  <div style={{ ...pulseType.small, color: pt.textSecondary, marginTop: 4 }}>
-                    {weeklySummary ? 'Accuracy this week' : 'No questions logged this week'}
-                  </div>
-                </StatTile>
-
-                <StatTile dark={dark} pt={pt} delay={msFor(WEEKLY_REPORT_START) + 60}>
-                  <div style={{ ...statNumStyle, color: pt.textPrimary }}>{weeklySummary ? weeklySummary.totalAttempted : 0}</div>
-                  <div style={{ ...pulseType.small, color: pt.textSecondary, marginTop: 4 }}>Questions attempted</div>
-                </StatTile>
-
-                <div className="pulse-stat-row-2">
-                  <StatTile dark={dark} pt={pt} delay={msFor(WEEKLY_REPORT_START) + 120}>
-                    <div style={{ ...pulseType.cardTitle, fontSize: 15, color: pt.indigo }}>
-                      {weeklySummary?.topSubjectName || '—'}
+                <LiquidGlassCard dark={dark} delay={msFor(WEEKLY_REPORT_START)} style={{ padding: '18px 20px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+                    <WeeklyReportIcon color={pt.text} size={16} />
+                    <div style={{ ...pulseType.sectionLabel, fontSize: 16, color: pt.text }}>
+                      Weekly Report
                     </div>
-                    <div style={{ ...pulseType.small, fontSize: 11, color: pt.textMuted, marginTop: 4 }}>Most practiced</div>
-                  </StatTile>
-                  <StatTile dark={dark} pt={pt} delay={msFor(WEEKLY_REPORT_START) + 150}>
-                    <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, color: pt.terracotta }}>
-                      <span style={{ fontSize: 16 }}>🔥</span>
-                      <span style={{ ...pulseType.display, fontSize: 22, lineHeight: 1 }}>{streak}</span>
+                  </div>
+                  <div className="pulse-report-grid">
+                    <div>
+                      <div style={{
+                        ...statNumStyle,
+                        color: weeklySummary ? (weeklySummary.accuracy >= 60 ? pt.cobalt : pt.danger) : pt.textPrimary
+                      }}>
+                        {weeklySummary ? `${weeklySummary.accuracy}%` : '—'}
+                      </div>
+                      <div style={{ ...pulseType.small, color: pt.textSecondary, marginTop: 4 }}>
+                        {weeklySummary ? 'Accuracy this week' : 'No questions logged this week'}
+                      </div>
                     </div>
-                    <div style={{ ...pulseType.small, fontSize: 11, color: pt.textMuted, marginTop: 4 }}>Day streak</div>
-                  </StatTile>
-                </div>
+                    <div>
+                      <div style={{ ...statNumStyle, color: pt.textPrimary }}>{weeklySummary ? weeklySummary.totalAttempted : 0}</div>
+                      <div style={{ ...pulseType.small, color: pt.textSecondary, marginTop: 4 }}>Questions attempted</div>
+                    </div>
+                    <div>
+                      <div style={{ ...pulseType.cardTitle, fontSize: 15, color: pt.indigo }}>
+                        {weeklySummary?.topSubjectName || '—'}
+                      </div>
+                      <div style={{ ...pulseType.small, fontSize: 11, color: pt.textMuted, marginTop: 4 }}>Most practiced</div>
+                    </div>
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, color: pt.terracotta }}>
+                        <StreakFlameIcon color={pt.terracotta} size={16} />
+                        <span style={{ ...pulseType.display, fontSize: 22, lineHeight: 1 }}>{streak}</span>
+                      </div>
+                      <div style={{ ...pulseType.small, fontSize: 11, color: pt.textMuted, marginTop: 4 }}>Day streak</div>
+                    </div>
+                  </div>
+                </LiquidGlassCard>
 
                 {(pausedExam || announcement) && (
                   <LiquidGlassCard dark={dark} delay={msFor(WEEKLY_REPORT_START) + 200}
@@ -397,7 +392,7 @@ export default function Home({ dark, toggleTheme }) {
                 transition={{ duration: 0.85, delay: HERO_DELAY }}
                 style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
               >
-                <EcgHero height="100%" />
+                <EcgHero height={220} />
               </motion.div>
 
               <div>
@@ -480,7 +475,7 @@ export default function Home({ dark, toggleTheme }) {
           >
             <div style={{ height: 1, background: pt.border, flex: 1, maxWidth: 120 }} />
             <div style={{ ...pulseType.small, display: 'flex', alignItems: 'center', gap: 8, color: pt.textMuted }}>
-              <img src={LOGO_SRC} alt="" style={{ width: 18, height: 18, borderRadius: 4, objectFit: 'cover' }} />
+              <img src="/icon-192.png" alt="" style={{ width: 18, height: 18, borderRadius: 4, objectFit: 'cover' }} />
               Keep the pulse. Shape the future.
             </div>
             <div style={{ height: 1, background: pt.border, flex: 1, maxWidth: 120 }} />
