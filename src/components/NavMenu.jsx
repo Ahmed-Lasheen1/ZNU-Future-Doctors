@@ -1,4 +1,3 @@
-// src/components/NavMenu.jsx
 import { useState, useRef, useEffect, useLayoutEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -99,71 +98,63 @@ export default function NavMenu({ dark, toggleTheme, align = 'left' }) {
 
   const listContainer = {
     hidden: {},
-    visible: { transition: { delayChildren: 0.16, staggerChildren: 0.04 } },
+    visible: { transition: { delayChildren: 0.28, staggerChildren: 0.05 } },
     exit: { transition: { staggerChildren: 0.015, staggerDirection: -1 } },
   }
   const listItem = {
-    hidden: { opacity: 0, y: 6 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.2, ease: 'easeOut' } },
-    exit: { opacity: 0, y: -4, transition: { duration: 0.1, ease: 'easeIn' } },
+    hidden: { opacity: 0, y: 8 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.25, ease: 'easeOut' } },
+    exit: { opacity: 0, y: -4, transition: { duration: 0.12, ease: 'easeIn' } },
   }
 
   return (
     <div ref={wrapperRef} style={{ position: 'relative', width: BUTTON_SIZE, height: BUTTON_SIZE }}>
-      {/*
-        Perf fix: the panel's *size* (width/height/border-radius) is no
-        longer tweened by framer-motion — animating those properties
-        forces layout (reflow) on every single frame, which is what was
-        causing the visible lag, especially combined with the
-        backdrop-filter blur on the same element. Instead the panel
-        snaps to its open/closed box size instantly via plain CSS
-        (cheap — happens once, not per-frame), and the actual "grow"
-        illusion is done with transform: scale + transformOrigin, which
-        is GPU-composited and does not touch layout at all. Visually
-        indistinguishable from the old width/height tween, just smooth.
-      */}
       <motion.div
         style={{
           position: 'absolute', top: 0,
           [align === 'right' ? 'right' : 'left']: 0,
           maxWidth: '90vw',
+          overflow: 'hidden',
+          zIndex: 2000,
+          willChange: 'width, height, border-radius',
+        }}
+        animate={{
           width: open ? PANEL_WIDTH : BUTTON_SIZE,
           height: open ? openHeight : BUTTON_SIZE,
           borderRadius: open ? PANEL_RADIUS : BUTTON_SIZE,
-          overflow: 'hidden',
-          zIndex: 2000,
-          transformOrigin: align === 'right' ? 'top right' : 'top left',
-          willChange: 'transform, opacity',
         }}
-        initial={false}
-        animate={{ scale: 1, opacity: 1 }}
         whileHover={!open ? { scale: 1.06 } : undefined}
-        transition={{ duration: 0.25, ease: morphEase }}
+        transition={{
+          duration: 0.7, ease: morphEase,
+          height: { duration: open ? 0.7 : 0.32, ease: morphEase },
+          borderRadius: { duration: 0.5, ease: morphEase },
+          scale: { duration: 0.25, ease: morphEase },
+        }}
       >
         <motion.div
           aria-hidden
           className="pointer-events-none"
           style={{ position: 'absolute', inset: 0, borderRadius: 'inherit', ...liquidGlassBackdrop() }}
           animate={{ opacity: open ? 1 : 0 }}
-          transition={{ duration: open ? 0.25 : 0.12 }}
+          transition={{ duration: open ? 0.35 : 0.15, delay: open ? 0.12 : 0 }}
         />
         <motion.div
           aria-hidden
           className="pointer-events-none"
           style={{ position: 'absolute', inset: 0, borderRadius: 'inherit', boxShadow: liquidGlassShadow(dark) }}
           animate={{ opacity: open ? 1 : 0 }}
-          transition={{ duration: open ? 0.25 : 0.12 }}
+          transition={{ duration: open ? 0.35 : 0.15, delay: open ? 0.12 : 0 }}
         />
         <motion.div
           aria-hidden
           className="pointer-events-none"
           style={{ position: 'absolute', inset: 0, borderRadius: 'inherit', background: liquidGlassTint(dark) }}
           animate={{ opacity: open ? 1 : 0 }}
-          transition={{ duration: open ? 0.25 : 0.12 }}
+          transition={{ duration: open ? 0.35 : 0.15, delay: open ? 0.12 : 0 }}
         />
 
         <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column' }}>
-          <div style={{
+                    <div style={{
             width: BUTTON_SIZE, height: BUTTON_SIZE, flexShrink: 0,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             alignSelf: align === 'right' ? 'flex-end' : 'flex-start'
@@ -183,7 +174,7 @@ export default function NavMenu({ dark, toggleTheme, align = 'left' }) {
                 outline: 'none'
               }}
             >
-              <MenuToggleIcon open={open} width={44} height={44} stroke={dark ? '#38bdf8' : '#475569'} duration={250} />
+              <MenuToggleIcon open={open} width={44} height={44} stroke={dark ? '#38bdf8' : '#475569'} duration={400} />
             </button>
           </div>
 
