@@ -1,13 +1,13 @@
 // src/pages/MCQ.tsx
 import { useState, useEffect, useRef } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
+import { motion } from 'framer-motion'
 import { supabase } from '../supabase'
 import { useAuth, useModules } from '../contexts'
 import { getPulseTheme, pulseFonts, pulseType } from '../premiumTheme'
 import { useToast } from '../components/ToastProvider'
 import ErrorBanner from '../components/ErrorBanner'
 import QuestionRail from '../components/QuestionRail'
-import ScoreRing from '../components/ScoreRing'
 import QuestionSourceBadge from '../components/QuestionSourceBadge'
 import LiquidGlassCard from '@/components/ui/liquid-glass-card'
 import PulseBackground from '../components/pulse/PulseBackground'
@@ -24,6 +24,17 @@ const MOCK_MINUTES = 36
 // Existing functional accent for the MCQ/exam feature (same terracotta
 // used on Review.tsx) — reused, not invented.
 const MCQ_ACCENT = '#e2725b'
+
+// Small labeled number used on the results screen ("CORRECT 28",
+// "INCORRECT 8", "TIME 31:42") — plain typography, no chart chrome.
+function StatChip({ label, value, color }: { label: string; value: string | number; color: string }) {
+  return (
+    <div style={{ textAlign: 'center' }}>
+      <div style={{ fontFamily: pulseFonts.display, fontWeight: 800, fontSize: 22, color }}>{value}</div>
+      <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1.5, color: color, opacity: 0.7, marginTop: 2 }}>{label}</div>
+    </div>
+  )
+}
 
 export default function MCQ({ dark }: { dark: boolean }) {
   const { user, fetchProfile } = useAuth() as any
@@ -54,6 +65,8 @@ export default function MCQ({ dark }: { dark: boolean }) {
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState(false)
   const [timeLeft, setTimeLeft] = useState(0)
+  const [elapsedSeconds, setElapsedSeconds] = useState(0)
+  const [finishTimeSec, setFinishTimeSec] = useState(0)
   const [flaggedIds, setFlaggedIds] = useState<Set<string>>(new Set())
   const [resumeData, setResumeData] = useState<any>(null)
   const [currentIndex, setCurrentIndex] = useState(0)
@@ -235,10 +248,18 @@ export default function MCQ({ dark }: { dark: boolean }) {
     setFlaggedIds(next)
   }
 
-  function startMockTimer(startedAt: number) {
+  // Unified exam timer — counts down for mock (urgency escalates as it
+  // runs low), counts up for practice/retry (so a timer is always
+  // visible during an exam, per exam-mode spec, without needing a
+  // fixed target). Always clears any previous interval first, since
+  // "Try Again" can start a fresh quiz without the old one having
+  // stopped its own timer yet.
+  function startTimer(startedAt: number, mode: string) {
+    clearInterval(timerRef.current)
     const tick = () => {
       const elapsed = Math.floor((Date.now() - startedAt) / 1000)
-      setTimeLeft(Math.max(0, MOCK_MINUTES * 60 - elapsed))
+      if (mode === 'mock') setTimeLeft(Math.max(0, MOCK_MINUTES * 60 - elapsed))
+      else setElapsedSeconds(elapsed)
     }
     tick()
     timerRef.current = setInterval(tick, 1000)
@@ -260,10 +281,11 @@ export default function MCQ({ dark }: { dark: boolean }) {
     setQuizMode(type)
     setResumeData(null)
     setCurrentIndex(0)
+    setElapsedSeconds(0)
     loadFlagsFor(qs.map(q => q.id)).then(setFlaggedIds)
 
-    if (type === 'mock') startMockTimer(quizStartedAtRef.current = Date.now())
-    else quizStartedAtRef.current = Date.now()
+    quizStartedAtRef.current = Date.now()
+    startTimer(quizStartedAtRef.current, type)
   }
 
   function startRetryQuiz(list: any[]) {
@@ -274,7 +296,9 @@ export default function MCQ({ dark }: { dark: boolean }) {
     setQuizMode('retry')
     setResumeData(null)
     setCurrentIndex(0)
+    setElapsedSeconds(0)
     quizStartedAtRef.current = Date.now()
+    startTimer(quizStartedAtRef.current, 'retry')
     loadFlagsFor(list.map(q => q.id)).then(setFlaggedIds)
   }
 
@@ -290,7 +314,7 @@ export default function MCQ({ dark }: { dark: boolean }) {
     quizStartedAtRef.current = resumeData.startedAt
     loadFlagsFor((resumeData.quizQuestions || []).map((q: any) => q.id)).then(setFlaggedIds)
 
-    if (resumeData.quizMode === 'mock') startMockTimer(resumeData.startedAt)
+    startTimer(resumeData.startedAt, resumeData.quizMode)
     setResumeData(null)
   }
 
@@ -307,6 +331,7 @@ export default function MCQ({ dark }: { dark: boolean }) {
     setResults({})
     setSubmitted(false)
     setTimeLeft(0)
+    setElapsedSeconds(0)
     setFlaggedIds(new Set())
     setCurrentIndex(0)
   }
@@ -322,6 +347,21 @@ export default function MCQ({ dark }: { dark: boolean }) {
   function tryAgain() {
     if (quizMode === 'retry') startRetryQuiz(quizQuestions)
     else startQuiz(quizMode!)
+  }
+
+  // Starts a fresh retry quiz made only of the questions the student
+  // got wrong, within one subject, from the exam they just finished —
+  // real data pulled from this session's own results, nothing invented.
+  function startTargetedPractice(subjectId: string) {
+    const incorrectQs = quizQuestions
+      .filter(q => q.subject_id === subjectId && results[q.id] && !results[q.id].is_correct)
+      .map(q => ({
+        id: q.id, question: q.question,
+        option_a: q.option_a, option_b: q.option_b, option_c: q.option_c, option_d: q.option_d,
+        module_id: q.module_id, subject_id: q.subject_id
+      }))
+    if (incorrectQs.length === 0) return
+    startRetryQuiz(incorrectQs)
   }
 
   async function submitQuiz() {
@@ -357,6 +397,7 @@ export default function MCQ({ dark }: { dark: boolean }) {
     const correctCount = quizQuestions.filter(q => resultMap[q.id]?.is_correct).length
     const scorePercent = total > 0 ? Math.round((correctCount / total) * 100) : 0
     const timeSec = quizMode === 'mock' ? Math.max(0, MOCK_MINUTES * 60 - timeLeft) : null
+    setFinishTimeSec(quizMode === 'mock' ? (timeSec as number) : elapsedSeconds)
     const historyModuleId = quizMode === 'retry' ? (quizQuestions[0]?.module_id || null) : activeModule
     const historySubjectId = (quizMode === 'practice' || quizMode === 'retry') ? (quizQuestions[0]?.subject_id || null) : null
 
@@ -423,15 +464,24 @@ export default function MCQ({ dark }: { dark: boolean }) {
   const optionLabels = ['a', 'b', 'c', 'd']
   const optionTexts = (q: any) => [q.option_a, q.option_b, q.option_c, q.option_d]
   const formatTime = (s: number) => `${Math.floor(s / 60).toString().padStart(2, '0')}:${(s % 60).toString().padStart(2, '0')}`
-  const quizTitle = quizMode === 'mock' ? '📝 Mock Exam' : quizMode === 'retry' ? '🔁 Retry' : '🧪 Practice'
   const hoverTint = dark ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.35)'
 
-  // ── Quiz-taking view ──────────────────────────────────────────────
+  // Gradual urgency for the mock-exam countdown — normal, then amber
+  // under ~28% remaining (~10 min of 36), then red under ~14% (~5
+  // min). No sudden full-screen warning, just a color shift.
+  function timerColor() {
+    if (quizMode !== 'mock') return pt.textPrimary
+    const pctLeft = timeLeft / (MOCK_MINUTES * 60)
+    if (pctLeft <= 0.14) return pt.danger
+    if (pctLeft <= 0.28) return pt.amber
+    return pt.textPrimary
+  }
+
+  // ── Exam-mode overlay (taking + results) ───────────────────────────
   if (quizMode) {
     const score = submitted ? getScore() : 0
     const total = quizQuestions.length
     const percent = total > 0 ? Math.round((score / total) * 100) : 0
-    const timePercent = quizMode === 'mock' ? (timeLeft / (MOCK_MINUTES * 60)) * 100 : 100
     const answeredIndexes = new Set(Object.keys(answers).map(Number))
     const flaggedIndexes = new Set(quizQuestions.map((q, i) => flaggedIds.has(q.id) ? i : null).filter((i): i is number => i !== null))
     const safeIndex = total > 0 ? Math.min(currentIndex, total - 1) : 0
@@ -439,52 +489,81 @@ export default function MCQ({ dark }: { dark: boolean }) {
     const answeredCount = Object.keys(answers).length
     const isLastQuestion = safeIndex === total - 1
 
-    if (total === 0) return (
-      <div style={{ position: 'relative', minHeight: '100vh' }}>
-        <PulseBackground />
-        <div className="pulse-wide" style={{ position: 'relative', zIndex: 1, padding: 24, textAlign: 'center' }}>
-          <h2 style={{ color: MCQ_ACCENT }}>No questions available yet! 🚧</h2>
-          <button onClick={stopQuiz} style={{
-            marginTop: 16, background: dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)',
-            border: `1px solid ${pt.border}`, borderRadius: 10, padding: '8px 16px',
-            color: pt.sub, cursor: 'pointer', fontSize: 13, fontWeight: 700, fontFamily: pulseFonts.body
-          }}>← Back</button>
-        </div>
-      </div>
-    )
+    // Real per-subject breakdown from this session's own results —
+    // no invented numbers. Only subjects actually present among the
+    // graded questions are included.
+    const subjectStats = submitted ? (() => {
+      const map: Record<string, { name: string; total: number; correct: number }> = {}
+      quizQuestions.forEach(q => {
+        const r = results[q.id]
+        if (!q.subject_id || !r) return
+        if (!map[q.subject_id]) {
+          const subj = subjects.find(s => s.id === q.subject_id)
+          map[q.subject_id] = { name: subj?.name || 'Other', total: 0, correct: 0 }
+        }
+        map[q.subject_id].total++
+        if (r.is_correct) map[q.subject_id].correct++
+      })
+      return Object.entries(map).map(([id, v]) => ({
+        id, name: v.name, total: v.total, correct: v.correct,
+        incorrect: v.total - v.correct,
+        accuracy: v.total > 0 ? Math.round((v.correct / v.total) * 100) : 0
+      })).sort((a, b) => a.accuracy - b.accuracy)
+    })() : []
+    const weakestSubject = subjectStats.find(s => s.incorrect > 0) || null
 
     return (
-      <div style={{ position: 'relative', minHeight: '100vh' }}>
+      <motion.div
+        initial={{ opacity: 0, scale: 0.985 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+        style={{ position: 'fixed', inset: 0, zIndex: 2000, overflowY: 'auto' }}
+      >
         <PulseBackground />
-        <div className="pulse-wide" style={{ position: 'relative', zIndex: 1, padding: '24px 20px 120px', fontFamily: pulseFonts.body }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
-            <button onClick={stopQuiz} style={{
-              background: dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)',
-              border: `1px solid ${pt.border}`, borderRadius: 10, padding: '8px 16px',
-              color: pt.sub, cursor: 'pointer', fontSize: 13, fontWeight: 700, fontFamily: pulseFonts.body
-            }}>← Back</button>
-            <h2 style={{ color: MCQ_ACCENT, flex: 1, fontSize: 16 }}>{quizTitle}</h2>
-            {quizMode === 'mock' && !submitted && (
-              <div style={{
-                background: timeLeft < 300 ? 'rgba(239,107,87,0.16)' : `${pt.cobalt}20`,
-                border: `1px solid ${timeLeft < 300 ? 'rgba(239,107,87,0.4)' : pt.cobaltBorder}`,
-                borderRadius: 10, padding: '6px 14px',
-                color: timeLeft < 300 ? pt.danger : pt.cobalt,
-                fontWeight: 900, fontSize: 16, fontFamily: 'monospace'
-              }}>⏱ {formatTime(timeLeft)}</div>
+        <style>{`
+          .exam-option { transition: transform 0.12s ease, background 0.15s ease, border-color 0.15s ease; }
+          .exam-option:hover { background: var(--opt-hover-bg); }
+          .exam-option:active { transform: scale(0.985); }
+          .exam-btn { transition: opacity 0.15s ease, transform 0.12s ease; }
+          .exam-btn:active { transform: scale(0.97); }
+        `}</style>
+
+        <div style={{ position: 'relative', zIndex: 1, maxWidth: 640, margin: '0 auto', padding: '0 20px 40px', fontFamily: pulseFonts.body }}>
+
+          {/* Minimal header — label, exit, and either question/timer or a results/grading label */}
+          <div style={{ position: 'relative', textAlign: 'center', paddingTop: 'max(18px, env(safe-area-inset-top))', paddingBottom: 14 }}>
+            <button onClick={stopQuiz} className="exam-btn" aria-label="Exit exam" style={{
+              position: 'absolute', top: 'max(14px, env(safe-area-inset-top))', right: 0,
+              background: 'transparent', border: 'none', cursor: 'pointer',
+              color: pt.textMuted, fontSize: 11, fontWeight: 700, letterSpacing: 1
+            }}>✕ EXIT</button>
+
+            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 3, color: pt.textMuted }}>ZNU · EXAM MODE</div>
+
+            {!submitted && !grading && total > 0 && (
+              <>
+                <div style={{ fontSize: 13, fontWeight: 700, letterSpacing: 1, color: pt.sub, marginTop: 8 }}>
+                  QUESTION {safeIndex + 1} / {total}
+                </div>
+                <div style={{
+                  fontFamily: 'monospace', fontWeight: 800, fontSize: 24, marginTop: 8,
+                  color: timerColor(), transition: 'color 0.5s ease'
+                }}>
+                  {quizMode === 'mock' ? formatTime(timeLeft) : formatTime(elapsedSeconds)}
+                </div>
+              </>
+            )}
+            {grading && (
+              <div style={{ fontSize: 13, fontWeight: 700, letterSpacing: 1, color: pt.sub, marginTop: 8 }}>GRADING…</div>
+            )}
+            {submitted && (
+              <div style={{ fontSize: 13, fontWeight: 700, letterSpacing: 1, color: pt.sub, marginTop: 8 }}>RESULTS</div>
             )}
           </div>
 
-          {quizMode === 'mock' && !submitted && (
-            <div style={{
-              background: dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)',
-              borderRadius: 999, height: 6, overflow: 'hidden', marginBottom: 20
-            }}>
-              <div style={{
-                height: '100%', borderRadius: 999,
-                background: timeLeft < 300 ? pt.danger : `linear-gradient(90deg, ${pt.cobalt}, ${pt.indigo})`,
-                width: `${timePercent}%`, transition: 'width 1s linear'
-              }} />
+          {total === 0 && !submitted && (
+            <div style={{ textAlign: 'center', padding: 24 }}>
+              <h2 style={{ color: MCQ_ACCENT, fontSize: 16 }}>No questions available yet! 🚧</h2>
             </div>
           )}
 
@@ -492,26 +571,11 @@ export default function MCQ({ dark }: { dark: boolean }) {
             <div style={{ textAlign: 'center', padding: 24, color: pt.sub, fontSize: 14 }}>Grading...</div>
           )}
 
-          {submitted && (
-            <div style={{ marginBottom: 24 }}>
-              <LiquidGlassCard dark={dark} delay={0} style={{ padding: 28, textAlign: 'center' }}>
-                <ScoreRing percent={percent} />
-                <div style={{ fontSize: 32, fontWeight: 900, color: percent >= 60 ? pt.success : pt.danger, marginTop: 12, marginBottom: 4 }}>
-                  {score}/{total}
-                </div>
-                {user && <div style={{ color: pt.amber, fontSize: 13, marginTop: 8 }}>⭐ Points earned for new correct answers!</div>}
-                <button onClick={tryAgain} style={{
-                  background: pt.cobalt, color: '#fff', border: 'none',
-                  padding: '10px 24px', borderRadius: 999, cursor: 'pointer',
-                  fontWeight: 700, fontSize: 14, marginTop: 16, fontFamily: pulseFonts.body
-                }}>🔄 Try Again</button>
-              </LiquidGlassCard>
-            </div>
-          )}
-
-          {/* ── Active taking: single-question focus view ─────────── */}
+          {/* ── Active taking: single-question focus ───────────────── */}
           {!submitted && !grading && currentQuestion && (
             <>
+              <div style={{ height: 1, background: pt.border, opacity: 0.5, marginBottom: 20 }} />
+
               <QuestionRail
                 total={total}
                 currentIndex={safeIndex}
@@ -523,36 +587,29 @@ export default function MCQ({ dark }: { dark: boolean }) {
               />
 
               <LiquidGlassCard dark={dark} delay={0} style={{ padding: '24px 24px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8, marginBottom: 14 }}>
-                  <span style={{ ...pulseType.small, color: pt.textMuted, fontWeight: 700 }}>
-                    Question {safeIndex + 1} of {total}
-                  </span>
-                  <button
-                    onClick={() => toggleFlagFor(currentQuestion)}
-                    aria-label={flaggedIds.has(currentQuestion.id) ? 'Remove flag' : 'Flag this question'}
-                    style={{
-                      background: 'transparent', border: 'none', cursor: 'pointer', fontSize: 20,
-                      color: flaggedIds.has(currentQuestion.id) ? pt.amber : pt.sub, flexShrink: 0, lineHeight: 1, padding: 0
-                    }}>🚩</button>
-                </div>
-
                 {currentQuestion.source && <div style={{ marginBottom: 12 }}><QuestionSourceBadge source={currentQuestion.source} /></div>}
 
-                <p style={{ ...pulseType.cardTitle, fontSize: 17, color: pt.textPrimary, margin: '0 0 18px' }}>
+                <p style={{ ...pulseType.cardTitle, fontSize: 18, color: pt.textPrimary, margin: '0 0 20px', lineHeight: 1.45 }}>
                   {currentQuestion.question}
                 </p>
 
                 {optionTexts(currentQuestion).map((opt: string, ai: number) => {
                   const label = optionLabels[ai]
                   const selected = answers[safeIndex] === label
+                  const hoverBg = dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.045)'
                   return (
-                    <div key={ai} onClick={() => selectAnswer(safeIndex, label)} style={{
-                      display: 'flex', alignItems: 'center', gap: 12,
-                      background: selected ? `${pt.cobalt}18` : (dark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)'),
-                      border: `1.5px solid ${selected ? pt.cobalt : pt.border}`,
-                      borderRadius: 14, padding: '14px 16px', marginBottom: 10,
-                      cursor: 'pointer', transition: 'all 0.15s'
-                    }}>
+                    <div
+                      key={ai}
+                      className="exam-option"
+                      onClick={() => selectAnswer(safeIndex, label)}
+                      style={{
+                        ['--opt-hover-bg' as any]: selected ? `${pt.cobalt}20` : hoverBg,
+                        display: 'flex', alignItems: 'center', gap: 12,
+                        background: selected ? `${pt.cobalt}18` : (dark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)'),
+                        border: `1.5px solid ${selected ? pt.cobalt : pt.border}`,
+                        borderRadius: 14, padding: '14px 16px', marginBottom: 10,
+                        cursor: 'pointer'
+                      }}>
                       <span style={{
                         width: 28, height: 28, borderRadius: '50%', flexShrink: 0,
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -565,95 +622,123 @@ export default function MCQ({ dark }: { dark: boolean }) {
                   )
                 })}
               </LiquidGlassCard>
+
+              <div style={{ height: 1, background: pt.border, opacity: 0.5, margin: '24px 0 16px' }} />
+
+              {/* FLAG, then PREVIOUS / NEXT — matches the requested composition */}
+              <div style={{ textAlign: 'center', marginBottom: 14 }}>
+                <button onClick={() => toggleFlagFor(currentQuestion)} className="exam-btn" style={{
+                  background: 'transparent', border: 'none', cursor: 'pointer',
+                  color: flaggedIds.has(currentQuestion.id) ? pt.amber : pt.textMuted,
+                  fontSize: 12, fontWeight: 700, letterSpacing: 1.5
+                }}>🚩 {flaggedIds.has(currentQuestion.id) ? 'FLAGGED' : 'FLAG'}</button>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 'max(20px, env(safe-area-inset-bottom))' }}>
+                <button onClick={goPrev} disabled={safeIndex === 0} className="exam-btn" style={{
+                  background: 'transparent', border: 'none', cursor: safeIndex === 0 ? 'not-allowed' : 'pointer',
+                  color: safeIndex === 0 ? pt.faint : pt.sub, fontSize: 13, fontWeight: 700, letterSpacing: 1.5
+                }}>PREVIOUS</button>
+
+                <span style={{ color: pt.textMuted, fontSize: 11, fontWeight: 700 }}>{answeredCount}/{total}</span>
+
+                {!isLastQuestion ? (
+                  <button onClick={goNext} className="exam-btn" style={{
+                    background: 'transparent', border: 'none', cursor: 'pointer',
+                    color: pt.cobalt, fontSize: 13, fontWeight: 700, letterSpacing: 1.5
+                  }}>NEXT</button>
+                ) : (
+                  <button onClick={submitQuiz} disabled={answeredCount < total} className="exam-btn" style={{
+                    background: 'transparent', border: 'none',
+                    cursor: answeredCount < total ? 'not-allowed' : 'pointer',
+                    color: answeredCount < total ? pt.faint : pt.cobalt, fontSize: 13, fontWeight: 800, letterSpacing: 1.5
+                  }}>{answeredCount < total ? `${total - answeredCount} LEFT` : 'SUBMIT'}</button>
+                )}
+              </div>
             </>
           )}
 
-          {/* ── Submitted: full scrollable review list ─────────────── */}
-          {submitted && !grading && quizQuestions.map((q, qi) => {
-            const result = results[q.id]
-            const isCorrect = result?.is_correct
-            const isLast = qi === quizQuestions.length - 1
-            return (
-              <div key={qi} style={{ marginBottom: isLast ? 0 : 16 }}>
-                <LiquidGlassCard dark={dark} delay={0} style={{
-                  padding: '20px 22px',
-                  boxShadow: `inset 0 0 0 2px ${isCorrect ? '#4ade80' : answers[qi] ? '#f87171' : 'transparent'}`
-                }}>
-                  <p style={{ ...pulseType.cardTitle, color: pt.textPrimary, margin: '0 0 10px' }}>
-                    {qi + 1}. {q.question}
-                  </p>
-                  {q.source && <div style={{ marginBottom: 10 }}><QuestionSourceBadge source={q.source} /></div>}
-                  {optionTexts(q).map((opt: string, ai: number) => {
-                    const label = optionLabels[ai]
-                    let bg = dark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)'
-                    let border = pt.border
-                    let color = pt.sub
-                    if (result && label === result.correct_answer) { bg = 'rgba(74,222,128,0.16)'; border = '#4ade80'; color = '#4ade80' }
-                    if (result && answers[qi] === label && label !== result.correct_answer) { bg = 'rgba(248,113,113,0.16)'; border = '#f87171'; color = '#f87171' }
-                    return (
-                      <div key={ai} style={{
-                        background: bg, border: `1px solid ${border}`,
-                        borderRadius: 10, padding: '10px 14px', marginBottom: 8,
-                        color, fontSize: 13, fontWeight: 600
-                      }}>
-                        {label.toUpperCase()}. {opt}
-                      </div>
-                    )
-                  })}
-                  {result?.explanation && (
-                    <div style={{
-                      background: dark ? 'rgba(56,189,248,0.10)' : 'rgba(2,132,199,0.06)',
-                      borderRadius: 10, padding: '10px 14px', marginTop: 10, color: pt.sub, fontSize: 12
-                    }}>
-                      💡 {result.explanation}
-                    </div>
-                  )}
-                </LiquidGlassCard>
+          {/* ── Results: analytical instrument ─────────────────────── */}
+          {submitted && !grading && (
+            <div style={{ paddingBottom: 'max(24px, env(safe-area-inset-bottom))' }}>
+              <div style={{ height: 1, background: pt.border, opacity: 0.5, marginBottom: 24 }} />
+
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.5, color: pt.textMuted, marginBottom: 4 }}>
+                  {quizMode === 'mock' ? 'MOCK EXAM COMPLETE' : quizMode === 'retry' ? 'RETRY COMPLETE' : 'PRACTICE COMPLETE'}
+                </div>
+                <div style={{
+                  fontFamily: pulseFonts.display, fontWeight: 800, fontSize: 'clamp(64px, 16vw, 92px)',
+                  lineHeight: 1, color: percent >= 60 ? pt.cobalt : pt.danger
+                }}>{percent}</div>
+                <div style={{ fontSize: 13, fontWeight: 700, letterSpacing: 1, color: pt.textMuted, marginTop: 6 }}>
+                  {percent >= 90 ? 'EXCELLENT.' : percent >= 75 ? 'GREAT WORK.' : percent >= 60 ? 'GOOD WORK.' : 'KEEP PRACTICING.'}
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'center', gap: 28, marginTop: 24, flexWrap: 'wrap' }}>
+                  <StatChip label="CORRECT" value={score} color={pt.success} />
+                  <StatChip label="INCORRECT" value={total - score} color={pt.danger} />
+                  <StatChip label="TIME" value={formatTime(finishTimeSec)} color={pt.textMuted} />
+                </div>
               </div>
-            )
-          })}
-        </div>
 
-        {/* ── Sticky bottom nav — only while actively taking the quiz ── */}
-        {!submitted && !grading && total > 0 && (
-          <div style={{
-            position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 200,
-            padding: '12px 20px max(12px, env(safe-area-inset-bottom))',
-            background: dark ? 'rgba(15,23,42,0.85)' : 'rgba(248,250,252,0.9)',
-            backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
-            borderTop: `1px solid ${pt.border}`,
-            display: 'flex', alignItems: 'center', gap: 10
-          }}>
-            <button onClick={goPrev} disabled={safeIndex === 0} style={{
-              background: dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)',
-              border: `1px solid ${pt.border}`, borderRadius: 999, padding: '11px 18px',
-              color: safeIndex === 0 ? pt.faint : pt.sub, cursor: safeIndex === 0 ? 'not-allowed' : 'pointer',
-              fontWeight: 700, fontSize: 13, fontFamily: pulseFonts.body
-            }}>← Prev</button>
+              {subjectStats.length > 1 && (
+                <div style={{ marginTop: 36 }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.5, color: pt.textMuted, marginBottom: 14 }}>YOUR PERFORMANCE</div>
+                  {subjectStats.map(s => (
+                    <div key={s.id} style={{ marginBottom: 14 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                        <span style={{ color: pt.textPrimary, fontSize: 13, fontWeight: 600 }}>{s.name}</span>
+                        <span style={{ color: pt.textMuted, fontSize: 13, fontWeight: 700 }}>{s.accuracy}</span>
+                      </div>
+                      <div style={{
+                        height: 5, borderRadius: 999, overflow: 'hidden',
+                        background: dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)'
+                      }}>
+                        <div style={{
+                          height: '100%', width: `${s.accuracy}%`, borderRadius: 999,
+                          background: s.accuracy >= 60 ? pt.cobalt : pt.danger,
+                          transition: 'width 0.6s ease'
+                        }} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
 
-            <div style={{ flex: 1, textAlign: 'center', color: pt.sub, fontSize: 12, fontWeight: 700 }}>
-              {answeredCount}/{total} answered
+              {weakestSubject && (
+                <div style={{ marginTop: 36 }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.5, color: pt.textMuted, marginBottom: 10 }}>FOCUS NEXT</div>
+                  <LiquidGlassCard dark={dark} delay={0} style={{ padding: '20px 22px' }}>
+                    <div style={{ color: MCQ_ACCENT, fontWeight: 800, fontSize: 16, marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                      {weakestSubject.name}
+                    </div>
+                    <div style={{ color: pt.sub, fontSize: 13, marginBottom: 16 }}>
+                      You missed {weakestSubject.incorrect} question{weakestSubject.incorrect === 1 ? '' : 's'} from this topic.
+                    </div>
+                    <button onClick={() => startTargetedPractice(weakestSubject.id)} className="exam-btn" style={{
+                      width: '100%', background: MCQ_ACCENT, color: '#0f172a', border: 'none', borderRadius: 999,
+                      padding: '13px', fontWeight: 800, fontSize: 13, letterSpacing: 0.5, cursor: 'pointer', fontFamily: pulseFonts.body
+                    }}>START TARGETED PRACTICE</button>
+                  </LiquidGlassCard>
+                </div>
+              )}
+
+              <div style={{ display: 'flex', gap: 10, marginTop: 36 }}>
+                <button onClick={tryAgain} className="exam-btn" style={{
+                  flex: 1, background: dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)',
+                  border: `1px solid ${pt.border}`, borderRadius: 999, padding: '13px',
+                  color: pt.sub, cursor: 'pointer', fontWeight: 700, fontSize: 13, letterSpacing: 0.5, fontFamily: pulseFonts.body
+                }}>TRY AGAIN</button>
+                <button onClick={stopQuiz} className="exam-btn" style={{
+                  flex: 1, background: pt.cobalt, border: 'none', borderRadius: 999, padding: '13px',
+                  color: '#fff', cursor: 'pointer', fontWeight: 700, fontSize: 13, letterSpacing: 0.5, fontFamily: pulseFonts.body
+                }}>DONE</button>
+              </div>
             </div>
-
-            {!isLastQuestion ? (
-              <button onClick={goNext} style={{
-                background: pt.cobalt, color: '#fff', border: 'none', borderRadius: 999,
-                padding: '11px 22px', cursor: 'pointer', fontWeight: 700, fontSize: 13, fontFamily: pulseFonts.body
-              }}>Next →</button>
-            ) : (
-              <button onClick={submitQuiz} disabled={answeredCount < total} style={{
-                background: answeredCount < total ? (dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)') : pt.cobalt,
-                color: answeredCount < total ? pt.sub : '#fff',
-                border: 'none', borderRadius: 999, padding: '11px 22px',
-                cursor: answeredCount < total ? 'not-allowed' : 'pointer',
-                fontWeight: 700, fontSize: 13, fontFamily: pulseFonts.body
-              }}>
-                {answeredCount < total ? `${total - answeredCount} left` : '✅ Submit'}
-              </button>
-            )}
-          </div>
-        )}
-      </div>
+          )}
+        </div>
+      </motion.div>
     )
   }
 
