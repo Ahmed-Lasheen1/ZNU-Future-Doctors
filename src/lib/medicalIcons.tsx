@@ -594,6 +594,32 @@ export function WeightScaleIcon({ color = 'currentColor', size }: IconProps) {
   )
 }
 
+// ── Feature icons used for MCQ / Summaries (not user-selectable — used
+// directly in place of the old 🧪 and 📝 emoji on card treatments). ──
+
+export function ExamIcon({ color = 'currentColor', size }: IconProps) {
+  return (
+    <Base size={size}>
+      <rect x="4.5" y="3.5" width="15" height="18" rx="2" stroke={color} strokeWidth={SW} />
+      <path d="M7.5 8h9" stroke={color} strokeWidth={SW * 0.85} strokeLinecap="round" opacity="0.6" />
+      <path d="M7.3 12.2l1.4 1.4 2.4-2.6" stroke={color} strokeWidth={SW} strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M13.5 12h3" stroke={color} strokeWidth={SW * 0.85} strokeLinecap="round" opacity="0.6" />
+      <path d="M7.3 17l1.4 1.4 2.4-2.6" stroke={color} strokeWidth={SW} strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M13.5 16.7h3" stroke={color} strokeWidth={SW * 0.85} strokeLinecap="round" opacity="0.6" />
+    </Base>
+  )
+}
+
+export function NotesIcon({ color = 'currentColor', size }: IconProps) {
+  return (
+    <Base size={size}>
+      <path d="M6 3.5h9l4 4v13h-13v-17Z" stroke={color} strokeWidth={SW} strokeLinejoin="round" />
+      <path d="M15 3.5V7.5h4" stroke={color} strokeWidth={SW} strokeLinejoin="round" />
+      <path d="M8.5 12h7M8.5 15h7M8.5 18h4" stroke={color} strokeWidth={SW * 0.85} strokeLinecap="round" opacity="0.7" />
+    </Base>
+  )
+}
+
 // ── Registry — Maps all 65 asset files directly to React component icons ──
 
 export const MEDICAL_ICONS: Record<string, { label: string; Icon: (p: IconProps) => JSX.Element }> = {
@@ -664,8 +690,10 @@ export const MEDICAL_ICONS: Record<string, { label: string; Icon: (p: IconProps)
   'weight scale': { label: 'Weight Scale', Icon: WeightScaleIcon },
 }
 
-// ── Resolver for dynamic icon rendering ──
-
+// ── Resolver — used everywhere a module/subject/lesson icon is
+// rendered. Values are stored as either a plain emoji string (legacy,
+// e.g. "🧠") or "icon:<key>" (new, custom SVG). Unknown/legacy values
+// just render as text, so nothing existing breaks.
 export function ModuleIcon({ value, color = 'currentColor', size = 24, fallbackEmoji = '📚' }: {
   value?: string | null
   color?: string
