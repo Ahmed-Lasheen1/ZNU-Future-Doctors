@@ -28,23 +28,24 @@ export default function AnonQuestions({ dark }: { dark: boolean }) {
   const pt = getPulseTheme(dark)
 
   const [questions, setQuestions] = useState<AnonQuestion[]>([])
+  const [myQuestions, setMyQuestions] = useState<AnonQuestion[]>([])
   const [newQ, setNewQ] = useState('')
   const [loading, setLoading] = useState(true)
   const [msg, setMsg] = useState('')
   const [replyText, setReplyText] = useState<Record<string, string>>({})
 
-  useEffect(() => { fetchQuestions() }, [])
+  useEffect(() => { fetchQuestions(); fetchMyQuestions() }, [])
 
-  // Once the question list loads, check if any of THIS browser's own
-  // tracked questions just became answered, and fire a one-time local
-  // notification for each.
+  // Once this browser's own tracked questions load, check if any just
+  // became answered, and fire a one-time local notification for each.
+  // Reads from `myQuestions` (resolved via the get_my_anon_questions
+  // RPC) rather than the public `questions` list, since tracking_token
+  // is no longer selectable on the public anonymous_questions read.
   useEffect(() => {
     if (!('Notification' in window) || Notification.permission !== 'granted') return
-    const myTokens = getMyAnonTokens()
-    if (myTokens.length === 0) return
     const notified = getNotifiedTokens()
-    const newlyAnswered = questions.filter(q =>
-      q.tracking_token && myTokens.includes(q.tracking_token) && q.answered && !notified.includes(q.tracking_token)
+    const newlyAnswered = myQuestions.filter(q =>
+      q.tracking_token && q.answered && !notified.includes(q.tracking_token)
     )
     if (newlyAnswered.length > 0) {
       newlyAnswered.forEach(() => {
@@ -52,13 +53,28 @@ export default function AnonQuestions({ dark }: { dark: boolean }) {
       })
       markTokensNotified(newlyAnswered.map(q => q.tracking_token as string))
     }
-  }, [questions])
+  }, [myQuestions])
 
   async function fetchQuestions() {
     setLoading(true)
-    const { data } = await supabase.from('anonymous_questions').select('*').order('created_at', { ascending: false })
+    // tracking_token is column-blocked on the public read now, so this
+    // must name columns explicitly instead of select('*').
+    const { data } = await supabase
+      .from('anonymous_questions')
+      .select('id, question, answer, answered, created_at')
+      .order('created_at', { ascending: false })
     if (data) setQuestions(data)
     setLoading(false)
+  }
+
+  // Resolves "my questions" (this device's own submissions) through a
+  // security-definer RPC, since tracking_token can no longer be read
+  // directly off the anonymous_questions table.
+  async function fetchMyQuestions() {
+    const myTokens = getMyAnonTokens()
+    if (myTokens.length === 0) { setMyQuestions([]); return }
+    const { data } = await supabase.rpc('get_my_anon_questions', { p_tokens: myTokens })
+    if (data) setMyQuestions(data)
   }
 
   async function submitQuestion() {
@@ -70,6 +86,7 @@ export default function AnonQuestions({ dark }: { dark: boolean }) {
       setMsg('✅ Question submitted anonymously!')
       setNewQ('')
       fetchQuestions()
+      fetchMyQuestions()
       setTimeout(() => setMsg(''), 3000)
     }
   }
@@ -91,8 +108,6 @@ export default function AnonQuestions({ dark }: { dark: boolean }) {
 
   const answeredQs = questions.filter(q => q.answered)
   const unansweredQs = questions.filter(q => !q.answered)
-  const myTokens = getMyAnonTokens()
-  const myQuestions = questions.filter(q => q.tracking_token && myTokens.includes(q.tracking_token))
 
   const isSuccess = msg.includes('✅')
   const inStyle = { ...glassInput(pt, dark), padding: '13px 20px' }

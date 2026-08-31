@@ -15,6 +15,7 @@ import { ModuleIcon, ExamIcon, NotesIcon } from '../lib/medicalIcons'
 interface PageModule { id: string; name: string; icon?: string | null; color: string }
 interface Subject { id: string; name: string; icon?: string | null; color?: string | null }
 interface Lesson { id: string; title: string; icon?: string | null; summary_url?: string | null }
+interface LessonSummary { id: string; title: string; url: string; lesson_id: string }
 
 function gridCols(n: number) { return n === 1 ? 1 : n === 2 ? 2 : n === 3 ? 3 : 4 }
 
@@ -27,6 +28,7 @@ export default function SubjectPage({ dark }: { dark: boolean }) {
   const module = modules.find(m => m.id === moduleId) || null
   const [subject, setSubject] = useState<Subject | null>(null)
   const [lessons, setLessons] = useState<Lesson[]>([])
+  const [lessonSummaries, setLessonSummaries] = useState<LessonSummary[]>([])
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState(false)
   const [selectedSummary, setSelectedSummary] = useState<{ title: string; url: string } | null>(null)
@@ -36,11 +38,15 @@ export default function SubjectPage({ dark }: { dark: boolean }) {
     setLoading(true)
     Promise.all([
       supabase.from('subjects').select('*').eq('id', subjectId).single(),
-      supabase.from('lessons').select('*').eq('subject_id', subjectId).order('created_at', { ascending: false })
-    ]).then(([subRes, lessonRes]) => {
+      supabase.from('lessons').select('*').eq('subject_id', subjectId).order('created_at', { ascending: false }),
+      // Lesson-scoped summaries live in `summaries` (via lesson_id) —
+      // there is no `lessons.summary_url` column.
+      supabase.from('summaries').select('id, title, url, lesson_id').eq('subject_id', subjectId).not('lesson_id', 'is', null)
+    ]).then(([subRes, lessonRes, summaryRes]) => {
       if (subRes.data) setSubject(subRes.data)
       if (lessonRes.data) setLessons(lessonRes.data)
-      if (subRes.error || lessonRes.error) setLoadError(true)
+      if (summaryRes.data) setLessonSummaries(summaryRes.data)
+      if (subRes.error || lessonRes.error || summaryRes.error) setLoadError(true)
       setLoading(false)
     })
   }, [subjectId])
@@ -60,14 +66,13 @@ export default function SubjectPage({ dark }: { dark: boolean }) {
     <SummaryOverlay onBack={() => setSelectedSummary(null)} eyebrow={subject?.name} title={selectedSummary.title} titleColor="#34d399" url={selectedSummary.url} />
   )
 
-  const lessonsWithSummaries = lessons.filter(l => l.summary_url)
   const hoverTint = dark ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.35)'
 
   function openAllSummaries() {
-    if (lessonsWithSummaries.length === 0) { showToast('No summaries added for this subject yet'); return }
-    if (lessonsWithSummaries.length === 1) {
-      const l = lessonsWithSummaries[0]
-      setSelectedSummary({ title: l.title, url: l.summary_url as string })
+    if (lessonSummaries.length === 0) { showToast('No summaries added for this subject yet'); return }
+    if (lessonSummaries.length === 1) {
+      const s = lessonSummaries[0]
+      setSelectedSummary({ title: s.title, url: s.url })
     } else {
       setShowSummaryPicker(prev => !prev)
     }
@@ -113,14 +118,14 @@ export default function SubjectPage({ dark }: { dark: boolean }) {
           </LiquidGlassCard>
         </div>
 
-        {showSummaryPicker && lessonsWithSummaries.length > 1 && (
+        {showSummaryPicker && lessonSummaries.length > 1 && (
           <div style={{ display: 'grid', gap: 10, marginBottom: 28 }}>
-            {lessonsWithSummaries.map((l, i) => (
-              <LiquidGlassCard key={l.id} dark={dark} delay={i * 60}
-                onClick={() => setSelectedSummary({ title: l.title, url: l.summary_url as string })}
+            {lessonSummaries.map((s, i) => (
+              <LiquidGlassCard key={s.id} dark={dark} delay={i * 60}
+                onClick={() => setSelectedSummary({ title: s.title, url: s.url })}
                 style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
                 <NotesIcon color="#34d399" size={16} />
-                <span style={{ color: pt.textPrimary, fontSize: 13, fontWeight: 600 }}>{l.title}</span>
+                <span style={{ color: pt.textPrimary, fontSize: 13, fontWeight: 600 }}>{s.title}</span>
               </LiquidGlassCard>
             ))}
           </div>
