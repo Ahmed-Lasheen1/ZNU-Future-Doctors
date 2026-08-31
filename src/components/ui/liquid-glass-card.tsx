@@ -1,8 +1,8 @@
+// src/components/ui/liquid-glass-card.tsx
 "use client"
 
-import { type CSSProperties, type ReactNode, type KeyboardEvent } from "react"
+import { useState, type CSSProperties, type ReactNode, type KeyboardEvent } from "react"
 import { motion } from "framer-motion"
-import { cn } from "@/lib/utils"
 import { ENTRANCE_PAUSE } from "@/lib/pulseMotion"
 import { liquidGlassShadow, liquidGlassBackdrop, liquidGlassTint } from "@/lib/liquidGlass"
 
@@ -24,6 +24,7 @@ export default function LiquidGlassCard({
   style = {},
 }: LiquidGlassCardProps) {
   const interactive = !!onClick
+  const [hovered, setHovered] = useState(false)
 
   function handleKeyDown(e: KeyboardEvent<HTMLDivElement>) {
     if (!interactive) return
@@ -42,35 +43,49 @@ export default function LiquidGlassCard({
       tabIndex={interactive ? 0 : undefined}
       onClick={onClick}
       onKeyDown={handleKeyDown}
-      className={cn(interactive ? "cursor-pointer" : "cursor-default", "relative", className)}
+      onMouseEnter={() => interactive && setHovered(true)}
+      onMouseLeave={() => interactive && setHovered(false)}
+      className={className}
+      style={{ position: 'relative', cursor: interactive ? 'pointer' : 'default' }}
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.75, delay: entranceDelay, ease: [0.34, 1.56, 0.64, 1] }}
     >
       <div
-        className={cn(
-          "relative isolate overflow-hidden transition-transform duration-300",
-          interactive && "hover:scale-105"
-        )}
-        style={{ borderRadius, height: "100%", ...liquidGlassBackdrop() }}
+        style={{
+          position: 'relative',
+          isolation: 'isolate',
+          overflow: 'hidden',
+          borderRadius,
+          height: '100%',
+          transform: hovered && interactive ? 'scale(1.05)' : 'scale(1)',
+          transition: 'transform 0.3s ease',
+          ...liquidGlassBackdrop(),
+        }}
       >
         {/* Lens-shadow/rim layer */}
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-0 z-0 rounded-[inherit]"
-          style={{ boxShadow: liquidGlassShadow(!!dark) }}
+          style={{
+            position: 'absolute', inset: 0, zIndex: 0, borderRadius: 'inherit',
+            pointerEvents: 'none',
+            boxShadow: liquidGlassShadow(!!dark),
+          }}
         />
-                {/* Neutral tint — pulls the glass color back toward grey/
+        {/* Neutral tint — pulls the glass color back toward grey/
             white instead of inheriting the page background's hue
             (saturate() in liquidGlassBackdrop amplifies whatever
             color sits behind the glass). See liquidGlass.js. */}
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-0 z-0 rounded-[inherit]"
-          style={{ background: liquidGlassTint(!!dark) }}
+          style={{
+            position: 'absolute', inset: 0, zIndex: 0, borderRadius: 'inherit',
+            pointerEvents: 'none',
+            background: liquidGlassTint(!!dark),
+          }}
         />
 
-        <div className="relative z-10" style={contentStyle}>
+        <div style={{ position: 'relative', zIndex: 10, ...contentStyle }}>
           {children}
         </div>
       </div>
