@@ -18,16 +18,20 @@ function urlBase64ToUint8Array(base64String) {
 // server-side record in sync. Reuses an existing subscription if the
 // browser already has one; otherwise creates one and saves it.
 //
-// Uses `upsert` keyed on `endpoint` instead of a plain `insert` — this
-// makes the call safely repeatable: calling it again with the same
-// endpoint just re-confirms the row (and re-attaches it to the correct
-// user_id if the person has since signed in) instead of throwing a
-// unique-constraint error that a caller might mishandle.
+// Saves it via the upsert_push_subscription RPC rather than a direct
+// table upsert. Direct table access to push_subscriptions is
+// intentionally locked down now (RLS only exposes a row you already
+// own, nothing "unclaimed") — the RPC is a security-definer function
+// that can see the one row matching this exact endpoint, insert it if
+// new, and claim it for the signed-in caller (via auth.uid(), not a
+// client-supplied id) without ever needing broader table access. If
+// the endpoint is already claimed by a DIFFERENT account, the RPC
+// silently no-ops rather than overwriting someone else's keys.
 //
 // Returns { success: boolean, reason?: string } so the caller can
 // actually tell the student what went wrong instead of nothing
 // happening with no explanation.
-export async function subscribeToPush(userId) {
+export async function subscribeToPush() {
   if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
     console.warn('[push] Push not supported in this browser.')
     return { success: false, reason: 'unsupported' }
@@ -49,17 +53,11 @@ export async function subscribeToPush(userId) {
     }
 
     const subJson = sub.toJSON()
-    const { error } = await supabase
-      .from('push_subscriptions')
-      .upsert(
-        {
-          user_id: userId || null,
-          endpoint: subJson.endpoint,
-          p256dh: subJson.keys.p256dh,
-          auth: subJson.keys.auth
-        },
-        { onConflict: 'endpoint' }
-      )
+    const { error } = await supabase.rpc('upsert_push_subscription', {
+      p_endpoint: subJson.endpoint,
+      p_p256dh: subJson.keys.p256dh,
+      p_auth: subJson.keys.auth
+    })
 
     if (error) {
       console.error('[push] Could not save subscription to Supabase:', error)

@@ -53,22 +53,27 @@ export default function NotifyPermissionButton({ dark, label = '🔔 Enable noti
           return
         }
 
-        const { data, error } = await supabase
-          .from('push_subscriptions')
-          .select('id')
-          .eq('endpoint', sub.endpoint)
-          .maybeSingle()
+        // Uses the push_subscription_exists RPC rather than a direct
+        // table select — push_subscriptions no longer grants broad
+        // SELECT (a plain select would only ever see a row you already
+        // own, never an unclaimed one, so it couldn't tell "not saved
+        // yet" apart from "saved but not claimed by me yet"). The RPC
+        // answers the actual question this check needs — "does a row
+        // for this endpoint exist at all" — without exposing anyone's
+        // keys.
+        const { data: exists, error } = await supabase.rpc('push_subscription_exists', { p_endpoint: sub.endpoint })
 
         if (cancelled) return
 
-        if (!error && data) {
+        if (!error && exists) {
           // Confirmed present on the server — nothing to do.
           setNeedsAction(false)
         } else {
-          // Either the row genuinely isn't there, or the lookup itself
-          // failed (e.g. RLS blocking a plain select) — try to
-          // (re)save it silently once before bothering the student.
-          const result = await subscribeToPush(user?.id)
+          // Either the row genuinely isn't there, or this device's
+          // subscription hasn't been claimed under the signed-in
+          // account yet — try to (re)save/claim it silently once
+          // before bothering the student.
+          const result = await subscribeToPush()
           setNeedsAction(!result.success)
         }
         setChecked(true)
@@ -94,7 +99,7 @@ export default function NotifyPermissionButton({ dark, label = '🔔 Enable noti
       return
     }
 
-    const result = await subscribeToPush(user?.id)
+    const result = await subscribeToPush()
     setBusy(false)
 
     if (result.success) {
