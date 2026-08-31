@@ -15,38 +15,41 @@ function Base({ size = 24, children }: { size?: number; children: ReactNode }) {
   )
 }
 
-// ── Specialty Icons (Based on reference sheets) ──
+// ── Specialty Icons (Exact vector matches from reference sheets) ──
 
+// Neurology (Sheet 2 / Sheet 3)
 export function BrainIcon({ color = 'currentColor', size }: IconProps) {
   return (
     <Base size={size}>
       <path
-        d="M12 3a7 7 0 0 0-7 7c0 2.3 1.1 4.3 2.8 5.6V18a2 2 0 0 0 2 2h2v1a1 1 0 0 0 2 0v-1h2a2 2 0 0 0 2-2v-2.4C19.9 14.3 21 12.3 21 10a7 7 0 0 0-9-7Z"
+        d="M12 3a7.5 7.5 0 0 0-6.4 11.4l-.1 1.1A2.5 2.5 0 0 0 8 18h1.5v2.5a1 1 0 0 0 2 0V18h1a2.5 2.5 0 0 0 2.5-2.5v-.8A7.5 7.5 0 0 0 12 3Z"
         stroke={color}
         strokeWidth={SW}
+        strokeLinecap="round"
         strokeLinejoin="round"
       />
       <path
-        d="M9.5 8.5c.5-.8 1.4-1.2 2.5-1.2s2 .4 2.5 1.2M9 11.5c.6.8 1.6 1.3 3 1.3s2.4-.5 3-1.3M10.5 14.5c.4.4 1 .6 1.5.6s1.1-.2 1.5-.6"
+        d="M10.2 8.5c.6-.6 1.3-.8 2.3-.8s1.7.2 2.3.8M9.5 11.8c.8.8 1.8 1.2 3 1.2s2.2-.4 3-1.2M11 15c.4.3.9.5 1.5.5s1.1-.2 1.5-.5"
         stroke={color}
-        strokeWidth={SW * 0.8}
+        strokeWidth={SW * 0.85}
         strokeLinecap="round"
       />
     </Base>
   )
 }
 
+// Cardiology (Sheet 1 / Sheet 3)
 export function HeartIcon({ color = 'currentColor', size }: IconProps) {
   return (
     <Base size={size}>
       <path
-        d="M11 3.5V8M14 3.5v3.5M14 5h3.5M10.5 8h-3"
+        d="M9.5 3v5.5M12.5 3v4.5M12.5 5.5H16M9.5 6.5H6.5"
         stroke={color}
         strokeWidth={SW}
         strokeLinecap="round"
       />
       <path
-        d="M12.5 8.5c-2.3-1.8-5.5-.8-6.7 1.7-1.3 2.7-.4 6.2 2.2 8.8l4 3.5 4-3.5c2.6-2.6 3.5-6.1 2.2-8.8-1.2-2.5-4.4-3.5-6.7-1.7Z"
+        d="M12 8.8c-2.4-2.2-6-.9-7.2 2-1.4 3.2-.2 7.2 2.8 10l4.4 3.7 4.4-3.7c3-2.8 4.2-6.8 2.8-10-1.2-2.9-4.8-4.2-7.2-2Z"
         stroke={color}
         strokeWidth={SW}
         strokeLinejoin="round"
@@ -55,24 +58,25 @@ export function HeartIcon({ color = 'currentColor', size }: IconProps) {
   )
 }
 
+// Pulmonology (Sheet 1 / Sheet 3)
 export function LungsIcon({ color = 'currentColor', size }: IconProps) {
   return (
     <Base size={size}>
-      <path d="M12 3v7" stroke={color} strokeWidth={SW} strokeLinecap="round" />
+      <path d="M12 2.5v7" stroke={color} strokeWidth={SW} strokeLinecap="round" />
       <path
-        d="M12 7l-3 3M12 8.5l3 2.5"
+        d="M12 6.5l-3.5 3.5M12 8l3.5 3"
         stroke={color}
         strokeWidth={SW * 0.85}
         strokeLinecap="round"
       />
       <path
-        d="M11 10.5c-1.2-.8-2.8-.8-3.8 0-1.8 1.4-2.7 4.2-2.2 6.8.5 2.5 2.2 3.7 4 3.7 1.5 0 2.5-.8 2.5-2.2V10.5Z"
+        d="M10.5 10c-1.5-.8-3.2-.6-4.3.5-1.8 1.8-2.5 5.2-1.8 8 .6 2.4 2.4 3.5 4.1 3.5 1.7 0 2.5-1.2 2.5-3V10Z"
         stroke={color}
         strokeWidth={SW}
         strokeLinejoin="round"
       />
       <path
-        d="M13 10.5c1.2-.8 2.8-.8 3.8 0 1.8 1.4 2.7 4.2 2.2 6.8-.5 2.5-2.2 3.7-4 3.7-1.5 0-2.5-.8-2.5-2.2V10.5Z"
+        d="M13.5 10c1.5-.8 3.2-.6 4.3.5 1.8 1.8 2.5 5.2 1.8 8-.6 2.4-2.4 3.5-4.1 3.5-1.7 0-2.5-1.2-2.5-3V10Z"
         stroke={color}
         strokeWidth={SW}
         strokeLinejoin="round"
@@ -81,401 +85,413 @@ export function LungsIcon({ color = 'currentColor', size }: IconProps) {
   )
 }
 
+// Gastroenterology (Sheet 2 / Sheet 3)
 export function StomachIcon({ color = 'currentColor', size }: IconProps) {
   return (
     <Base size={size}>
-      <path d="M10.5 3v4" stroke={color} strokeWidth={SW} strokeLinecap="round" />
+      <path d="M11 2.5v4" stroke={color} strokeWidth={SW} strokeLinecap="round" />
       <path
-        d="M10.5 7c-3 0-5.5 2.2-5.5 5.5 0 4.2 3.2 6.5 7 6.5 4.2 0 6.5-2.5 6.5-5 0-2.2-1.5-3.5-1.5-5 0-1.8 1.8-2.2 3-2"
+        d="M11 6.5c-3.5 0-6 2.5-6 6 0 4.5 3.5 7.5 7.5 7.5 4.5 0 7-3 7-5.5 0-2.5-1.5-3.8-1.5-5.5 0-2 2-2.5 3-2"
         stroke={color}
         strokeWidth={SW}
         strokeLinecap="round"
         strokeLinejoin="round"
       />
       <path
-        d="M6 13.5c2.5 1.5 5.5 1.5 8 0"
+        d="M6.2 13.5c2.8 1.8 6.8 1.8 9.6 0"
         stroke={color}
         strokeWidth={SW * 0.85}
         strokeLinecap="round"
-        opacity="0.75"
       />
     </Base>
   )
 }
 
+// Urology / Kidney (Sheet 1 / Sheet 3)
 export function KidneyIcon({ color = 'currentColor', size }: IconProps) {
   return (
     <Base size={size}>
       <path
-        d="M8.5 4c-2.3 0-4 1.8-4 4.5 0 3 1.8 5 1.8 7 0 1.2.8 2.5 2.2 2.5 1.5 0 2-1.2 2-2.5V4.5C10.5 4 9.5 4 8.5 4Z"
+        d="M8.5 3.5c-2.5 0-4.5 2-4.5 5 0 3.2 2 5.2 2 7.5 0 1.5 1 2.5 2.5 2.5 1.8 0 2.5-1.5 2.5-3V4.5C11 3.8 9.8 3.5 8.5 3.5Z"
         stroke={color}
         strokeWidth={SW}
         strokeLinejoin="round"
       />
       <path
-        d="M15.5 4c2.3 0 4 1.8 4 4.5 0 3-1.8 5-1.8 7 0 1.2-.8 2.5-2.2 2.5-1.5 0-2-1.2-2-2.5V4.5C13.5 4 14.5 4 15.5 4Z"
+        d="M15.5 3.5c2.5 0 4.5 2 4.5 5 0 3.2-2 5.2-2 7.5 0 1.5-1 2.5-2.5 2.5-1.8 0-2.5-1.5-2.5-3V4.5C13 3.8 14.2 3.5 15.5 3.5Z"
         stroke={color}
         strokeWidth={SW}
         strokeLinejoin="round"
       />
       <path
-        d="M10.5 13.5l1.5 3v4.5M13.5 13.5l-1.5 3"
+        d="M11 13.5l1 3v4M13 13.5l-1 3"
         stroke={color}
         strokeWidth={SW * 0.85}
         strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M9.5 20.5h5a2 2 0 0 1-5 0Z"
+        stroke={color}
+        strokeWidth={SW * 0.85}
         strokeLinejoin="round"
       />
     </Base>
   )
 }
 
+// Osteology / Joint / Bone (Sheet 1 / Sheet 3)
 export function BoneIcon({ color = 'currentColor', size }: IconProps) {
   return (
     <Base size={size}>
       <path
-        d="M15.5 4c-1.5 0-2.5 1-3.5 2.5L7 11.5"
+        d="M16 4.5c.8-1 2.2-1.2 3.2-.4 1 .8 1.2 2.2.4 3.2L9 18c-.8 1-2.2 1.2-3.2.4-1-.8-1.2-2.2-.4-3.2L16 4.5Z"
         stroke={color}
-        strokeWidth={SW * 1.2}
-        strokeLinecap="round"
+        strokeWidth={SW}
+        strokeLinejoin="round"
       />
-      <path
-        d="M17 7.5l-5 5c-1.5 1.5-2 3-2.5 5"
-        stroke={color}
-        strokeWidth={SW * 1.2}
-        strokeLinecap="round"
-      />
-      <circle cx="16.5" cy="5.5" r="2" stroke={color} strokeWidth={SW} />
-      <circle cx="8" cy="18" r="2.5" stroke={color} strokeWidth={SW} />
+      <circle cx="18" cy="4.5" r="1.5" stroke={color} strokeWidth={SW * 0.8} />
+      <circle cx="6" cy="19.5" r="1.5" stroke={color} strokeWidth={SW * 0.8} />
     </Base>
   )
 }
 
+// Muscle Fiber (Sheet 1)
 export function MuscleIcon({ color = 'currentColor', size }: IconProps) {
   return (
     <Base size={size}>
       <path
-        d="M4.5 19.5L19.5 4.5"
+        d="M3.5 20.5L20.5 3.5"
         stroke={color}
         strokeWidth={SW}
         strokeLinecap="round"
       />
       <path
-        d="M7 14c-1.5-2.5-1-6 1.5-8.5S15 2.5 17.5 4c-1 3-2.5 6-5 8.5S7 16 7 14Z"
+        d="M6.5 14.5C4.5 11.5 5 7.5 7.5 5S14.5 3.5 17.5 5.5c-1 3-2.5 6.5-5.5 9.5s-5.5 4.5-5.5 2.5Z"
         stroke={color}
         strokeWidth={SW}
         strokeLinejoin="round"
       />
       <path
-        d="M9.5 8.5c2 0 4 1.5 5.5 3.5"
+        d="M9.5 9c2.2.2 4.5 1.8 6 4"
         stroke={color}
-        strokeWidth={SW * 0.8}
+        strokeWidth={SW * 0.85}
         strokeLinecap="round"
-        opacity="0.7"
       />
     </Base>
   )
 }
 
+// Ophthalmology / Eyesight (Sheet 2)
 export function EyeIcon({ color = 'currentColor', size }: IconProps) {
   return (
     <Base size={size}>
       <path
-        d="M2.5 12c2.5-4.5 6-7 9.5-7s7 2.5 9.5 7c-2.5 4.5-6 7-9.5 7s-7-2.5-9.5-7Z"
+        d="M3 12c2.5-4.5 5.8-7 9-7s6.5 2.5 9 7c-2.5 4.5-5.8 7-9 7s-6.5-2.5-9-7Z"
         stroke={color}
         strokeWidth={SW}
         strokeLinejoin="round"
       />
-      <circle cx="12" cy="12" r="3.5" stroke={color} strokeWidth={SW} />
-      <circle cx="12" cy="12" r="1.5" fill={color} />
+      <circle cx="12" cy="12" r="4" stroke={color} strokeWidth={SW} />
+      <circle cx="12" cy="12" r="2" stroke={color} strokeWidth={SW} fill={color} />
       <path
-        d="M12 2v2M12 20v2M4 4l1.5 1.5M18.5 18.5L20 20M2 12h2M20 12h2M4 20l1.5-1.5M18.5 5.5L20 4"
+        d="M12 2.5v1.5M12 20v1.5M4 4.5l1.2 1.2M18.8 18.3l1.2 1.2M2.5 12H4M20 12h1.5M4.5 19.5l1.2-1.2M18.3 5.7l1.2-1.2"
         stroke={color}
         strokeWidth={SW * 0.75}
         strokeLinecap="round"
-        opacity="0.6"
       />
     </Base>
   )
 }
 
+// Otology / Ear (Sheet 3)
 export function EarIcon({ color = 'currentColor', size }: IconProps) {
   return (
     <Base size={size}>
       <path
-        d="M13 3.5c3.6 0 6.5 2.8 6.5 6.5 0 3.2-2.1 4.5-2.1 6.8 0 2-1.6 3.7-3.6 3.7-2 0-3.3-1.4-3.5-3.1"
+        d="M12.5 3c3.5 0 6 2.5 6 6 0 3-1.8 4.2-1.8 6.5 0 2-1.5 3.5-3.5 3.5s-3.2-1.2-3.4-3"
         stroke={color}
         strokeWidth={SW}
         strokeLinecap="round"
         strokeLinejoin="round"
       />
       <path
-        d="M13 3.5c-3.8 0-6.5 3-6.5 6.8 0 2.5 1.4 3.7 1.4 5.7"
+        d="M12.5 3C9 3 6.5 5.8 6.5 9.5c0 2.2 1.2 3.5 1.2 5.5"
         stroke={color}
         strokeWidth={SW}
         strokeLinecap="round"
       />
       <path
-        d="M12 8.5a2.5 2.5 0 0 1 2.5 2.5c0 1.5-1 2-1 3.2"
+        d="M12 8a2.5 2.5 0 0 1 2.5 2.5c0 1.5-1 2-1 3"
         stroke={color}
         strokeWidth={SW * 0.85}
         strokeLinecap="round"
-        opacity="0.8"
       />
       <path
-        d="M18.5 8.5h2M19 11h1.5"
+        d="M18.5 7.5h2M19 10h1.5M18.2 12.5h1.8"
         stroke={color}
         strokeWidth={SW * 0.85}
         strokeLinecap="round"
-        opacity="0.6"
       />
     </Base>
   )
 }
 
+// Oral Health / Dentistry (Sheet 2 / Sheet 3)
 export function ToothIcon({ color = 'currentColor', size }: IconProps) {
   return (
     <Base size={size}>
       <path
-        d="M7 4h10c2 0 3 1.5 3 3.5 0 3-1 6-2 9.5-1 3.5-1.5 4-3 4s-1.5-2-3-2-1.5 2-3 2-2-.5-3-4C5 13.5 4 10.5 4 7.5 4 5.5 5 4 7 4Z"
+        d="M6.5 3.5h11c2 0 3 1.5 3 3.5 0 3-1 6.5-2 10-1 3.5-1.8 4-3.2 4s-1.5-2.5-3.3-2.5S10.2 21 8.8 21 7.8 20.5 6.8 17c-1-3.5-2.3-7-2.3-10 0-2 1-3.5 3-3.5Z"
         stroke={color}
         strokeWidth={SW}
         strokeLinejoin="round"
       />
       <path
-        d="M9.5 4v4.5c0 1.4 1.1 2.5 2.5 2.5s2.5-1.1 2.5-2.5V4"
+        d="M19 4.5l1.2-1.2M20.5 5.5h1.5"
         stroke={color}
         strokeWidth={SW * 0.85}
         strokeLinecap="round"
-        opacity="0.75"
       />
     </Base>
   )
 }
 
+// Skin Layer (Sheet 1)
 export function SkinIcon({ color = 'currentColor', size }: IconProps) {
   return (
     <Base size={size}>
-      <rect x="3" y="11" width="18" height="9" rx="2" stroke={color} strokeWidth={SW} />
+      <rect x="3" y="11" width="18" height="9" rx="1.5" stroke={color} strokeWidth={SW} />
       <path
-        d="M7 11V6.5M12 11V4.5M17 11V7.5"
+        d="M7 11V6.5M12 11V4M17 11V7"
         stroke={color}
-        strokeWidth={SW * 0.9}
+        strokeWidth={SW * 0.85}
         strokeLinecap="round"
       />
       <circle cx="7" cy="4.5" r="1" fill={color} />
       <circle cx="12" cy="2.5" r="1" fill={color} />
-      <circle cx="17" cy="5.5" r="1" fill={color} />
-      <circle cx="7" cy="15.5" r="1" stroke={color} strokeWidth={SW * 0.8} />
+      <circle cx="17" cy="5" r="1" fill={color} />
+      <circle cx="7.5" cy="15" r="1" stroke={color} strokeWidth={SW * 0.8} />
+      <circle cx="15.5" cy="16" r="1" stroke={color} strokeWidth={SW * 0.8} />
     </Base>
   )
 }
 
+// Endocrinology / Thyroid (Sheet 1)
 export function HormoneIcon({ color = 'currentColor', size }: IconProps) {
   return (
     <Base size={size}>
       <path
-        d="M7 6c0-2 1.5-3 3.5-3S14 4 14 6c0 1.8-1 2.7-2 3.5v5c1 .8 2 1.7 2 3.5 0 2-1.5 3-3.5 3S7 20 7 18c0-1.8 1-2.7 2-3.5v-5C8 8.7 7 7.8 7 6Z"
+        d="M8 4c-2 0-3.5 1.5-3.5 3.5 0 2 1 3 1 4.8S4.5 15.5 4.5 17.5C4.5 19.5 6 21 8 21s3-1.2 3-3V6c0-2-1-2-3-2Z"
         stroke={color}
         strokeWidth={SW}
         strokeLinejoin="round"
       />
       <path
-        d="M17 9c1.5 0 2.5 1 2.5 2.5S18.5 14 17 14"
+        d="M16 4c2 0 3.5 1.5 3.5 3.5 0 2-1 3-1 4.8s1 3.2 1 5.2c0 2-1.5 3.5-3.5 3.5s-3-1.2-3-3V6c0-2 1-2 3-2Z"
         stroke={color}
         strokeWidth={SW}
-        strokeLinecap="round"
+        strokeLinejoin="round"
       />
+      <path d="M11 12h2" stroke={color} strokeWidth={SW} strokeLinecap="round" />
     </Base>
   )
 }
 
+// Diabetes / Blood (Sheet 3)
 export function BloodIcon({ color = 'currentColor', size }: IconProps) {
   return (
     <Base size={size}>
       <path
-        d="M5 6.5h7c1.5 0 2.5 1 2.5 2.5s-1 2.5-2.5 2.5H5v-5Z"
-        stroke={color}
-        strokeWidth={SW}
-        strokeLinejoin="round"
-      />
-      <path
-        d="M4 6.5h-1M4 11.5h-1"
+        d="M4 11.5h8.5c1.8 0 3-1.2 3-3s-1.2-3-3-3H9"
         stroke={color}
         strokeWidth={SW}
         strokeLinecap="round"
       />
       <path
-        d="M17.5 13.5c1.8 2.2 3.5 4.5 3.5 6.5 0 2-1.5 3.5-3.5 3.5S14 22 14 20c0-2 1.7-4.3 3.5-6.5Z"
+        d="M4 11.5v3c0 1.5 1 2.5 2.5 2.5h6.5"
+        stroke={color}
+        strokeWidth={SW}
+        strokeLinecap="round"
+      />
+      <path
+        d="M18.5 13.5c1.8 2 3.5 4.2 3.5 6 0 2-1.5 3.5-3.5 3.5S15 21.5 15 19.5c0-1.8 1.7-4 3.5-6Z"
         fill={color}
       />
     </Base>
   )
 }
 
+// Immune / Shield (Sheet 2)
 export function ImmuneIcon({ color = 'currentColor', size }: IconProps) {
   return (
     <Base size={size}>
       <path
-        d="M12 3l7 3v6c0 5-3.5 8.5-7 10-3.5-1.5-7-5-7-10V6l7-3Z"
+        d="M12 3l7.5 3.5v5.5c0 5.2-3.8 9.2-7.5 10.5C8.3 21.2 4.5 17.2 4.5 12V6.5L12 3Z"
         stroke={color}
         strokeWidth={SW}
         strokeLinejoin="round"
       />
       <path
-        d="M9 12l2 2 4-4"
+        d="M12 8.5v7M8.5 12h7"
         stroke={color}
         strokeWidth={SW}
         strokeLinecap="round"
-        strokeLinejoin="round"
       />
     </Base>
   )
 }
 
+// Microbe (Sheet 1)
 export function MicrobeIcon({ color = 'currentColor', size }: IconProps) {
   return (
     <Base size={size}>
-      <circle cx="12" cy="12" r="5" stroke={color} strokeWidth={SW} />
-      <circle cx="10" cy="11" r="0.8" fill={color} />
-      <circle cx="13.5" cy="10.5" r="0.8" fill={color} />
-      <circle cx="12" cy="13.5" r="0.8" fill={color} />
+      <rect x="6" y="8" width="12" height="8" rx="4" stroke={color} strokeWidth={SW} />
       <path
-        d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4L7 17M17 7l1.4-1.4"
+        d="M6 10L3.5 8.5M6 14L3.5 15.5M18 10l2.5-1.5M18 14l2.5 1.5"
         stroke={color}
         strokeWidth={SW * 0.85}
         strokeLinecap="round"
       />
+      <circle cx="9.5" cy="12" r="0.8" fill={color} />
+      <circle cx="13" cy="10.8" r="0.8" fill={color} />
+      <circle cx="14.5" cy="13.2" r="0.8" fill={color} />
     </Base>
   )
 }
 
+// Virus (Sheet 1)
 export function VirusIcon({ color = 'currentColor', size }: IconProps) {
   return (
     <Base size={size}>
-      <circle cx="12" cy="12" r="4" stroke={color} strokeWidth={SW} />
+      <circle cx="12" cy="12" r="4.5" stroke={color} strokeWidth={SW} />
       <path
-        d="M12 2v4M12 18v4M2 12h4M18 12h4M4.9 4.9l2.9 2.9M16.2 16.2l2.9 2.9M4.9 19.1l2.9-2.9M16.2 7.8l2.9-2.9"
+        d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1"
         stroke={color}
         strokeWidth={SW}
         strokeLinecap="round"
       />
-      <circle cx="12" cy="2" r="1" fill={color} />
-      <circle cx="12" cy="22" r="1" fill={color} />
-      <circle cx="2" cy="12" r="1" fill={color} />
-      <circle cx="22" cy="12" r="1" fill={color} />
+      <circle cx="12" cy="2.5" r="0.9" fill={color} />
+      <circle cx="12" cy="21.5" r="0.9" fill={color} />
+      <circle cx="2.5" cy="12" r="0.9" fill={color} />
+      <circle cx="21.5" cy="12" r="0.9" fill={color} />
     </Base>
   )
 }
 
+// DNA / DNA Test (Sheet 1 / Sheet 2)
 export function DnaIcon({ color = 'currentColor', size }: IconProps) {
   return (
     <Base size={size}>
       <path
-        d="M7 3c0 6 10 6 10 12s-10 6-10 12"
+        d="M7.5 3c0 6 9 6 9 12s-9 6-9 12"
         stroke={color}
         strokeWidth={SW}
         strokeLinecap="round"
       />
       <path
-        d="M17 3c0 6-10 6-10 12s10 6 10 12"
+        d="M16.5 3c0 6-9 6-9 12s9 6 9 12"
         stroke={color}
         strokeWidth={SW}
         strokeLinecap="round"
       />
       <path
-        d="M8 6h8M7.5 10h9M7.5 14h9M8 18h8"
+        d="M8.2 6.5h7.6M7.8 10h8.4M7.8 14h8.4M8.2 17.5h7.6"
         stroke={color}
         strokeWidth={SW * 0.8}
         strokeLinecap="round"
-        opacity="0.7"
       />
     </Base>
   )
 }
 
+// Cell (Sheet 1)
 export function CellIcon({ color = 'currentColor', size }: IconProps) {
   return (
     <Base size={size}>
       <circle cx="12" cy="12" r="8.5" stroke={color} strokeWidth={SW} />
-      <circle cx="12" cy="12" r="3.5" stroke={color} strokeWidth={SW} />
-      <circle cx="10.5" cy="11.5" r="1" fill={color} />
-      <circle cx="7" cy="9" r="0.8" fill={color} opacity="0.6" />
-      <circle cx="16" cy="8" r="0.8" fill={color} opacity="0.6" />
-      <circle cx="15" cy="16" r="0.8" fill={color} opacity="0.6" />
+      <circle cx="12" cy="12" r="3.2" stroke={color} strokeWidth={SW} />
+      <circle cx="10.8" cy="11.2" r="0.9" fill={color} />
+      <circle cx="13.2" cy="12.8" r="0.9" fill={color} />
+      <circle cx="11.2" cy="13.2" r="0.9" fill={color} />
     </Base>
   )
 }
 
+// Syringe (Sheet 2)
 export function SyringeIcon({ color = 'currentColor', size }: IconProps) {
   return (
     <Base size={size}>
       <path
-        d="M18 3l3 3M16.5 4.5l3 3M4 17l3 3M7 20l-4 1 1-4"
+        d="M17.5 3.5l3 3M16 5l3 3M4 17l3 3M6.5 19.5l-3.5 1 1-3.5"
         stroke={color}
         strokeWidth={SW}
         strokeLinecap="round"
         strokeLinejoin="round"
       />
       <path
-        d="M7.5 19.5l9-9-3-3-9 9 3 3Z"
+        d="M7 19l9.5-9.5-3-3L4 16l3 3Z"
         stroke={color}
         strokeWidth={SW}
         strokeLinejoin="round"
       />
       <path
-        d="M10.5 13.5l2 2M12.5 11.5l2 2"
+        d="M10 13l1.8 1.8M12 11l1.8 1.8"
         stroke={color}
         strokeWidth={SW * 0.85}
         strokeLinecap="round"
       />
+      <circle cx="20.5" cy="2.5" r="0.8" fill={color} />
     </Base>
   )
 }
 
+// Tabs and Pills (Sheet 2)
 export function PillIcon({ color = 'currentColor', size }: IconProps) {
   return (
     <Base size={size}>
       <rect
-        x="3" y="3" width="18" height="18" rx="4"
+        x="5"
+        y="5"
+        width="14"
+        height="14"
+        rx="3"
+        transform="rotate(-25 12 12)"
         stroke={color}
         strokeWidth={SW}
-        opacity="0.4"
       />
-      <circle cx="8" cy="8" r="1.5" fill={color} />
-      <circle cx="12" cy="8" r="1.5" fill={color} />
-      <circle cx="16" cy="8" r="1.5" fill={color} />
-      <circle cx="8" cy="12" r="1.5" fill={color} />
-      <circle cx="12" cy="12" r="1.5" fill={color} />
-      <circle cx="16" cy="12" r="1.5" fill={color} />
-      <circle cx="8" cy="16" r="1.5" fill={color} />
-      <circle cx="12" cy="16" r="1.5" fill={color} />
-      <circle cx="16" cy="16" r="1.5" fill={color} />
+      <circle cx="9" cy="9" r="1.2" fill={color} />
+      <circle cx="14" cy="9" r="1.2" fill={color} />
+      <circle cx="9" cy="14" r="1.2" fill={color} />
+      <circle cx="14" cy="14" r="1.2" fill={color} />
     </Base>
   )
 }
 
+// Stethoscope / Health Check (Sheet 2)
 export function StethoscopeIcon({ color = 'currentColor', size }: IconProps) {
   return (
     <Base size={size}>
       <path
-        d="M6 3v6a5 5 0 0 0 10 0V3"
+        d="M7 3v5.5a5 5 0 0 0 10 0V3"
         stroke={color}
         strokeWidth={SW}
         strokeLinecap="round"
       />
       <path
-        d="M11 14v3a4 4 0 0 0 8 0v-2"
+        d="M12 13.5v2.5a4 4 0 0 0 8 0v-3"
         stroke={color}
         strokeWidth={SW}
         strokeLinecap="round"
       />
-      <circle cx="19" cy="13" r="2" stroke={color} strokeWidth={SW} />
-      <circle cx="6" cy="3" r="1" fill={color} />
-      <circle cx="16" cy="3" r="1" fill={color} />
+      <circle cx="20" cy="11.5" r="1.8" stroke={color} strokeWidth={SW} />
+      <circle cx="7" cy="3" r="1" fill={color} />
+      <circle cx="17" cy="3" r="1" fill={color} />
     </Base>
   )
 }
 
+// Heartbeat (Sheet 2)
 export function PulseIcon({ color = 'currentColor', size }: IconProps) {
   return (
     <Base size={size}>
@@ -496,71 +512,61 @@ export function PulseIcon({ color = 'currentColor', size }: IconProps) {
   )
 }
 
+// Medical Tests / Microscope (Sheet 2)
 export function MicroscopeIcon({ color = 'currentColor', size }: IconProps) {
   return (
     <Base size={size}>
       <path
-        d="M7 21h10M12 21v-3M12 18a6 6 0 0 0 6-6V9"
+        d="M8 21h8M12 21v-3.5M12 17.5a5.5 5.5 0 0 0 5.5-5.5V9"
         stroke={color}
         strokeWidth={SW}
         strokeLinecap="round"
-      />
-      <rect
-        x="10"
-        y="3"
-        width="5"
-        height="8"
-        rx="1"
-        transform="rotate(25 10 3)"
-        stroke={color}
-        strokeWidth={SW}
       />
       <path
-        d="M7 14h6"
+        d="M11 3.5l4 4M9.5 5l4 4"
         stroke={color}
         strokeWidth={SW}
         strokeLinecap="round"
       />
+      <path d="M7 14.5h6" stroke={color} strokeWidth={SW} strokeLinecap="round" />
     </Base>
   )
 }
 
+// Radiology (Sheet 3)
 export function XrayIcon({ color = 'currentColor', size }: IconProps) {
   return (
     <Base size={size}>
+      <circle cx="12" cy="5.5" r="2.5" stroke={color} strokeWidth={SW} />
       <path
-        d="M12 2a4 4 0 0 0-4 4v2a4 4 0 0 0 8 0V6a4 4 0 0 0-4-4Z"
-        stroke={color}
-        strokeWidth={SW}
-      />
-      <path
-        d="M5 22v-7a3 3 0 0 1 3-3h8a3 3 0 0 1 3 3v7"
+        d="M6 21v-7a3 3 0 0 1 3-3h6a3 3 0 0 1 3 3v7"
         stroke={color}
         strokeWidth={SW}
         strokeLinejoin="round"
       />
       <path
-        d="M9 15h6M8.5 17.5h7M9 20h6"
+        d="M9.5 14.5h5M9 17h6M9.5 19.5h5"
         stroke={color}
-        strokeWidth={SW * 0.8}
+        strokeWidth={SW * 0.85}
         strokeLinecap="round"
-        opacity="0.85"
       />
+      <path d="M12 11v9.5" stroke={color} strokeWidth={SW * 0.85} strokeLinecap="round" />
     </Base>
   )
 }
 
+// Gynecology / Uterus (Sheet 1 / Sheet 3)
 export function UterusIcon({ color = 'currentColor', size }: IconProps) {
   return (
     <Base size={size}>
       <path
-        d="M12 8c0 4-2 7-3.5 9.5S7 21 7 21M12 8c0 4 2 7 3.5 9.5S17 21 17 21"
+        d="M12 8.5c0 4-2.5 6.5-4 9S6.5 21 6.5 21M12 8.5c0 4 2.5 6.5 4 9s1.5 3.5 1.5 3.5"
         stroke={color}
         strokeWidth={SW}
         strokeLinecap="round"
       />
       <path
-        d="M12 8c-3 0-5.5-1.5-7-3.5C3.8 2.8 5 2 6.5 2.5 8 3 9.5 5 12 5s4-2 5.5-2.5c1.5-.5 2.7.3 1.5 2C17.5 6.5 15 8 12 8Z"
+        d="M12 8.5C9 8.5 6.5 7 5 5c-1.2-1.6-.2-2.5 1.2-2 1.5.5 3 2.5 5.8 2.5s4.3-2 5.8-2.5c1.4-.5 2.4.4 1.2 2-1.5 2-4 3.5-7 3.5Z"
         stroke={color}
         strokeWidth={SW}
         strokeLinejoin="round"
@@ -569,32 +575,34 @@ export function UterusIcon({ color = 'currentColor', size }: IconProps) {
   )
 }
 
+// Fetus / Baby (Sheet 1)
 export function BabyIcon({ color = 'currentColor', size }: IconProps) {
   return (
     <Base size={size}>
-      <circle cx="12" cy="12" r="8" stroke={color} strokeWidth={SW} />
+      <circle cx="12" cy="12" r="8.5" stroke={color} strokeWidth={SW} />
       <path
-        d="M12 7.5c-2 0-3 1.5-3 3.5 0 2.5 1.5 3.5 3 3.5s3-1 3-3.5c0-2-1-3.5-3-3.5Z"
+        d="M11 7.5a2.5 2.5 0 0 1 3 3c0 2-1.5 3.5-3 3.5s-2-1-2-2.5"
         stroke={color}
-        strokeWidth={SW * 0.9}
+        strokeWidth={SW}
+        strokeLinecap="round"
       />
-      <circle cx="10" cy="10" r="0.6" fill={color} />
-      <circle cx="14" cy="10" r="0.6" fill={color} />
+      <circle cx="12.5" cy="9.5" r="0.7" fill={color} />
     </Base>
   )
 }
 
+// Surgery / Scalpel
 export function ScalpelIcon({ color = 'currentColor', size }: IconProps) {
   return (
     <Base size={size}>
       <path
-        d="M3 21l8.5-8.5"
+        d="M3.5 20.5l9-9"
         stroke={color}
         strokeWidth={SW}
         strokeLinecap="round"
       />
       <path
-        d="M11.5 12.5L21 3c-3 2-5 5-6.5 7.5l-3 2Z"
+        d="M12.5 11.5L21 3c-3.2 2.2-5.5 5.5-7 8l-1.5.5Z"
         stroke={color}
         strokeWidth={SW}
         strokeLinejoin="round"
@@ -603,25 +611,21 @@ export function ScalpelIcon({ color = 'currentColor', size }: IconProps) {
   )
 }
 
+// Ambulance Car (Sheet 2)
 export function AmbulanceIcon({ color = 'currentColor', size }: IconProps) {
   return (
     <Base size={size}>
+      <rect x="2.5" y="7.5" width="12" height="8.5" rx="1" stroke={color} strokeWidth={SW} />
       <path
-        d="M3 8h11v8H3V8Z"
+        d="M14.5 10h4l2.5 2.5V16h-6.5v-6Z"
         stroke={color}
         strokeWidth={SW}
         strokeLinejoin="round"
       />
+      <circle cx="6.5" cy="17" r="1.8" stroke={color} strokeWidth={SW} />
+      <circle cx="16.5" cy="17" r="1.8" stroke={color} strokeWidth={SW} />
       <path
-        d="M14 10h4l3 3v3h-7v-6Z"
-        stroke={color}
-        strokeWidth={SW}
-        strokeLinejoin="round"
-      />
-      <circle cx="7" cy="17" r="1.5" stroke={color} strokeWidth={SW} />
-      <circle cx="17" cy="17" r="1.5" stroke={color} strokeWidth={SW} />
-      <path
-        d="M7.5 10.5v3M6 12h3"
+        d="M8.5 10v3.5M6.7 11.7h3.5"
         stroke={color}
         strokeWidth={SW}
         strokeLinecap="round"
@@ -630,22 +634,22 @@ export function AmbulanceIcon({ color = 'currentColor', size }: IconProps) {
   )
 }
 
+// General Clipboard / Lab Tests
 export function ClipboardIcon({ color = 'currentColor', size }: IconProps) {
   return (
     <Base size={size}>
-      <rect x="4" y="5" width="16" height="15" rx="2" stroke={color} strokeWidth={SW} />
+      <rect x="4.5" y="4.5" width="15" height="16" rx="2" stroke={color} strokeWidth={SW} />
       <path
-        d="M9 5V3.5h6V5"
+        d="M9 4.5V3h6v1.5"
         stroke={color}
         strokeWidth={SW}
         strokeLinejoin="round"
       />
       <path
-        d="M8 10h8M8 13.5h8M8 17h5"
+        d="M8 9.5h8M8 13h8M8 16.5h5"
         stroke={color}
         strokeWidth={SW * 0.85}
         strokeLinecap="round"
-        opacity="0.75"
       />
     </Base>
   )
