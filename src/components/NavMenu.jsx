@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useLayoutEffect } from 'react'
+import { useState, useRef, useEffect, useLayoutEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Search as SearchIcon, X } from 'lucide-react'
@@ -8,6 +8,9 @@ import ThemeSwitch from './ui/theme-switch'
 import { getPulseTheme, pulseFonts } from '../premiumTheme'
 import { liquidGlassShadow, liquidGlassBackdrop, liquidGlassTint } from '../lib/liquidGlass'
 
+// Same morph curve the liquid floating-menu reference uses — kept
+// identical rather than approximated, since it's the thing that makes
+// the open/close read as "liquid" instead of "mechanical".
 const morphEase = [0.22, 1, 0.36, 1]
 
 const navItems = [
@@ -26,6 +29,128 @@ const BUTTON_SIZE = 44
 const PANEL_WIDTH = 280
 const PANEL_RADIUS = 24
 const ROW_RADIUS = 16
+
+// ── Per-letter flip reveal ──────────────────────────────────────────
+// Lifted from the reference component's MenuButton: each character
+// sits in its own overflow-hidden slot with a duplicate stacked below
+// it, and hovering slides that stack up by 50% with a per-letter
+// stagger delay. Only `transform` ever animates, so it's compositor-
+// only work — cheap even with several of these mounted at once.
+function useLetterHover(label) {
+  const [hovered, setHovered] = useState(false)
+  const animatingRef = useRef(false)
+  const pendingLeaveRef = useRef(false)
+  const chars = label.split('')
+  const lockDuration = 22 * chars.length + 220
+
+  const onEnter = useCallback(() => {
+    pendingLeaveRef.current = false
+    if (hovered) return
+    setHovered(true)
+    animatingRef.current = true
+    setTimeout(() => {
+      animatingRef.current = false
+      if (pendingLeaveRef.current) {
+        pendingLeaveRef.current = false
+        setHovered(false)
+      }
+    }, lockDuration)
+  }, [hovered, lockDuration])
+
+  const onLeave = useCallback(() => {
+    if (animatingRef.current) pendingLeaveRef.current = true
+    else setHovered(false)
+  }, [])
+
+  return { hovered, chars, onEnter, onLeave }
+}
+
+function FlipLabel({ label, color, weight = 600, size = 14 }) {
+  const { hovered, chars, onEnter, onLeave } = useLetterHover(label)
+  const lineHeight = Math.round(size * 1.3)
+
+  return (
+    <span
+      onMouseEnter={onEnter}
+      onMouseLeave={onLeave}
+      style={{ display: 'inline-flex', overflow: 'hidden', height: lineHeight, verticalAlign: 'top' }}
+    >
+      {chars.map((ch, i) => (
+        <span key={i} style={{ display: 'inline-block', overflow: 'hidden', height: lineHeight }}>
+          <span
+            style={{
+              display: 'flex', flexDirection: 'column',
+              transitionProperty: 'transform',
+              transitionDuration: hovered ? '620ms' : '0ms',
+              transitionDelay: hovered ? `${22 * i}ms` : '0ms',
+              transform: hovered ? 'translateY(-50%)' : 'translateY(0%)',
+              transitionTimingFunction: 'cubic-bezier(0.22, 1, 0.36, 1)',
+            }}
+          >
+            <span style={{ display: 'block', height: lineHeight, lineHeight: `${lineHeight}px`, color, fontWeight: weight, fontSize: size, fontFamily: 'inherit' }}>
+              {ch === ' ' ? '\u00A0' : ch}
+            </span>
+            <span aria-hidden style={{ display: 'block', height: lineHeight, lineHeight: `${lineHeight}px`, color, fontWeight: weight, fontSize: size, fontFamily: 'inherit' }}>
+              {ch === ' ' ? '\u00A0' : ch}
+            </span>
+          </span>
+        </span>
+      ))}
+    </span>
+  )
+}
+
+// ── Liquid fill burst ───────────────────────────────────────────────
+// The reference's "dark circle growing from the bottom" moment,
+// reinterpreted as a soft glass-tinted bloom instead of a flat opaque
+// fill, so it reads as the glass itself flowing into the new shape
+// rather than a solid color wiping in. Mounted only while open
+// (AnimatePresence unmounts it on close) so it costs nothing at rest,
+// and only `transform`/`opacity` ever animate.
+function LiquidBloom({ pt, open, align }) {
+  return (
+    <AnimatePresence>
+      {open && (
+        <motion.div
+          aria-hidden
+          className="pointer-events-none"
+          initial={{ opacity: 0, scale: 0.15 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.4, transition: { duration: 0.25, ease: morphEase } }}
+          transition={{ duration: 0.7, ease: morphEase, delay: 0.05 }}
+          style={{
+            position: 'absolute', borderRadius: '50%',
+            width: 340, height: 340,
+            [align === 'right' ? 'right' : 'left']: -60,
+            bottom: -80,
+            background: `radial-gradient(circle, ${pt.cobalt}30, ${pt.indigo}18 55%, transparent 72%)`,
+            transformOrigin: align === 'right' ? 'bottom right' : 'bottom left',
+            willChange: 'transform, opacity',
+          }}
+        />
+      )}
+    </AnimatePresence>
+  )
+}
+
+// Ambient inner motion while the panel is open — reuses the
+// `.liquid-sheen` keyframe already defined in index.css (a slow
+// translate+rotate loop). Pure transform animation, so it's
+// effectively free to run continuously.
+function LiquidSheen({ pt, open }) {
+  return (
+    <div
+      aria-hidden
+      className="liquid-sheen pointer-events-none"
+      style={{
+        position: 'absolute', width: '140%', height: '140%',
+        background: `radial-gradient(circle, ${pt.cobalt}20, transparent 65%)`,
+        opacity: open ? 0.8 : 0,
+        transition: 'opacity 0.6s ease',
+      }}
+    />
+  )
+}
 
 // Same three-layer glass recipe as the cards / menu shell — reused as
 // a per-row "chip" wrapper.
@@ -117,6 +242,11 @@ export default function NavMenu({ dark, toggleTheme, align = 'left' }) {
           overflow: 'hidden',
           zIndex: 2000,
           willChange: 'width, height, border-radius',
+          // Forces this panel onto its own compositor layer so the
+          // width/height morph doesn't force a repaint of the rest of
+          // the page on every frame — this is the main lever for
+          // keeping the open/close feeling like 60fps.
+          transform: 'translateZ(0)',
         }}
         animate={{
           width: open ? PANEL_WIDTH : BUTTON_SIZE,
@@ -124,9 +254,11 @@ export default function NavMenu({ dark, toggleTheme, align = 'left' }) {
           borderRadius: open ? PANEL_RADIUS : BUTTON_SIZE,
         }}
         whileHover={!open ? { scale: 1.06 } : undefined}
+        whileTap={{ scale: 0.96 }}
         transition={{
-          duration: 0.7, ease: morphEase,
-          height: { duration: open ? 0.7 : 0.32, ease: morphEase },
+          duration: 0.8, ease: morphEase,
+          width: { duration: 0.8, ease: morphEase },
+          height: { duration: open ? 0.8 : 0.32, ease: morphEase },
           borderRadius: { duration: 0.5, ease: morphEase },
           scale: { duration: 0.25, ease: morphEase },
         }}
@@ -153,17 +285,25 @@ export default function NavMenu({ dark, toggleTheme, align = 'left' }) {
           transition={{ duration: open ? 0.35 : 0.15, delay: open ? 0.12 : 0 }}
         />
 
+        {/* Liquid morph layers — the "flowing in" moment plus a slow
+            ambient sheen while the panel stays open. Sit below content
+            (zIndex 1 on the wrapper below) so rows always read clearly. */}
+        <LiquidBloom pt={pt} open={open} align={align} />
+        <LiquidSheen pt={pt} open={open} />
+
         <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column' }}>
-                    <div style={{
+          <div style={{
             width: BUTTON_SIZE, height: BUTTON_SIZE, flexShrink: 0,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             alignSelf: align === 'right' ? 'flex-end' : 'flex-start'
           }}>
-            <button
+            <motion.button
               onClick={() => setOpen(o => !o)}
               aria-label={open ? 'Close navigation menu' : 'Open navigation menu'}
               aria-haspopup="true"
               aria-expanded={open}
+              whileTap={{ scale: 0.88 }}
+              transition={{ duration: 0.15, ease: morphEase }}
               style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 width: 44, height: 44, flexShrink: 0, padding: 0,
@@ -175,7 +315,7 @@ export default function NavMenu({ dark, toggleTheme, align = 'left' }) {
               }}
             >
               <MenuToggleIcon open={open} width={44} height={44} stroke={dark ? '#010c4a' : '#010c4a'} duration={400} />
-            </button>
+            </motion.button>
           </div>
 
           <AnimatePresence>
@@ -242,7 +382,9 @@ export default function NavMenu({ dark, toggleTheme, align = 'left' }) {
                   </GlassRow>
                 </motion.div>
 
-                {/* Navigation */}
+                {/* Navigation — labels use the per-letter flip reveal
+                    on hover, the signature move borrowed from the
+                    liquid floating-menu reference. */}
                 {navItems.map(item => (
                   <motion.div key={item.href} variants={listItem}>
                     <GlassRow dark={dark} radius={16} hoverBg={rowHover} onClick={() => goTo(item.href)}
@@ -250,9 +392,7 @@ export default function NavMenu({ dark, toggleTheme, align = 'left' }) {
                       onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); goTo(item.href) } }}
                       style={{ cursor: 'pointer' }}>
                       <div style={{ padding: '13px 16px' }}>
-                        <span style={{ color: pt.text, fontSize: 14, fontWeight: item.href === '/' ? 800 : 600, fontFamily: 'inherit' }}>
-                          {item.label}
-                        </span>
+                        <FlipLabel label={item.label} color={pt.text} weight={item.href === '/' ? 800 : 600} size={14} />
                       </div>
                     </GlassRow>
                   </motion.div>
