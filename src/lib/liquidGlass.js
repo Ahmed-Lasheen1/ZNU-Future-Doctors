@@ -33,5 +33,5 @@ export function liquidGlassBackdrop() {
 // only neutralizes color, without turning the glass into an opaque
 // card or hiding content behind it.
 export function liquidGlassTint(dark) {
-  return dark ? 'rgba(70,74,84,0.28)' : 'rgba(64, 62, 62, 0.35)'
+  return dark ? 'rgba(70,74,84,0.28)' : 'rgba(255,255,255,0.35)'
 }
