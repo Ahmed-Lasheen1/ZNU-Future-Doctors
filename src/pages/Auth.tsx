@@ -1,133 +1,301 @@
-import { useState } from "react"
-import { useNavigate } from "react-router-dom"
-import { supabase } from "../supabase"
-import { containsProfanity } from "../lib/moderation"
-import { AuthComponent, type AccountType, type AuthMode, type AuthStep } from "@/components/ui/sign-up"
-import "../styles/shadcn-theme.css"
+// src/pages/Auth.tsx
+import { useState, useRef, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { motion } from 'framer-motion'
+import confetti from 'canvas-confetti'
+import { Lock, Eye, EyeOff, ArrowLeft, GraduationCap, Mail } from 'lucide-react'
+import { supabase } from '../supabase'
+import { containsProfanity } from '../lib/moderation'
+import { getPulseTheme, pulseFonts } from '../premiumTheme'
+import PulseBackground from '../components/pulse/PulseBackground'
+import PulseBrand from '../components/pulse/PulseBrand'
+import {
+  GlassField, PrimaryButton, GhostButton, TextLink, AccountToggle, AuthMessage, inputResetStyle
+} from '../components/pulse/AuthPrimitives'
 
-export default function Auth() {
+type AccountType = 'university' | 'personal'
+type AuthMode = 'signin' | 'signup'
+type AuthStep = 'form' | 'verify'
+
+function fireConfetti() {
+  const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 999 }
+  confetti({ ...defaults, particleCount: 50, origin: { x: 0, y: 1 }, angle: 60 })
+  confetti({ ...defaults, particleCount: 50, origin: { x: 1, y: 1 }, angle: 120 })
+}
+
+export default function Auth({ dark = true }: { dark?: boolean }) {
   const navigate = useNavigate()
-  const [mode, setMode] = useState<AuthMode>("signin")
-  const [step, setStep] = useState<AuthStep>("form")
-  const [accountType, setAccountType] = useState<AccountType>("university")
+  const pt = getPulseTheme(dark)
 
-  const [name, setName] = useState("")
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [confirmPassword, setConfirmPassword] = useState("")
-  const [otp, setOtp] = useState("")
+  const [mode, setMode] = useState<AuthMode>('signin')
+  const [step, setStep] = useState<AuthStep>('form')
+  const [accountType, setAccountType] = useState<AccountType>('university')
+
+  const [name, setName] = useState('')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [otp, setOtp] = useState('')
   const [loading, setLoading] = useState(false)
-  const [message, setMessage] = useState("")
+  const [message, setMessage] = useState('')
+  const [showPw, setShowPw] = useState(false)
+  const [showConfirmPw, setShowConfirmPw] = useState(false)
+  const [isDesktop, setIsDesktop] = useState(false)
 
-  const extractCode = (e: string) => e.split("@")[0]
+  const otpRef = useRef<HTMLInputElement>(null)
+  const celebratedRef = useRef(false)
+
+  useEffect(() => { if (step === 'verify') setTimeout(() => otpRef.current?.focus(), 300) }, [step])
+  useEffect(() => {
+    if (message.includes('✅') && message.toLowerCase().includes('verified') && !celebratedRef.current) {
+      celebratedRef.current = true
+      fireConfetti()
+    }
+  }, [message])
+
+  // Drives which brand block shows (desktop side-panel vs. compact
+  // mobile header) without touching window.matchMedia during render.
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 1024px)')
+    setIsDesktop(mq.matches)
+    const handler = (e: MediaQueryListEvent) => setIsDesktop(e.matches)
+    mq.addEventListener?.('change', handler)
+    return () => mq.removeEventListener?.('change', handler)
+  }, [])
+
+  const extractCode = (e: string) => e.split('@')[0]
   const universityCodePreview =
-    mode === "signup" && accountType === "university" && email.includes("@med.znu.edu.eg")
+    mode === 'signup' && accountType === 'university' && email.includes('@med.znu.edu.eg')
       ? extractCode(email) : null
 
   function resetAll() {
-    setStep("form"); setName(""); setEmail(""); setPassword(""); setConfirmPassword(""); setOtp(""); setMessage("")
+    setStep('form'); setName(''); setEmail(''); setPassword(''); setConfirmPassword(''); setOtp(''); setMessage('')
   }
 
-  // Sign-in: one screen, one submit — validates and calls
-  // supabase.auth.signInWithPassword() directly.
   async function handleSignInSubmit() {
-    setMessage("")
-    if (!email.trim()) return setMessage("❌ Please enter your email")
-    if (!password || password.length < 6) return setMessage("❌ Password must be at least 6 characters")
+    setMessage('')
+    if (!email.trim()) return setMessage('❌ Please enter your email')
+    if (!password || password.length < 6) return setMessage('❌ Password must be at least 6 characters')
     setLoading(true)
     const { error } = await supabase.auth.signInWithPassword({ email, password })
     setLoading(false)
-    if (error) setMessage("❌ " + error.message)
-    else navigate("/")
+    if (error) setMessage('❌ ' + error.message)
+    else navigate('/')
   }
 
-  // Sign-up: also one screen, one submit — every field (account type,
-  // name, email, password, confirm password) lives on the same page,
-  // so all validation + account creation happens in a single combined
-  // handler instead of being spread across separate step handlers.
   async function handleSignupSubmit() {
-    setMessage("")
-    const valid = accountType === "university"
-      ? email.includes("@med.znu.edu.eg")
+    setMessage('')
+    const valid = accountType === 'university'
+      ? email.includes('@med.znu.edu.eg')
       : /^[^\s@]+@gmail\.com$/i.test(email)
-    if (!valid) return setMessage(accountType === "university" ? "❌ Please use your ZNU email (@med.znu.edu.eg)" : "❌ Please enter a valid Gmail address")
-    if (!name.trim()) return setMessage("❌ Please enter your name")
-    if (containsProfanity(name)) return setMessage("❌ Please choose an appropriate name")
-    if (containsProfanity(email.split("@")[0])) return setMessage("❌ The email contains inappropriate words")
-    if (!password || password.length < 6) return setMessage("❌ Password must be at least 6 characters")
-    if (!confirmPassword || confirmPassword.length < 6) return setMessage("❌ Please confirm your password")
-    if (password !== confirmPassword) return setMessage("❌ Passwords do not match")
+    if (!valid) return setMessage(accountType === 'university' ? '❌ Please use your ZNU email (@med.znu.edu.eg)' : '❌ Please enter a valid Gmail address')
+    if (!name.trim()) return setMessage('❌ Please enter your name')
+    if (containsProfanity(name)) return setMessage('❌ Please choose an appropriate name')
+    if (containsProfanity(email.split('@')[0])) return setMessage('❌ The email contains inappropriate words')
+    if (!password || password.length < 6) return setMessage('❌ Password must be at least 6 characters')
+    if (!confirmPassword || confirmPassword.length < 6) return setMessage('❌ Please confirm your password')
+    if (password !== confirmPassword) return setMessage('❌ Passwords do not match')
 
     setLoading(true)
-    const universityCode = accountType === "university" ? extractCode(email) : null
+    const universityCode = accountType === 'university' ? extractCode(email) : null
     const { data, error } = await supabase.auth.signUp({
       email, password,
       options: { data: { name: name.trim(), account_type: accountType, university_code: universityCode } }
     })
 
-    if (error) { setLoading(false); return setMessage("❌ " + error.message) }
+    if (error) { setLoading(false); return setMessage('❌ ' + error.message) }
 
     if (data?.user && data.user.identities && data.user.identities.length === 0) {
-      const { error: resendError } = await supabase.auth.resend({ type: "signup", email })
+      const { error: resendError } = await supabase.auth.resend({ type: 'signup', email })
       setLoading(false)
-      if (resendError) return setMessage("❌ " + resendError.message)
-      setMessage("✅ This email was already pending verification — a fresh code was sent.")
-      setStep("verify")
+      if (resendError) return setMessage('❌ ' + resendError.message)
+      setMessage('✅ This email was already pending verification — a fresh code was sent.')
+      setStep('verify')
       return
     }
     setLoading(false)
-    setStep("verify")
+    setStep('verify')
   }
 
   async function handleVerify() {
-    if (!otp || otp.trim().length < 6) return setMessage("❌ Please enter the 6-digit code")
-    setMessage("")
+    if (!otp || otp.trim().length < 6) return setMessage('❌ Please enter the 6-digit code')
+    setMessage('')
     setLoading(true)
-    const { error } = await supabase.auth.verifyOtp({ email, token: otp.trim(), type: "signup" })
+    const { error } = await supabase.auth.verifyOtp({ email, token: otp.trim(), type: 'signup' })
     setLoading(false)
-    if (error) return setMessage("❌ " + error.message)
-    setMessage("✅ Account verified! Welcome aboard.")
-    setTimeout(() => navigate("/"), 900)
+    if (error) return setMessage('❌ ' + error.message)
+    setMessage('✅ Account verified! Welcome aboard.')
+    setTimeout(() => navigate('/'), 900)
   }
 
   async function handleResend() {
     setLoading(true)
-    const { error } = await supabase.auth.resend({ type: "signup", email })
+    const { error } = await supabase.auth.resend({ type: 'signup', email })
     setLoading(false)
-    setMessage(error ? "❌ " + error.message : "✅ A new code was sent — check spam too.")
+    setMessage(error ? '❌ ' + error.message : '✅ A new code was sent — check spam too.')
   }
 
   async function handleForgotPassword() {
-    if (!email) return setMessage("Please enter your email address first")
+    if (!email) return setMessage('Please enter your email address first')
     setLoading(true)
-    setMessage("")
+    setMessage('')
     const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: `${window.location.origin}/reset-password` })
     setLoading(false)
-    setMessage(error ? "❌ " + error.message : "✅ Check your email for a reset link (check spam too).")
+    setMessage(error ? '❌ ' + error.message : '✅ Check your email for a reset link (check spam too).')
   }
 
+  const handleSubmit = mode === 'signin' ? handleSignInSubmit : handleSignupSubmit
+
   return (
-    <AuthComponent
-      mode={mode}
-      onToggleMode={() => { setMode(mode === "signup" ? "signin" : "signup"); resetAll() }}
-      step={step}
-      onStepChange={setStep}
-      accountType={accountType}
-      onAccountTypeChange={t => { setAccountType(t); setEmail("") }}
-      name={name} onNameChange={setName}
-      email={email} onEmailChange={setEmail}
-      password={password} onPasswordChange={setPassword}
-      confirmPassword={confirmPassword} onConfirmPasswordChange={setConfirmPassword}
-      otp={otp} onOtpChange={setOtp}
-      loading={loading}
-      message={message}
-      universityCodePreview={universityCodePreview}
-      onSubmitSignIn={handleSignInSubmit}
-      onSubmitSignup={handleSignupSubmit}
-      onSubmitVerify={handleVerify}
-      onResendCode={handleResend}
-      onForgotPassword={handleForgotPassword}
-      onContinueAsGuest={() => navigate("/")}
-    />
+    <div style={{ position: 'relative', minHeight: '100vh' }}>
+      <PulseBackground />
+      <style>{`
+        .auth-grid { display: flex; align-items: center; justify-content: center; gap: 60px; max-width: 1100px; margin: 0 auto; padding: 40px 24px; }
+        .auth-brand-panel { display: none; }
+        @media (min-width: 1024px) {
+          .auth-brand-panel { display: flex; flex: 1; max-width: 480px; flex-direction: column; align-items: flex-start; gap: 18px; }
+        }
+        .auth-form-panel { width: 100%; max-width: 420px; }
+      `}</style>
+
+      <div style={{ position: 'relative', zIndex: 1, minHeight: '100vh', display: 'flex', alignItems: 'center' }}>
+        <div className="auth-grid">
+          <div className="auth-brand-panel">
+            <PulseBrand dark={dark} logoSize={72} fontSize={40} />
+            <p style={{ color: pt.sub, fontSize: 16, lineHeight: 1.6, maxWidth: 420, fontFamily: pulseFonts.body }}>
+              Your integrated medical study companion — schedules, checklists, MCQ banks, and smart summaries, all in one place.
+            </p>
+          </div>
+
+          <div className="auth-form-panel">
+            {!isDesktop && (
+              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 24 }}>
+                <PulseBrand dark={dark} logoSize={56} fontSize={26} />
+              </div>
+            )}
+
+            <AuthMessage dark={dark} message={message} />
+
+            {step === 'verify' ? (
+              <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                <p style={{ textAlign: 'center', fontSize: 12, color: pt.sub, fontFamily: pulseFonts.body }}>
+                  We sent a 6-digit code to <strong style={{ color: pt.text }}>{email}</strong>
+                </p>
+                <GlassField dark={dark}>
+                  <input ref={otpRef} inputMode="numeric" maxLength={6} value={otp}
+                    onChange={e => setOtp(e.target.value.replace(/\D/g, ''))}
+                    onKeyDown={e => e.key === 'Enter' && handleVerify()}
+                    placeholder="123456" name="otp" autoComplete="one-time-code"
+                    style={inputResetStyle(pt, { textAlign: 'center', fontSize: 22, fontWeight: 800, letterSpacing: 8 })} />
+                </GlassField>
+                <PrimaryButton pt={pt} disabled={loading} onClick={handleVerify}>{loading ? 'Verifying...' : 'Verify & Continue'}</PrimaryButton>
+                <GhostButton dark={dark} onClick={handleResend}>Resend code</GhostButton>
+                <div style={{ textAlign: 'center' }}>
+                  <TextLink pt={pt} muted onClick={() => setStep('form')}>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><ArrowLeft size={13} /> Go back</span>
+                  </TextLink>
+                </div>
+              </motion.div>
+            ) : mode === 'signin' ? (
+              <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                <p style={{ fontSize: 22, fontWeight: 300, color: pt.text, textAlign: 'center', fontFamily: pulseFonts.display }}>Welcome back</p>
+
+                <GlassField dark={dark}>
+                  <input type="email" value={email} onChange={e => setEmail(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && handleSubmit()}
+                    placeholder="Email address" name="email" autoComplete="username" inputMode="email"
+                    style={inputResetStyle(pt)} />
+                </GlassField>
+
+                <GlassField dark={dark}>
+                  <Lock size={15} color={pt.faint} style={{ flexShrink: 0 }} />
+                  <input type={showPw ? 'text' : 'password'} value={password}
+                    onChange={e => setPassword(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && handleSubmit()}
+                    placeholder="Password" name="password" autoComplete="current-password"
+                    style={inputResetStyle(pt)} />
+                  <button type="button" onClick={() => setShowPw(!showPw)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: pt.sub, flexShrink: 0 }}>
+                    {showPw ? <EyeOff size={15} /> : <Eye size={15} />}
+                  </button>
+                </GlassField>
+
+                <div style={{ textAlign: 'right' }}>
+                  <TextLink pt={pt} onClick={handleForgotPassword}>Forgot password?</TextLink>
+                </div>
+
+                <PrimaryButton pt={pt} disabled={loading} onClick={handleSubmit}>{loading ? 'Signing in...' : 'Sign In'}</PrimaryButton>
+
+                <GhostButton dark={dark} onClick={() => { setMode('signup'); resetAll() }}>Don't have an account? Sign Up</GhostButton>
+                <div style={{ textAlign: 'center' }}>
+                  <TextLink pt={pt} muted onClick={() => navigate('/')}>Continue without account →</TextLink>
+                </div>
+              </motion.div>
+            ) : (
+              <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                <p style={{ fontSize: 22, fontWeight: 300, color: pt.text, textAlign: 'center', fontFamily: pulseFonts.display }}>Create your account</p>
+
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <AccountToggle dark={dark} pt={pt} active={accountType === 'university'} onClick={() => { setAccountType('university'); setEmail('') }}>
+                    <GraduationCap size={14} /> University
+                  </AccountToggle>
+                  <AccountToggle dark={dark} pt={pt} active={accountType === 'personal'} onClick={() => { setAccountType('personal'); setEmail('') }}>
+                    <Mail size={14} /> Personal Gmail
+                  </AccountToggle>
+                </div>
+
+                <GlassField dark={dark}>
+                  <input value={name} onChange={e => setName(e.target.value)} placeholder="Your name" name="name" autoComplete="name" style={inputResetStyle(pt)} />
+                </GlassField>
+
+                <GlassField dark={dark}>
+                  <input type="email" value={email} onChange={e => setEmail(e.target.value)}
+                    placeholder={accountType === 'university' ? 'ZNU email (@med.znu.edu.eg)' : 'you@gmail.com'}
+                    name="signup-email" autoComplete="username" inputMode="email" style={inputResetStyle(pt)} />
+                </GlassField>
+
+                {accountType === 'university' && universityCodePreview && (
+                  <div style={{ position: 'relative', overflow: 'hidden', borderRadius: 12 }}>
+                    <div aria-hidden style={{ position: 'absolute', inset: 0, background: `${pt.cobalt}20` }} />
+                    <div style={{ position: 'relative', zIndex: 1, padding: '8px 16px', fontSize: 12, color: pt.cobalt, fontFamily: pulseFonts.body }}>
+                      🎓 University Code: <strong>{universityCodePreview}</strong>
+                    </div>
+                  </div>
+                )}
+
+                <GlassField dark={dark}>
+                  <Lock size={15} color={pt.faint} style={{ flexShrink: 0 }} />
+                  <input type={showPw ? 'text' : 'password'} value={password}
+                    onChange={e => setPassword(e.target.value)}
+                    placeholder="Password (min 6 characters)" name="password" autoComplete="new-password"
+                    style={inputResetStyle(pt)} />
+                  <button type="button" onClick={() => setShowPw(!showPw)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: pt.sub, flexShrink: 0 }}>
+                    {showPw ? <EyeOff size={15} /> : <Eye size={15} />}
+                  </button>
+                </GlassField>
+
+                <GlassField dark={dark}>
+                  <Lock size={15} color={pt.faint} style={{ flexShrink: 0 }} />
+                  <input type={showConfirmPw ? 'text' : 'password'} value={confirmPassword}
+                    onChange={e => setConfirmPassword(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && handleSubmit()}
+                    placeholder="Confirm password" name="confirm-password" autoComplete="new-password"
+                    style={inputResetStyle(pt)} />
+                  <button type="button" onClick={() => setShowConfirmPw(!showConfirmPw)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: pt.sub, flexShrink: 0 }}>
+                    {showConfirmPw ? <EyeOff size={15} /> : <Eye size={15} />}
+                  </button>
+                </GlassField>
+
+                <PrimaryButton pt={pt} disabled={loading} onClick={handleSubmit}>{loading ? 'Creating account...' : 'Create Account'}</PrimaryButton>
+
+                <GhostButton dark={dark} onClick={() => { setMode('signin'); resetAll() }}>Already have an account? Sign In</GhostButton>
+                <div style={{ textAlign: 'center' }}>
+                  <TextLink pt={pt} muted onClick={() => navigate('/')}>Continue without account →</TextLink>
+                </div>
+              </motion.div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
   )
 }

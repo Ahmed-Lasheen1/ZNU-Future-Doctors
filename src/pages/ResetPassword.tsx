@@ -1,83 +1,75 @@
-import { useState, useEffect } from "react"
-import { useNavigate } from "react-router-dom"
-import { supabase } from "../supabase"
-import { cn } from "@/lib/utils"
-import "../styles/shadcn-theme.css"
+// src/pages/ResetPassword.tsx
+import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { supabase } from '../supabase'
+import { getPulseTheme, pulseFonts } from '../premiumTheme'
+import PulseBackground from '../components/pulse/PulseBackground'
+import PulseBrand from '../components/pulse/PulseBrand'
+import { GlassField, PrimaryButton, GhostButton, AuthMessage, inputResetStyle } from '../components/pulse/AuthPrimitives'
 
-export default function ResetPassword() {
+export default function ResetPassword({ dark = true }: { dark?: boolean }) {
   const navigate = useNavigate()
+  const pt = getPulseTheme(dark)
   const [ready, setReady] = useState(false)
-  const [password, setPassword] = useState("")
-  const [confirm, setConfirm] = useState("")
+  const [password, setPassword] = useState('')
+  const [confirm, setConfirm] = useState('')
   const [loading, setLoading] = useState(false)
-  const [message, setMessage] = useState("")
+  const [message, setMessage] = useState('')
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setReady(!!session)
-      if (!session) setMessage("❌ This reset link is invalid or expired. Please request a new one.")
+      if (!session) setMessage('❌ This reset link is invalid or expired. Please request a new one.')
     })
   }, [])
 
   async function handleSubmit() {
-    if (!password || password.length < 6) return setMessage("❌ Password must be at least 6 characters")
-    if (password !== confirm) return setMessage("❌ Passwords do not match")
-    setLoading(true); setMessage("")
+    if (!password || password.length < 6) return setMessage('❌ Password must be at least 6 characters')
+    if (password !== confirm) return setMessage('❌ Passwords do not match')
+    setLoading(true); setMessage('')
     const { error } = await supabase.auth.updateUser({ password })
     setLoading(false)
-    if (error) return setMessage("❌ " + error.message)
-    setMessage("✅ Password updated! Redirecting...")
-    setTimeout(() => navigate("/"), 1500)
+    if (error) return setMessage('❌ ' + error.message)
+    setMessage('✅ Password updated! Redirecting...')
+    setTimeout(() => navigate('/'), 1500)
   }
 
-  const isSuccess = message.includes("✅")
-
   return (
-    <div className="fixed inset-0 overflow-y-auto bg-gradient-to-b from-background to-[hsl(var(--card))] flex items-center justify-center">
-      <div aria-hidden className="fixed inset-0 overflow-hidden pointer-events-none z-0">
-        <div className="absolute -top-32 -left-24 w-[520px] h-[520px] rounded-full bg-primary/40 blur-[90px]" />
-        <div className="absolute -bottom-32 -right-24 w-[460px] h-[460px] rounded-full bg-[hsl(var(--chart-4))]/40 blur-[90px]" />
-      </div>
-
-      <div className="relative z-10 w-[92%] max-w-[400px] rounded-[28px] border border-white/10 bg-white/5 backdrop-blur-2xl p-9 shadow-2xl">
-        <div className="flex flex-col items-center gap-2 mb-6">
-          <div className="w-[60px] h-[60px] rounded-2xl overflow-hidden border border-primary/40">
-            <img src="/icon-192.png" alt="ZNU Pulse" className="w-full h-full object-cover" />
+    <div style={{ position: 'relative', minHeight: '100vh' }}>
+      <PulseBackground />
+      <div style={{
+        position: 'relative', zIndex: 1, minHeight: '100vh',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24
+      }}>
+        <div style={{ width: '100%', maxWidth: 400 }}>
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 24 }}>
+            <PulseBrand dark={dark} logoSize={56} fontSize={26} />
           </div>
-          <div className="font-extrabold text-2xl text-foreground">ZNU <span className="text-primary">PULSE</span></div>
-          <p className="text-xs text-muted-foreground">Set a new password</p>
+          <p style={{ textAlign: 'center', fontSize: 12, color: pt.sub, marginBottom: 20, fontFamily: pulseFonts.body }}>
+            Set a new password
+          </p>
+
+          <AuthMessage dark={dark} message={message} />
+
+          {ready ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <GlassField dark={dark}>
+                <input type="password" value={password} onChange={e => setPassword(e.target.value)}
+                  placeholder="New password (min 6 characters)" style={inputResetStyle(pt)} />
+              </GlassField>
+              <GlassField dark={dark}>
+                <input type="password" value={confirm} onChange={e => setConfirm(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && handleSubmit()}
+                  placeholder="Confirm new password" style={inputResetStyle(pt)} />
+              </GlassField>
+              <PrimaryButton pt={pt} disabled={loading} onClick={handleSubmit}>
+                {loading ? 'Saving...' : 'Save New Password'}
+              </PrimaryButton>
+            </div>
+          ) : (
+            <GhostButton dark={dark} onClick={() => navigate('/auth')}>← Back to Sign In</GhostButton>
+          )}
         </div>
-
-        {message && (
-          <div className={cn(
-            "text-center text-xs font-semibold rounded-xl py-2.5 px-4 mb-4 border",
-            isSuccess ? "bg-primary/10 border-primary/30 text-primary" : "bg-destructive/10 border-destructive/30 text-destructive"
-          )}>{message}</div>
-        )}
-
-        {ready ? (
-          <div className="space-y-4">
-            <div className="rounded-full border border-white/10 bg-white/5 backdrop-blur-xl px-5 py-3.5">
-              <input type="password" value={password} onChange={e => setPassword(e.target.value)}
-                placeholder="New password (min 6 characters)"
-                className="w-full bg-transparent outline-none text-sm text-foreground placeholder:text-muted-foreground" />
-            </div>
-            <div className="rounded-full border border-white/10 bg-white/5 backdrop-blur-xl px-5 py-3.5">
-              <input type="password" value={confirm} onChange={e => setConfirm(e.target.value)}
-                onKeyDown={e => e.key === "Enter" && handleSubmit()}
-                placeholder="Confirm new password"
-                className="w-full bg-transparent outline-none text-sm text-foreground placeholder:text-muted-foreground" />
-            </div>
-            <button onClick={handleSubmit} disabled={loading} className={cn(
-              "w-full rounded-full py-3.5 font-semibold text-sm border",
-              loading ? "bg-white/5 border-white/10 text-muted-foreground" : "bg-gradient-to-br from-primary/90 to-secondary/90 border-white/10 text-primary-foreground"
-            )}>{loading ? "Saving..." : "Save New Password"}</button>
-          </div>
-        ) : (
-          <button onClick={() => navigate("/auth")} className="w-full rounded-full py-3.5 font-semibold text-sm bg-gradient-to-br from-primary/90 to-secondary/90 text-primary-foreground">
-            ← Back to Sign In
-          </button>
-        )}
       </div>
     </div>
   )
