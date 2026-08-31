@@ -1,4 +1,5 @@
-"use client"
+// src/components/ui/theme-switch.tsx
+'use client'
 
 import { Sun, Moon } from 'lucide-react'
 import { useState } from 'react'
@@ -44,12 +45,15 @@ export default function ThemeSwitch({ dark, onToggle, scale = 1, stretchX = 1 }:
   }
 
   return (
-    <div style={{ width: BASE_W * scale * stretchX, height: BASE_H * scale, position: 'relative', display: 'inline-block' }}>
+    <div style={{
+      width: BASE_W * scale * stretchX, height: BASE_H * scale,
+      position: 'relative', display: 'inline-block'
+    }}>
       <div style={{ transform: `scale(${scale * stretchX}, ${scale})`, transformOrigin: 'top left' }}>
-        <svg className="absolute w-0 h-0">
+        <svg style={{ position: 'absolute', width: 0, height: 0 }}>
           <defs>
             <filter id="grain-light">
-              <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="4" result="noise" />
+              <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves={4} result="noise" />
               <feColorMatrix in="noise" type="saturate" values="0" result="desaturatedNoise" />
               <feComponentTransfer in="desaturatedNoise" result="lightGrain">
                 <feFuncA type="linear" slope="0.3" />
@@ -57,7 +61,7 @@ export default function ThemeSwitch({ dark, onToggle, scale = 1, stretchX = 1 }:
               <feBlend in="SourceGraphic" in2="lightGrain" mode="overlay" />
             </filter>
             <filter id="grain-dark">
-              <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="4" result="noise" />
+              <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves={4} result="noise" />
               <feColorMatrix in="noise" type="saturate" values="0" result="desaturatedNoise" />
               <feComponentTransfer in="desaturatedNoise" result="darkGrain">
                 <feFuncA type="linear" slope="0.5" />
@@ -69,10 +73,10 @@ export default function ThemeSwitch({ dark, onToggle, scale = 1, stretchX = 1 }:
 
         <motion.button
           onClick={handleToggle}
-          className="relative flex h-[64px] w-[104px] items-center rounded-full p-[6px] transition-all duration-300 focus:outline-none"
           style={{
-            // Lighter track in both modes — dark mode no longer bottoms
-            // out near-black, light mode stays a bright, airy surface.
+            position: 'relative',
+            display: 'flex', height: 64, width: 104, alignItems: 'center',
+            borderRadius: 999, padding: 6,
             background: isDark
               ? `radial-gradient(ellipse at top left, ${pt.surfaceRaised} 0%, ${pt.surfaceFlat} 50%, ${pt.canvas} 100%)`
               : `radial-gradient(ellipse at top left, #ffffff 0%, #ffffff 45%, ${pt.surfaceFlat} 100%)`,
@@ -80,41 +84,46 @@ export default function ThemeSwitch({ dark, onToggle, scale = 1, stretchX = 1 }:
               ? `inset 3px 3px 8px rgba(0,0,0,0.5), inset -3px -3px 8px rgba(90,120,165,0.35), inset 0 2px 4px rgba(0,0,0,0.5), inset 0 -2px 4px rgba(90,120,165,0.3), 0 2px 4px rgba(0,0,0,0.3), 0 8px 16px rgba(0,0,0,0.25), 0 16px 32px rgba(0,0,0,0.18)`
               : `inset 3px 3px 8px rgba(175,192,214,0.35), inset -3px -3px 8px rgba(255,255,255,1), inset 0 2px 4px rgba(175,192,214,0.3), inset 0 -2px 4px rgba(255,255,255,1), 0 2px 4px rgba(0,0,0,0.06), 0 8px 16px rgba(0,0,0,0.05), 0 16px 32px rgba(0,0,0,0.04)`,
             border: `2px solid ${pt.border}`,
-            position: 'relative',
+            outline: 'none', cursor: 'pointer',
           }}
           aria-label={`Switch to ${isDark ? 'light' : 'dark'} mode`}
           role="switch"
           aria-checked={isDark}
           whileTap={{ scale: 0.98 }}
         >
-          <div className="absolute inset-[3px] rounded-full pointer-events-none" style={{
+          <div style={{
+            position: 'absolute', inset: 3, borderRadius: 999, pointerEvents: 'none',
             boxShadow: isDark
               ? 'inset 0 2px 5px rgba(0,0,0,0.5), inset 0 -1px 2px rgba(90,120,165,0.25)'
               : 'inset 0 2px 5px rgba(175,192,214,0.3), inset 0 -1px 2px rgba(255,255,255,0.8)',
           }} />
 
-          <div className="absolute inset-0 rounded-full pointer-events-none" style={{
+          <div style={{
+            position: 'absolute', inset: 0, borderRadius: 999, pointerEvents: 'none',
             background: isDark
               ? `radial-gradient(ellipse at top, rgba(90,120,165,0.12) 0%, transparent 50%), linear-gradient(to bottom, rgba(90,120,165,0.15) 0%, transparent 30%, transparent 70%, rgba(0,0,0,0.15) 100%)`
               : `radial-gradient(ellipse at top, rgba(255,255,255,0.8) 0%, transparent 50%), linear-gradient(to bottom, rgba(255,255,255,0.7) 0%, transparent 30%, transparent 70%, rgba(175,192,214,0.12) 100%)`,
             mixBlendMode: 'overlay',
           }} />
 
-          <div className="absolute inset-0 rounded-full pointer-events-none" style={{
+          <div style={{
+            position: 'absolute', inset: 0, borderRadius: 999, pointerEvents: 'none',
             boxShadow: isDark ? 'inset 0 0 12px rgba(0,0,0,0.3)' : 'inset 0 0 12px rgba(175,192,214,0.15)',
           }} />
 
-          <div className="absolute inset-0 flex items-center justify-between px-4">
+          <div style={{
+            position: 'absolute', inset: 0, display: 'flex', alignItems: 'center',
+            justifyContent: 'space-between', padding: '0 16px'
+          }}>
             <Sun size={20} color={isDark ? pt.faint : pt.amber} />
             <Moon size={20} color={isDark ? pt.faint : pt.sub} />
           </div>
 
           <motion.div
-            className="relative z-10 flex h-[44px] w-[44px] items-center justify-center rounded-full overflow-hidden"
             style={{
-              // Cobalt only — no indigo, so no purple cast. Lightened
-              // with a soft highlight stop instead of dropping straight
-              // to the dark canvas color.
+              position: 'relative', zIndex: 1,
+              display: 'flex', height: 44, width: 44, alignItems: 'center', justifyContent: 'center',
+              borderRadius: 999, overflow: 'hidden',
               background: isDark
                 ? `linear-gradient(145deg, #7fb0ff 0%, ${pt.cobalt} 55%, #2a5cd8 100%)`
                 : `linear-gradient(145deg, #ffffff 0%, #fefefe 50%, ${pt.surfaceFlat} 100%)`,
@@ -126,17 +135,21 @@ export default function ThemeSwitch({ dark, onToggle, scale = 1, stretchX = 1 }:
             animate={{ x: isDark ? 46 : 0 }}
             transition={{ type: 'spring', stiffness: 300, damping: 20 }}
           >
-            <div className="absolute inset-0 rounded-full pointer-events-none" style={{
+            <div style={{
+              position: 'absolute', inset: 0, borderRadius: 999, pointerEvents: 'none',
               background: 'linear-gradient(to bottom, rgba(255,255,255,0.45) 0%, transparent 40%, rgba(0,0,0,0.06) 100%)',
               mixBlendMode: 'overlay',
             }} />
 
             {isAnimating && particles.map((particle) => (
-              <motion.div key={particle.id} className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <div key={particle.id} style={{
+                position: 'absolute', inset: 0, display: 'flex',
+                alignItems: 'center', justifyContent: 'center', pointerEvents: 'none'
+              }}>
                 <motion.div
-                  className="absolute rounded-full"
                   style={{
-                    width: '10px', height: '10px',
+                    position: 'absolute', borderRadius: 999,
+                    width: 10, height: 10,
                     background: isDark
                       ? `radial-gradient(circle, #7fb0ff80 0%, #7fb0ff00 70%)`
                       : `radial-gradient(circle, ${pt.amber}b3 0%, ${pt.amber}00 70%)`,
@@ -146,15 +159,16 @@ export default function ThemeSwitch({ dark, onToggle, scale = 1, stretchX = 1 }:
                   animate={{ scale: isDark ? 6 : 8, opacity: [0, 1, 0] }}
                   transition={{ duration: isDark ? 0.5 : particle.duration, delay: particle.delay, ease: 'easeOut' }}
                 >
-                  <div className="absolute inset-0 rounded-full opacity-40" style={{
+                  <div style={{
+                    position: 'absolute', inset: 0, borderRadius: 999, opacity: 0.4,
                     backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
                     mixBlendMode: 'overlay',
                   }} />
                 </motion.div>
-              </motion.div>
+              </div>
             ))}
 
-            <div className="relative z-10">
+            <div style={{ position: 'relative', zIndex: 1 }}>
               {isDark ? <Moon size={20} color="#fff" /> : <Sun size={20} color={pt.amber} />}
             </div>
           </motion.div>
