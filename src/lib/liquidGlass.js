@@ -21,8 +21,8 @@ export function liquidGlassShadow(dark) {
 // below for the fix.
 export function liquidGlassBackdrop() {
   return {
-    backdropFilter: 'blur(3px) saturate(1200%)',
-    WebkitBackdropFilter: 'blur(3px) saturate(1200%)',
+    backdropFilter: 'blur(100px) saturate(120%)',
+    WebkitBackdropFilter: 'blur(100px) saturate(120%)',
   }
 }
 
