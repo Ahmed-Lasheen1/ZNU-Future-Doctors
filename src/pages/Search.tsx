@@ -1,6 +1,6 @@
 // src/pages/Search.tsx
 import { useState, useEffect, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { supabase } from '../supabase'
 import { getPulseTheme, pulseFonts, pulseType } from '../premiumTheme'
 import { glassInput } from '../components/pulse/PulseUI'
@@ -36,8 +36,13 @@ const typeMeta: Record<SearchResult['type'], { icon: string; label: string; colo
 export default function Search({ dark }: { dark: boolean }) {
   const pt = getPulseTheme(dark)
   const navigate = useNavigate()
+  const location = useLocation()
   const { modules } = useModules() as { modules: SearchModule[] }
-  const [query, setQuery] = useState('')
+  // Picks up the query typed into NavMenu's search bar (passed via
+  // navigate('/search', { state: { initialQuery: q } })) so hitting
+  // Enter there actually lands here with the text pre-filled instead
+  // of an empty box.
+  const [query, setQuery] = useState(() => (location.state as { initialQuery?: string } | null)?.initialQuery || '')
   const [results, setResults] = useState<SearchResult[] | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(false)
