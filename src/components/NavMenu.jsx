@@ -6,6 +6,7 @@ import { useAuth } from '../contexts'
 import { MenuToggleIcon } from './ui/menu-toggle-icon'
 import ThemeSwitch from './ui/theme-switch'
 import { getPulseTheme, pulseFonts } from '../premiumTheme'
+import { glassInput } from './pulse/PulseUI'
 import { liquidGlassShadow, liquidGlassBackdrop, liquidGlassTint } from '../lib/liquidGlass'
 
 // Same morph curve the liquid floating-menu reference uses.
@@ -313,23 +314,29 @@ export default function NavMenu({ dark, toggleTheme, align = 'left' }) {
             </GlassRow>
           )}
 
-          {/* Search bar */}
-          <GlassRow dark={dark} radius={16} hoverBg={rowHover}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '12px 14px' }}>
-              <SearchIcon size={16} color={pt.faint} style={{ flexShrink: 0, cursor: 'pointer' }} onClick={submitSearch} />
-              <input
-                value={searchValue}
-                onChange={e => setSearchValue(e.target.value)}
-                onKeyDown={e => { if (e.key === 'Enter') submitSearch() }}
-                placeholder="Search..."
-                tabIndex={open ? 0 : -1}
-                style={{
-                  flex: 1, minWidth: 0, background: 'transparent', border: 'none', outline: 'none',
-                  color: pt.text, fontSize: 14, fontFamily: 'inherit', fontWeight: 600
-                }}
-              />
-            </div>
-          </GlassRow>
+          {/* Search bar — same glass recipe as the input on the Search
+              page itself (glassInput from PulseUI: pill shape,
+              blur(14px), solid border), just sized to fit the panel
+              instead of the page's full width. Everything else about
+              it — the icon, submit-on-Enter, click-to-submit — is
+              unchanged. */}
+          <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+            <SearchIcon size={16} color={pt.faint} style={{ position: 'absolute', left: 16, pointerEvents: 'none' }} />
+            <input
+              value={searchValue}
+              onChange={e => setSearchValue(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') submitSearch() }}
+              placeholder="Search..."
+              type="search"
+              tabIndex={open ? 0 : -1}
+              style={{
+                ...glassInput(pt, dark),
+                padding: '13px 18px 13px 42px',
+                marginBottom: 0,
+                fontSize: 14,
+              }}
+            />
+          </div>
 
           {/* Navigation — labels use the per-letter flip reveal on
               hover, the signature move borrowed from the liquid
