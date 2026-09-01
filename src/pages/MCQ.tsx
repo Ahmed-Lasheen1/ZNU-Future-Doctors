@@ -759,12 +759,22 @@ export default function MCQ({ dark }: { dark: boolean }) {
                     color: pt.cobalt, textShadow: EXAM_LOW_SHADOW, fontSize: 13, fontWeight: 700, letterSpacing: 1.5
                   }}>NEXT</button>
                 ) : (
-                  <button onClick={submitQuiz} disabled={answeredCount < total} className="exam-btn" style={{
-                    background: 'transparent', border: 'none',
-                    cursor: answeredCount < total ? 'not-allowed' : 'pointer',
-                    color: answeredCount < total ? 'rgba(245,250,255,0.35)' : pt.cobalt,
-                    textShadow: EXAM_LOW_SHADOW, fontSize: 13, fontWeight: 800, letterSpacing: 1.5
-                  }}>{answeredCount < total ? `${total - answeredCount} LEFT` : 'SUBMIT'}</button>
+                  <button
+                    onClick={() => {
+                      const remaining = total - answeredCount
+                      if (remaining > 0) {
+                        const proceed = window.confirm(
+                          `${remaining} question${remaining === 1 ? '' : 's'} left unanswered — submit the exam anyway?`
+                        )
+                        if (!proceed) return
+                      }
+                      submitQuiz()
+                    }}
+                    className="exam-btn"
+                    style={{
+                      background: 'transparent', border: 'none', cursor: 'pointer',
+                      color: pt.cobalt, textShadow: EXAM_LOW_SHADOW, fontSize: 13, fontWeight: 800, letterSpacing: 1.5
+                    }}>SUBMIT</button>
                 )}
               </div>
             </>

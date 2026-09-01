@@ -289,19 +289,26 @@ export default function NavMenu({ dark, toggleTheme, align = 'left' }) {
             />
           </div>
 
-          {/* Navigation — labels use the per-letter flip reveal on
-              hover, the signature move borrowed from the liquid
-              floating-menu reference. */}
-          {navItems.map(item => (
-            <GlassRow key={item.href} dark={dark} radius={16} hoverBg={rowHover} onClick={() => goTo(item.href)}
-              role="button" tabIndex={open ? 0 : -1}
-              onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); goTo(item.href) } }}
-              style={{ cursor: 'pointer' }}>
-              <div style={{ padding: '13px 16px' }}>
-                <FlipLabel label={item.label} color={pt.text} weight={item.href === '/' ? 800 : 600} size={14} />
-              </div>
-            </GlassRow>
-          ))}
+          {/* Navigation — icon before label, same icon set (and
+              accent colors) as Home's own tool cards. Hover is the
+              GlassRow pop now, not a letter animation. */}
+          {navItems.map(item => {
+            const Icon = item.Icon
+            const iconColor = pt[item.accent] || pt.text
+            return (
+              <GlassRow key={item.href} dark={dark} radius={16} onClick={() => goTo(item.href)}
+                role="button" tabIndex={open ? 0 : -1}
+                onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); goTo(item.href) } }}
+                style={{ cursor: 'pointer' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '13px 16px' }}>
+                  <Icon color={iconColor} size={17} />
+                  <span style={{ color: pt.text, fontWeight: item.href === '/' ? 800 : 600, fontSize: 14, fontFamily: 'inherit' }}>
+                    {item.label}
+                  </span>
+                </div>
+              </GlassRow>
+            )
+          })}
 
           {/* Theme switch */}
           <div style={{ display: 'flex', justifyContent: 'center', padding: '4px 0' }}>
@@ -310,7 +317,7 @@ export default function NavMenu({ dark, toggleTheme, align = 'left' }) {
 
           {/* Sign out */}
           {user && (
-            <GlassRow dark={dark} radius={16} hoverBg={dangerHover} onClick={handleSignOut}
+            <GlassRow dark={dark} radius={16} onClick={handleSignOut}
               role="button" tabIndex={open ? 0 : -1}
               onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleSignOut() } }}
               style={{ cursor: 'pointer' }}>
