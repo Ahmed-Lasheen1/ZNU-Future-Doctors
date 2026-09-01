@@ -1,29 +1,104 @@
-import PulseBrand from './PulseBrand'
-import NavMenu from '../NavMenu'
+// src/components/pulse/PulseBrand.tsx
+import { motion } from 'framer-motion'
+import { getPulseTheme, pulseFonts, pulseType } from '../../premiumTheme'
 
-// Fixed, transparent brand bar used on every page except Home —
-// identical markup, sizing, and copy to Home's own fixed header block
-// (see Home.tsx), just without Home's staggered entrance animation
-// (instant timing instead, since this bar persists across navigation
-// rather than playing once on first load).
-export default function PulseOverlayHeader({ dark, toggleTheme }) {
-  return (
-    <div style={{
-      position: 'fixed', top: 0, left: 0, right: 0,
-      zIndex: 500, pointerEvents: 'none'
-    }}>
-      <div className="pulse-wide" style={{
-        paddingTop: 'max(16px, env(safe-area-inset-top))',
-        paddingBottom: 16,
-        pointerEvents: 'auto'
-      }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-          <PulseBrand
-            dark={dark}
-            animation={{ logoDelay: 0, wordsStart: 0, wordStagger: 0, taglineDelay: 0 }}
-          />
-          <NavMenu dark={dark} toggleTheme={toggleTheme} align="right" />
+const LOGO_SRC = '/icon-192.png'
+
+interface BrandAnimationTiming {
+  logoDelay: number
+  wordsStart: number
+  wordStagger: number
+  taglineDelay: number
+}
+
+interface PulseBrandProps {
+  dark: boolean
+  logoSize?: number
+  fontSize?: number
+  // Omit entirely for a static render (used by PulseHeader on every
+  // non-Home page). Pass Home's own timeline to get its entrance
+  // animation (logo slides in, "ZNU"/"PULSE" stagger in word by word,
+  // tagline fades in last) — this is Home's actual animation, not a
+  // new one; it's just parameterized so both call sites share the
+  // same markup instead of duplicating it.
+  animation?: BrandAnimationTiming
+}
+
+const brandWordItem = {
+  hidden: { opacity: 0, y: 10 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: 'easeOut' } },
+}
+
+export default function PulseBrand({ dark, logoSize = 44, fontSize = 20, animation }: PulseBrandProps) {
+  const pt = getPulseTheme(dark)
+
+  if (!animation) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div style={{
+          width: logoSize, height: logoSize, flexShrink: 0,
+          borderRadius: 10, overflow: 'hidden',
+          background: pt.surfaceFlat, border: `1px solid ${pt.cobaltBorder}`,
+        }}>
+          <img src={LOGO_SRC} alt="ZNU Pulse" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
         </div>
+        <div style={{
+          ...pulseType.sectionTitle,
+          fontFamily: pulseFonts.display, fontWeight: 800, fontSize, letterSpacing: 1,
+          color: pt.textPrimary, lineHeight: 1
+        }}>
+          ZNU <span style={{ color: pt.cobalt }}>PULSE</span>
+        </div>
+      </div>
+    )
+  }
+
+  const { logoDelay, wordsStart, wordStagger, taglineDelay } = animation
+  const brandWordsContainer = {
+    hidden: {},
+    visible: { transition: { delayChildren: wordsStart, staggerChildren: wordStagger } },
+  }
+
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+      <motion.div
+        initial={{ opacity: 0, x: -20 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.7, delay: logoDelay }}
+        style={{
+          width: logoSize, height: logoSize, flexShrink: 0,
+          borderRadius: 12, overflow: 'hidden',
+          background: pt.surfaceFlat, border: `1px solid ${pt.cobaltBorder}`,
+        }}
+      >
+        <img src={LOGO_SRC} alt="ZNU Pulse" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+      </motion.div>
+
+      <div>
+        <motion.div
+          initial="hidden"
+          animate="visible"
+          variants={brandWordsContainer}
+          style={{
+            ...pulseType.sectionTitle,
+            fontFamily: pulseFonts.display, fontWeight: 800, fontSize, letterSpacing: 1.2,
+            color: pt.textPrimary, lineHeight: 1
+          }}
+        >
+          <motion.span variants={brandWordItem} style={{ display: 'inline-block' }}>ZNU</motion.span>
+          {' '}
+          <motion.span variants={brandWordItem} style={{ display: 'inline-block', color: pt.cobalt }}>PULSE</motion.span>
+        </motion.div>
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.55, delay: taglineDelay }}
+          style={{
+            ...pulseType.sectionLabel,
+            fontSize: 9, letterSpacing: 2.5,
+            color: pt.textMuted, marginTop: 5,
+          }}
+        >For Future Doctors</motion.div>
       </div>
     </div>
   )
