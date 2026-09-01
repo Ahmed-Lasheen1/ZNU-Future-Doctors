@@ -621,10 +621,10 @@ export default function MCQ({ dark }: { dark: boolean }) {
                 accent={MCQ_ACCENT}
               />
 
-              <LiquidGlassCard dark={dark} delay={0} style={{ padding: '24px 24px' }}>
+              <LiquidGlassCard dark={dark} delay={0} style={{ padding: 'clamp(22px, 3vw, 40px) clamp(22px, 3.5vw, 44px)' }}>
                 {currentQuestion.source && <div style={{ marginBottom: 12 }}><QuestionSourceBadge source={currentQuestion.source} /></div>}
 
-                <p style={{ ...pulseType.cardTitle, fontSize: 18, color: pt.textPrimary, margin: '0 0 20px', lineHeight: 1.45 }}>
+                <p style={{ ...pulseType.cardTitle, fontSize: 'clamp(18px, 1.7vw, 23px)', color: pt.textPrimary, margin: '0 0 20px', lineHeight: 1.5 }}>
                   {currentQuestion.question}
                 </p>
 
@@ -639,20 +639,20 @@ export default function MCQ({ dark }: { dark: boolean }) {
                       onClick={() => selectAnswer(safeIndex, label)}
                       style={{
                         ['--opt-hover-bg' as any]: selected ? `${pt.cobalt}20` : hoverBg,
-                        display: 'flex', alignItems: 'center', gap: 12,
+                        display: 'flex', alignItems: 'center', gap: 14,
                         background: selected ? `${pt.cobalt}18` : (dark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)'),
                         border: `1.5px solid ${selected ? pt.cobalt : pt.border}`,
-                        borderRadius: 14, padding: '14px 16px', marginBottom: 10,
+                        borderRadius: 14, padding: 'clamp(14px, 1.6vw, 20px) clamp(16px, 2vw, 24px)', marginBottom: 12,
                         cursor: 'pointer'
                       }}>
                       <span style={{
-                        width: 28, height: 28, borderRadius: '50%', flexShrink: 0,
+                        width: 'clamp(28px, 2.2vw, 34px)', height: 'clamp(28px, 2.2vw, 34px)', borderRadius: '50%', flexShrink: 0,
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         background: selected ? pt.cobalt : 'transparent',
                         border: `1.5px solid ${selected ? pt.cobalt : pt.border}`,
-                        color: selected ? '#fff' : pt.sub, fontWeight: 800, fontSize: 12
+                        color: selected ? '#fff' : pt.sub, fontWeight: 800, fontSize: 'clamp(12px, 1vw, 14px)'
                       }}>{label.toUpperCase()}</span>
-                      <span style={{ color: selected ? pt.cobalt : pt.text, fontSize: 14, fontWeight: 600 }}>{opt}</span>
+                      <span style={{ color: selected ? pt.cobalt : pt.text, fontSize: 'clamp(14px, 1.15vw, 16px)', fontWeight: 600, lineHeight: 1.4 }}>{opt}</span>
                     </div>
                   )
                 })}
@@ -706,7 +706,7 @@ export default function MCQ({ dark }: { dark: boolean }) {
                   {quizMode === 'mock' ? 'MOCK EXAM COMPLETE' : quizMode === 'retry' ? 'RETRY COMPLETE' : 'PRACTICE COMPLETE'}
                 </div>
                 <div style={{
-                  fontFamily: pulseFonts.display, fontWeight: 800, fontSize: 'clamp(64px, 16vw, 92px)',
+                  fontFamily: pulseFonts.display, fontWeight: 800, fontSize: 'clamp(64px, 14vw, 140px)',
                   lineHeight: 1, color: EXAM_LOW_TEXT, textShadow: '0 2px 14px rgba(1,12,74,0.55)'
                 }}>{percent}</div>
                 <div style={{ fontSize: 13, fontWeight: 700, letterSpacing: 1, color: EXAM_LOW_TEXT, textShadow: EXAM_LOW_SHADOW, marginTop: 6 }}>
