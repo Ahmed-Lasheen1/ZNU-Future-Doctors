@@ -7,7 +7,7 @@ import { fetchModulesSorted } from './lib/modules'
 import { subscribeOnlinePresence } from './lib/onlinePresence'
 import ErrorBoundary from './components/ErrorBoundary'
 import ToastProvider from './components/ToastProvider'
-import PulseHeader from './components/pulse/PulseHeader'
+import PulseOverlayHeader from './components/pulse/PulseOverlayHeader'
 import { ThemeContext, AuthContext, ModulesContext } from './contexts'
 import Home from './pages/Home'
 const Checklist = lazy(() => import('./pages/Checklist'))
@@ -66,14 +66,20 @@ function ScrollToTop() {
 
 // Home renders its own fixed, full-bleed brand header + NavMenu
 // directly inline (its content scrolls behind a transparent overlay).
-// Every other route gets the same brand identity — logo + "ZNU PULSE"
-// left, NavMenu right — via the shared PulseHeader component instead,
-// so both are visually the same design language without duplicating
-// Home's specific fixed-overlay layout onto pages that don't need it.
+// Every other route now gets the exact same treatment via
+// PulseOverlayHeader — a fixed, transparent, non-glass bar with no
+// scroll-triggered chrome — plus a spacer matching Home's own internal
+// spacer, so page content starts right below where the bar sits
+// instead of being hidden underneath it.
 function SiteHeader({ dark, toggleTheme }) {
   const location = useLocation()
   if (location.pathname === '/') return null
-  return <PulseHeader dark={dark} toggleTheme={toggleTheme} />
+  return (
+    <>
+      <PulseOverlayHeader dark={dark} toggleTheme={toggleTheme} />
+      <div style={{ height: 'calc(76px + env(safe-area-inset-top))' }} />
+    </>
+  )
 }
 
 export default function App() {
