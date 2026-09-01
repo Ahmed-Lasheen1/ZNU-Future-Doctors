@@ -1,13 +1,11 @@
 import PulseBrand from './PulseBrand'
 import NavMenu from '../NavMenu'
 
-// Fixed, transparent brand bar used on every page except Home — no
-// glass background, no border, no sticky-scroll shadow. Content
-// scrolls underneath it, exactly like Home's own fixed overlay header
-// (see Home.tsx). Replaces the old sticky glass PulseHeader.
-//
-// Callers must also render a spacer the same height as this bar so
-// page content doesn't start out hidden underneath it — see App.jsx.
+// Fixed, transparent brand bar used on every page except Home —
+// identical markup, sizing, and copy to Home's own fixed header block
+// (see Home.tsx), just without Home's staggered entrance animation
+// (instant timing instead, since this bar persists across navigation
+// rather than playing once on first load).
 export default function PulseOverlayHeader({ dark, toggleTheme }) {
   return (
     <div style={{
@@ -19,8 +17,11 @@ export default function PulseOverlayHeader({ dark, toggleTheme }) {
         paddingBottom: 16,
         pointerEvents: 'auto'
       }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
-          <PulseBrand dark={dark} logoSize={38} fontSize={17} />
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+          <PulseBrand
+            dark={dark}
+            animation={{ logoDelay: 0, wordsStart: 0, wordStagger: 0, taglineDelay: 0 }}
+          />
           <NavMenu dark={dark} toggleTheme={toggleTheme} align="right" />
         </div>
       </div>
