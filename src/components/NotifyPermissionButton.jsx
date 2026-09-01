@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { getTheme } from '../theme'
 import { useAuth } from '../contexts'
 import { subscribeToPush } from '../lib/pushNotifications'
@@ -20,77 +20,108 @@ export default function NotifyPermissionButton({ dark, label = '🔔 Enable noti
   const [busy, setBusy] = useState(false)
   const [needsAction, setNeedsAction] = useState(false)
   const [checked, setChecked] = useState(false)
+  // Tracks Notification.permission itself, not just derived UI state —
+  // re-read on every check() call so a permission change made from the
+  // browser's own site-settings UI (not this button) is picked up the
+  // next time the tab becomes active again, instead of only at mount.
+  const [permission, setPermission] = useState(() =>
+    typeof window !== 'undefined' && 'Notification' in window ? Notification.permission : null
+  )
 
   const supported = typeof window !== 'undefined' && 'Notification' in window && 'serviceWorker' in navigator && 'PushManager' in window
-  const permission = supported ? Notification.permission : null
+
+  const check = useCallback(async () => {
+    if (!supported) { setChecked(true); return }
+
+    const currentPermission = Notification.permission
+    setPermission(currentPermission)
+
+    if (currentPermission === 'default') {
+      setNeedsAction(true)
+      setChecked(true)
+      return
+    }
+
+    if (currentPermission === 'denied') {
+      setNeedsAction(false)
+      setChecked(true)
+      return
+    }
+
+    // permission === 'granted' — verify against the server, not a
+    // local flag, since local storage isn't reliable on iOS PWAs.
+    try {
+      const reg = await navigator.serviceWorker.ready
+      const sub = await reg.pushManager.getSubscription()
+
+      if (!sub) {
+        // Browser says granted but has no actual subscription object
+        // (can happen after iOS clears things) — needs a fresh one.
+        setNeedsAction(true)
+        setChecked(true)
+        return
+      }
+
+      // Uses the push_subscription_exists RPC rather than a direct
+      // table select — push_subscriptions no longer grants broad
+      // SELECT (a plain select would only ever see a row you already
+      // own, never an unclaimed one, so it couldn't tell "not saved
+      // yet" apart from "saved but not claimed by me yet"). The RPC
+      // answers the actual question this check needs — "does a row
+      // for this endpoint exist at all" — without exposing anyone's
+      // keys.
+      const { data: exists, error } = await supabase.rpc('push_subscription_exists', { p_endpoint: sub.endpoint })
+
+      if (!error && exists) {
+        // Confirmed present on the server — nothing to do.
+        setNeedsAction(false)
+      } else {
+        // Either the row genuinely isn't there, or this device's
+        // subscription hasn't been claimed under the signed-in
+        // account yet — try to (re)save/claim it silently once
+        // before bothering the student.
+        const result = await subscribeToPush()
+        setNeedsAction(!result.success)
+      }
+      setChecked(true)
+    } catch {
+      setNeedsAction(true)
+      setChecked(true)
+    }
+  }, [supported])
 
   useEffect(() => {
     let cancelled = false
 
-    async function check() {
-      if (!supported) { if (!cancelled) setChecked(true); return }
-
-      if (permission === 'default') {
-        if (!cancelled) { setNeedsAction(true); setChecked(true) }
-        return
-      }
-
-      if (permission === 'denied') {
-        if (!cancelled) setChecked(true)
-        return
-      }
-
-      // permission === 'granted' — verify against the server, not a
-      // local flag, since local storage isn't reliable on iOS PWAs.
-      try {
-        const reg = await navigator.serviceWorker.ready
-        const sub = await reg.pushManager.getSubscription()
-
-        if (!sub) {
-          // Browser says granted but has no actual subscription object
-          // (can happen after iOS clears things) — needs a fresh one.
-          if (!cancelled) { setNeedsAction(true); setChecked(true) }
-          return
-        }
-
-        // Uses the push_subscription_exists RPC rather than a direct
-        // table select — push_subscriptions no longer grants broad
-        // SELECT (a plain select would only ever see a row you already
-        // own, never an unclaimed one, so it couldn't tell "not saved
-        // yet" apart from "saved but not claimed by me yet"). The RPC
-        // answers the actual question this check needs — "does a row
-        // for this endpoint exist at all" — without exposing anyone's
-        // keys.
-        const { data: exists, error } = await supabase.rpc('push_subscription_exists', { p_endpoint: sub.endpoint })
-
-        if (cancelled) return
-
-        if (!error && exists) {
-          // Confirmed present on the server — nothing to do.
-          setNeedsAction(false)
-        } else {
-          // Either the row genuinely isn't there, or this device's
-          // subscription hasn't been claimed under the signed-in
-          // account yet — try to (re)save/claim it silently once
-          // before bothering the student.
-          const result = await subscribeToPush()
-          setNeedsAction(!result.success)
-        }
-        setChecked(true)
-      } catch {
-        if (!cancelled) { setNeedsAction(true); setChecked(true) }
-      }
+    async function run() {
+      if (cancelled) return
+      await check()
     }
+    run()
 
-    check()
-    return () => { cancelled = true }
-  }, [supported, permission, user?.id])
+    // Re-check whenever the tab regains focus/visibility — catches a
+    // permission grant/denial made from the browser's own site-
+    // settings UI while this tab was backgrounded, which the original
+    // mount-only check would otherwise miss until a full reload.
+    function onVisibilityChange() {
+      if (document.visibilityState === 'visible') check()
+    }
+    document.addEventListener('visibilitychange', onVisibilityChange)
+    window.addEventListener('focus', onVisibilityChange)
+
+    return () => {
+      cancelled = true
+      document.removeEventListener('visibilitychange', onVisibilityChange)
+      window.removeEventListener('focus', onVisibilityChange)
+    }
+  }, [check, user?.id])
 
   async function handleClick() {
     setBusy(true)
     let perm = permission
     if (perm === 'default') {
       perm = await Notification.requestPermission()
+      setPermission(perm)
     }
 
     if (perm !== 'granted') {

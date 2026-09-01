@@ -23,6 +23,34 @@ const statNumStyle = { fontFamily: pulseFonts.display, fontWeight: 800, fontSize
 const SECTION_GAP = 22
 const TASK_GAP = 16
 
+const CHECKLIST_KEY_PREFIX = 'checklist_'
+
+// Guest (no-account) checklists live one localStorage key per module
+// (checklist_<moduleId>), created the first time that module's tab is
+// opened. Nothing ever removed those keys, so if a module is later
+// deleted or replaced by an admin, that guest's old checklist for it
+// stays in their browser forever — dead weight with no UI path to
+// reach or clear it. Run once modules have loaded: drop any
+// checklist_* key whose module id isn't in the current module list.
+// Signed-in users are unaffected by this either way — their data
+// lives in Supabase, and this function never touches anything but
+// checklist_* keys, which only guests ever write.
+function pruneOrphanedGuestChecklists(validModuleIds: Set<string>) {
+  try {
+    const keysToRemove: string[] = []
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i)
+      if (!key || !key.startsWith(CHECKLIST_KEY_PREFIX)) continue
+      const moduleId = key.slice(CHECKLIST_KEY_PREFIX.length)
+      if (!validModuleIds.has(moduleId)) keysToRemove.push(key)
+    }
+    keysToRemove.forEach(key => localStorage.removeItem(key))
+  } catch {
+    // localStorage can throw in private-browsing/storage-full edge
+    // cases — never let cleanup itself break the page.
+  }
+}
+
 export default function Checklist({ dark }: { dark: boolean }) {
   const { user } = useAuth()
   const navigate = useNavigate()
@@ -49,6 +77,16 @@ export default function Checklist({ dark }: { dark: boolean }) {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [modulesLoaded, modules])
+
+  // Runs once per full page load, only after the real module list has
+  // actually arrived (never against a still-empty/loading list, which
+  // would wrongly look like "every module is orphaned").
+  useEffect(() => {
+    if (!modulesLoaded) return
+    const validIds = new Set((modules as any[]).map(m => m.id))
+    pruneOrphanedGuestChecklists(validIds)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [modulesLoaded])
 
   useEffect(() => { if (activeModule) fetchTasks() }, [activeModule, user])
 
