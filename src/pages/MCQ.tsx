@@ -58,6 +58,20 @@ function StatChip({ label, value, color }: { label: string; value: string | numb
   )
 }
 
+// Generic subject/lesson context tag, same pill treatment as
+// QuestionSourceBadge — shown next to it based on how broad the
+// current quiz is (see showSubjectTag/showLessonTag below).
+function InfoTag({ label, color }: { label: string; color: string }) {
+  return (
+    <span style={{
+      display: 'inline-flex', alignItems: 'center', gap: 4,
+      background: `${color}20`, border: `1px solid ${color}40`,
+      color, borderRadius: 20, padding: '2px 10px',
+      fontSize: 11, fontWeight: 700, whiteSpace: 'nowrap'
+    }}>{label}</span>
+  )
+}
+
 export default function MCQ({ dark }: { dark: boolean }) {
   const { user, fetchProfile } = useAuth() as any
   const { modules, modulesLoaded, modulesError } = useModules() as any
@@ -67,6 +81,7 @@ export default function MCQ({ dark }: { dark: boolean }) {
   const pt = getPulseTheme(dark)
 
   const [subjects, setSubjects] = useState<any[]>([])
+  const [lessons, setLessons] = useState<any[]>([])
   const [questions, setQuestions] = useState<any[]>([])
   const [answeredIds, setAnsweredIds] = useState<Set<string>>(new Set())
   const [activeModule, setActiveModule] = useState<string | null>(null)
@@ -98,6 +113,7 @@ export default function MCQ({ dark }: { dark: boolean }) {
 
   useEffect(() => {
     fetchSubjects()
+    fetchLessons()
     return () => clearInterval(timerRef.current)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -181,6 +197,17 @@ export default function MCQ({ dark }: { dark: boolean }) {
     } else if (data) {
       setSubjects(data)
       localStorage.setItem('mcq_subjects_cache', JSON.stringify(data))
+    }
+  }
+
+  async function fetchLessons() {
+    const { data, error } = await supabase.from('lessons').select('id, title, subject_id')
+    if (error) {
+      const cached = localStorage.getItem('mcq_lessons_cache')
+      if (cached) setLessons(JSON.parse(cached))
+    } else if (data) {
+      setLessons(data)
+      localStorage.setItem('mcq_lessons_cache', JSON.stringify(data))
     }
   }
 
@@ -561,7 +588,7 @@ export default function MCQ({ dark }: { dark: boolean }) {
           transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
           style={{
             position: 'relative', zIndex: 1,
-            maxWidth: 'min(920px, 94vw)', margin: '0 auto',
+            maxWidth: 'min(1080px, 92vw)', margin: '0 auto',
             padding: '12px clamp(16px, 3vw, 36px) max(16px, env(safe-area-inset-bottom))', fontFamily: pulseFonts.body
           }}
         >
@@ -636,7 +663,31 @@ export default function MCQ({ dark }: { dark: boolean }) {
                 display: 'flex', flexDirection: 'column', justifyContent: 'center',
                 overflowY: 'auto', overflowX: 'hidden', marginBottom: 14
               }}>
-                {currentQuestion.source && <div style={{ marginBottom: 12, flexShrink: 0 }}><QuestionSourceBadge source={currentQuestion.source} /></div>}
+                {(() => {
+                  // Real data only: each tag is resolved from the
+                  // current question's own subject_id/lesson_id against
+                  // the subjects/lessons already fetched — nothing
+                  // invented. Which tags show depends on how broad this
+                  // quiz is: a mock exam spans every subject, so subject
+                  // + lesson + source all help orient the student;
+                  // practicing one subject already makes the subject
+                  // obvious, so just lesson + source; a lesson-filtered
+                  // quiz (detected via the `lesson` URL param, since it
+                  // still runs under the general 'retry' quiz mode)
+                  // makes both redundant — source only.
+                  const subj = subjects.find(s => s.id === currentQuestion.subject_id)
+                  const lesson = lessons.find(l => l.id === currentQuestion.lesson_id)
+                  const showSubjectTag = quizMode === 'mock' && !!subj
+                  const showLessonTag = !lessonFilter && !!lesson
+                  if (!showSubjectTag && !showLessonTag && !currentQuestion.source) return null
+                  return (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 14, flexShrink: 0 }}>
+                      {showSubjectTag && <InfoTag label={subj.name} color={subj.color || '#34d399'} />}
+                      {showLessonTag && <InfoTag label={lesson.title} color="#818cf8" />}
+                      {currentQuestion.source && <QuestionSourceBadge source={currentQuestion.source} />}
+                    </div>
+                  )
+                })()}
 
                 <p style={{
                   ...pulseType.cardTitle, fontSize: 'clamp(18px, 1.8vw, 24px)', color: pt.textPrimary,
