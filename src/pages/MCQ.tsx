@@ -25,13 +25,35 @@ const MOCK_MINUTES = 36
 // used on Review.tsx) — reused, not invented.
 const MCQ_ACCENT = '#e2725b'
 
+// ── Gradient-aware text colors ──────────────────────────────────────
+// PulseBackground's gradient is fixed to the *viewport* (not the
+// scrolled page) and always runs pale blue (top) → dark navy (bottom),
+// in both themes. Anything rendered directly on it (not inside a
+// LiquidGlassCard, which has its own backing) needs colors chosen for
+// whichever zone it actually sits in, not the theme's usual card-text
+// colors. We force a scroll-to-top whenever a quiz starts or finishes
+// (see startTimer-adjacent calls below) so these zone assumptions —
+// "the mini status header sits in the light top zone", "everything
+// below the first divider sits in the medium/dark zone" — actually
+// hold in practice.
+const EXAM_TOP_TEXT = '#0a1f3d'                 // dark navy — for the light top of the gradient
+const EXAM_TOP_TEXT_MUTED = 'rgba(10,31,61,0.62)'
+const EXAM_TOP_AMBER = '#b45309'                // deepened amber — still legible on pale blue
+const EXAM_TOP_RED = '#b91c1c'                  // deepened red — still legible on pale blue
+const EXAM_LOW_TEXT = '#f5faff'                 // near-white — for the medium/dark lower gradient
+const EXAM_LOW_TEXT_MUTED = 'rgba(245,250,255,0.72)'
+const EXAM_LOW_SHADOW = '0 1px 6px rgba(1,12,74,0.5)'
+const EXAM_DIVIDER = 'rgba(255,255,255,0.28)'   // reads on both light and dark portions
+
 // Small labeled number used on the results screen ("CORRECT 28",
 // "INCORRECT 8", "TIME 31:42") — plain typography, no chart chrome.
+// Lives in the lower/results zone, so it always carries the legibility
+// shadow regardless of the color passed in for its accent.
 function StatChip({ label, value, color }: { label: string; value: string | number; color: string }) {
   return (
     <div style={{ textAlign: 'center' }}>
-      <div style={{ fontFamily: pulseFonts.display, fontWeight: 800, fontSize: 22, color }}>{value}</div>
-      <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1.5, color: color, opacity: 0.7, marginTop: 2 }}>{label}</div>
+      <div style={{ fontFamily: pulseFonts.display, fontWeight: 800, fontSize: 22, color, textShadow: EXAM_LOW_SHADOW }}>{value}</div>
+      <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1.5, color, opacity: 0.75, marginTop: 2, textShadow: EXAM_LOW_SHADOW }}>{label}</div>
     </div>
   )
 }
@@ -250,10 +272,9 @@ export default function MCQ({ dark }: { dark: boolean }) {
 
   // Unified exam timer — counts down for mock (urgency escalates as it
   // runs low), counts up for practice/retry (so a timer is always
-  // visible during an exam, per exam-mode spec, without needing a
-  // fixed target). Always clears any previous interval first, since
-  // "Try Again" can start a fresh quiz without the old one having
-  // stopped its own timer yet.
+  // visible during an exam). Always clears any previous interval
+  // first, since "Try Again" can start a fresh quiz before the old
+  // one's own timer has stopped.
   function startTimer(startedAt: number, mode: string) {
     clearInterval(timerRef.current)
     const tick = () => {
@@ -286,6 +307,9 @@ export default function MCQ({ dark }: { dark: boolean }) {
 
     quizStartedAtRef.current = Date.now()
     startTimer(quizStartedAtRef.current, type)
+    // Entering exam mode should start from a known position — the mini
+    // status header assumes it's sitting near the top of the gradient.
+    window.scrollTo({ top: 0 })
   }
 
   function startRetryQuiz(list: any[]) {
@@ -300,6 +324,7 @@ export default function MCQ({ dark }: { dark: boolean }) {
     quizStartedAtRef.current = Date.now()
     startTimer(quizStartedAtRef.current, 'retry')
     loadFlagsFor(list.map(q => q.id)).then(setFlaggedIds)
+    window.scrollTo({ top: 0 })
   }
 
   async function resumeExam() {
@@ -316,6 +341,7 @@ export default function MCQ({ dark }: { dark: boolean }) {
 
     startTimer(resumeData.startedAt, resumeData.quizMode)
     setResumeData(null)
+    window.scrollTo({ top: 0 })
   }
 
   async function discardResume() {
@@ -390,6 +416,8 @@ export default function MCQ({ dark }: { dark: boolean }) {
     setResults(resultMap)
     setGrading(false)
     setSubmitted(true)
+    // Results screen also assumes it starts near the top of the gradient.
+    window.scrollTo({ top: 0 })
 
     clearActiveExam(user)
 
@@ -466,18 +494,19 @@ export default function MCQ({ dark }: { dark: boolean }) {
   const formatTime = (s: number) => `${Math.floor(s / 60).toString().padStart(2, '0')}:${(s % 60).toString().padStart(2, '0')}`
   const hoverTint = dark ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.35)'
 
-  // Gradual urgency for the mock-exam countdown — normal, then amber
-  // under ~28% remaining (~10 min of 36), then red under ~14% (~5
-  // min). No sudden full-screen warning, just a color shift.
+  // Gradual urgency for the mock-exam countdown — normal (dark navy,
+  // since the timer sits in the light top zone), then a deepened amber
+  // under ~28% remaining (~10 min of 36), then a deepened red under
+  // ~14% (~5 min). No sudden full-screen warning, just a color shift.
   function timerColor() {
-    if (quizMode !== 'mock') return pt.textPrimary
+    if (quizMode !== 'mock') return EXAM_TOP_TEXT
     const pctLeft = timeLeft / (MOCK_MINUTES * 60)
-    if (pctLeft <= 0.14) return pt.danger
-    if (pctLeft <= 0.28) return pt.amber
-    return pt.textPrimary
+    if (pctLeft <= 0.14) return EXAM_TOP_RED
+    if (pctLeft <= 0.28) return EXAM_TOP_AMBER
+    return EXAM_TOP_TEXT
   }
 
-  // ── Exam-mode overlay (taking + results) ───────────────────────────
+  // ── Exam mode (taking + results) ────────────────────────────────────
   if (quizMode) {
     const score = submitted ? getScore() : 0
     const total = quizQuestions.length
@@ -489,8 +518,8 @@ export default function MCQ({ dark }: { dark: boolean }) {
     const answeredCount = Object.keys(answers).length
     const isLastQuestion = safeIndex === total - 1
 
-    // Real per-subject breakdown from this session's own results —
-    // no invented numbers. Only subjects actually present among the
+    // Real per-subject breakdown from this session's own results — no
+    // invented numbers. Only subjects actually present among the
     // graded questions are included.
     const subjectStats = submitted ? (() => {
       const map: Record<string, { name: string; total: number; correct: number }> = {}
@@ -513,12 +542,7 @@ export default function MCQ({ dark }: { dark: boolean }) {
     const weakestSubject = subjectStats.find(s => s.incorrect > 0) || null
 
     return (
-      <motion.div
-        initial={{ opacity: 0, scale: 0.985 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-        style={{ position: 'fixed', inset: 0, zIndex: 2000, overflowY: 'auto' }}
-      >
+      <div style={{ position: 'relative', minHeight: '100vh' }}>
         <PulseBackground />
         <style>{`
           .exam-option { transition: transform 0.12s ease, background 0.15s ease, border-color 0.15s ease; }
@@ -528,21 +552,28 @@ export default function MCQ({ dark }: { dark: boolean }) {
           .exam-btn:active { transform: scale(0.97); }
         `}</style>
 
-        <div style={{ position: 'relative', zIndex: 1, maxWidth: 640, margin: '0 auto', padding: '0 20px 40px', fontFamily: pulseFonts.body }}>
-
-          {/* Minimal header — label, exit, and either question/timer or a results/grading label */}
-          <div style={{ position: 'relative', textAlign: 'center', paddingTop: 'max(18px, env(safe-area-inset-top))', paddingBottom: 14 }}>
+        {/* Short entrance — a quick fade/slide, not a takeover. The
+            real site header (rendered above this by App.jsx) stays
+            exactly where it is; exam mode is just this page's content. */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+          style={{ position: 'relative', zIndex: 1, maxWidth: 640, margin: '0 auto', padding: '20px 20px 100px', fontFamily: pulseFonts.body }}
+        >
+          {/* Minimal status header — sits in the gradient's light top zone */}
+          <div style={{ position: 'relative', textAlign: 'center', paddingBottom: 14 }}>
             <button onClick={stopQuiz} className="exam-btn" aria-label="Exit exam" style={{
-              position: 'absolute', top: 'max(14px, env(safe-area-inset-top))', right: 0,
+              position: 'absolute', top: 0, right: 0,
               background: 'transparent', border: 'none', cursor: 'pointer',
-              color: pt.textMuted, fontSize: 11, fontWeight: 700, letterSpacing: 1
+              color: EXAM_TOP_TEXT_MUTED, fontSize: 11, fontWeight: 700, letterSpacing: 1
             }}>✕ EXIT</button>
 
-            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 3, color: pt.textMuted }}>ZNU · EXAM MODE</div>
+            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 3, color: EXAM_TOP_TEXT_MUTED }}>ZNU · EXAM MODE</div>
 
             {!submitted && !grading && total > 0 && (
               <>
-                <div style={{ fontSize: 13, fontWeight: 700, letterSpacing: 1, color: pt.sub, marginTop: 8 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, letterSpacing: 1, color: EXAM_TOP_TEXT, marginTop: 8 }}>
                   QUESTION {safeIndex + 1} / {total}
                 </div>
                 <div style={{
@@ -554,10 +585,10 @@ export default function MCQ({ dark }: { dark: boolean }) {
               </>
             )}
             {grading && (
-              <div style={{ fontSize: 13, fontWeight: 700, letterSpacing: 1, color: pt.sub, marginTop: 8 }}>GRADING…</div>
+              <div style={{ fontSize: 13, fontWeight: 700, letterSpacing: 1, color: EXAM_TOP_TEXT, marginTop: 8 }}>GRADING…</div>
             )}
             {submitted && (
-              <div style={{ fontSize: 13, fontWeight: 700, letterSpacing: 1, color: pt.sub, marginTop: 8 }}>RESULTS</div>
+              <div style={{ fontSize: 13, fontWeight: 700, letterSpacing: 1, color: EXAM_TOP_TEXT, marginTop: 8 }}>RESULTS</div>
             )}
           </div>
 
@@ -568,13 +599,13 @@ export default function MCQ({ dark }: { dark: boolean }) {
           )}
 
           {grading && (
-            <div style={{ textAlign: 'center', padding: 24, color: pt.sub, fontSize: 14 }}>Grading...</div>
+            <div style={{ textAlign: 'center', padding: 24, color: EXAM_LOW_TEXT, textShadow: EXAM_LOW_SHADOW, fontSize: 14 }}>Grading...</div>
           )}
 
           {/* ── Active taking: single-question focus ───────────────── */}
           {!submitted && !grading && currentQuestion && (
             <>
-              <div style={{ height: 1, background: pt.border, opacity: 0.5, marginBottom: 20 }} />
+              <div style={{ height: 1, background: EXAM_DIVIDER, marginBottom: 20 }} />
 
               <QuestionRail
                 total={total}
@@ -623,35 +654,38 @@ export default function MCQ({ dark }: { dark: boolean }) {
                 })}
               </LiquidGlassCard>
 
-              <div style={{ height: 1, background: pt.border, opacity: 0.5, margin: '24px 0 16px' }} />
+              <div style={{ height: 1, background: EXAM_DIVIDER, margin: '24px 0 16px' }} />
 
-              {/* FLAG, then PREVIOUS / NEXT — matches the requested composition */}
+              {/* FLAG, then PREVIOUS / NEXT — sits in the gradient's medium/dark lower zone */}
               <div style={{ textAlign: 'center', marginBottom: 14 }}>
                 <button onClick={() => toggleFlagFor(currentQuestion)} className="exam-btn" style={{
                   background: 'transparent', border: 'none', cursor: 'pointer',
-                  color: flaggedIds.has(currentQuestion.id) ? pt.amber : pt.textMuted,
+                  color: flaggedIds.has(currentQuestion.id) ? pt.amber : EXAM_LOW_TEXT_MUTED,
+                  textShadow: EXAM_LOW_SHADOW,
                   fontSize: 12, fontWeight: 700, letterSpacing: 1.5
                 }}>🚩 {flaggedIds.has(currentQuestion.id) ? 'FLAGGED' : 'FLAG'}</button>
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 'max(20px, env(safe-area-inset-bottom))' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 20 }}>
                 <button onClick={goPrev} disabled={safeIndex === 0} className="exam-btn" style={{
                   background: 'transparent', border: 'none', cursor: safeIndex === 0 ? 'not-allowed' : 'pointer',
-                  color: safeIndex === 0 ? pt.faint : pt.sub, fontSize: 13, fontWeight: 700, letterSpacing: 1.5
+                  color: safeIndex === 0 ? 'rgba(245,250,255,0.35)' : EXAM_LOW_TEXT,
+                  textShadow: EXAM_LOW_SHADOW, fontSize: 13, fontWeight: 700, letterSpacing: 1.5
                 }}>PREVIOUS</button>
 
-                <span style={{ color: pt.textMuted, fontSize: 11, fontWeight: 700 }}>{answeredCount}/{total}</span>
+                <span style={{ color: EXAM_LOW_TEXT_MUTED, textShadow: EXAM_LOW_SHADOW, fontSize: 11, fontWeight: 700 }}>{answeredCount}/{total}</span>
 
                 {!isLastQuestion ? (
                   <button onClick={goNext} className="exam-btn" style={{
                     background: 'transparent', border: 'none', cursor: 'pointer',
-                    color: pt.cobalt, fontSize: 13, fontWeight: 700, letterSpacing: 1.5
+                    color: pt.cobalt, textShadow: EXAM_LOW_SHADOW, fontSize: 13, fontWeight: 700, letterSpacing: 1.5
                   }}>NEXT</button>
                 ) : (
                   <button onClick={submitQuiz} disabled={answeredCount < total} className="exam-btn" style={{
                     background: 'transparent', border: 'none',
                     cursor: answeredCount < total ? 'not-allowed' : 'pointer',
-                    color: answeredCount < total ? pt.faint : pt.cobalt, fontSize: 13, fontWeight: 800, letterSpacing: 1.5
+                    color: answeredCount < total ? 'rgba(245,250,255,0.35)' : pt.cobalt,
+                    textShadow: EXAM_LOW_SHADOW, fontSize: 13, fontWeight: 800, letterSpacing: 1.5
                   }}>{answeredCount < total ? `${total - answeredCount} LEFT` : 'SUBMIT'}</button>
                 )}
               </div>
@@ -660,40 +694,40 @@ export default function MCQ({ dark }: { dark: boolean }) {
 
           {/* ── Results: analytical instrument ─────────────────────── */}
           {submitted && !grading && (
-            <div style={{ paddingBottom: 'max(24px, env(safe-area-inset-bottom))' }}>
-              <div style={{ height: 1, background: pt.border, opacity: 0.5, marginBottom: 24 }} />
+            <div style={{ paddingBottom: 24 }}>
+              <div style={{ height: 1, background: EXAM_DIVIDER, marginBottom: 24 }} />
 
               <div style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.5, color: pt.textMuted, marginBottom: 4 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.5, color: EXAM_LOW_TEXT_MUTED, textShadow: EXAM_LOW_SHADOW, marginBottom: 4 }}>
                   {quizMode === 'mock' ? 'MOCK EXAM COMPLETE' : quizMode === 'retry' ? 'RETRY COMPLETE' : 'PRACTICE COMPLETE'}
                 </div>
                 <div style={{
                   fontFamily: pulseFonts.display, fontWeight: 800, fontSize: 'clamp(64px, 16vw, 92px)',
-                  lineHeight: 1, color: percent >= 60 ? pt.cobalt : pt.danger
+                  lineHeight: 1, color: EXAM_LOW_TEXT, textShadow: '0 2px 14px rgba(1,12,74,0.55)'
                 }}>{percent}</div>
-                <div style={{ fontSize: 13, fontWeight: 700, letterSpacing: 1, color: pt.textMuted, marginTop: 6 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, letterSpacing: 1, color: EXAM_LOW_TEXT, textShadow: EXAM_LOW_SHADOW, marginTop: 6 }}>
                   {percent >= 90 ? 'EXCELLENT.' : percent >= 75 ? 'GREAT WORK.' : percent >= 60 ? 'GOOD WORK.' : 'KEEP PRACTICING.'}
                 </div>
 
                 <div style={{ display: 'flex', justifyContent: 'center', gap: 28, marginTop: 24, flexWrap: 'wrap' }}>
                   <StatChip label="CORRECT" value={score} color={pt.success} />
                   <StatChip label="INCORRECT" value={total - score} color={pt.danger} />
-                  <StatChip label="TIME" value={formatTime(finishTimeSec)} color={pt.textMuted} />
+                  <StatChip label="TIME" value={formatTime(finishTimeSec)} color={EXAM_LOW_TEXT} />
                 </div>
               </div>
 
               {subjectStats.length > 1 && (
                 <div style={{ marginTop: 36 }}>
-                  <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.5, color: pt.textMuted, marginBottom: 14 }}>YOUR PERFORMANCE</div>
+                  <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.5, color: EXAM_LOW_TEXT_MUTED, textShadow: EXAM_LOW_SHADOW, marginBottom: 14 }}>YOUR PERFORMANCE</div>
                   {subjectStats.map(s => (
                     <div key={s.id} style={{ marginBottom: 14 }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                        <span style={{ color: pt.textPrimary, fontSize: 13, fontWeight: 600 }}>{s.name}</span>
-                        <span style={{ color: pt.textMuted, fontSize: 13, fontWeight: 700 }}>{s.accuracy}</span>
+                        <span style={{ color: EXAM_LOW_TEXT, textShadow: EXAM_LOW_SHADOW, fontSize: 13, fontWeight: 600 }}>{s.name}</span>
+                        <span style={{ color: EXAM_LOW_TEXT_MUTED, textShadow: EXAM_LOW_SHADOW, fontSize: 13, fontWeight: 700 }}>{s.accuracy}</span>
                       </div>
                       <div style={{
                         height: 5, borderRadius: 999, overflow: 'hidden',
-                        background: dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)'
+                        background: 'rgba(255,255,255,0.15)'
                       }}>
                         <div style={{
                           height: '100%', width: `${s.accuracy}%`, borderRadius: 999,
@@ -708,7 +742,7 @@ export default function MCQ({ dark }: { dark: boolean }) {
 
               {weakestSubject && (
                 <div style={{ marginTop: 36 }}>
-                  <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.5, color: pt.textMuted, marginBottom: 10 }}>FOCUS NEXT</div>
+                  <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.5, color: EXAM_LOW_TEXT_MUTED, textShadow: EXAM_LOW_SHADOW, marginBottom: 10 }}>FOCUS NEXT</div>
                   <LiquidGlassCard dark={dark} delay={0} style={{ padding: '20px 22px' }}>
                     <div style={{ color: MCQ_ACCENT, fontWeight: 800, fontSize: 16, marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 }}>
                       {weakestSubject.name}
@@ -726,9 +760,10 @@ export default function MCQ({ dark }: { dark: boolean }) {
 
               <div style={{ display: 'flex', gap: 10, marginTop: 36 }}>
                 <button onClick={tryAgain} className="exam-btn" style={{
-                  flex: 1, background: dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)',
-                  border: `1px solid ${pt.border}`, borderRadius: 999, padding: '13px',
-                  color: pt.sub, cursor: 'pointer', fontWeight: 700, fontSize: 13, letterSpacing: 0.5, fontFamily: pulseFonts.body
+                  flex: 1, background: 'rgba(1,12,74,0.28)',
+                  border: '1px solid rgba(255,255,255,0.35)', borderRadius: 999, padding: '13px',
+                  color: EXAM_LOW_TEXT, textShadow: EXAM_LOW_SHADOW,
+                  cursor: 'pointer', fontWeight: 700, fontSize: 13, letterSpacing: 0.5, fontFamily: pulseFonts.body
                 }}>TRY AGAIN</button>
                 <button onClick={stopQuiz} className="exam-btn" style={{
                   flex: 1, background: pt.cobalt, border: 'none', borderRadius: 999, padding: '13px',
@@ -737,8 +772,8 @@ export default function MCQ({ dark }: { dark: boolean }) {
               </div>
             </div>
           )}
-        </div>
-      </motion.div>
+        </motion.div>
+      </div>
     )
   }
 
