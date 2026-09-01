@@ -1,10 +1,11 @@
-import { useState, useRef, useEffect, useCallback } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Search as SearchIcon } from 'lucide-react'
 import { useAuth } from '../contexts'
 import { MenuToggleIcon } from './ui/menu-toggle-icon'
 import ThemeSwitch from './ui/theme-switch'
+import { HomeIcon, ScheduleIcon, ChecklistIcon, AnonQAIcon, LeaderboardIcon } from './ui/tool-icons'
 import { getPulseTheme, pulseFonts } from '../premiumTheme'
 import { glassInput } from './pulse/PulseUI'
 import { liquidGlassShadow, liquidGlassBackdrop, liquidGlassTint } from '../lib/liquidGlass'
@@ -12,12 +13,17 @@ import { liquidGlassShadow, liquidGlassBackdrop, liquidGlassTint } from '../lib/
 // Same morph curve the liquid floating-menu reference uses.
 const morphEase = [0.22, 1, 0.36, 1]
 
+// Same icon set Home.tsx's own tool cards use for these four, plus a
+// freshly-built HomeIcon (see tool-icons.tsx) for the one item that
+// didn't have a matching glyph anywhere yet. `accent` mirrors Home's
+// own accent assignment per card (indigo/amber alternating) so the
+// menu's colors read as the same system, not a new one.
 const navItems = [
-  { label: 'Home', href: '/' },
-  { label: 'Schedules', href: '/schedule' },
-  { label: 'Checklist', href: '/checklist' },
-  { label: 'Anonymous Q&A', href: '/anon-questions' },
-  { label: 'Leaderboard', href: '/profile?tab=leaderboard' },
+  { label: 'Home', href: '/', Icon: HomeIcon, accent: 'cobalt' },
+  { label: 'Schedules', href: '/schedule', Icon: ScheduleIcon, accent: 'indigo' },
+  { label: 'Checklist', href: '/checklist', Icon: ChecklistIcon, accent: 'amber' },
+  { label: 'Anonymous Q&A', href: '/anon-questions', Icon: AnonQAIcon, accent: 'indigo' },
+  { label: 'Leaderboard', href: '/profile?tab=leaderboard', Icon: LeaderboardIcon, accent: 'amber' },
 ]
 
 function initialOf(name) {
@@ -61,76 +67,6 @@ function useSyncedTransition(open) {
     : { duration: CLOSE_DURATION, ease: morphEase }
 }
 
-// ── Per-letter flip reveal ──────────────────────────────────────────
-// From the reference component's MenuButton: each character sits in
-// its own overflow-hidden slot with a duplicate stacked below it, and
-// hovering slides that stack up by 50% with a per-letter stagger
-// delay. Only `transform` ever animates — cheap even with several
-// mounted at once.
-function useLetterHover(label) {
-  const [hovered, setHovered] = useState(false)
-  const animatingRef = useRef(false)
-  const pendingLeaveRef = useRef(false)
-  const chars = label.split('')
-  const lockDuration = 22 * chars.length + 220
-
-  const onEnter = useCallback(() => {
-    pendingLeaveRef.current = false
-    if (hovered) return
-    setHovered(true)
-    animatingRef.current = true
-    setTimeout(() => {
-      animatingRef.current = false
-      if (pendingLeaveRef.current) {
-        pendingLeaveRef.current = false
-        setHovered(false)
-      }
-    }, lockDuration)
-  }, [hovered, lockDuration])
-
-  const onLeave = useCallback(() => {
-    if (animatingRef.current) pendingLeaveRef.current = true
-    else setHovered(false)
-  }, [])
-
-  return { hovered, chars, onEnter, onLeave }
-}
-
-function FlipLabel({ label, color, weight = 600, size = 14 }) {
-  const { hovered, chars, onEnter, onLeave } = useLetterHover(label)
-  const lineHeight = Math.round(size * 1.3)
-
-  return (
-    <span
-      onMouseEnter={onEnter}
-      onMouseLeave={onLeave}
-      style={{ display: 'inline-flex', overflow: 'hidden', height: lineHeight, verticalAlign: 'top' }}
-    >
-      {chars.map((ch, i) => (
-        <span key={i} style={{ display: 'inline-block', overflow: 'hidden', height: lineHeight }}>
-          <span
-            style={{
-              display: 'flex', flexDirection: 'column',
-              transitionProperty: 'transform',
-              transitionDuration: hovered ? '620ms' : '0ms',
-              transitionDelay: hovered ? `${22 * i}ms` : '0ms',
-              transform: hovered ? 'translateY(-50%)' : 'translateY(0%)',
-              transitionTimingFunction: 'cubic-bezier(0.22, 1, 0.36, 1)',
-            }}
-          >
-            <span style={{ display: 'block', height: lineHeight, lineHeight: `${lineHeight}px`, color, fontWeight: weight, fontSize: size, fontFamily: 'inherit' }}>
-              {ch === ' ' ? '\u00A0' : ch}
-            </span>
-            <span aria-hidden style={{ display: 'block', height: lineHeight, lineHeight: `${lineHeight}px`, color, fontWeight: weight, fontSize: size, fontFamily: 'inherit' }}>
-              {ch === ' ' ? '\u00A0' : ch}
-            </span>
-          </span>
-        </span>
-      ))}
-    </span>
-  )
-}
-
 // ── Liquid fill burst ───────────────────────────────────────────────
 // The reference's "dark circle growing from the bottom" moment,
 // reinterpreted as a soft glass-tinted bloom. Mounted only while open
@@ -165,23 +101,32 @@ function LiquidBloom({ pt, open, align }) {
 // of rendering weirdness on top of the backdrop-filter fix, and it
 // was purely decorative, not load-bearing for the open/close motion.)
 
-// Same three-layer glass recipe as the cards / menu shell. No more
-// gating needed here — see the note on the panel's own layers below
-// for why blur/shadow are cheap enough now to just always render.
-function GlassRow({ dark, radius = ROW_RADIUS, style = {}, hoverBg, children, onMouseEnter, onMouseLeave, ...rest }) {
+// Same glass recipe as LiquidGlassCard — literally, not just visually:
+// isolation + overflow + backdrop-filter + the hover transform all sit
+// on the SAME inner element, exactly mirroring LiquidGlassCard's own
+// structure. That co-location matters for the same reason it did on
+// the panel itself — putting the hover `scale` on an ancestor while
+// backdrop-filter lives on a child breaks the blur the instant you
+// hover. Hover is now a "pop" (scale 1.05), not a color overlay.
+function GlassRow({ dark, radius = ROW_RADIUS, style = {}, children, onMouseEnter, onMouseLeave, ...rest }) {
   const [hovered, setHovered] = useState(false)
   return (
     <div
       {...rest}
       onMouseEnter={e => { setHovered(true); onMouseEnter?.(e) }}
       onMouseLeave={e => { setHovered(false); onMouseLeave?.(e) }}
-      style={{ position: 'relative', overflow: 'hidden', borderRadius: radius, ...style }}
+      style={{ position: 'relative', ...style }}
     >
-      <div aria-hidden className="pointer-events-none" style={{ position: 'absolute', inset: 0, borderRadius: 'inherit', ...liquidGlassBackdrop() }} />
-      <div aria-hidden className="pointer-events-none" style={{ position: 'absolute', inset: 0, borderRadius: 'inherit', boxShadow: liquidGlassShadow(dark) }} />
-      <div aria-hidden className="pointer-events-none" style={{ position: 'absolute', inset: 0, borderRadius: 'inherit', background: liquidGlassTint(dark) }} />
-      {hovered && <div aria-hidden className="pointer-events-none" style={{ position: 'absolute', inset: 0, borderRadius: 'inherit', background: hoverBg }} />}
-      <div style={{ position: 'relative', zIndex: 1 }}>{children}</div>
+      <div style={{
+        position: 'relative', isolation: 'isolate', overflow: 'hidden', borderRadius: radius,
+        transform: hovered ? 'scale(1.05)' : 'scale(1)',
+        transition: 'transform 0.3s ease',
+        ...liquidGlassBackdrop(),
+      }}>
+        <div aria-hidden className="pointer-events-none" style={{ position: 'absolute', inset: 0, zIndex: 0, borderRadius: 'inherit', boxShadow: liquidGlassShadow(dark) }} />
+        <div aria-hidden className="pointer-events-none" style={{ position: 'absolute', inset: 0, zIndex: 0, borderRadius: 'inherit', background: liquidGlassTint(dark) }} />
+        <div style={{ position: 'relative', zIndex: 10 }}>{children}</div>
+      </div>
     </div>
   )
 }
@@ -224,8 +169,6 @@ export default function NavMenu({ dark, toggleTheme, align = 'left' }) {
     navigate('/')
   }
 
-  const rowHover = dark ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.35)'
-  const dangerHover = dark ? 'rgba(239,107,87,0.14)' : 'rgba(214,84,63,0.12)'
   const cornerSide = align === 'right' ? 'right' : 'left'
 
   return (
@@ -289,7 +232,7 @@ export default function NavMenu({ dark, toggleTheme, align = 'left' }) {
         >
           {/* Profile / Sign In */}
           {user ? (
-            <GlassRow dark={dark} radius={18} hoverBg={rowHover} onClick={() => goTo('/profile')}
+            <GlassRow dark={dark} radius={18} onClick={() => goTo('/profile')}
               role="button" tabIndex={open ? 0 : -1}
               onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); goTo('/profile') } }}
               style={{ cursor: 'pointer' }}>
@@ -312,7 +255,7 @@ export default function NavMenu({ dark, toggleTheme, align = 'left' }) {
               </div>
             </GlassRow>
           ) : (
-            <GlassRow dark={dark} radius={18} hoverBg="rgba(255,255,255,0.08)" onClick={() => goTo('/auth')}
+            <GlassRow dark={dark} radius={18} onClick={() => goTo('/auth')}
               role="button" tabIndex={open ? 0 : -1} style={{ cursor: 'pointer' }}>
               <div style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
