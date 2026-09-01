@@ -4,6 +4,7 @@ import { supabase } from '../supabase'
 import { useAuth, useModules } from '../App'
 import { getTheme } from '../theme'
 import { fetchModulesSorted } from '../lib/modules'
+import { invalidateSubjectsCache } from '../lib/subjects'
 import NotFound from './NotFound'
 
 import ModulesTab from './admin/ModulesTab'
@@ -54,6 +55,13 @@ export default function Admin({ dark }) {
     refreshModules()
   }
   async function fetchSubjects() {
+    // Invalidate the shared student-facing subjects cache (see
+    // src/lib/subjects.js) every time this refetches — this runs
+    // right after every subject create/update/delete in SubjectsTab,
+    // so it's the single point where "an admin just changed subjects"
+    // becomes known app-wide, instead of duplicating this call in
+    // every mutation handler.
+    invalidateSubjectsCache()
     const { data } = await supabase.from('subjects').select('*').order('created_at')
     if (data) setSubjects(data)
   }

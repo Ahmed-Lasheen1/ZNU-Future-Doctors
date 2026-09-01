@@ -10,6 +10,7 @@ import PulseGlassRow from '../components/pulse/PulseGlassRow'
 import SummaryOverlay from '../components/SummaryOverlay'
 import { useModules } from '../contexts'
 import { fetchModuleStages, stageMetaFrom } from '../lib/moduleStages'
+import { fetchSubjectsForModule } from '../lib/subjects'
 import { FILE_CARDS } from '../lib/fileCards'
 import { ModuleIcon, ExamIcon, NotesIcon } from '../lib/medicalIcons'
 
@@ -57,11 +58,10 @@ export default function StagePage({ dark }: { dark: boolean }) {
         if (data) setSummaries(data)
         if (error) setLoadError(true)
       })
-    supabase.from('subjects').select('*').eq('module_id', moduleId).order('name')
-      .then(({ data, error }) => {
-        if (data) setSubjects(data)
-        if (error) setLoadError(true)
-      })
+    fetchSubjectsForModule(moduleId!).then(({ subjects, error }) => {
+      setSubjects(subjects)
+      if (error) setLoadError(true)
+    })
   }, [moduleId, stage])
 
   if (!module) return (

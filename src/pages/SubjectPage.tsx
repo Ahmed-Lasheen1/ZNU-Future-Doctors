@@ -10,6 +10,7 @@ import PulseGlassRow from '../components/pulse/PulseGlassRow'
 import SummaryOverlay from '../components/SummaryOverlay'
 import { useToast } from '../components/ToastProvider'
 import { useModules } from '../contexts'
+import { fetchSubjectById } from '../lib/subjects'
 import { ModuleIcon, ExamIcon, NotesIcon } from '../lib/medicalIcons'
 
 interface PageModule { id: string; name: string; icon?: string | null; color: string }
@@ -37,16 +38,16 @@ export default function SubjectPage({ dark }: { dark: boolean }) {
   useEffect(() => {
     setLoading(true)
     Promise.all([
-      supabase.from('subjects').select('*').eq('id', subjectId).single(),
+      fetchSubjectById(subjectId!),
       supabase.from('lessons').select('*').eq('subject_id', subjectId).order('created_at', { ascending: false }),
       // Lesson-scoped summaries live in `summaries` (via lesson_id) —
       // there is no `lessons.summary_url` column.
       supabase.from('summaries').select('id, title, url, lesson_id').eq('subject_id', subjectId).not('lesson_id', 'is', null)
-    ]).then(([subRes, lessonRes, summaryRes]) => {
-      if (subRes.data) setSubject(subRes.data)
+    ]).then(([subjectRes, lessonRes, summaryRes]) => {
+      setSubject(subjectRes.subject)
       if (lessonRes.data) setLessons(lessonRes.data)
       if (summaryRes.data) setLessonSummaries(summaryRes.data)
-      if (subRes.error || lessonRes.error || summaryRes.error) setLoadError(true)
+      if (subjectRes.error || lessonRes.error || summaryRes.error) setLoadError(true)
       setLoading(false)
     })
   }, [subjectId])
