@@ -28,13 +28,14 @@ const BUTTON_SIZE = 44
 const PANEL_WIDTH = 280
 const PANEL_RADIUS = 24
 const ROW_RADIUS = 16
-// How far the closed panel is shrunk relative to its true (always-on)
-// layout size. Deliberately NOT matching BUTTON_SIZE exactly on both
-// axes — a non-uniform scale that forces a 280-wide box down to a
-// perfect 44x44 would squash its border-radius into an ellipse. This
-// factor just needs to get small/fast enough that it's fully hidden
-// (opacity 0) under the real toggle button by the time it matters.
-const CLOSED_SCALE = BUTTON_SIZE / PANEL_WIDTH
+// The closed clip-path circle radius exactly matches the real
+// button's radius, centered at the same corner the button sits at —
+// so the panel's masked-down state lines up pixel-for-pixel with the
+// button on top of it. The open radius just needs to be comfortably
+// bigger than the panel's own diagonal; anything beyond the box's
+// actual edges is invisible anyway (clipped by its own overflow), so
+// there's no need to measure content height to compute it exactly.
+const OPEN_CLIP_RADIUS = 900
 
 // Open/close durations. Close was 0.4s before, which — combined with
 // the panel's blur visually shrinking as it scales down (a CSS
@@ -222,6 +223,7 @@ export default function NavMenu({ dark, toggleTheme, align = 'left' }) {
   const rowHover = dark ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.35)'
   const dangerHover = dark ? 'rgba(239,107,87,0.14)' : 'rgba(214,84,63,0.12)'
   const cornerSide = align === 'right' ? 'right' : 'left'
+  const clipCenterX = cornerSide === 'right' ? PANEL_WIDTH - BUTTON_SIZE / 2 : BUTTON_SIZE / 2
 
   return (
     <div ref={wrapperRef} style={{ position: 'relative', width: BUTTON_SIZE, height: BUTTON_SIZE }}>
@@ -230,34 +232,39 @@ export default function NavMenu({ dark, toggleTheme, align = 'left' }) {
           actual fix: since the box's real dimensions never change,
           the browser computes the backdrop-blur once and the GPU just
           re-composites that cached result under the scale transform,
-          instead of re-blurring a resizing region every frame. Only
-          `scale` and `opacity` are ever touched here — both are
-          compositor-only, so this is genuinely free regardless of
-          device. */}
+          instead of re-blurring a resizing region every frame. Now
+          revealed via `clip-path` (a growing circle from the button's
+          corner) instead of `scale` — scale forces the browser to
+          re-blur the backdrop at a new size every single frame, which
+          is why the blur was visibly lagging behind the motion.
+          clip-path just masks an already-fully-blurred, fixed-size
+          layer, so the blur itself never has to be recomputed. */}
       <motion.div
         style={{
           position: 'absolute', top: 0, [cornerSide]: 0,
           width: PANEL_WIDTH,
           maxWidth: '90vw',
-          transformOrigin: cornerSide === 'right' ? 'top right' : 'top left',
           pointerEvents: open ? 'auto' : 'none',
           zIndex: 1999,
-          willChange: 'transform, opacity',
+          willChange: 'clip-path, opacity',
           // overflow-hidden + isolation:isolate + backdrop-filter all
           // live on THIS element — the same one that carries the
-          // scale/opacity animation below. That co-location is what
-          // makes backdrop-filter actually work: it needs to sample
-          // "behind itself" at its own pre-transform position. Once
-          // it's nested a level inside a SEPARATE already-transformed
-          // ancestor (what this looked like before — scale on an
-          // outer div, backdrop-filter on an inner one) it gets
-          // trapped sampling only within that ancestor's own isolated
-          // layer, which has nothing behind it — so it blurs nothing,
-          // regardless of the blur radius value.
+          // clip-path/opacity animation below. That co-location is
+          // what makes backdrop-filter actually work: it needs to
+          // sample "behind itself" at its own position. Once it's
+          // nested a level inside a SEPARATE already-transformed
+          // ancestor it gets trapped sampling only within that
+          // ancestor's own isolated layer, which has nothing behind
+          // it — so it blurs nothing, regardless of the blur radius.
           isolation: 'isolate', overflow: 'hidden', borderRadius: PANEL_RADIUS,
           ...liquidGlassBackdrop(),
         }}
-        animate={{ scale: open ? 1 : CLOSED_SCALE, opacity: open ? 1 : 0 }}
+        animate={{
+          clipPath: open
+            ? `circle(${OPEN_CLIP_RADIUS}px at ${clipCenterX}px ${BUTTON_SIZE / 2}px)`
+            : `circle(${BUTTON_SIZE / 2}px at ${clipCenterX}px ${BUTTON_SIZE / 2}px)`,
+          opacity: open ? 1 : 0,
+        }}
         transition={transition}
       >
         <div aria-hidden className="pointer-events-none" style={{ position: 'absolute', inset: 0, borderRadius: 'inherit', boxShadow: liquidGlassShadow(dark) }} />
@@ -321,7 +328,7 @@ export default function NavMenu({ dark, toggleTheme, align = 'left' }) {
               it — the icon, submit-on-Enter, click-to-submit — is
               unchanged. */}
           <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-            <SearchIcon size={16} color={pt.faint} style={{ position: 'absolute', left: 16, top: '60%', transform: 'translateY(-60%)', pointerEvents: 'none' }} />
+            <SearchIcon size={16} color={pt.faint} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
             <input
               value={searchValue}
               onChange={e => setSearchValue(e.target.value)}
