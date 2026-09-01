@@ -284,7 +284,7 @@ export default function Home({ dark, toggleTheme }: { dark: boolean; toggleTheme
 
           .pulse-dash-grid {
             display: grid;
-            grid-template-columns: 1fr 1.3fr 1fr;
+            grid-template-columns: 1fr 1fr 1fr;
             gap: clamp(14px, 1.6vw, 28px);
             align-items: stretch;
           }
