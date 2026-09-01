@@ -35,14 +35,24 @@ const ROW_RADIUS = 16
 // (opacity 0) under the real toggle button by the time it matters.
 const CLOSED_SCALE = BUTTON_SIZE / PANEL_WIDTH
 
+// Open/close durations. Close was 0.4s before, which — combined with
+// the panel's blur visually shrinking as it scales down (a CSS
+// transform scales the already-blurred result, so at 15% scale a 5px
+// blur reads as under 1px) — made the whole thing read as "vanishing"
+// rather than closing. Slowing it down and bringing it closer to the
+// open duration gives it enough time to actually read as full 5px
+// blur before it starts shrinking away.
+const OPEN_DURATION = 0.6
+const CLOSE_DURATION = 0.55
+
 // Single transition object shared by BOTH the panel (scale/opacity)
 // and the content block (y/opacity) — using the literal same object
 // on both `animate` calls is what guarantees they move in lockstep:
 // same duration, same easing curve, starting the same frame.
 function useSyncedTransition(open) {
   return open
-    ? { duration: 0.6, ease: morphEase }
-    : { duration: 0.4, ease: morphEase }
+    ? { duration: OPEN_DURATION, ease: morphEase }
+    : { duration: CLOSE_DURATION, ease: morphEase }
 }
 
 // ── Per-letter flip reveal ──────────────────────────────────────────
@@ -128,8 +138,8 @@ function LiquidBloom({ pt, open, align }) {
           className="pointer-events-none"
           initial={{ opacity: 0, scale: 0.15 }}
           animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.4, transition: { duration: 0.25, ease: morphEase } }}
-          transition={{ duration: 0.55, ease: morphEase, delay: 0.05 }}
+          exit={{ opacity: 0, scale: 0.4, transition: { duration: CLOSE_DURATION, ease: morphEase } }}
+          transition={{ duration: OPEN_DURATION, ease: morphEase, delay: 0.05 }}
           style={{
             position: 'absolute', borderRadius: '50%',
             width: 340, height: 340,
@@ -157,7 +167,7 @@ function LiquidSheen({ pt, open }) {
         position: 'absolute', width: '140%', height: '140%',
         background: `radial-gradient(circle, ${pt.cobalt}20, transparent 65%)`,
         opacity: open ? 0.8 : 0,
-        transition: 'opacity 0.5s ease',
+        transition: `opacity ${open ? OPEN_DURATION : CLOSE_DURATION}s ease`,
       }}
     />
   )
