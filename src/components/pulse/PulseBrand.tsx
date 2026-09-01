@@ -37,7 +37,7 @@ const brandWordItem = {
 }
 
 export default function PulseBrand({ dark, logoSize = 44, fontSize = 20, animation, instant = false }: PulseBrandProps) {
-  const pt = getPulseTheme(dark)
+  const pt = getPulseTheme(false)
 
   if (!animation) {
     return (
