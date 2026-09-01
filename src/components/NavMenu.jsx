@@ -47,15 +47,11 @@ const CLOSED_SCALE = BUTTON_SIZE / PANEL_WIDTH
 // it read as "vanishing" rather than closing.
 const OPEN_DURATION = 0.6
 const CLOSE_DURATION = 0.55
-// On open, opacity reaches 1 well before the scale finishes growing
-// (40% of the way through). `morphEase` decelerates hard near the
-// end, so scale/opacity sharing one curve meant the panel sat at
-// ~90% grown for a while before opacity (and therefore the visible
-// blur) finally caught up — which read as the blur "lagging behind"
-// the growth. Splitting them so opacity front-loads means the panel
-// is already fully opaque and blurred while it's still visibly
-// growing, instead of only becoming visible right at the very end.
-const OPEN_OPACITY_DURATION = OPEN_DURATION * 0.4
+// On open, opacity reaches 1 well before the scale finishes growing.
+// See the panel's `animate`/`transition` below for the actual
+// Container Transform implementation (a `times`-keyed keyframe
+// window), which replaced a cruder "give opacity a shorter duration"
+// version of this same idea.
 
 // Single transition object shared by BOTH the panel (scale/opacity)
 // and the content block (y/opacity) — using the literal same object
@@ -192,7 +188,11 @@ export default function NavMenu({ dark, toggleTheme, align = 'left' }) {
           transformOrigin: cornerSide === 'right' ? 'top right' : 'top left',
           pointerEvents: open ? 'auto' : 'none',
           zIndex: 1999,
-          willChange: 'transform, opacity',
+          // backdrop-filter added per Google's own guidance for
+          // "heaviest use cases — full-screen panels, persistent
+          // sidebars": promotes this to its own GPU layer ahead of
+          // the animation instead of during it.
+          willChange: 'transform, opacity, backdrop-filter',
           // overflow-hidden + isolation:isolate + backdrop-filter all
           // live on THIS element — the same one that carries the
           // scale/opacity animation below. That co-location is what
@@ -205,10 +205,29 @@ export default function NavMenu({ dark, toggleTheme, align = 'left' }) {
           isolation: 'isolate', overflow: 'hidden', borderRadius: PANEL_RADIUS,
           ...liquidGlassBackdrop(),
         }}
-        animate={{ scale: open ? 1 : CLOSED_SCALE, opacity: open ? 1 : 0 }}
+        // This is Material Design's "Container Transform" pattern —
+        // the same one Google names for exactly "a search bar into
+        // expanded search." Its actual technique: don't make opacity
+        // track the scale for the whole duration. Confine the
+        // cross-fade to the MIDDLE third of the transition, on its
+        // own linear curve, fully decoupled from the scale's
+        // ease-in-out. Scale plays start-to-finish; opacity sits at 0
+        // through the first 35%, ramps to 1 (linear) by 65%, then
+        // holds. Reversed symmetrically on close. That's what a real
+        // container-transform blur/opacity relationship looks like —
+        // not "opacity finishes early," but "opacity is confined to a
+        // narrow window with a different curve entirely."
+        animate={{
+          scale: open ? 1 : CLOSED_SCALE,
+          opacity: open ? [0, 0, 1, 1] : [1, 1, 0, 0],
+        }}
         transition={{
           scale: transition,
-          opacity: open ? { duration: OPEN_OPACITY_DURATION, ease: 'easeOut' } : transition,
+          opacity: {
+            duration: open ? OPEN_DURATION : CLOSE_DURATION,
+            times: [0, 0.35, 0.65, 1],
+            ease: 'linear',
+          },
         }}
       >
         <div aria-hidden className="pointer-events-none" style={{ position: 'absolute', inset: 0, borderRadius: 'inherit', boxShadow: liquidGlassShadow(dark) }} />
