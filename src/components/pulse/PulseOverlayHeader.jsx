@@ -10,7 +10,7 @@ const LOGO_SRC = '/icon-192.png'
 // replaying an entrance animation on every route change would just be
 // visual noise rather than a first-impression moment like on Home.
 export default function PulseOverlayHeader({ dark, toggleTheme }) {
-  const pt = getPulseTheme(dark)
+  const pt = getPulseTheme(false)
 
   return (
     <div style={{
