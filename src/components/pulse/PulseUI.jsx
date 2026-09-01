@@ -1,15 +1,26 @@
 import { getPulseTheme, pulseFonts } from '../../premiumTheme'
+import { liquidGlassBackdrop } from '../../lib/liquidGlass'
 
 // Shared glass-style primitives for the ZNU Pulse redesign — used by
 // Auth, ResetPassword, and (as we roll it out) every other page, so
 // the glass look/feel only needs to be tuned in one place.
+//
+// Blur now comes from liquidGlassBackdrop() (the same function
+// LiquidGlassCard, PulseGlassRow, and NavMenu's glass all use) instead
+// of each function here hardcoding its own value (previously 14px for
+// inputs, 10px for buttons/tabs — neither tied to the 5px cards use).
+// One blur constant, tuned in one place (src/lib/liquidGlass.js),
+// applies everywhere now. Everything else here — the solid border,
+// pill radius, no heavy card shadow — stays as-is; that's what makes
+// an input/button read as "interactive" rather than "elevated card",
+// and is unrelated to the blur-source fix.
 
 export function glassInput(pt, dark) {
   return {
     width: '100%', padding: '15px 20px', marginBottom: 14,
     borderRadius: 999, border: `1px solid ${pt.border}`,
     background: dark ? 'rgba(255,255,255,0.045)' : 'rgba(255,255,255,0.35)',
-    backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)',
+    ...liquidGlassBackdrop(),
     color: pt.text, fontSize: 14, fontFamily: pulseFonts.body, outline: 'none', boxSizing: 'border-box'
   }
 }
@@ -20,7 +31,7 @@ export function glassPrimaryBtn(pt, dark, disabled) {
     background: disabled
       ? (dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)')
       : `linear-gradient(135deg, ${pt.cobalt}cc, ${pt.indigo}cc)`,
-    backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)',
+    ...liquidGlassBackdrop(),
     color: disabled ? pt.sub : '#fff', border: disabled ? `1px solid ${pt.border}` : 'none',
     fontWeight: 800, cursor: disabled ? 'not-allowed' : 'pointer',
     fontFamily: pulseFonts.body, fontSize: 14, marginBottom: 12,
@@ -31,7 +42,7 @@ export function glassPrimaryBtn(pt, dark, disabled) {
 export function glassGhostBtn(pt, dark) {
   return {
     width: '100%', padding: 11, background: dark ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.3)',
-    backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)',
+    ...liquidGlassBackdrop(),
     border: `1px solid ${pt.border}`, borderRadius: 999, cursor: 'pointer',
     color: pt.sub, fontFamily: pulseFonts.body, fontSize: 13, fontWeight: 700
   }
@@ -42,7 +53,7 @@ export function glassTabBtn(pt, dark, active) {
     flex: 1, padding: '9px', borderRadius: 999, cursor: 'pointer',
     border: `1.5px solid ${active ? pt.cobalt : pt.border}`,
     background: active ? pt.cobaltSoft : (dark ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.25)'),
-    backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)',
+    ...liquidGlassBackdrop(),
     color: active ? pt.cobalt : pt.sub, fontWeight: 700, fontSize: 12, fontFamily: pulseFonts.body
   }
 }
@@ -81,7 +92,7 @@ export function glassPanel(pt, dark, extra = {}) {
   return {
     position: 'relative', zIndex: 1,
     background: dark ? 'rgba(24,38,58,0.30)' : 'rgba(255,255,255,0.28)',
-    backdropFilter: 'blur(22px)', WebkitBackdropFilter: 'blur(22px)',
+    ...liquidGlassBackdrop(),
     border: `1px solid ${dark ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.55)'}`,
     borderRadius: 28, padding: '40px 36px', width: '92%', maxWidth: 400,
     ...extra
