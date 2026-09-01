@@ -559,7 +559,11 @@ export default function MCQ({ dark }: { dark: boolean }) {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-          style={{ position: 'relative', zIndex: 1, maxWidth: 640, margin: '0 auto', padding: '20px 20px 100px', fontFamily: pulseFonts.body }}
+          style={{
+            position: 'relative', zIndex: 1,
+            maxWidth: 'min(920px, 94vw)', margin: '0 auto',
+            padding: '20px clamp(16px, 3vw, 36px) 100px', fontFamily: pulseFonts.body
+          }}
         >
           {/* Minimal status header — sits in the gradient's light top zone */}
           <div style={{ position: 'relative', textAlign: 'center', paddingBottom: 14 }}>
