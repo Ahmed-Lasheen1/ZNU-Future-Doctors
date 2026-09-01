@@ -13,6 +13,7 @@ import { computeStreak } from '../lib/streak'
 import { getGuestHistory } from '../lib/reviewStorage'
 import { loadSavedActiveExam } from '../lib/activeExam'
 import { ENTRANCE_PAUSE } from '../lib/pulseMotion'
+import { useOncePerSession } from '../lib/useOncePerSession'
 import NotifyPermissionButton from '../components/NotifyPermissionButton'
 import LiquidGlassCard from '@/components/ui/liquid-glass-card'
 import EcgHero from '../components/pulse/EcgHero'
@@ -123,6 +124,12 @@ export default function Home({ dark, toggleTheme }: { dark: boolean; toggleTheme
   const [pausedExam, setPausedExam] = useState<any>(null)
   const [weeklySummary, setWeeklySummary] = useState<{ totalAttempted: number; accuracy: number; topSubjectName: string | null } | null>(null)
 
+  // True only the first time Home mounts in this browser tab session
+  // (survives reloads, resets when the tab closes). The full
+  // staggered entrance plays once; navigating back to Home afterward
+  // in the same tab renders everything instantly in its final state.
+  const playEntrance = useOncePerSession('znu_home_entrance_played')
+
   useEffect(() => {
     supabase.from('site_settings').select('value').eq('key', 'home_announcement').single()
       .then(({ data }) => { if (data?.value) setAnnouncement(data.value) })
@@ -216,7 +223,7 @@ export default function Home({ dark, toggleTheme }: { dark: boolean; toggleTheme
   // ad-hoc sizing, so every uppercase label in the app matches.
   const sectionTitle = (text: string, delaySeconds: number) => (
     <motion.h2
-      initial={{ opacity: 0, y: 20 }}
+      initial={playEntrance ? { opacity: 0, y: 20 } : false}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.7, delay: delaySeconds }}
       style={{
@@ -246,6 +253,7 @@ export default function Home({ dark, toggleTheme }: { dark: boolean; toggleTheme
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
             <PulseBrand
               dark={dark}
+              instant={!playEntrance}
               animation={{
                 logoDelay: LOGO_DELAY,
                 wordsStart: BRAND_WORDS_START,
@@ -255,7 +263,7 @@ export default function Home({ dark, toggleTheme }: { dark: boolean; toggleTheme
             />
 
             <motion.div
-              initial={{ opacity: 0, x: 20 }}
+              initial={playEntrance ? { opacity: 0, x: 20 } : false}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.7, delay: LOGO_DELAY }}
             >
@@ -320,7 +328,7 @@ export default function Home({ dark, toggleTheme }: { dark: boolean; toggleTheme
           {modulesError && <div className="pulse-wide"><ErrorBanner /></div>}
 
           <motion.div className="pulse-wide"
-            initial={{ opacity: 0, y: 16 }}
+            initial={playEntrance ? { opacity: 0, y: 16 } : false}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: NOTIFY_DELAY }}
           >
@@ -330,7 +338,7 @@ export default function Home({ dark, toggleTheme }: { dark: boolean; toggleTheme
           <div className="pulse-wide">
             <div className="pulse-dash-grid">
               <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                <LiquidGlassCard dark={dark} delay={msFor(WEEKLY_REPORT_START)} style={{ padding: '18px 20px' }}>
+                <LiquidGlassCard dark={dark} delay={msFor(WEEKLY_REPORT_START)} instant={!playEntrance} style={{ padding: '18px 20px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
                     <WeeklyReportIcon color={pt.text} size={16} />
                     <div style={{ ...pulseType.sectionLabel, fontSize: 16, color: pt.text }}>
@@ -370,7 +378,7 @@ export default function Home({ dark, toggleTheme }: { dark: boolean; toggleTheme
                 </LiquidGlassCard>
 
                 {(pausedExam || announcement) && (
-                  <LiquidGlassCard dark={dark} delay={msFor(WEEKLY_REPORT_START) + 200}
+                  <LiquidGlassCard dark={dark} delay={msFor(WEEKLY_REPORT_START) + 200} instant={!playEntrance}
                     onClick={pausedExam ? () => navigate('/mcq') : undefined}
                     style={{ padding: '16px 20px' }}>
                     {pausedExam ? (
@@ -387,7 +395,7 @@ export default function Home({ dark, toggleTheme }: { dark: boolean; toggleTheme
               </div>
 
               <motion.div className="pulse-hero-panel"
-                initial={{ opacity: 0, scale: 0.85 }}
+                initial={playEntrance ? { opacity: 0, scale: 0.85 } : false}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.85, delay: HERO_DELAY }}
                 style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
@@ -397,7 +405,7 @@ export default function Home({ dark, toggleTheme }: { dark: boolean; toggleTheme
 
               <div>
                 <motion.div
-                  initial={{ opacity: 0, y: 16 }}
+                  initial={playEntrance ? { opacity: 0, y: 16 } : false}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.7, delay: ACTIVE_MODULES_START }}
                   style={{ display: 'flex', alignItems: 'center', gap: 8, color: pt.cobalt, marginBottom: 14, ...pulseType.sectionLabel }}
@@ -408,14 +416,14 @@ export default function Home({ dark, toggleTheme }: { dark: boolean; toggleTheme
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                   {modulesLoaded && activeModules.length === 0 && (
                     <motion.div
-                      initial={{ opacity: 0, y: 16 }}
+                      initial={playEntrance ? { opacity: 0, y: 16 } : false}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.7, delay: ACTIVE_MODULES_START }}
                       style={{ ...pulseType.body, color: pt.textSecondary }}
                     >No active modules yet.</motion.div>
                   )}
                   {activeModules.map((mod, i) => (
-                    <LiquidGlassCard key={mod.id} dark={dark} delay={msFor(ACTIVE_MODULES_START) + i * 110}
+                    <LiquidGlassCard key={mod.id} dark={dark} delay={msFor(ACTIVE_MODULES_START) + i * 110} instant={!playEntrance}
                       onClick={() => navigate(`/module/${mod.id}`)}
                       style={{ borderRadius: 999, padding: '10px 18px 10px 10px', display: 'flex', alignItems: 'center', gap: 14 }}>
                       <div style={{
@@ -444,7 +452,7 @@ export default function Home({ dark, toggleTheme }: { dark: boolean; toggleTheme
                 const accentColor = card.accent === 'amber' ? pt.amber : pt.indigo
                 const Icon = card.Icon
                 return (
-                  <LiquidGlassCard key={i} dark={dark} delay={msFor(TOOLS_START) + i * 110}
+                  <LiquidGlassCard key={i} dark={dark} delay={msFor(TOOLS_START) + i * 110} instant={!playEntrance}
                     onClick={() => navigate(card.to)}
                     style={{ borderRadius: 22, padding: '18px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
@@ -468,7 +476,7 @@ export default function Home({ dark, toggleTheme }: { dark: boolean; toggleTheme
           </div>
 
           <motion.div className="pulse-wide"
-            initial={{ opacity: 0 }}
+            initial={playEntrance ? { opacity: 0 } : false}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.7, delay: FOOTER_DELAY }}
             style={{ display: 'flex', alignItems: 'center', gap: 14, justifyContent: 'center' }}
@@ -487,7 +495,7 @@ export default function Home({ dark, toggleTheme }: { dark: boolean; toggleTheme
             {sectionTitle('✓ Completed Modules', COMPLETED_MODULES_START)}
             <AutoGrid>
               {completedModules.map((mod, i) => (
-                <LiquidGlassCard key={mod.id} dark={dark} delay={msFor(COMPLETED_MODULES_START) + i * 110}
+                <LiquidGlassCard key={mod.id} dark={dark} delay={msFor(COMPLETED_MODULES_START) + i * 110} instant={!playEntrance}
                   onClick={() => navigate(`/module/${mod.id}`)}
                   style={{ padding: 'clamp(20px, 2vw, 28px)', textAlign: 'center' }}>
                   <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8, filter: 'grayscale(0.5)' }}>

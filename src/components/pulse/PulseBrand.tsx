@@ -22,6 +22,13 @@ interface PulseBrandProps {
   // new one; it's just parameterized so both call sites share the
   // same markup instead of duplicating it.
   animation?: BrandAnimationTiming
+  // When true (and `animation` is passed), skips the "from" state of
+  // every motion element and renders straight into its final
+  // position/opacity — used to replay the Home entrance only once per
+  // browser tab session instead of every time the user navigates back
+  // to Home. Has no effect on the static (no-animation) branch, which
+  // was never animated in the first place.
+  instant?: boolean
 }
 
 const brandWordItem = {
@@ -29,7 +36,7 @@ const brandWordItem = {
   visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: 'easeOut' } },
 }
 
-export default function PulseBrand({ dark, logoSize = 44, fontSize = 20, animation }: PulseBrandProps) {
+export default function PulseBrand({ dark, logoSize = 44, fontSize = 20, animation, instant = false }: PulseBrandProps) {
   const pt = getPulseTheme(dark)
 
   if (!animation) {
@@ -62,7 +69,7 @@ export default function PulseBrand({ dark, logoSize = 44, fontSize = 20, animati
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
       <motion.div
-        initial={{ opacity: 0, x: -20 }}
+        initial={instant ? false : { opacity: 0, x: -20 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.7, delay: logoDelay }}
         style={{
@@ -76,7 +83,7 @@ export default function PulseBrand({ dark, logoSize = 44, fontSize = 20, animati
 
       <div>
         <motion.div
-          initial="hidden"
+          initial={instant ? false : 'hidden'}
           animate="visible"
           variants={brandWordsContainer}
           style={{
@@ -90,7 +97,7 @@ export default function PulseBrand({ dark, logoSize = 44, fontSize = 20, animati
           <motion.span variants={brandWordItem} style={{ display: 'inline-block', color: pt.cobalt }}>PULSE</motion.span>
         </motion.div>
         <motion.div
-          initial={{ opacity: 0, y: 8 }}
+          initial={instant ? false : { opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.55, delay: taglineDelay }}
           style={{

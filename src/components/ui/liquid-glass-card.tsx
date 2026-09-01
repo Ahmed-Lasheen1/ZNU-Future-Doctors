@@ -11,6 +11,7 @@ interface LiquidGlassCardProps {
   dark?: boolean
   onClick?: () => void
   delay?: number
+  instant?: boolean
   className?: string
   style?: CSSProperties
 }
@@ -20,6 +21,7 @@ export default function LiquidGlassCard({
   dark,
   onClick,
   delay = 0,
+  instant = false,
   className,
   style = {},
 }: LiquidGlassCardProps) {
@@ -47,7 +49,7 @@ export default function LiquidGlassCard({
       onMouseLeave={() => interactive && setHovered(false)}
       className={className}
       style={{ position: 'relative', cursor: interactive ? 'pointer' : 'default' }}
-      initial={{ opacity: 0, y: 16 }}
+      initial={instant ? false : { opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.75, delay: entranceDelay, ease: [0.34, 1.56, 0.64, 1] }}
     >
