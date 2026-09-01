@@ -9,8 +9,8 @@ import { getPulseTheme, pulseFonts } from '../premiumTheme'
 import { glassInput } from './pulse/PulseUI'
 import { liquidGlassShadow, liquidGlassBackdrop, liquidGlassTint } from '../lib/liquidGlass'
 
-// Same morph curve the liquid floating-menu reference uses.
-const morphEase = [0.22, 1, 0.36, 1]
+// Snappier hardware-optimized curve
+const morphEase = [0.16, 1, 0.3, 1]
 
 const navItems = [
   { label: 'Home', href: '/' },
@@ -28,40 +28,17 @@ const BUTTON_SIZE = 44
 const PANEL_WIDTH = 280
 const PANEL_RADIUS = 24
 const ROW_RADIUS = 16
-// How far the closed panel is shrunk relative to its true (always-on)
-// layout size. Deliberately NOT matching BUTTON_SIZE exactly on both
-// axes — a non-uniform scale that forces a 280-wide box down to a
-// perfect 44x44 would squash its border-radius into an ellipse. This
-// factor just needs to get small/fast enough that it's fully hidden
-// (opacity 0) under the real toggle button by the time it matters.
 const CLOSED_SCALE = BUTTON_SIZE / PANEL_WIDTH
 
-// Open/close durations. Close was 0.4s before, which — combined with
-// the panel's blur visually shrinking as it scales down (a CSS
-// transform scales the already-blurred result, so at 15% scale a 5px
-// blur reads as under 1px) — made the whole thing read as "vanishing"
-// rather than closing. Slowing it down and bringing it closer to the
-// open duration gives it enough time to actually read as full 5px
-// blur before it starts shrinking away.
-const OPEN_DURATION = 0.6
-const CLOSE_DURATION = 0.55
+const OPEN_DURATION = 0.4
+const CLOSE_DURATION = 0.35
 
-// Single transition object shared by BOTH the panel (scale/opacity)
-// and the content block (y/opacity) — using the literal same object
-// on both `animate` calls is what guarantees they move in lockstep:
-// same duration, same easing curve, starting the same frame.
 function useSyncedTransition(open) {
   return open
     ? { duration: OPEN_DURATION, ease: morphEase }
     : { duration: CLOSE_DURATION, ease: morphEase }
 }
 
-// ── Per-letter flip reveal ──────────────────────────────────────────
-// From the reference component's MenuButton: each character sits in
-// its own overflow-hidden slot with a duplicate stacked below it, and
-// hovering slides that stack up by 50% with a per-letter stagger
-// delay. Only `transform` ever animates — cheap even with several
-// mounted at once.
 function useLetterHover(label) {
   const [hovered, setHovered] = useState(false)
   const animatingRef = useRef(false)
@@ -105,12 +82,14 @@ function FlipLabel({ label, color, weight = 600, size = 14 }) {
         <span key={i} style={{ display: 'inline-block', overflow: 'hidden', height: lineHeight }}>
           <span
             style={{
-              display: 'flex', flexDirection: 'column',
+              display: 'flex', 
+              flexDirection: 'column',
               transitionProperty: 'transform',
-              transitionDuration: hovered ? '620ms' : '0ms',
+              transitionDuration: hovered ? '500ms' : '0ms',
               transitionDelay: hovered ? `${22 * i}ms` : '0ms',
               transform: hovered ? 'translateY(-50%)' : 'translateY(0%)',
-              transitionTimingFunction: 'cubic-bezier(0.22, 1, 0.36, 1)',
+              transitionTimingFunction: 'cubic-bezier(0.16, 1, 0.3, 1)',
+              willChange: 'transform',
             }}
           >
             <span style={{ display: 'block', height: lineHeight, lineHeight: `${lineHeight}px`, color, fontWeight: weight, fontSize: size, fontFamily: 'inherit' }}>
@@ -126,10 +105,6 @@ function FlipLabel({ label, color, weight = 600, size = 14 }) {
   )
 }
 
-// ── Liquid fill burst ───────────────────────────────────────────────
-// The reference's "dark circle growing from the bottom" moment,
-// reinterpreted as a soft glass-tinted bloom. Mounted only while open
-// so it costs nothing at rest, and only transform/opacity animate.
 function LiquidBloom({ pt, open, align }) {
   return (
     <AnimatePresence>
@@ -137,18 +112,21 @@ function LiquidBloom({ pt, open, align }) {
         <motion.div
           aria-hidden
           className="pointer-events-none"
-          initial={{ opacity: 0, scale: 0.15 }}
+          initial={{ opacity: 0, scale: 0.2 }}
           animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.4, transition: { duration: CLOSE_DURATION, ease: morphEase } }}
-          transition={{ duration: OPEN_DURATION, ease: morphEase, delay: 0.05 }}
+          exit={{ opacity: 0, scale: 0.3, transition: { duration: CLOSE_DURATION, ease: morphEase } }}
+          transition={{ duration: OPEN_DURATION, ease: morphEase }}
           style={{
-            position: 'absolute', borderRadius: '50%',
-            width: 340, height: 340,
+            position: 'absolute', 
+            borderRadius: '50%',
+            width: 340, 
+            height: 340,
             [align === 'right' ? 'right' : 'left']: -60,
             top: -40,
-            background: `radial-gradient(circle, ${pt.cobalt}30, ${pt.indigo}18 55%, transparent 72%)`,
+            background: `radial-gradient(circle, ${pt.cobalt}25, ${pt.indigo}15 55%, transparent 70%)`,
             transformOrigin: align === 'right' ? 'top right' : 'top left',
             willChange: 'transform, opacity',
+            transform: 'translateZ(0)',
           }}
         />
       )}
@@ -156,13 +134,7 @@ function LiquidBloom({ pt, open, align }) {
   )
 }
 
-// (Ambient liquid-sheen layer removed — was a possible extra source
-// of rendering weirdness on top of the backdrop-filter fix, and it
-// was purely decorative, not load-bearing for the open/close motion.)
-
-// Same three-layer glass recipe as the cards / menu shell. No more
-// gating needed here — see the note on the panel's own layers below
-// for why blur/shadow are cheap enough now to just always render.
+// Lightened row wrapper to prevent redundant backdrop blurs:
 function GlassRow({ dark, radius = ROW_RADIUS, style = {}, hoverBg, children, onMouseEnter, onMouseLeave, ...rest }) {
   const [hovered, setHovered] = useState(false)
   return (
@@ -170,12 +142,15 @@ function GlassRow({ dark, radius = ROW_RADIUS, style = {}, hoverBg, children, on
       {...rest}
       onMouseEnter={e => { setHovered(true); onMouseEnter?.(e) }}
       onMouseLeave={e => { setHovered(false); onMouseLeave?.(e) }}
-      style={{ position: 'relative', overflow: 'hidden', borderRadius: radius, ...style }}
+      style={{ 
+        position: 'relative', 
+        overflow: 'hidden', 
+        borderRadius: radius, 
+        background: hovered ? hoverBg : 'rgba(255, 255, 255, 0.03)',
+        transition: 'background 0.2s ease',
+        ...style 
+      }}
     >
-      <div aria-hidden className="pointer-events-none" style={{ position: 'absolute', inset: 0, borderRadius: 'inherit', ...liquidGlassBackdrop() }} />
-      <div aria-hidden className="pointer-events-none" style={{ position: 'absolute', inset: 0, borderRadius: 'inherit', boxShadow: liquidGlassShadow(dark) }} />
-      <div aria-hidden className="pointer-events-none" style={{ position: 'absolute', inset: 0, borderRadius: 'inherit', background: liquidGlassTint(dark) }} />
-      {hovered && <div aria-hidden className="pointer-events-none" style={{ position: 'absolute', inset: 0, borderRadius: 'inherit', background: hoverBg }} />}
       <div style={{ position: 'relative', zIndex: 1 }}>{children}</div>
     </div>
   )
@@ -225,36 +200,22 @@ export default function NavMenu({ dark, toggleTheme, align = 'left' }) {
 
   return (
     <div ref={wrapperRef} style={{ position: 'relative', width: BUTTON_SIZE, height: BUTTON_SIZE }}>
-      {/* Glass panel — ALWAYS at its true, final layout size. Nothing
-          about width/height/border-radius ever animates, which is the
-          actual fix: since the box's real dimensions never change,
-          the browser computes the backdrop-blur once and the GPU just
-          re-composites that cached result under the scale transform,
-          instead of re-blurring a resizing region every frame. Only
-          `scale` and `opacity` are ever touched here — both are
-          compositor-only, so this is genuinely free regardless of
-          device. */}
+      {/* Container */}
       <motion.div
         style={{
-          position: 'absolute', top: 0, [cornerSide]: 0,
+          position: 'absolute', 
+          top: 0, 
+          [cornerSide]: 0,
           width: PANEL_WIDTH,
           maxWidth: '90vw',
           transformOrigin: cornerSide === 'right' ? 'top right' : 'top left',
           pointerEvents: open ? 'auto' : 'none',
           zIndex: 1999,
           willChange: 'transform, opacity',
-          // overflow-hidden + isolation:isolate + backdrop-filter all
-          // live on THIS element — the same one that carries the
-          // scale/opacity animation below. That co-location is what
-          // makes backdrop-filter actually work: it needs to sample
-          // "behind itself" at its own pre-transform position. Once
-          // it's nested a level inside a SEPARATE already-transformed
-          // ancestor (what this looked like before — scale on an
-          // outer div, backdrop-filter on an inner one) it gets
-          // trapped sampling only within that ancestor's own isolated
-          // layer, which has nothing behind it — so it blurs nothing,
-          // regardless of the blur radius value.
-          isolation: 'isolate', overflow: 'hidden', borderRadius: PANEL_RADIUS,
+          transform: 'translateZ(0)',
+          isolation: 'isolate', 
+          overflow: 'hidden', 
+          borderRadius: PANEL_RADIUS,
           ...liquidGlassBackdrop(),
         }}
         animate={{ scale: open ? 1 : CLOSED_SCALE, opacity: open ? 1 : 0 }}
@@ -265,21 +226,26 @@ export default function NavMenu({ dark, toggleTheme, align = 'left' }) {
 
         <LiquidBloom pt={pt} open={open} align={align} />
 
-        {/* Spacer matching the real button's footprint, so the list
-            below never sits under it. */}
         <div style={{ height: BUTTON_SIZE }} />
 
-        {/* Content — pulls down into place as it opens, pulls back up
-            as it closes, using the SAME `transition` object as the
-            panel's scale above (see useSyncedTransition), so the two
-            are locked to identical timing. */}
+        {/* Inner layout content */}
         <motion.div
-          animate={{ y: open ? 0 : -16, opacity: open ? 1 : 0 }}
+          animate={{ y: open ? 0 : -10, opacity: open ? 1 : 0 }}
           transition={transition}
           aria-hidden={!open}
-          style={{ position: 'relative', zIndex: 1, width: PANEL_WIDTH, padding: '0 14px 16px', fontFamily: pulseFonts.body, display: 'flex', flexDirection: 'column', gap: 10 }}
+          style={{ 
+            position: 'relative', 
+            zIndex: 1, 
+            width: PANEL_WIDTH, 
+            padding: '0 14px 16px', 
+            fontFamily: pulseFonts.body, 
+            display: 'flex', 
+            flexDirection: 'column', 
+            gap: 10,
+            willChange: 'transform, opacity',
+          }}
         >
-          {/* Profile / Sign In */}
+          {/* User Section */}
           {user ? (
             <GlassRow dark={dark} radius={18} hoverBg={rowHover} onClick={() => goTo('/profile')}
               role="button" tabIndex={open ? 0 : -1}
@@ -314,14 +280,9 @@ export default function NavMenu({ dark, toggleTheme, align = 'left' }) {
             </GlassRow>
           )}
 
-          {/* Search bar — same glass recipe as the input on the Search
-              page itself (glassInput from PulseUI: pill shape,
-              blur(14px), solid border), just sized to fit the panel
-              instead of the page's full width. Everything else about
-              it — the icon, submit-on-Enter, click-to-submit — is
-              unchanged. */}
+          {/* Search bar */}
           <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-            <SearchIcon size={16} color={pt.faint} style={{ position: 'absolute', left: 16, top: '60%', transform: 'translateY(-60%)', pointerEvents: 'none' }} />
+            <SearchIcon size={16} color={pt.faint} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
             <input
               value={searchValue}
               onChange={e => setSearchValue(e.target.value)}
@@ -334,13 +295,12 @@ export default function NavMenu({ dark, toggleTheme, align = 'left' }) {
                 padding: '13px 18px 13px 42px',
                 marginBottom: 0,
                 fontSize: 14,
+                backdropFilter: 'none', // Prevent stacking filters
               }}
             />
           </div>
 
-          {/* Navigation — labels use the per-letter flip reveal on
-              hover, the signature move borrowed from the liquid
-              floating-menu reference. */}
+          {/* Navigation Links */}
           {navItems.map(item => (
             <GlassRow key={item.href} dark={dark} radius={16} hoverBg={rowHover} onClick={() => goTo(item.href)}
               role="button" tabIndex={open ? 0 : -1}
@@ -371,10 +331,7 @@ export default function NavMenu({ dark, toggleTheme, align = 'left' }) {
         </motion.div>
       </motion.div>
 
-      {/* Real toggle button — fixed 44x44, never scaled or distorted.
-          Sits above the glass panel (higher zIndex) at the same
-          corner, so it stays crisp throughout the whole open/close
-          motion regardless of what the panel underneath is doing. */}
+      {/* Toggle Button */}
       <div style={{
         position: 'absolute', top: 0, [cornerSide]: 0,
         width: BUTTON_SIZE, height: BUTTON_SIZE, zIndex: 2000,
