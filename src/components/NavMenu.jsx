@@ -155,23 +155,9 @@ function LiquidBloom({ pt, open, align }) {
   )
 }
 
-// Ambient inner motion while the panel is open — reuses the
-// `.liquid-sheen` keyframe already defined in index.css (a slow
-// translate+rotate loop). Pure transform, effectively free to run.
-function LiquidSheen({ pt, open }) {
-  return (
-    <div
-      aria-hidden
-      className="liquid-sheen pointer-events-none"
-      style={{
-        position: 'absolute', width: '140%', height: '140%',
-        background: `radial-gradient(circle, ${pt.cobalt}20, transparent 65%)`,
-        opacity: open ? 0.8 : 0,
-        transition: `opacity ${open ? OPEN_DURATION : CLOSE_DURATION}s ease`,
-      }}
-    />
-  )
-}
+// (Ambient liquid-sheen layer removed — was a possible extra source
+// of rendering weirdness on top of the backdrop-filter fix, and it
+// was purely decorative, not load-bearing for the open/close motion.)
 
 // Same three-layer glass recipe as the cards / menu shell. No more
 // gating needed here — see the note on the panel's own layers below
@@ -278,7 +264,6 @@ export default function NavMenu({ dark, toggleTheme, align = 'left' }) {
           <div aria-hidden className="pointer-events-none" style={{ position: 'absolute', inset: 0, borderRadius: 'inherit', background: liquidGlassTint(dark) }} />
 
           <LiquidBloom pt={pt} open={open} align={align} />
-          <LiquidSheen pt={pt} open={open} />
 
           {/* Spacer matching the real button's footprint, so the list
               below never sits under it. */}
