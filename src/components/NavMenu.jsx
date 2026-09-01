@@ -252,8 +252,6 @@ export default function NavMenu({ dark, toggleTheme, align = 'left' }) {
           position: 'absolute', top: 0, [cornerSide]: 0,
           width: PANEL_WIDTH,
           maxWidth: '90vw',
-          borderRadius: PANEL_RADIUS,
-          overflow: 'hidden',
           transformOrigin: cornerSide === 'right' ? 'top right' : 'top left',
           pointerEvents: open ? 'auto' : 'none',
           zIndex: 1999,
@@ -262,22 +260,35 @@ export default function NavMenu({ dark, toggleTheme, align = 'left' }) {
         animate={{ scale: open ? 1 : CLOSED_SCALE, opacity: open ? 1 : 0 }}
         transition={transition}
       >
-        <div aria-hidden className="pointer-events-none" style={{ position: 'absolute', inset: 0, ...liquidGlassBackdrop() }} />
-        <div aria-hidden className="pointer-events-none" style={{ position: 'absolute', inset: 0, boxShadow: liquidGlassShadow(dark) }} />
-        <div aria-hidden className="pointer-events-none" style={{ position: 'absolute', inset: 0, background: liquidGlassTint(dark) }} />
+        {/* overflow-hidden + isolation:isolate + backdrop-filter all
+            live on this SAME element — same recipe LiquidGlassCard
+            uses. Splitting backdrop-filter onto a separate child
+            inside a differently-clipped parent (what this looked like
+            before) is what was making the blur render as nothing:
+            without `isolation: isolate` establishing its own stacking
+            context here, the backdrop-filter had no reliable "behind"
+            to sample once it was nested a level deeper than the
+            overflow/transform boundary. */}
+        <div style={{
+          position: 'relative', isolation: 'isolate', overflow: 'hidden',
+          borderRadius: PANEL_RADIUS,
+          ...liquidGlassBackdrop(),
+        }}>
+          <div aria-hidden className="pointer-events-none" style={{ position: 'absolute', inset: 0, borderRadius: 'inherit', boxShadow: liquidGlassShadow(dark) }} />
+          <div aria-hidden className="pointer-events-none" style={{ position: 'absolute', inset: 0, borderRadius: 'inherit', background: liquidGlassTint(dark) }} />
 
-        <LiquidBloom pt={pt} open={open} align={align} />
-        <LiquidSheen pt={pt} open={open} />
+          <LiquidBloom pt={pt} open={open} align={align} />
+          <LiquidSheen pt={pt} open={open} />
 
-        {/* Spacer matching the real button's footprint, so the list
-            below never sits under it. */}
-        <div style={{ height: BUTTON_SIZE }} />
+          {/* Spacer matching the real button's footprint, so the list
+              below never sits under it. */}
+          <div style={{ height: BUTTON_SIZE }} />
 
-        {/* Content — pulls down into place as it opens, pulls back up
-            as it closes, using the SAME `transition` object as the
-            panel's scale above (see useSyncedTransition), so the two
-            are locked to identical timing. */}
-        <motion.div
+          {/* Content — pulls down into place as it opens, pulls back up
+              as it closes, using the SAME `transition` object as the
+              panel's scale above (see useSyncedTransition), so the two
+              are locked to identical timing. */}
+          <motion.div
           animate={{ y: open ? 0 : -16, opacity: open ? 1 : 0 }}
           transition={transition}
           aria-hidden={!open}
@@ -367,6 +378,7 @@ export default function NavMenu({ dark, toggleTheme, align = 'left' }) {
             </GlassRow>
           )}
         </motion.div>
+      </div>
       </motion.div>
 
       {/* Real toggle button — fixed 44x44, never scaled or distorted.
