@@ -113,3 +113,31 @@ export function LeaderboardIcon({ color, size = 20 }: IconProps) {
     </svg>
   )
 }
+
+// Home nav icon — built fresh to match the same hand-drawn, animated-
+// stroke language as the four icons above (thin static outline plus
+// one accent stroke that draws itself in on mount). None of the
+// existing icon sets had a "home" glyph, since the Home page doesn't
+// link to itself from within itself — this fills that gap for the
+// nav menu specifically. Roof + walls sit static (opacity 0.9/0.55,
+// matching how e.g. ScheduleIcon treats its outline vs its accent),
+// and the arched doorway draws itself in as the accent stroke.
+export function HomeIcon({ color, size = 20 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <path d="M4 10.5L12 4l8 6.5" stroke={color} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" opacity="0.9" />
+      <path d="M6 9.5V19a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V9.5" stroke={color} strokeWidth="1.6" strokeLinejoin="round" opacity="0.55" />
+      <motion.path
+        d="M9.5 20V15a2.5 2.5 0 0 1 5 0v5"
+        stroke={color}
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        fill="none"
+        initial={{ pathLength: 0, opacity: 0 }}
+        animate={{ pathLength: 1, opacity: 1 }}
+        transition={{ ...drawTransition, delay: 0.15 }}
+      />
+    </svg>
+  )
+}
