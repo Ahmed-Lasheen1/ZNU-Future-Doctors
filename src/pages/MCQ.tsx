@@ -107,6 +107,7 @@ export default function MCQ({ dark }: { dark: boolean }) {
   const [flaggedIds, setFlaggedIds] = useState<Set<string>>(new Set())
   const [resumeData, setResumeData] = useState<any>(null)
   const [currentIndex, setCurrentIndex] = useState(0)
+  const [showReview, setShowReview] = useState(false)
   const timerRef = useRef<ReturnType<typeof setInterval>>()
   const quizStartedAtRef = useRef<number | null>(null)
   const [usingCache, setUsingCache] = useState(false)
@@ -330,6 +331,7 @@ export default function MCQ({ dark }: { dark: boolean }) {
     setResumeData(null)
     setCurrentIndex(0)
     setElapsedSeconds(0)
+    setShowReview(false)
     loadFlagsFor(qs.map(q => q.id)).then(setFlaggedIds)
 
     quizStartedAtRef.current = Date.now()
@@ -348,6 +350,7 @@ export default function MCQ({ dark }: { dark: boolean }) {
     setResumeData(null)
     setCurrentIndex(0)
     setElapsedSeconds(0)
+    setShowReview(false)
     quizStartedAtRef.current = Date.now()
     startTimer(quizStartedAtRef.current, 'retry')
     loadFlagsFor(list.map(q => q.id)).then(setFlaggedIds)
@@ -363,6 +366,7 @@ export default function MCQ({ dark }: { dark: boolean }) {
     setSubmitted(false)
     setQuizMode(resumeData.quizMode)
     setCurrentIndex(0)
+    setShowReview(false)
     quizStartedAtRef.current = resumeData.startedAt
     loadFlagsFor((resumeData.quizQuestions || []).map((q: any) => q.id)).then(setFlaggedIds)
 
@@ -387,6 +391,7 @@ export default function MCQ({ dark }: { dark: boolean }) {
     setElapsedSeconds(0)
     setFlaggedIds(new Set())
     setCurrentIndex(0)
+    setShowReview(false)
   }
 
   function selectAnswer(qi: number, opt: string) {
@@ -679,9 +684,14 @@ export default function MCQ({ dark }: { dark: boolean }) {
                   const lesson = lessons.find(l => l.id === currentQuestion.lesson_id)
                   const showSubjectTag = quizMode === 'mock' && !!subj
                   const showLessonTag = !lessonFilter && !!lesson
-                  if (!showSubjectTag && !showLessonTag && !currentQuestion.source) return null
                   return (
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 14, flexShrink: 0 }}>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 6, marginBottom: 14, flexShrink: 0 }}>
+                      <span style={{
+                        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                        minWidth: 30, height: 24, padding: '0 9px', borderRadius: 8,
+                        background: `${MCQ_ACCENT}22`, border: `1px solid ${MCQ_ACCENT}55`,
+                        color: MCQ_ACCENT, fontWeight: 800, fontSize: 12, whiteSpace: 'nowrap'
+                      }}>Q{safeIndex + 1}</span>
                       {showSubjectTag && <InfoTag label={subj.name} color={subj.color || '#34d399'} />}
                       {showLessonTag && <InfoTag label={lesson.title} color="#818cf8" />}
                       {currentQuestion.source && <QuestionSourceBadge source={currentQuestion.source} />}
@@ -781,23 +791,23 @@ export default function MCQ({ dark }: { dark: boolean }) {
           )}
 
           {/* ── Results: analytical instrument ─────────────────────── */}
-          {submitted && !grading && (
-            <div style={{ paddingBottom: 24 }}>
-              <div style={{ height: 1, background: EXAM_DIVIDER, marginBottom: 24 }} />
+          {submitted && !grading && !showReview && (
+            <div style={{ paddingBottom: 20 }}>
+              <div style={{ height: 1, background: EXAM_DIVIDER, marginBottom: 18 }} />
 
               <div style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.5, color: EXAM_LOW_TEXT_MUTED, textShadow: EXAM_LOW_SHADOW, marginBottom: 4 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.5, color: EXAM_LOW_TEXT_MUTED, textShadow: EXAM_LOW_SHADOW, marginBottom: 2 }}>
                   {quizMode === 'mock' ? 'MOCK EXAM COMPLETE' : quizMode === 'retry' ? 'RETRY COMPLETE' : 'PRACTICE COMPLETE'}
                 </div>
                 <div style={{
-                  fontFamily: pulseFonts.display, fontWeight: 800, fontSize: 'clamp(64px, 14vw, 140px)',
+                  fontFamily: pulseFonts.display, fontWeight: 800, fontSize: 'clamp(52px, 11vw, 104px)',
                   lineHeight: 1, color: EXAM_LOW_TEXT, textShadow: '0 2px 14px rgba(1,12,74,0.55)'
                 }}>{percent}</div>
-                <div style={{ fontSize: 13, fontWeight: 700, letterSpacing: 1, color: EXAM_LOW_TEXT, textShadow: EXAM_LOW_SHADOW, marginTop: 6 }}>
+                <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: 1, color: EXAM_LOW_TEXT, textShadow: EXAM_LOW_SHADOW, marginTop: 4 }}>
                   {percent >= 90 ? 'EXCELLENT.' : percent >= 75 ? 'GREAT WORK.' : percent >= 60 ? 'GOOD WORK.' : 'KEEP PRACTICING.'}
                 </div>
 
-                <div style={{ display: 'flex', justifyContent: 'center', gap: 28, marginTop: 24, flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', justifyContent: 'center', gap: 24, marginTop: 16, flexWrap: 'wrap' }}>
                   <StatChip label="CORRECT" value={score} color={pt.success} />
                   <StatChip label="INCORRECT" value={total - score} color={pt.danger} />
                   <StatChip label="TIME" value={formatTime(finishTimeSec)} color={EXAM_LOW_TEXT} />
@@ -805,16 +815,16 @@ export default function MCQ({ dark }: { dark: boolean }) {
               </div>
 
               {subjectStats.length > 1 && (
-                <div style={{ marginTop: 36 }}>
-                  <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.5, color: EXAM_LOW_TEXT_MUTED, textShadow: EXAM_LOW_SHADOW, marginBottom: 14 }}>YOUR PERFORMANCE</div>
+                <div style={{ marginTop: 20 }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.5, color: EXAM_LOW_TEXT_MUTED, textShadow: EXAM_LOW_SHADOW, marginBottom: 10 }}>YOUR PERFORMANCE</div>
                   {subjectStats.map(s => (
-                    <div key={s.id} style={{ marginBottom: 14 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                        <span style={{ color: EXAM_LOW_TEXT, textShadow: EXAM_LOW_SHADOW, fontSize: 13, fontWeight: 600 }}>{s.name}</span>
-                        <span style={{ color: EXAM_LOW_TEXT_MUTED, textShadow: EXAM_LOW_SHADOW, fontSize: 13, fontWeight: 700 }}>{s.accuracy}</span>
+                    <div key={s.id} style={{ marginBottom: 8 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                        <span style={{ color: EXAM_LOW_TEXT, textShadow: EXAM_LOW_SHADOW, fontSize: 12, fontWeight: 600 }}>{s.name}</span>
+                        <span style={{ color: EXAM_LOW_TEXT_MUTED, textShadow: EXAM_LOW_SHADOW, fontSize: 12, fontWeight: 700 }}>{s.accuracy}</span>
                       </div>
                       <div style={{
-                        height: 5, borderRadius: 999, overflow: 'hidden',
+                        height: 4, borderRadius: 999, overflow: 'hidden',
                         background: 'rgba(255,255,255,0.15)'
                       }}>
                         <div style={{
@@ -829,30 +839,128 @@ export default function MCQ({ dark }: { dark: boolean }) {
               )}
 
               {weakestSubject && (
-                <div style={{ marginTop: 36 }}>
-                  <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.5, color: EXAM_LOW_TEXT_MUTED, textShadow: EXAM_LOW_SHADOW, marginBottom: 10 }}>FOCUS NEXT</div>
-                  <LiquidGlassCard dark={dark} delay={0} style={{ padding: '20px 22px' }}>
-                    <div style={{ color: MCQ_ACCENT, fontWeight: 800, fontSize: 16, marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                <div style={{ marginTop: 20 }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.5, color: EXAM_LOW_TEXT_MUTED, textShadow: EXAM_LOW_SHADOW, marginBottom: 8 }}>FOCUS NEXT</div>
+                  <LiquidGlassCard dark={dark} delay={0} style={{ padding: '16px 20px' }}>
+                    <div style={{ color: MCQ_ACCENT, fontWeight: 800, fontSize: 15, marginBottom: 4, textTransform: 'uppercase', letterSpacing: 0.5 }}>
                       {weakestSubject.name}
                     </div>
-                    <div style={{ color: pt.sub, fontSize: 13, marginBottom: 16 }}>
+                    <div style={{ color: pt.sub, fontSize: 12, marginBottom: 12 }}>
                       You missed {weakestSubject.incorrect} question{weakestSubject.incorrect === 1 ? '' : 's'} from this topic.
                     </div>
                     <button onClick={() => startTargetedPractice(weakestSubject.id)} className="exam-btn" style={{
                       width: '100%', background: MCQ_ACCENT, color: '#0f172a', border: 'none', borderRadius: 999,
-                      padding: '13px', fontWeight: 800, fontSize: 13, letterSpacing: 0.5, cursor: 'pointer', fontFamily: pulseFonts.body
+                      padding: '11px', fontWeight: 800, fontSize: 12, letterSpacing: 0.5, cursor: 'pointer', fontFamily: pulseFonts.body
                     }}>START TARGETED PRACTICE</button>
                   </LiquidGlassCard>
                 </div>
               )}
 
-              <div style={{ display: 'flex', gap: 10, marginTop: 36 }}>
+              <div style={{ marginTop: 20 }}>
+                <button onClick={() => setShowReview(true)} className="exam-btn" style={{
+                  width: '100%', background: 'rgba(1,12,74,0.28)',
+                  border: '1px solid rgba(255,255,255,0.35)', borderRadius: 999, padding: '12px',
+                  color: EXAM_LOW_TEXT, textShadow: EXAM_LOW_SHADOW,
+                  cursor: 'pointer', fontWeight: 700, fontSize: 13, letterSpacing: 0.5, fontFamily: pulseFonts.body
+                }}>🔍 REVIEW ANSWERS</button>
+              </div>
+
+              <div style={{ display: 'flex', gap: 10, marginTop: 10 }}>
                 <button onClick={tryAgain} className="exam-btn" style={{
                   flex: 1, background: 'rgba(1,12,74,0.28)',
                   border: '1px solid rgba(255,255,255,0.35)', borderRadius: 999, padding: '13px',
                   color: EXAM_LOW_TEXT, textShadow: EXAM_LOW_SHADOW,
                   cursor: 'pointer', fontWeight: 700, fontSize: 13, letterSpacing: 0.5, fontFamily: pulseFonts.body
                 }}>TRY AGAIN</button>
+                <button onClick={stopQuiz} className="exam-btn" style={{
+                  flex: 1, background: pt.cobalt, border: 'none', borderRadius: 999, padding: '13px',
+                  color: '#fff', cursor: 'pointer', fontWeight: 700, fontSize: 13, letterSpacing: 0.5, fontFamily: pulseFonts.body
+                }}>DONE</button>
+              </div>
+            </div>
+          )}
+
+          {/* ── Review Answers: full scrollable per-question breakdown ── */}
+          {submitted && !grading && showReview && (
+            <div style={{ paddingBottom: 20 }}>
+              <div style={{ height: 1, background: EXAM_DIVIDER, marginBottom: 16 }} />
+
+              <button onClick={() => setShowReview(false)} className="exam-btn" style={{
+                background: 'transparent', border: 'none', cursor: 'pointer',
+                color: EXAM_LOW_TEXT, textShadow: EXAM_LOW_SHADOW,
+                fontSize: 12, fontWeight: 700, letterSpacing: 1, marginBottom: 16, display: 'block'
+              }}>← BACK TO RESULTS</button>
+
+              {quizQuestions.map((q, qi) => {
+                const result = results[q.id]
+                const isCorrect = result?.is_correct
+                const userAnswer = answers[qi]
+                const isLast = qi === quizQuestions.length - 1
+                return (
+                  <div key={qi} style={{ marginBottom: isLast ? 0 : 14 }}>
+                    <LiquidGlassCard dark={dark} delay={0} style={{
+                      padding: '18px 20px',
+                      boxShadow: `inset 0 0 0 2px ${isCorrect ? '#4ade80' : userAnswer ? '#f87171' : 'transparent'}`
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, flexWrap: 'wrap' }}>
+                        <span style={{
+                          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                          minWidth: 28, height: 22, padding: '0 8px', borderRadius: 7,
+                          background: `${MCQ_ACCENT}22`, border: `1px solid ${MCQ_ACCENT}55`,
+                          color: MCQ_ACCENT, fontWeight: 800, fontSize: 11
+                        }}>Q{qi + 1}</span>
+                        <span style={{
+                          fontSize: 11, fontWeight: 800, letterSpacing: 0.5, padding: '2px 9px', borderRadius: 20,
+                          background: isCorrect ? 'rgba(74,222,128,0.16)' : 'rgba(248,113,113,0.16)',
+                          color: isCorrect ? '#4ade80' : '#f87171'
+                        }}>{isCorrect ? '✓ CORRECT' : userAnswer ? '✕ INCORRECT' : '— UNANSWERED'}</span>
+                        {q.source && <QuestionSourceBadge source={q.source} />}
+                      </div>
+
+                      <p style={{
+                        ...pulseType.cardTitle, color: pt.textPrimary, margin: '0 0 12px',
+                        wordBreak: 'break-word', overflowWrap: 'anywhere'
+                      }}>{q.question}</p>
+
+                      {optionTexts(q).map((opt: string, ai: number) => {
+                        const label = optionLabels[ai]
+                        let bg = dark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)'
+                        let border = pt.border
+                        let color = pt.sub
+                        if (result && label === result.correct_answer) { bg = 'rgba(74,222,128,0.16)'; border = '#4ade80'; color = '#4ade80' }
+                        if (result && userAnswer === label && label !== result.correct_answer) { bg = 'rgba(248,113,113,0.16)'; border = '#f87171'; color = '#f87171' }
+                        return (
+                          <div key={ai} style={{
+                            background: bg, border: `1px solid ${border}`,
+                            borderRadius: 10, padding: '10px 14px', marginBottom: 8,
+                            color, fontSize: 13, fontWeight: 600,
+                            wordBreak: 'break-word', overflowWrap: 'anywhere'
+                          }}>
+                            {label.toUpperCase()}. {opt}
+                          </div>
+                        )
+                      })}
+
+                      {result?.explanation && (
+                        <div style={{
+                          background: dark ? 'rgba(56,189,248,0.10)' : 'rgba(2,132,199,0.06)',
+                          borderRadius: 10, padding: '10px 14px', marginTop: 8, color: pt.sub, fontSize: 12
+                        }}>
+                          💡 {result.explanation}
+                        </div>
+                      )}
+                    </LiquidGlassCard>
+                  </div>
+                )
+              })}
+
+              <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
+                <button onClick={() => setShowReview(false)} className="exam-btn" style={{
+                  flex: 1, background: 'rgba(1,12,74,0.28)',
+                  border: '1px solid rgba(255,255,255,0.35)', borderRadius: 999, padding: '13px',
+                  color: EXAM_LOW_TEXT, textShadow: EXAM_LOW_SHADOW,
+                  cursor: 'pointer', fontWeight: 700, fontSize: 13, letterSpacing: 0.5, fontFamily: pulseFonts.body
+                }}>← BACK</button>
                 <button onClick={stopQuiz} className="exam-btn" style={{
                   flex: 1, background: pt.cobalt, border: 'none', borderRadius: 999, padding: '13px',
                   color: '#fff', cursor: 'pointer', fontWeight: 700, fontSize: 13, letterSpacing: 0.5, fontFamily: pulseFonts.body
