@@ -634,11 +634,15 @@ export default function MCQ({ dark }: { dark: boolean }) {
                 minHeight: 'clamp(320px, 58vh, 760px)', boxSizing: 'border-box',
                 padding: 'clamp(20px, 3vh, 40px) clamp(22px, 3.5vw, 44px)',
                 display: 'flex', flexDirection: 'column', justifyContent: 'center',
-                overflowY: 'auto', marginBottom: 14
+                overflowY: 'auto', overflowX: 'hidden', marginBottom: 14
               }}>
                 {currentQuestion.source && <div style={{ marginBottom: 12, flexShrink: 0 }}><QuestionSourceBadge source={currentQuestion.source} /></div>}
 
-                <p style={{ ...pulseType.cardTitle, fontSize: 'clamp(18px, 1.8vw, 24px)', color: pt.textPrimary, margin: '0 0 22px', lineHeight: 1.5, flexShrink: 0 }}>
+                <p style={{
+                  ...pulseType.cardTitle, fontSize: 'clamp(18px, 1.8vw, 24px)', color: pt.textPrimary,
+                  margin: '0 0 22px', lineHeight: 1.5, flexShrink: 0,
+                  wordBreak: 'break-word', overflowWrap: 'anywhere'
+                }}>
                   {currentQuestion.question}
                 </p>
 
@@ -653,7 +657,7 @@ export default function MCQ({ dark }: { dark: boolean }) {
                       onClick={() => selectAnswer(safeIndex, label)}
                       style={{
                         ['--opt-hover-bg' as any]: selected ? `${pt.cobalt}20` : hoverBg,
-                        display: 'flex', alignItems: 'center', gap: 14, flexShrink: 0,
+                        display: 'flex', alignItems: 'flex-start', gap: 14, flexShrink: 0, minWidth: 0,
                         background: selected ? `${pt.cobalt}18` : (dark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)'),
                         border: `1.5px solid ${selected ? pt.cobalt : pt.border}`,
                         borderRadius: 14, padding: 'clamp(14px, 1.8vh, 20px) clamp(16px, 2vw, 24px)', marginBottom: 12,
@@ -664,9 +668,14 @@ export default function MCQ({ dark }: { dark: boolean }) {
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         background: selected ? pt.cobalt : 'transparent',
                         border: `1.5px solid ${selected ? pt.cobalt : pt.border}`,
-                        color: selected ? '#fff' : pt.sub, fontWeight: 800, fontSize: 'clamp(12px, 1vw, 14px)'
+                        color: selected ? '#fff' : pt.sub, fontWeight: 800, fontSize: 'clamp(12px, 1vw, 14px)',
+                        marginTop: 1
                       }}>{label.toUpperCase()}</span>
-                      <span style={{ color: selected ? pt.cobalt : pt.text, fontSize: 'clamp(14px, 1.2vw, 17px)', fontWeight: 600, lineHeight: 1.4 }}>{opt}</span>
+                      <span style={{
+                        flex: 1, minWidth: 0, color: selected ? pt.cobalt : pt.text,
+                        fontSize: 'clamp(14px, 1.2vw, 17px)', fontWeight: 600, lineHeight: 1.45,
+                        wordBreak: 'break-word', overflowWrap: 'anywhere'
+                      }}>{opt}</span>
                     </div>
                   )
                 })}
