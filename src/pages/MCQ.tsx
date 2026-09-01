@@ -606,82 +606,76 @@ export default function MCQ({ dark }: { dark: boolean }) {
             <div style={{ textAlign: 'center', padding: 24, color: EXAM_LOW_TEXT, textShadow: EXAM_LOW_SHADOW, fontSize: 14 }}>Grading...</div>
           )}
 
-          {/* ── Active taking: single-question focus, laid out to fit one
-              screen. The outer minHeight is an estimate of (real
-              viewport height − the site's own sticky header − this
-              page's own status header) — close enough on most devices
-              that FLAG/PREVIOUS/NEXT never require scrolling to reach.
-              If a specific device shows a small gap or slight overflow,
-              nudge the 200px offset below. */}
+          {/* ── Active taking: single-question focus, card kept large
+              via a direct minHeight floor rather than a flex-stretch
+              chain (LiquidGlassCard's own inner layer hardcodes
+              height:'100%' against ITS parent — which silently
+              resolves to nothing unless that parent already has a
+              definite height, so relying on stretch through it is
+              fragile). A minHeight works bottom-up regardless of any
+              ancestor's sizing: short question → card stays big;
+              genuinely long question → card (and page) simply grows
+              past the floor and scrolls. */}
           {!submitted && !grading && currentQuestion && (
-            <div style={{ display: 'flex', flexDirection: 'column', minHeight: 'calc(100dvh - 200px)' }}>
-              <div style={{ height: 1, background: EXAM_DIVIDER, marginBottom: 16, flexShrink: 0 }} />
+            <>
+              <div style={{ height: 1, background: EXAM_DIVIDER, marginBottom: 16 }} />
 
-              <div style={{ flexShrink: 0 }}>
-                <QuestionRail
-                  total={total}
-                  currentIndex={safeIndex}
-                  answeredIndexes={answeredIndexes}
-                  flaggedIndexes={flaggedIndexes}
-                  onGoTo={setCurrentIndex}
-                  dark={dark}
-                  accent={MCQ_ACCENT}
-                />
-              </div>
+              <QuestionRail
+                total={total}
+                currentIndex={safeIndex}
+                answeredIndexes={answeredIndexes}
+                flaggedIndexes={flaggedIndexes}
+                onGoTo={setCurrentIndex}
+                dark={dark}
+                accent={MCQ_ACCENT}
+              />
 
-              {/* Flexible middle region — a single flex child under a
-                  row-flex wrapper stretches to the wrapper's full
-                  height by default (align-items: stretch), which is
-                  what lets LiquidGlassCard's own height:100% below
-                  actually resolve to something real instead of "auto". */}
-              <div style={{ flex: 1, minHeight: 0, display: 'flex', marginBottom: 14 }}>
-                <LiquidGlassCard dark={dark} delay={0} style={{
-                  height: '100%', width: '100%', boxSizing: 'border-box',
-                  padding: 'clamp(20px, 3vh, 40px) clamp(22px, 3.5vw, 44px)',
-                  display: 'flex', flexDirection: 'column', justifyContent: 'center',
-                  overflowY: 'auto'
-                }}>
-                  {currentQuestion.source && <div style={{ marginBottom: 12, flexShrink: 0 }}><QuestionSourceBadge source={currentQuestion.source} /></div>}
+              <LiquidGlassCard dark={dark} delay={0} style={{
+                minHeight: 'clamp(320px, 58vh, 760px)', boxSizing: 'border-box',
+                padding: 'clamp(20px, 3vh, 40px) clamp(22px, 3.5vw, 44px)',
+                display: 'flex', flexDirection: 'column', justifyContent: 'center',
+                overflowY: 'auto', marginBottom: 14
+              }}>
+                {currentQuestion.source && <div style={{ marginBottom: 12, flexShrink: 0 }}><QuestionSourceBadge source={currentQuestion.source} /></div>}
 
-                  <p style={{ ...pulseType.cardTitle, fontSize: 'clamp(18px, 1.8vw, 24px)', color: pt.textPrimary, margin: '0 0 22px', lineHeight: 1.5, flexShrink: 0 }}>
-                    {currentQuestion.question}
-                  </p>
+                <p style={{ ...pulseType.cardTitle, fontSize: 'clamp(18px, 1.8vw, 24px)', color: pt.textPrimary, margin: '0 0 22px', lineHeight: 1.5, flexShrink: 0 }}>
+                  {currentQuestion.question}
+                </p>
 
-                  {optionTexts(currentQuestion).map((opt: string, ai: number) => {
-                    const label = optionLabels[ai]
-                    const selected = answers[safeIndex] === label
-                    const hoverBg = dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.045)'
-                    return (
-                      <div
-                        key={ai}
-                        className="exam-option"
-                        onClick={() => selectAnswer(safeIndex, label)}
-                        style={{
-                          ['--opt-hover-bg' as any]: selected ? `${pt.cobalt}20` : hoverBg,
-                          display: 'flex', alignItems: 'center', gap: 14, flexShrink: 0,
-                          background: selected ? `${pt.cobalt}18` : (dark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)'),
-                          border: `1.5px solid ${selected ? pt.cobalt : pt.border}`,
-                          borderRadius: 14, padding: 'clamp(14px, 1.8vh, 20px) clamp(16px, 2vw, 24px)', marginBottom: 12,
-                          cursor: 'pointer'
-                        }}>
-                        <span style={{
-                          width: 'clamp(28px, 2.2vw, 34px)', height: 'clamp(28px, 2.2vw, 34px)', borderRadius: '50%', flexShrink: 0,
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          background: selected ? pt.cobalt : 'transparent',
-                          border: `1.5px solid ${selected ? pt.cobalt : pt.border}`,
-                          color: selected ? '#fff' : pt.sub, fontWeight: 800, fontSize: 'clamp(12px, 1vw, 14px)'
-                        }}>{label.toUpperCase()}</span>
-                        <span style={{ color: selected ? pt.cobalt : pt.text, fontSize: 'clamp(14px, 1.2vw, 17px)', fontWeight: 600, lineHeight: 1.4 }}>{opt}</span>
-                      </div>
-                    )
-                  })}
-                </LiquidGlassCard>
-              </div>
+                {optionTexts(currentQuestion).map((opt: string, ai: number) => {
+                  const label = optionLabels[ai]
+                  const selected = answers[safeIndex] === label
+                  const hoverBg = dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.045)'
+                  return (
+                    <div
+                      key={ai}
+                      className="exam-option"
+                      onClick={() => selectAnswer(safeIndex, label)}
+                      style={{
+                        ['--opt-hover-bg' as any]: selected ? `${pt.cobalt}20` : hoverBg,
+                        display: 'flex', alignItems: 'center', gap: 14, flexShrink: 0,
+                        background: selected ? `${pt.cobalt}18` : (dark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)'),
+                        border: `1.5px solid ${selected ? pt.cobalt : pt.border}`,
+                        borderRadius: 14, padding: 'clamp(14px, 1.8vh, 20px) clamp(16px, 2vw, 24px)', marginBottom: 12,
+                        cursor: 'pointer'
+                      }}>
+                      <span style={{
+                        width: 'clamp(28px, 2.2vw, 34px)', height: 'clamp(28px, 2.2vw, 34px)', borderRadius: '50%', flexShrink: 0,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        background: selected ? pt.cobalt : 'transparent',
+                        border: `1.5px solid ${selected ? pt.cobalt : pt.border}`,
+                        color: selected ? '#fff' : pt.sub, fontWeight: 800, fontSize: 'clamp(12px, 1vw, 14px)'
+                      }}>{label.toUpperCase()}</span>
+                      <span style={{ color: selected ? pt.cobalt : pt.text, fontSize: 'clamp(14px, 1.2vw, 17px)', fontWeight: 600, lineHeight: 1.4 }}>{opt}</span>
+                    </div>
+                  )
+                })}
+              </LiquidGlassCard>
 
-              <div style={{ height: 1, background: EXAM_DIVIDER, marginBottom: 12, flexShrink: 0 }} />
+              <div style={{ height: 1, background: EXAM_DIVIDER, marginBottom: 12 }} />
 
               {/* FLAG, then PREVIOUS / NEXT — sits in the gradient's medium/dark lower zone */}
-              <div style={{ textAlign: 'center', marginBottom: 10, flexShrink: 0 }}>
+              <div style={{ textAlign: 'center', marginBottom: 10 }}>
                 <button onClick={() => toggleFlagFor(currentQuestion)} className="exam-btn" style={{
                   background: 'transparent', border: 'none', cursor: 'pointer',
                   color: flaggedIds.has(currentQuestion.id) ? pt.amber : EXAM_LOW_TEXT_MUTED,
@@ -690,7 +684,7 @@ export default function MCQ({ dark }: { dark: boolean }) {
                 }}>🚩 {flaggedIds.has(currentQuestion.id) ? 'FLAGGED' : 'FLAG'}</button>
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 12 }}>
                 <button onClick={goPrev} disabled={safeIndex === 0} className="exam-btn" style={{
                   background: 'transparent', border: 'none', cursor: safeIndex === 0 ? 'not-allowed' : 'pointer',
                   color: safeIndex === 0 ? 'rgba(245,250,255,0.35)' : EXAM_LOW_TEXT,
@@ -713,7 +707,7 @@ export default function MCQ({ dark }: { dark: boolean }) {
                   }}>{answeredCount < total ? `${total - answeredCount} LEFT` : 'SUBMIT'}</button>
                 )}
               </div>
-            </div>
+            </>
           )}
 
           {/* ── Results: analytical instrument ─────────────────────── */}
