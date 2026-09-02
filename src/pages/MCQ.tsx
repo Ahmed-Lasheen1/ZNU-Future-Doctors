@@ -108,6 +108,7 @@ export default function MCQ({ dark }: { dark: boolean }) {
   const [resumeData, setResumeData] = useState<any>(null)
   const [currentIndex, setCurrentIndex] = useState(0)
   const [showReview, setShowReview] = useState(false)
+  const [struckOut, setStruckOut] = useState<Record<number, Set<string>>>({})
   const timerRef = useRef<ReturnType<typeof setInterval>>()
   const quizStartedAtRef = useRef<number | null>(null)
   const [usingCache, setUsingCache] = useState(false)
@@ -332,6 +333,7 @@ export default function MCQ({ dark }: { dark: boolean }) {
     setCurrentIndex(0)
     setElapsedSeconds(0)
     setShowReview(false)
+    setStruckOut({})
     loadFlagsFor(qs.map(q => q.id)).then(setFlaggedIds)
 
     quizStartedAtRef.current = Date.now()
@@ -351,6 +353,7 @@ export default function MCQ({ dark }: { dark: boolean }) {
     setCurrentIndex(0)
     setElapsedSeconds(0)
     setShowReview(false)
+    setStruckOut({})
     quizStartedAtRef.current = Date.now()
     startTimer(quizStartedAtRef.current, 'retry')
     loadFlagsFor(list.map(q => q.id)).then(setFlaggedIds)
@@ -367,6 +370,7 @@ export default function MCQ({ dark }: { dark: boolean }) {
     setQuizMode(resumeData.quizMode)
     setCurrentIndex(0)
     setShowReview(false)
+    setStruckOut({})
     quizStartedAtRef.current = resumeData.startedAt
     loadFlagsFor((resumeData.quizQuestions || []).map((q: any) => q.id)).then(setFlaggedIds)
 
@@ -392,11 +396,59 @@ export default function MCQ({ dark }: { dark: boolean }) {
     setFlaggedIds(new Set())
     setCurrentIndex(0)
     setShowReview(false)
+    setStruckOut({})
+  }
+
+  // Tutor Mode: practice and retry quizzes reveal correct/incorrect +
+  // explanation the instant a question is answered (matches how every
+  // major board-exam question bank — UWorld, TrueLearn, BoardVitals —
+  // splits "tutor" from "timed" mode). Mock Exam stays strictly
+  // deferred until submission, since it's meant to simulate real test
+  // conditions. Grades just that one question via the same grade_mcq
+  // RPC already used for full submission, and stores it in the same
+  // `results` map the post-submit review already reads — so the
+  // reveal UI is shared code, not a separate rendering path.
+  const isTutorMode = quizMode === 'practice' || quizMode === 'retry'
+
+  async function tutorGradeAnswer(qi: number, opt: string) {
+    const q = quizQuestions[qi]
+    if (!q) return
+    const { data, error } = await supabase.rpc('grade_mcq', { p_answers: [{ id: q.id, answer: opt }] })
+    if (!error && data && data[0]) {
+      const r = data[0]
+      setResults(prev => ({
+        ...prev,
+        [q.id]: { is_correct: r.is_correct, correct_answer: r.correct_answer, explanation: r.explanation }
+      }))
+    }
   }
 
   function selectAnswer(qi: number, opt: string) {
     if (submitted) return
+    const q = quizQuestions[qi]
+    // Once Tutor Mode has revealed a question's answer, it's locked —
+    // matches every reference question bank (you commit, then see the
+    // answer; you don't get to keep changing it after the reveal).
+    if (isTutorMode && q && results[q.id]) return
     setAnswers(prev => ({ ...prev, [qi]: opt }))
+    if (isTutorMode) tutorGradeAnswer(qi, opt)
+  }
+
+  // Strikethrough / eliminate — a visual-only convenience for ruling
+  // out an option, independent of actually selecting an answer. Same
+  // pattern used across board-exam software (ExamSoft, BoardVitals):
+  // striking an option never selects or excludes it from being
+  // selectable, it just crosses it out for the student's own process
+  // of elimination.
+  function toggleStrike(qi: number, label: string) {
+    setStruckOut(prev => {
+      const next = { ...prev }
+      const set = new Set(next[qi] || [])
+      if (set.has(label)) set.delete(label)
+      else set.add(label)
+      next[qi] = set
+      return next
+    })
   }
 
   function goPrev() { setCurrentIndex(i => Math.max(0, i - 1)) }
@@ -618,6 +670,30 @@ export default function MCQ({ dark }: { dark: boolean }) {
                 }}>
                   {quizMode === 'mock' ? formatTime(timeLeft) : formatTime(elapsedSeconds)}
                 </div>
+
+                {/* Time-remaining bar with an "even pace" marker at the
+                    fraction of time that would remain if the student
+                    were exactly on pace with questions answered so far
+                    — lets them see at a glance whether they're ahead
+                    or behind, without a second separate progress bar. */}
+                {quizMode === 'mock' && (
+                  <div style={{ position: 'relative', width: '100%', maxWidth: 260, margin: '10px auto 0', height: 5, borderRadius: 999, background: 'rgba(10,31,61,0.12)', overflow: 'visible' }}>
+                    <div style={{
+                      position: 'absolute', inset: 0, borderRadius: 999, overflow: 'hidden'
+                    }}>
+                      <div style={{
+                        height: '100%', borderRadius: 999,
+                        width: `${(timeLeft / (MOCK_MINUTES * 60)) * 100}%`,
+                        background: timerColor(), transition: 'width 1s linear, background 0.5s ease'
+                      }} />
+                    </div>
+                    <div style={{
+                      position: 'absolute', top: -2, bottom: -2, width: 2, borderRadius: 1,
+                      left: `${Math.max(0, Math.min(100, ((total - answeredCount) / total) * 100))}%`,
+                      background: EXAM_TOP_TEXT, opacity: 0.55
+                    }} />
+                  </div>
+                )}
               </>
             )}
             {grading && (
@@ -692,6 +768,7 @@ export default function MCQ({ dark }: { dark: boolean }) {
                         background: `${MCQ_ACCENT}22`, border: `1px solid ${MCQ_ACCENT}55`,
                         color: MCQ_ACCENT, fontWeight: 800, fontSize: 12, whiteSpace: 'nowrap'
                       }}>Q{safeIndex + 1}</span>
+                      {isTutorMode && <InfoTag label="🎓 TUTOR — instant feedback" color={pt.cobalt} />}
                       {showSubjectTag && <InfoTag label={subj.name} color={subj.color || '#34d399'} />}
                       {showLessonTag && <InfoTag label={lesson.title} color="#818cf8" />}
                       {currentQuestion.source && <QuestionSourceBadge source={currentQuestion.source} />}
@@ -707,39 +784,110 @@ export default function MCQ({ dark }: { dark: boolean }) {
                   {currentQuestion.question}
                 </p>
 
-                {optionTexts(currentQuestion).map((opt: string, ai: number) => {
-                  const label = optionLabels[ai]
-                  const selected = answers[safeIndex] === label
-                  const hoverBg = dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.045)'
+                {(() => {
+                  const revealed = isTutorMode && !!results[currentQuestion.id]
+                  const result = results[currentQuestion.id]
+                  const struck = struckOut[safeIndex] || new Set<string>()
+
                   return (
-                    <div
-                      key={ai}
-                      className="exam-option"
-                      onClick={() => selectAnswer(safeIndex, label)}
-                      style={{
-                        ['--opt-hover-bg' as any]: selected ? `${pt.cobalt}20` : hoverBg,
-                        display: 'flex', alignItems: 'flex-start', gap: 14, flexShrink: 0, minWidth: 0,
-                        background: selected ? `${pt.cobalt}18` : (dark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)'),
-                        border: `1.5px solid ${selected ? pt.cobalt : pt.border}`,
-                        borderRadius: 14, padding: 'clamp(14px, 1.8vh, 20px) clamp(16px, 2vw, 24px)', marginBottom: 12,
-                        cursor: 'pointer'
-                      }}>
-                      <span style={{
-                        width: 'clamp(28px, 2.2vw, 34px)', height: 'clamp(28px, 2.2vw, 34px)', borderRadius: '50%', flexShrink: 0,
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        background: selected ? pt.cobalt : 'transparent',
-                        border: `1.5px solid ${selected ? pt.cobalt : pt.border}`,
-                        color: selected ? '#fff' : pt.sub, fontWeight: 800, fontSize: 'clamp(12px, 1vw, 14px)',
-                        marginTop: 1
-                      }}>{label.toUpperCase()}</span>
-                      <span style={{
-                        flex: 1, minWidth: 0, color: selected ? pt.cobalt : pt.text,
-                        fontSize: 'clamp(14px, 1.2vw, 17px)', fontWeight: 600, lineHeight: 1.45,
-                        wordBreak: 'break-word', overflowWrap: 'anywhere'
-                      }}>{opt}</span>
-                    </div>
+                    <>
+                      {optionTexts(currentQuestion).map((opt: string, ai: number) => {
+                        const label = optionLabels[ai]
+                        const selected = answers[safeIndex] === label
+                        const isStruck = struck.has(label)
+                        const hoverBg = dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.045)'
+
+                        // Tutor Mode reveal takes over the color coding
+                        // once this question has been graded; otherwise
+                        // it's just the normal selectable/selected state.
+                        let bg = selected ? `${pt.cobalt}18` : (dark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)')
+                        let border = selected ? pt.cobalt : pt.border
+                        let textColor = selected ? pt.cobalt : pt.text
+                        let badgeBg = selected ? pt.cobalt : 'transparent'
+                        let badgeColor = selected ? '#fff' : pt.sub
+
+                        if (revealed && result) {
+                          if (label === result.correct_answer) {
+                            bg = 'rgba(74,222,128,0.16)'; border = '#4ade80'; textColor = '#4ade80'
+                            badgeBg = '#4ade80'; badgeColor = '#08300f'
+                          } else if (label === answers[safeIndex]) {
+                            bg = 'rgba(248,113,113,0.16)'; border = '#f87171'; textColor = '#f87171'
+                            badgeBg = '#f87171'; badgeColor = '#3a0a0a'
+                          } else {
+                            textColor = pt.faint
+                          }
+                        }
+
+                        const hoverBgFinal = revealed ? 'transparent' : selected ? `${pt.cobalt}20` : hoverBg
+
+                        return (
+                          <div
+                            key={ai}
+                            className="exam-option"
+                            onClick={() => !revealed && selectAnswer(safeIndex, label)}
+                            style={{
+                              ['--opt-hover-bg' as any]: hoverBgFinal,
+                              display: 'flex', alignItems: 'flex-start', gap: 12, flexShrink: 0, minWidth: 0,
+                              background: bg, border: `1.5px solid ${border}`,
+                              borderRadius: 14, padding: 'clamp(14px, 1.8vh, 20px) clamp(16px, 2vw, 24px)', marginBottom: 12,
+                              cursor: revealed ? 'default' : 'pointer', opacity: isStruck && !revealed ? 0.5 : 1,
+                              transition: 'opacity 0.15s ease'
+                            }}>
+                            <span style={{
+                              width: 'clamp(28px, 2.2vw, 34px)', height: 'clamp(28px, 2.2vw, 34px)', borderRadius: '50%', flexShrink: 0,
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              background: badgeBg,
+                              border: `1.5px solid ${badgeBg === 'transparent' ? pt.border : badgeBg}`,
+                              color: badgeColor, fontWeight: 800, fontSize: 'clamp(12px, 1vw, 14px)',
+                              marginTop: 1
+                            }}>{label.toUpperCase()}</span>
+                            <span style={{
+                              flex: 1, minWidth: 0, color: textColor,
+                              fontSize: 'clamp(14px, 1.2vw, 17px)', fontWeight: 600, lineHeight: 1.45,
+                              wordBreak: 'break-word', overflowWrap: 'anywhere',
+                              textDecoration: isStruck && !revealed ? 'line-through' : 'none'
+                            }}>{opt}</span>
+                            {!revealed && (
+                              <button
+                                onClick={(e) => { e.stopPropagation(); toggleStrike(safeIndex, label) }}
+                                aria-pressed={isStruck}
+                                aria-label={`Eliminate option ${label.toUpperCase()}`}
+                                className="exam-btn"
+                                style={{
+                                  flexShrink: 0, width: 26, height: 26, borderRadius: '50%',
+                                  background: isStruck ? (dark ? 'rgba(255,255,255,0.14)' : 'rgba(0,0,0,0.10)') : 'transparent',
+                                  border: `1px solid ${pt.border}`, color: pt.faint,
+                                  fontSize: 12, fontWeight: 800, cursor: 'pointer', lineHeight: 1
+                                }}>Ø</button>
+                            )}
+                          </div>
+                        )
+                      })}
+
+                      {revealed && result && (
+                        <div style={{
+                          display: 'flex', alignItems: 'center', gap: 8, marginTop: 4, marginBottom: result.explanation ? 10 : 0,
+                          flexShrink: 0
+                        }}>
+                          <span style={{
+                            fontSize: 11, fontWeight: 800, letterSpacing: 0.5, padding: '3px 10px', borderRadius: 20,
+                            background: result.is_correct ? 'rgba(74,222,128,0.16)' : 'rgba(248,113,113,0.16)',
+                            color: result.is_correct ? '#4ade80' : '#f87171'
+                          }}>{result.is_correct ? '✓ CORRECT' : '✕ INCORRECT'}</span>
+                        </div>
+                      )}
+                      {revealed && result?.explanation && (
+                        <div style={{
+                          background: dark ? 'rgba(56,189,248,0.10)' : 'rgba(2,132,199,0.06)',
+                          borderRadius: 10, padding: '10px 14px', color: pt.sub, fontSize: 12,
+                          flexShrink: 0, wordBreak: 'break-word', overflowWrap: 'anywhere'
+                        }}>
+                          💡 {result.explanation}
+                        </div>
+                      )}
+                    </>
                   )
-                })}
+                })()}
               </LiquidGlassCard>
 
               <div style={{ height: 1, background: EXAM_DIVIDER, marginBottom: 12 }} />
