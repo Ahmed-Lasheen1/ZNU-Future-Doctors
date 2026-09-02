@@ -109,6 +109,20 @@ export default function MCQ({ dark }: { dark: boolean }) {
   const [currentIndex, setCurrentIndex] = useState(0)
   const [showReview, setShowReview] = useState(false)
   const [struckOut, setStruckOut] = useState<Record<number, Set<string>>>({})
+  // Adjustable text size for the question/answer text — matches
+  // ExamSoft's "Adjust Text Size" control, a standard accessibility
+  // feature on every reference exam platform. Persisted like the
+  // app's existing theme preference (localStorage, not per-account).
+  const FONT_SCALES = [0.9, 1, 1.15, 1.3]
+  const [fontScale, setFontScale] = useState<number>(() => {
+    const saved = typeof window !== 'undefined' ? localStorage.getItem('znu_mcq_font_scale') : null
+    const parsed = saved ? parseFloat(saved) : 1
+    return FONT_SCALES.includes(parsed) ? parsed : 1
+  })
+  useEffect(() => { localStorage.setItem('znu_mcq_font_scale', String(fontScale)) }, [fontScale])
+  function cycleFontScale() {
+    setFontScale(prev => FONT_SCALES[(FONT_SCALES.indexOf(prev) + 1) % FONT_SCALES.length])
+  }
   const timerRef = useRef<ReturnType<typeof setInterval>>()
   const quizStartedAtRef = useRef<number | null>(null)
   const [usingCache, setUsingCache] = useState(false)
@@ -189,6 +203,43 @@ export default function MCQ({ dark }: { dark: boolean }) {
   useEffect(() => {
     fetchModuleStages(activeModule).then(setStages)
   }, [activeModule])
+
+  // Keyboard shortcuts, desktop only in practice (touch devices don't
+  // fire keydown for taps) — plain number keys rather than a modifier
+  // combo like ExamSoft's Ctrl/Cmd+Shift+Letter, since this page has
+  // no text inputs to conflict with. Ignored while grading/submitted,
+  // and skips re-selecting once Tutor Mode has already revealed an
+  // answer for the current question.
+  useEffect(() => {
+    if (!quizMode || submitted || grading) return
+    function handleKeyDown(e: KeyboardEvent) {
+      const targetTag = (e.target as HTMLElement)?.tagName
+      if (targetTag === 'INPUT' || targetTag === 'TEXTAREA') return
+      const total = quizQuestions.length
+      if (total === 0) return
+      const safeIdx = Math.min(currentIndex, total - 1)
+      const q = quizQuestions[safeIdx]
+      if (!q) return
+      const alreadyRevealed = (quizMode === 'practice' || quizMode === 'retry') && !!results[q.id]
+      const key = e.key.toLowerCase()
+
+      if (key === 'arrowleft') {
+        e.preventDefault()
+        setCurrentIndex(i => Math.max(0, i - 1))
+      } else if (key === 'arrowright') {
+        e.preventDefault()
+        setCurrentIndex(i => Math.min(total - 1, i + 1))
+      } else if (['1', '2', '3', '4'].includes(key) && !alreadyRevealed) {
+        e.preventDefault()
+        selectAnswer(safeIdx, optionLabels[Number(key) - 1])
+      } else if (key === 'f') {
+        e.preventDefault()
+        toggleFlagFor(q)
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [quizMode, submitted, grading, currentIndex, quizQuestions, results])
 
   async function fetchSubjects() {
     const { data, error } = await supabase.from('subjects').select('*').order('name')
@@ -634,6 +685,8 @@ export default function MCQ({ dark }: { dark: boolean }) {
           .exam-option:active { transform: scale(0.985); }
           .exam-btn { transition: opacity 0.15s ease, transform 0.12s ease; }
           .exam-btn:active { transform: scale(0.97); }
+          .kbd-hint { display: none; }
+          @media (hover: hover) and (pointer: fine) { .kbd-hint { display: block; } }
         `}</style>
 
         {/* Short entrance — a quick fade/slide, not a takeover. The
@@ -656,6 +709,18 @@ export default function MCQ({ dark }: { dark: boolean }) {
               background: 'transparent', border: 'none', cursor: 'pointer',
               color: EXAM_TOP_TEXT_MUTED, fontSize: 11, fontWeight: 700, letterSpacing: 1
             }}>✕ EXIT</button>
+
+            {!submitted && !grading && (
+              <button
+                onClick={cycleFontScale}
+                className="exam-btn"
+                aria-label={`Adjust text size (currently ${Math.round(fontScale * 100)}%)`}
+                style={{
+                  position: 'absolute', top: 0, left: 0,
+                  background: 'transparent', border: 'none', cursor: 'pointer',
+                  color: EXAM_TOP_TEXT_MUTED, fontSize: 13, fontWeight: 800, letterSpacing: 0.5
+                }}>Aa</button>
+            )}
 
             <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 3, color: EXAM_TOP_TEXT_MUTED }}>ZNU · EXAM MODE</div>
 
@@ -765,7 +830,7 @@ export default function MCQ({ dark }: { dark: boolean }) {
                 })()}
 
                 <p style={{
-                  ...pulseType.cardTitle, fontSize: 'clamp(18px, 1.8vw, 24px)', color: pt.textPrimary,
+                  ...pulseType.cardTitle, fontSize: `calc(clamp(18px, 1.8vw, 24px) * ${fontScale})`, color: pt.textPrimary,
                   margin: '0 0 22px', lineHeight: 1.5, flexShrink: 0,
                   wordBreak: 'break-word', overflowWrap: 'anywhere'
                 }}>
@@ -831,7 +896,7 @@ export default function MCQ({ dark }: { dark: boolean }) {
                             }}>{label.toUpperCase()}</span>
                             <span style={{
                               flex: 1, minWidth: 0, color: textColor,
-                              fontSize: 'clamp(14px, 1.2vw, 17px)', fontWeight: 600, lineHeight: 1.45,
+                              fontSize: `calc(clamp(14px, 1.2vw, 17px) * ${fontScale})`, fontWeight: 600, lineHeight: 1.45,
                               wordBreak: 'break-word', overflowWrap: 'anywhere',
                               textDecoration: isStruck && !revealed ? 'line-through' : 'none'
                             }}>{opt}</span>
@@ -923,6 +988,11 @@ export default function MCQ({ dark }: { dark: boolean }) {
                     }}>SUBMIT</button>
                 )}
               </div>
+
+              <div className="kbd-hint" style={{
+                textAlign: 'center', color: EXAM_LOW_TEXT_MUTED, textShadow: EXAM_LOW_SHADOW,
+                fontSize: 10, fontWeight: 600, letterSpacing: 0.3, paddingBottom: 4
+              }}>← → navigate · 1–4 select · F flag</div>
             </>
           )}
 
