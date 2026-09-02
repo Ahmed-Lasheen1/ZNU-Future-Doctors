@@ -9,6 +9,7 @@ import { HomeIcon, ScheduleIcon, ChecklistIcon, AnonQAIcon, LeaderboardIcon, Sig
 import { getPulseTheme, pulseFonts } from '../premiumTheme'
 import { glassInput } from './pulse/PulseUI'
 import { liquidGlassShadow, liquidGlassBackdrop, liquidGlassTint } from '../lib/liquidGlass'
+import PulseGlassRow from './pulse/PulseGlassRow'
 
 // Same morph curve the liquid floating-menu reference uses.
 const morphEase = [0.22, 1, 0.36, 1]
@@ -93,49 +94,31 @@ function LiquidBloom({ pt, open, align }) {
   )
 }
 
-// (Ambient liquid-sheen layer removed — was a possible extra source
-// of rendering weirdness on top of the backdrop-filter fix, and it
-// was purely decorative, not load-bearing for the open/close motion.)
-
-// Same glass recipe as LiquidGlassCard — literally, not just visually:
-// isolation + overflow + backdrop-filter + the hover transform all sit
-// on the SAME inner element, exactly mirroring LiquidGlassCard's own
-// structure. That co-location matters for the same reason it did on
-// the panel itself — putting the hover `scale` on an ancestor while
-// backdrop-filter lives on a child breaks the blur the instant you
-// hover. Hover is now a "pop" (scale 1.05), not a color overlay.
-//
-// `glass-focus-ring` (defined in index.css, same rule NavMenu's
-// GlassRow already uses) — only applied when the card is actually
-// interactive, since a non-clickable card has no tabIndex/role and
-// can never receive focus in the first place. Every other card in
-// the app (Home, ModulePage, StagePage, FilesPage, MCQ, Profile,
-// Checklist, Review, Summaries, SubjectPage, LessonPage, Search,
-// AnonQuestions) goes through this one component, so this single
-// change gives all of them a real keyboard-focus indicator at once
-// — previously the only feedback anywhere was the hover pop below,
-// which :hover never triggers from Tab navigation.
-function GlassRow({ dark, radius = ROW_RADIUS, style = {}, children, onMouseEnter, onMouseLeave, className, ...rest }) {
-  const [hovered, setHovered] = useState(false)
+// NOTE (audit fix): this file used to define its own local `GlassRow`
+// component here — a byte-for-byte hand copy of
+// `src/components/pulse/PulseGlassRow.tsx` (same backdrop-blur +
+// shadow + tint + hover-scale recipe, same structure). That meant any
+// future change to the glass recipe (a blur value, an opacity, the
+// focus-ring behavior) had to be made in TWO places and manually kept
+// in sync — exactly the kind of duplication a "change the glass blur
+// everywhere" request should never have to fight through. This now
+// imports the shared `PulseGlassRow` instead. `PulseGlassRow` didn't
+// originally carry the `glass-focus-ring` class the local copy did;
+// that's added below via the `className` prop it already supports,
+// so keyboard-focus visibility on every menu row is unchanged from
+// before this fix.
+function GlassRow({ dark, radius = ROW_RADIUS, style = {}, children, ...rest }) {
   return (
-    <div
+    <PulseGlassRow
+      dark={dark}
+      radius={radius}
+      className="glass-focus-ring"
+      hoverTint={dark ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.35)'}
+      style={style}
       {...rest}
-      className={['glass-focus-ring', className].filter(Boolean).join(' ')}
-      onMouseEnter={e => { setHovered(true); onMouseEnter?.(e) }}
-      onMouseLeave={e => { setHovered(false); onMouseLeave?.(e) }}
-      style={{ position: 'relative', borderRadius: radius, ...style }}
     >
-      <div style={{
-        position: 'relative', isolation: 'isolate', overflow: 'hidden', borderRadius: radius,
-        transform: hovered ? 'scale(1.05)' : 'scale(1)',
-        transition: 'transform 0.3s ease',
-        ...liquidGlassBackdrop(),
-      }}>
-        <div aria-hidden className="pointer-events-none" style={{ position: 'absolute', inset: 0, zIndex: 0, borderRadius: 'inherit', boxShadow: liquidGlassShadow(dark) }} />
-        <div aria-hidden className="pointer-events-none" style={{ position: 'absolute', inset: 0, zIndex: 0, borderRadius: 'inherit', background: liquidGlassTint(dark) }} />
-        <div style={{ position: 'relative', zIndex: 10 }}>{children}</div>
-      </div>
-    </div>
+      {children}
+    </PulseGlassRow>
   )
 }
 
