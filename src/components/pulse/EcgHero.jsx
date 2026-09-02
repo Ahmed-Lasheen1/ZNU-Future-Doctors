@@ -91,9 +91,6 @@ export default function EcgHero({ height = 220 }) {
           stroke-dasharray: 0.16 1;
           animation: pulseHeroDash ${BEAM_DURATION} linear infinite;
         }
-        @media (prefers-reduced-motion: reduce) {
-          .pulse-hero-beam { animation: none !important; opacity: 0.5 !important; }
-        }
       `}</style>
 
       <svg
@@ -126,7 +123,15 @@ export default function EcgHero({ height = 220 }) {
             pixel shape — the animated strokes below can be as wide or
             narrow as we like; only the part overlapping the real line
             ever shows, guaranteeing the visible glow always matches
-            the real pulse's width and silhouette exactly. */}
+            the real pulse's width and silhouette exactly.
+
+            Not rendered at all when prefers-reduced-motion is set —
+            this is the actual reduced-motion guard (a corresponding
+            CSS @media(prefers-reduced-motion) override on
+            .pulse-hero-beam used to exist here too, but since these
+            elements are never mounted in that case, that rule could
+            never actually apply to anything — removed as dead code,
+            no behavior change). */}
         {!reduced && (
           <g mask="url(#pulseLineMask)">
             {/* Outer soft bloom, following the traced centerline */}
