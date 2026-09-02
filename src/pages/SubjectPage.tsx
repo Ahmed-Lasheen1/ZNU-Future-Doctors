@@ -6,7 +6,7 @@ import { getPulseTheme, pulseFonts, pulseType } from '../premiumTheme'
 import ErrorBanner from '../components/ErrorBanner'
 import LiquidGlassCard from '@/components/ui/liquid-glass-card'
 import PulseBackground from '../components/pulse/PulseBackground'
-import PulseGlassRow from '../components/pulse/PulseGlassRow'
+import BackButton from '../components/pulse/BackButton'
 import SummaryOverlay from '../components/SummaryOverlay'
 import { useToast } from '../components/ToastProvider'
 import { useModules } from '../contexts'
@@ -37,6 +37,7 @@ export default function SubjectPage({ dark }: { dark: boolean }) {
   const [showSummaryPicker, setShowSummaryPicker] = useState(false)
 
   useEffect(() => {
+    let ignore = false
     setLoading(true)
     Promise.all([
       fetchSubjectById(subjectId!),
@@ -45,12 +46,14 @@ export default function SubjectPage({ dark }: { dark: boolean }) {
       // there is no `lessons.summary_url` column.
       supabase.from('summaries').select('id, title, url, lesson_id').eq('subject_id', subjectId).not('lesson_id', 'is', null)
     ]).then(([subjectRes, lessonRes, summaryRes]) => {
+      if (ignore) return
       setSubject(subjectRes.subject)
       setLessons(lessonRes.lessons)
       if (summaryRes.data) setLessonSummaries(summaryRes.data)
       if (subjectRes.error || lessonRes.error || summaryRes.error) setLoadError(true)
       setLoading(false)
     })
+    return () => { ignore = true }
   }, [subjectId])
 
   if (!module) return (
@@ -68,8 +71,6 @@ export default function SubjectPage({ dark }: { dark: boolean }) {
     <SummaryOverlay onBack={() => setSelectedSummary(null)} eyebrow={subject?.name} title={selectedSummary.title} titleColor="#34d399" url={selectedSummary.url} />
   )
 
-  const hoverTint = dark ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.35)'
-
   function openAllSummaries() {
     if (lessonSummaries.length === 0) { showToast('No summaries added for this subject yet'); return }
     if (lessonSummaries.length === 1) {
@@ -86,11 +87,7 @@ export default function SubjectPage({ dark }: { dark: boolean }) {
       <div className="pulse-wide" style={{ position: 'relative', zIndex: 1, padding: '24px 20px 100px', fontFamily: pulseFonts.body }}>
 
         <div style={{ marginBottom: 8 }}>
-          <PulseGlassRow dark={dark} radius={999} hoverTint={hoverTint} onClick={() => navigate(`/module/${moduleId}`)}
-            role="button" tabIndex={0}
-            onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate(`/module/${moduleId}`) } }}>
-            <div style={{ padding: '8px 18px', ...pulseType.small, fontWeight: 700, color: pt.sub }}>← Back</div>
-          </PulseGlassRow>
+          <BackButton dark={dark} fallback={`/module/${moduleId}`} />
         </div>
 
         <div style={{ textAlign: 'center', padding: '10px 0 30px' }}>

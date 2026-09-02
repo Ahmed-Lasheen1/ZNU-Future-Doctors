@@ -6,7 +6,7 @@ import { getPulseTheme, pulseFonts, pulseType } from '../premiumTheme'
 import ErrorBanner from '../components/ErrorBanner'
 import LiquidGlassCard from '@/components/ui/liquid-glass-card'
 import PulseBackground from '../components/pulse/PulseBackground'
-import PulseGlassRow from '../components/pulse/PulseGlassRow'
+import BackButton from '../components/pulse/BackButton'
 import SummaryOverlay from '../components/SummaryOverlay'
 import { useModules } from '../contexts'
 import { fetchModuleStages, stageMetaFrom } from '../lib/moduleStages'
@@ -74,13 +74,6 @@ export default function StagePage({ dark }: { dark: boolean }) {
       if (error) setLoadError(true)
     })
 
-    // Cleanup runs before the next effect (i.e. the moment moduleId or
-    // stage changes again) and marks this run's in-flight requests as
-    // stale — if a slower earlier request resolves after a newer one
-    // already landed, its setState calls are now no-ops instead of
-    // silently overwriting fresher data with an older result. Pure
-    // correctness fix; no visible behavior change when navigation is
-    // at normal human speed.
     return () => { ignore = true }
   }, [moduleId, stage])
 
@@ -106,7 +99,6 @@ export default function StagePage({ dark }: { dark: boolean }) {
   )
 
   const filteredFileCards = FILE_CARDS.filter(card => presentFileTypes.has(card.type))
-  const hoverTint = dark ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.35)'
 
   function openSummaries() {
     if (summaries.length === 1) setSelectedSummary(summaries[0])
@@ -119,11 +111,7 @@ export default function StagePage({ dark }: { dark: boolean }) {
       <div className="pulse-wide" style={{ position: 'relative', zIndex: 1, padding: '24px 20px 100px', fontFamily: pulseFonts.body }}>
 
         <div style={{ marginBottom: 8 }}>
-          <PulseGlassRow dark={dark} radius={999} hoverTint={hoverTint} onClick={() => navigate(`/module/${moduleId}`)}
-            role="button" tabIndex={0}
-            onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate(`/module/${moduleId}`) } }}>
-            <div style={{ padding: '8px 18px', ...pulseType.small, fontWeight: 700, color: pt.sub }}>← Back</div>
-          </PulseGlassRow>
+          <BackButton dark={dark} fallback={`/module/${moduleId}`} />
         </div>
 
         <div style={{ textAlign: 'center', padding: '10px 0 30px' }}>

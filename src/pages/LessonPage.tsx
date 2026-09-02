@@ -6,7 +6,7 @@ import { getPulseTheme, pulseFonts, pulseType } from '../premiumTheme'
 import ErrorBanner from '../components/ErrorBanner'
 import LiquidGlassCard from '@/components/ui/liquid-glass-card'
 import PulseBackground from '../components/pulse/PulseBackground'
-import PulseGlassRow from '../components/pulse/PulseGlassRow'
+import BackButton from '../components/pulse/BackButton'
 import SummaryOverlay from '../components/SummaryOverlay'
 import { useModules } from '../contexts'
 import { fetchLessonById } from '../lib/lessons'
@@ -31,18 +31,21 @@ export default function LessonPage({ dark }: { dark: boolean }) {
   const [showSummaryPicker, setShowSummaryPicker] = useState(false)
 
   useEffect(() => {
+    let ignore = false
     setLoading(true)
     Promise.all([
       fetchLessonById(lessonId!),
       supabase.from('questions').select('id', { count: 'exact', head: true }).eq('lesson_id', lessonId),
       supabase.from('summaries').select('*').eq('lesson_id', lessonId).order('created_at')
     ]).then(([lessonRes, countRes, summaryRes]) => {
+      if (ignore) return
       setLesson(lessonRes.lesson)
       if (countRes.count != null) setQuestionCount(countRes.count)
       if (summaryRes.data) setSummaries(summaryRes.data)
       if (lessonRes.error || summaryRes.error) setLoadError(true)
       setLoading(false)
     })
+    return () => { ignore = true }
   }, [lessonId])
 
   if (!module) return (
@@ -60,8 +63,6 @@ export default function LessonPage({ dark }: { dark: boolean }) {
     <SummaryOverlay onBack={() => setSelectedSummary(null)} title={selectedSummary.title} titleColor="#34d399" url={selectedSummary.url} eyebrow={undefined} />
   )
 
-  const hoverTint = dark ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.35)'
-
   function openSummary() {
     if (summaries.length === 0) return
     if (summaries.length === 1) setSelectedSummary(summaries[0])
@@ -74,11 +75,7 @@ export default function LessonPage({ dark }: { dark: boolean }) {
       <div className="pulse-wide" style={{ position: 'relative', zIndex: 1, padding: '24px 20px 100px', fontFamily: pulseFonts.body }}>
 
         <div style={{ marginBottom: 8 }}>
-          <PulseGlassRow dark={dark} radius={999} hoverTint={hoverTint} onClick={() => navigate(`/module/${moduleId}/subject/${subjectId}`)}
-            role="button" tabIndex={0}
-            onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate(`/module/${moduleId}/subject/${subjectId}`) } }}>
-            <div style={{ padding: '8px 18px', ...pulseType.small, fontWeight: 700, color: pt.sub }}>← Back</div>
-          </PulseGlassRow>
+          <BackButton dark={dark} fallback={`/module/${moduleId}/subject/${subjectId}`} />
         </div>
 
         {loading && <p style={{ color: pt.sub, textAlign: 'center' }}>Loading...</p>}
