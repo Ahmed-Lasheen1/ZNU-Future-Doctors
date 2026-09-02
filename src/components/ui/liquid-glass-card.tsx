@@ -1,4 +1,3 @@
-// src/components/ui/liquid-glass-card.tsx
 "use client"
 
 import { useState, type CSSProperties, type ReactNode, type KeyboardEvent } from "react"
@@ -13,6 +12,14 @@ interface LiquidGlassCardProps {
   delay?: number
   className?: string
   style?: CSSProperties
+  // When true, skips the entrance animation entirely and renders
+  // straight into its final (opacity:1, y:0) state — used by Home.tsx
+  // via useOncePerSession so the staggered reveal only plays once per
+  // browser tab session, not on every navigation back to Home. This
+  // was previously passed from Home.tsx but silently ignored here
+  // since it was never declared or read, so every card replayed its
+  // full entrance animation on every single mount regardless.
+  instant?: boolean
 }
 
 export default function LiquidGlassCard({
@@ -22,6 +29,7 @@ export default function LiquidGlassCard({
   delay = 0,
   className,
   style = {},
+  instant = false,
 }: LiquidGlassCardProps) {
   const interactive = !!onClick
   const [hovered, setHovered] = useState(false)
@@ -37,16 +45,6 @@ export default function LiquidGlassCard({
   const { borderRadius = 18, ...contentStyle } = style as CSSProperties & { borderRadius?: number | string }
   const entranceDelay = ENTRANCE_PAUSE + (delay / 1000) * 1.5
 
-  // `glass-focus-ring` (defined in index.css, same rule NavMenu's
-  // GlassRow already uses) — only applied when the card is actually
-  // interactive, since a non-clickable card has no tabIndex/role and
-  // can never receive focus in the first place. Every other card in
-  // the app (Home, ModulePage, StagePage, FilesPage, MCQ, Profile,
-  // Checklist, Review, Summaries, SubjectPage, LessonPage, Search,
-  // AnonQuestions) goes through this one component, so this single
-  // change gives all of them a real keyboard-focus indicator at once
-  // — previously the only feedback anywhere was the hover pop below,
-  // which :hover never triggers from Tab navigation.
   const rootClassName = interactive
     ? [className, 'glass-focus-ring'].filter(Boolean).join(' ')
     : className
@@ -60,14 +58,16 @@ export default function LiquidGlassCard({
       onMouseEnter={() => interactive && setHovered(true)}
       onMouseLeave={() => interactive && setHovered(false)}
       className={rootClassName}
-      // borderRadius added here (previously only set on the inner
-      // div) so the focus-ring box-shadow — which paints on this
-      // outer element — actually follows the card's real rounded
-      // shape instead of drawing a square box around a round card.
       style={{ position: 'relative', cursor: interactive ? 'pointer' : 'default', borderRadius }}
-      initial={{ opacity: 0, y: 16 }}
+      // `initial={false}` when `instant` is set skips Framer Motion's
+      // "from" state entirely and renders directly into whatever
+      // `animate` resolves to — the same pattern PulseBrand.tsx and
+      // NavMenu.jsx already use for exactly this purpose. Real
+      // open/entrance transitions (instant=false, the default) are
+      // completely unaffected.
+      initial={instant ? false : { opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.75, delay: entranceDelay, ease: [0.34, 1.56, 0.64, 1] }}
+      transition={instant ? { duration: 0 } : { duration: 0.75, delay: entranceDelay, ease: [0.34, 1.56, 0.64, 1] }}
     >
       <div
         style={{
@@ -81,7 +81,6 @@ export default function LiquidGlassCard({
           ...liquidGlassBackdrop(),
         }}
       >
-        {/* Lens-shadow/rim layer */}
         <div
           aria-hidden
           style={{
@@ -90,10 +89,6 @@ export default function LiquidGlassCard({
             boxShadow: liquidGlassShadow(!!dark),
           }}
         />
-        {/* Neutral tint — pulls the glass color back toward grey/
-            white instead of inheriting the page background's hue
-            (saturate() in liquidGlassBackdrop amplifies whatever
-            color sits behind the glass). See liquidGlass.js. */}
         <div
           aria-hidden
           style={{
