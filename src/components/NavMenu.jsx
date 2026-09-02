@@ -105,12 +105,16 @@ function LiquidBloom({ pt, open, align }) {
 // backdrop-filter lives on a child breaks the blur the instant you
 // hover. Hover is now a "pop" (scale 1.05), not a color overlay.
 //
-// `glass-focus-ring` (defined in index.css) gives keyboard/
-// assistive-tech focus a real, visible ring — deliberately separate
-// from the hover pop above, since :hover never fires from Tab
-// navigation and every row here IS keyboard-operable (role="button",
-// tabIndex, Enter/Space). Without this, tabbing through the menu gave
-// no visual indication of where focus was at all.
+// `glass-focus-ring` (defined in index.css, same rule NavMenu's
+// GlassRow already uses) — only applied when the card is actually
+// interactive, since a non-clickable card has no tabIndex/role and
+// can never receive focus in the first place. Every other card in
+// the app (Home, ModulePage, StagePage, FilesPage, MCQ, Profile,
+// Checklist, Review, Summaries, SubjectPage, LessonPage, Search,
+// AnonQuestions) goes through this one component, so this single
+// change gives all of them a real keyboard-focus indicator at once
+// — previously the only feedback anywhere was the hover pop below,
+// which :hover never triggers from Tab navigation.
 function GlassRow({ dark, radius = ROW_RADIUS, style = {}, children, onMouseEnter, onMouseLeave, className, ...rest }) {
   const [hovered, setHovered] = useState(false)
   return (
@@ -187,8 +191,25 @@ export default function NavMenu({ dark, toggleTheme, align = 'left' }) {
           compositor-only, so this is genuinely free regardless of
           device. Opacity gets its OWN faster transition on open (see
           OPEN_OPACITY_DURATION) so the blur reads as visible early,
-          not lagging behind the scale's slower grow. */}
+          not lagging behind the scale's slower grow.
+
+          `initial={false}` is required here — without it, Framer
+          Motion treats every fresh MOUNT of this component as an
+          animation from an implicit "open" starting point down to
+          whatever `animate` currently resolves to. Since this panel
+          is unconditionally rendered (not `{open && ...}`), and since
+          NavMenu itself mounts fresh every time you cross the Home
+          boundary (Home renders its own NavMenu instance; every other
+          route shares one persistent instance via SiteHeader, which
+          unmounts it entirely on '/'), that meant every "into/out of
+          Home" navigation — and every page reload — played a bogus
+          "menu closing" animation on load, even though nothing was
+          ever opened. `initial={false}` makes it render directly into
+          its closed (or whatever `open` currently is) state with zero
+          animation on mount; real open/close clicks are unaffected,
+          since those are state updates, not mounts. */}
       <motion.div
+        initial={false}
         style={{
           position: 'absolute', top: 0, [cornerSide]: 0,
           width: PANEL_WIDTH,
@@ -260,8 +281,15 @@ export default function NavMenu({ dark, toggleTheme, align = 'left' }) {
             the full, slow-to-settle morphEase curve, unlocking every
             row's blur later than the panel's own (already-fixed)
             blur. Windowing it the same way settles both at the same
-            point in the timeline. */}
+            point in the timeline.
+
+            `initial={false}` — same reasoning as the outer panel
+            above: this is also unconditionally mounted, so without
+            this it plays its own bogus "closing" slide/fade on every
+            fresh mount of NavMenu, stacking with the panel's own
+            mount-flash into the "menu opens and closes" glitch. */}
         <motion.div
+          initial={false}
           animate={{ y: open ? 0 : -16, opacity: open ? [0, 0, 1, 1] : [1, 1, 0, 0] }}
           transition={{
             y: transition,
