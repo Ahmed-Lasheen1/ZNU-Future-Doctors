@@ -10,6 +10,7 @@ import BackButton from '../components/pulse/BackButton'
 import SummaryOverlay from '../components/SummaryOverlay'
 import { useModules } from '../contexts'
 import { fetchLessonById } from '../lib/lessons'
+import { useHistoryOverlay } from '../lib/useHistoryOverlay'
 import { ModuleIcon, ExamIcon, NotesIcon } from '../lib/medicalIcons'
 
 interface PageModule { id: string; name: string; icon?: string | null; color: string }
@@ -29,6 +30,8 @@ export default function LessonPage({ dark }: { dark: boolean }) {
   const [loadError, setLoadError] = useState(false)
   const [selectedSummary, setSelectedSummary] = useState<Summary | null>(null)
   const [showSummaryPicker, setShowSummaryPicker] = useState(false)
+
+  useHistoryOverlay(!!selectedSummary, () => setSelectedSummary(null))
 
   useEffect(() => {
     let ignore = false

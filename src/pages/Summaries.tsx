@@ -10,6 +10,7 @@ import PulseBackground from '../components/pulse/PulseBackground'
 import PulseGlassRow from '../components/pulse/PulseGlassRow'
 import { useModules } from '../contexts'
 import { fetchModuleStages } from '../lib/moduleStages'
+import { useHistoryOverlay } from '../lib/useHistoryOverlay'
 
 interface SummaryModule {
   id: string; name: string; icon?: string | null; color: string; status: 'active' | 'completed'
@@ -82,6 +83,10 @@ function ModuleSummaries({ mod, onBack, dark, initialStage }: {
   const [activeStage, setActiveStage] = useState(initialStage || 'all')
   const [stages, setStages] = useState<ExamStage[]>([])
   const hoverTint = dark ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.35)'
+
+  // Back button closes this open summary before it ever falls through
+  // to the outer "which module" back handled by Summaries below.
+  useHistoryOverlay(!!selected, () => setSelected(null))
 
   useEffect(() => { fetchModuleStages(mod.id).then(setStages) }, [mod.id])
 
@@ -168,6 +173,10 @@ export default function Summaries({ dark }: { dark: boolean }) {
   const { modules } = useModules() as { modules: SummaryModule[] }
   const location = useLocation()
   const [selected, setSelected] = useState<SummaryModule | null>(null)
+
+  // Pressing back while viewing one module's summaries returns to the
+  // module grid instead of leaving the Summaries page entirely.
+  useHistoryOverlay(!!selected, () => setSelected(null))
 
   useEffect(() => {
     if (selected || modules.length === 0) return

@@ -11,6 +11,7 @@ import SummaryOverlay from '../components/SummaryOverlay'
 import { useModules } from '../contexts'
 import { fetchModuleStages, stageMetaFrom } from '../lib/moduleStages'
 import { fetchSubjectsForModule } from '../lib/subjects'
+import { useHistoryOverlay } from '../lib/useHistoryOverlay'
 import { FILE_CARDS } from '../lib/fileCards'
 import { ModuleIcon, ExamIcon, NotesIcon } from '../lib/medicalIcons'
 
@@ -35,6 +36,10 @@ export default function StagePage({ dark }: { dark: boolean }) {
   const [loadError, setLoadError] = useState(false)
   const [driveUrl, setDriveUrl] = useState('')
   const [subjects, setSubjects] = useState<PageSubject[]>([])
+
+  // Hardware/browser back now closes the full-screen summary overlay
+  // instead of leaving StagePage entirely — see useHistoryOverlay.
+  useHistoryOverlay(!!selectedSummary, () => setSelectedSummary(null))
 
   useEffect(() => {
     let ignore = false

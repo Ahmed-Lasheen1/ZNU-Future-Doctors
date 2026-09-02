@@ -12,6 +12,7 @@ import { useToast } from '../components/ToastProvider'
 import { useModules } from '../contexts'
 import { fetchSubjectById } from '../lib/subjects'
 import { fetchLessonsForSubject } from '../lib/lessons'
+import { useHistoryOverlay } from '../lib/useHistoryOverlay'
 import { ModuleIcon, ExamIcon, NotesIcon } from '../lib/medicalIcons'
 
 interface PageModule { id: string; name: string; icon?: string | null; color: string }
@@ -35,6 +36,8 @@ export default function SubjectPage({ dark }: { dark: boolean }) {
   const [loadError, setLoadError] = useState(false)
   const [selectedSummary, setSelectedSummary] = useState<{ title: string; url: string } | null>(null)
   const [showSummaryPicker, setShowSummaryPicker] = useState(false)
+
+  useHistoryOverlay(!!selectedSummary, () => setSelectedSummary(null))
 
   useEffect(() => {
     let ignore = false
