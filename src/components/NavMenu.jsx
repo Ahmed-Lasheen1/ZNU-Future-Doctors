@@ -5,7 +5,7 @@ import { Search as SearchIcon } from 'lucide-react'
 import { useAuth } from '../contexts'
 import { MenuToggleIcon } from './ui/menu-toggle-icon'
 import ThemeSwitch from './ui/theme-switch'
-import { HomeIcon, ScheduleIcon, ChecklistIcon, AnonQAIcon, LeaderboardIcon } from './ui/tool-icons'
+import { HomeIcon, ScheduleIcon, ChecklistIcon, AnonQAIcon, LeaderboardIcon, SignOutIcon } from './ui/tool-icons'
 import { getPulseTheme, pulseFonts } from '../premiumTheme'
 import { glassInput } from './pulse/PulseUI'
 import { liquidGlassShadow, liquidGlassBackdrop, liquidGlassTint } from '../lib/liquidGlass'
@@ -316,7 +316,7 @@ export default function NavMenu({ dark, toggleTheme, align = 'left' }) {
               it — the icon, submit-on-Enter, click-to-submit — is
               unchanged. */}
           <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-            <SearchIcon size={16} color={pt.faint} style={{ position: 'absolute', left: 16, top: '60%', transform: 'translateY(-60%)', pointerEvents: 'none' }} />
+            <SearchIcon size={16} color={pt.faint} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
             <input
               value={searchValue}
               onChange={e => setSearchValue(e.target.value)}
@@ -366,7 +366,8 @@ export default function NavMenu({ dark, toggleTheme, align = 'left' }) {
               onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleSignOut() } }}
               style={{ cursor: 'pointer' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '13px' }}>
-                🚪 <span style={{ color: pt.danger, fontSize: 14, fontWeight: 700 }}>Sign Out</span>
+                <SignOutIcon color={pt.danger} size={17} />
+                <span style={{ color: pt.danger, fontSize: 14, fontWeight: 700 }}>Sign Out</span>
               </div>
             </GlassRow>
           )}

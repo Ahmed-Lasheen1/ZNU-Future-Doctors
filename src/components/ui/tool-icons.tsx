@@ -141,3 +141,27 @@ export function HomeIcon({ color, size = 20 }: IconProps) {
     </svg>
   )
 }
+
+// Sign-out nav icon — same treatment again: a static open door frame
+// (the thing being left) plus an animated arrow (the leaving itself)
+// as the accent stroke. Replaces the 🚪 emoji previously used inline
+// in NavMenu, matching every other item in that list now having a
+// real icon instead of a mix of emoji and plain text.
+export function SignOutIcon({ color, size = 20 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <path d="M15 4H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8" stroke={color} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" opacity="0.85" />
+      <motion.path
+        d="M9 12h11M16 8l4 4-4 4"
+        stroke={color}
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        fill="none"
+        initial={{ pathLength: 0, opacity: 0 }}
+        animate={{ pathLength: 1, opacity: 1 }}
+        transition={{ ...drawTransition, delay: 0.15 }}
+      />
+    </svg>
+  )
+}
