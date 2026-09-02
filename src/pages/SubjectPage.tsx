@@ -11,6 +11,7 @@ import SummaryOverlay from '../components/SummaryOverlay'
 import { useToast } from '../components/ToastProvider'
 import { useModules } from '../contexts'
 import { fetchSubjectById } from '../lib/subjects'
+import { fetchLessonsForSubject } from '../lib/lessons'
 import { ModuleIcon, ExamIcon, NotesIcon } from '../lib/medicalIcons'
 
 interface PageModule { id: string; name: string; icon?: string | null; color: string }
@@ -39,13 +40,13 @@ export default function SubjectPage({ dark }: { dark: boolean }) {
     setLoading(true)
     Promise.all([
       fetchSubjectById(subjectId!),
-      supabase.from('lessons').select('*').eq('subject_id', subjectId).order('created_at', { ascending: false }),
+      fetchLessonsForSubject(subjectId!),
       // Lesson-scoped summaries live in `summaries` (via lesson_id) —
       // there is no `lessons.summary_url` column.
       supabase.from('summaries').select('id, title, url, lesson_id').eq('subject_id', subjectId).not('lesson_id', 'is', null)
     ]).then(([subjectRes, lessonRes, summaryRes]) => {
       setSubject(subjectRes.subject)
-      if (lessonRes.data) setLessons(lessonRes.data)
+      setLessons(lessonRes.lessons)
       if (summaryRes.data) setLessonSummaries(summaryRes.data)
       if (subjectRes.error || lessonRes.error || summaryRes.error) setLoadError(true)
       setLoading(false)

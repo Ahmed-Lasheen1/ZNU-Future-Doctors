@@ -5,6 +5,7 @@ import { useAuth, useModules } from '../App'
 import { getTheme } from '../theme'
 import { fetchModulesSorted } from '../lib/modules'
 import { invalidateSubjectsCache } from '../lib/subjects'
+import { invalidateLessonsCache } from '../lib/lessons'
 import NotFound from './NotFound'
 
 import ModulesTab from './admin/ModulesTab'
@@ -66,6 +67,10 @@ export default function Admin({ dark }) {
     if (data) setSubjects(data)
   }
   async function fetchLessons() {
+    // Same reasoning as fetchSubjects above, for the shared lessons
+    // cache (src/lib/lessons.js) — runs after every lesson
+    // create/update/delete via LessonsTab's fetchLessons prop call.
+    invalidateLessonsCache()
     const { data } = await supabase.from('lessons').select('*').order('created_at', { ascending: false }).limit(LESSONS_LIST_LIMIT)
     if (data) setLessons(data)
   }

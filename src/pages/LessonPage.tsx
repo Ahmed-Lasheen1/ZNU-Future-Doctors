@@ -9,6 +9,7 @@ import PulseBackground from '../components/pulse/PulseBackground'
 import PulseGlassRow from '../components/pulse/PulseGlassRow'
 import SummaryOverlay from '../components/SummaryOverlay'
 import { useModules } from '../contexts'
+import { fetchLessonById } from '../lib/lessons'
 import { ModuleIcon, ExamIcon, NotesIcon } from '../lib/medicalIcons'
 
 interface PageModule { id: string; name: string; icon?: string | null; color: string }
@@ -32,11 +33,11 @@ export default function LessonPage({ dark }: { dark: boolean }) {
   useEffect(() => {
     setLoading(true)
     Promise.all([
-      supabase.from('lessons').select('*').eq('id', lessonId).single(),
+      fetchLessonById(lessonId!),
       supabase.from('questions').select('id', { count: 'exact', head: true }).eq('lesson_id', lessonId),
       supabase.from('summaries').select('*').eq('lesson_id', lessonId).order('created_at')
     ]).then(([lessonRes, countRes, summaryRes]) => {
-      if (lessonRes.data) setLesson(lessonRes.data)
+      setLesson(lessonRes.lesson)
       if (countRes.count != null) setQuestionCount(countRes.count)
       if (summaryRes.data) setSummaries(summaryRes.data)
       if (lessonRes.error || summaryRes.error) setLoadError(true)
