@@ -8,6 +8,7 @@ import SummaryOverlay from '../components/SummaryOverlay'
 import LiquidGlassCard from '@/components/ui/liquid-glass-card'
 import PulseBackground from '../components/pulse/PulseBackground'
 import PulseGlassRow from '../components/pulse/PulseGlassRow'
+import BackButton from '../components/pulse/BackButton'
 import { useModules } from '../contexts'
 import { fetchModuleStages } from '../lib/moduleStages'
 import { useHistoryOverlay } from '../lib/useHistoryOverlay'
@@ -33,6 +34,10 @@ function SummariesHome({ modules, onSelect, dark }: {
 
   return (
     <div className="pulse-wide" style={{ position: 'relative', zIndex: 1, padding: '24px 20px 100px', fontFamily: pulseFonts.body }}>
+      <div style={{ marginBottom: 8 }}>
+        <BackButton dark={dark} fallback="/" />
+      </div>
+
       <div style={{ textAlign: 'center', padding: '20px 0 24px' }}>
         <div style={{ fontSize: 48, marginBottom: 12 }}>📝</div>
         <h1 style={{
@@ -108,11 +113,11 @@ function ModuleSummaries({ mod, onBack, dark, initialStage }: {
   return (
     <div className="pulse-wide" style={{ position: 'relative', zIndex: 1, padding: '24px 20px 100px', fontFamily: pulseFonts.body }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
-        <PulseGlassRow dark={dark} radius={999} hoverTint={hoverTint} onClick={onBack}
-          role="button" tabIndex={0}
-          onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onBack() } }}>
-          <div style={{ padding: '8px 18px', ...pulseType.small, fontWeight: 700, color: pt.sub }}>← Back</div>
-        </PulseGlassRow>
+        {/* "Back" here means "return to the module grid", a local
+            view switch, not real page navigation — that's why this
+            passes onClick instead of relying on BackButton's default
+            history behavior. */}
+        <BackButton dark={dark} onClick={onBack} />
         <h2 style={{ ...pulseType.sectionTitle, color: mod.color, flex: 1 }}>{mod.icon} {mod.name}</h2>
       </div>
 

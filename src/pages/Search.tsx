@@ -8,6 +8,7 @@ import { useModules } from '../contexts'
 import ErrorBanner from '../components/ErrorBanner'
 import LiquidGlassCard from '@/components/ui/liquid-glass-card'
 import PulseBackground from '../components/pulse/PulseBackground'
+import BackButton from '../components/pulse/BackButton'
 import { ModuleIcon } from '../lib/medicalIcons'
 
 interface SearchModule {
@@ -38,19 +39,12 @@ export default function Search({ dark }: { dark: boolean }) {
   const navigate = useNavigate()
   const location = useLocation()
   const { modules } = useModules() as { modules: SearchModule[] }
-  // Picks up the query typed into NavMenu's search bar (passed via
-  // navigate('/search', { state: { initialQuery: q } })) so hitting
-  // Enter there actually lands here with the text pre-filled instead
-  // of an empty box.
   const [query, setQuery] = useState(() => (location.state as { initialQuery?: string } | null)?.initialQuery || '')
   const [results, setResults] = useState<SearchResult[] | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(false)
   const debounceRef = useRef<ReturnType<typeof setTimeout>>()
   const inputRef = useRef<HTMLInputElement>(null)
-  // Bumped on every new search; a response only gets applied if it's
-  // still the most recent one requested — avoids a slower older
-  // request overwriting fresher results.
   const searchIdRef = useRef(0)
 
   useEffect(() => { inputRef.current?.focus() }, [])
@@ -122,6 +116,10 @@ export default function Search({ dark }: { dark: boolean }) {
     <div style={{ position: 'relative', minHeight: '100vh' }}>
       <PulseBackground />
       <div className="pulse-wide" style={{ position: 'relative', zIndex: 1, padding: '24px 20px 100px', fontFamily: pulseFonts.body, maxWidth: 700, margin: '0 auto' }}>
+
+        <div style={{ marginBottom: 8 }}>
+          <BackButton dark={dark} fallback="/" />
+        </div>
 
         <div style={{ textAlign: 'center', padding: '10px 0 20px' }}>
           <div style={{ fontSize: 40, marginBottom: 8 }}>🔍</div>

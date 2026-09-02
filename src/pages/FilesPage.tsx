@@ -10,6 +10,7 @@ import MediaOverlay from '../components/MediaOverlay'
 import LiquidGlassCard from '@/components/ui/liquid-glass-card'
 import PulseBackground from '../components/pulse/PulseBackground'
 import PulseGlassRow from '../components/pulse/PulseGlassRow'
+import BackButton from '../components/pulse/BackButton'
 import { useHistoryOverlay } from '../lib/useHistoryOverlay'
 import { getDriveOrRawUrl, getVideoEmbedUrl } from '../lib/embedUrl'
 
@@ -39,10 +40,6 @@ interface FilesSubject {
 
 const FILE_ACCENT = '#38bdf8'
 
-// Audio keeps its own centered-modal treatment — visually distinct from
-// the full-bleed PDF/video overlay, so it isn't folded into
-// MediaOverlay. Styled with the same glass card treatment as everything
-// else instead of the old flat #1e293b box.
 function AudioViewer({ url, name, onClose, dark }: { url: string; name: string; onClose: () => void; dark: boolean }) {
   const pt = getPulseTheme(dark)
   return (
@@ -83,8 +80,6 @@ export default function FilesPage({ dark }: { dark: boolean }) {
   const fileType = params.get('type')
   const moduleParam = params.get('module')
 
-  // Back closes whichever viewer (PDF/video/audio) is currently open
-  // instead of leaving FilesPage — see useHistoryOverlay.
   useHistoryOverlay(!!viewer, () => setViewer(null))
 
   const activeModules = modules.filter(m => m.status === 'active')
@@ -139,6 +134,10 @@ export default function FilesPage({ dark }: { dark: boolean }) {
     <div style={{ position: 'relative', minHeight: '100vh' }}>
       <PulseBackground />
       <div className="pulse-wide" style={{ position: 'relative', zIndex: 1, padding: '24px 20px 100px', fontFamily: pulseFonts.body }}>
+
+        <div style={{ marginBottom: 8 }}>
+          <BackButton dark={dark} fallback="/" />
+        </div>
 
         {(loadError || modulesError) && <ErrorBanner />}
 

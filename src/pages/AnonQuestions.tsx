@@ -6,11 +6,10 @@ import { getPulseTheme, pulseFonts, pulseType } from '../premiumTheme'
 import { glassInput, glassPrimaryBtn } from '../components/pulse/PulseUI'
 import LiquidGlassCard from '@/components/ui/liquid-glass-card'
 import PulseBackground from '../components/pulse/PulseBackground'
+import BackButton from '../components/pulse/BackButton'
 import NotifyPermissionButton from '../components/NotifyPermissionButton'
 import { getMyAnonTokens, addMyAnonToken, getNotifiedTokens, markTokensNotified } from '../lib/anonTracking'
 
-// Existing functional accent for the Anonymous Q&A feature (same
-// purple already used elsewhere for this feature) — reused, not new.
 const QNA_ACCENT = '#a78bfa'
 
 interface AnonQuestion {
@@ -36,11 +35,6 @@ export default function AnonQuestions({ dark }: { dark: boolean }) {
 
   useEffect(() => { fetchQuestions(); fetchMyQuestions() }, [])
 
-  // Once this browser's own tracked questions load, check if any just
-  // became answered, and fire a one-time local notification for each.
-  // Reads from `myQuestions` (resolved via the get_my_anon_questions
-  // RPC) rather than the public `questions` list, since tracking_token
-  // is no longer selectable on the public anonymous_questions read.
   useEffect(() => {
     if (!('Notification' in window) || Notification.permission !== 'granted') return
     const notified = getNotifiedTokens()
@@ -57,8 +51,6 @@ export default function AnonQuestions({ dark }: { dark: boolean }) {
 
   async function fetchQuestions() {
     setLoading(true)
-    // tracking_token is column-blocked on the public read now, so this
-    // must name columns explicitly instead of select('*').
     const { data } = await supabase
       .from('anonymous_questions')
       .select('id, question, answer, answered, created_at')
@@ -67,9 +59,6 @@ export default function AnonQuestions({ dark }: { dark: boolean }) {
     setLoading(false)
   }
 
-  // Resolves "my questions" (this device's own submissions) through a
-  // security-definer RPC, since tracking_token can no longer be read
-  // directly off the anonymous_questions table.
   async function fetchMyQuestions() {
     const myTokens = getMyAnonTokens()
     if (myTokens.length === 0) { setMyQuestions([]); return }
@@ -117,6 +106,10 @@ export default function AnonQuestions({ dark }: { dark: boolean }) {
       <PulseBackground />
       <div className="pulse-wide" style={{ position: 'relative', zIndex: 1, padding: '24px 20px 100px', fontFamily: pulseFonts.body, maxWidth: 700, margin: '0 auto' }}>
 
+        <div style={{ marginBottom: 8 }}>
+          <BackButton dark={dark} fallback="/" />
+        </div>
+
         <div style={{ textAlign: 'center', padding: '10px 0 16px' }}>
           <div style={{ fontSize: 40, marginBottom: 8 }}>💬</div>
           <h1 style={{ fontFamily: pulseFonts.display, fontWeight: 800, fontSize: 24, color: pt.text, marginBottom: 4 }}>
@@ -129,7 +122,6 @@ export default function AnonQuestions({ dark }: { dark: boolean }) {
           <NotifyPermissionButton dark={dark} label="🔔 Notify me when my question is answered" />
         </div>
 
-        {/* My Questions */}
         {myQuestions.length > 0 && (
           <div style={{ marginBottom: 24 }}>
             <h3 style={{ ...pulseType.sectionLabel, color: QNA_ACCENT, marginBottom: 12 }}>🔎 My Questions (this device)</h3>
@@ -164,7 +156,6 @@ export default function AnonQuestions({ dark }: { dark: boolean }) {
           </div>
         )}
 
-        {/* Submit Question */}
         <div style={{ marginBottom: 24 }}>
           <LiquidGlassCard dark={dark} delay={0} style={{ padding: '20px 22px' }}>
             <h3 style={{ ...pulseType.sectionLabel, color: QNA_ACCENT, marginBottom: 12 }}>🙋 Ask a Question</h3>
@@ -183,7 +174,6 @@ export default function AnonQuestions({ dark }: { dark: boolean }) {
           </LiquidGlassCard>
         </div>
 
-        {/* Admin Panel */}
         {isAdmin && (
           <div style={{ marginBottom: 24 }}>
             <LiquidGlassCard dark={dark} delay={0} style={{ padding: '10px 16px', textAlign: 'center' }}>
@@ -194,7 +184,6 @@ export default function AnonQuestions({ dark }: { dark: boolean }) {
           </div>
         )}
 
-        {/* Unanswered (admin only) */}
         {isAdmin && unansweredQs.length > 0 && (
           <div style={{ marginBottom: 24 }}>
             <h3 style={{ ...pulseType.sectionLabel, color: pt.amber, marginBottom: 12 }}>
@@ -230,7 +219,6 @@ export default function AnonQuestions({ dark }: { dark: boolean }) {
           </div>
         )}
 
-        {/* Answered */}
         <div>
           <h3 style={{ ...pulseType.sectionLabel, color: '#4ade80', marginBottom: 12 }}>
             ✅ Answered Questions ({answeredQs.length})

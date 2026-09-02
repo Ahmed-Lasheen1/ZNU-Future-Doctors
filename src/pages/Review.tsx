@@ -10,11 +10,10 @@ import ErrorBanner from '../components/ErrorBanner'
 import LiquidGlassCard from '@/components/ui/liquid-glass-card'
 import PulseBackground from '../components/pulse/PulseBackground'
 import PulseGlassRow from '../components/pulse/PulseGlassRow'
+import BackButton from '../components/pulse/BackButton'
 import { getGuestFlags, getGuestIncorrect, toggleGuestFlag } from '../lib/reviewStorage'
 import QuestionSourceBadge from '../components/QuestionSourceBadge'
 
-// Existing functional accent color for the Review/MCQ feature (the
-// same terracotta already used on MCQ.jsx) — reused, not invented.
 const REVIEW_ACCENT = '#e2725b'
 
 const SECTION_GAP = 22
@@ -67,10 +66,6 @@ export default function Review({ dark }: { dark: boolean }) {
     setLoadError(false)
 
     if (user) {
-      // Signed in: pull the relevant question ids from Supabase, then
-      // resolve them through the get_review_questions() RPC. That RPC
-      // only reveals the correct answer/explanation for questions this
-      // user has actually submitted through a graded quiz.
       let ids: string[] = []
       if (tab === 'incorrect') {
         const { data, error } = await supabase
@@ -95,8 +90,6 @@ export default function Review({ dark }: { dark: boolean }) {
       if (qError) setLoadError(true)
       setItems(qData || [])
     } else {
-      // Guest: everything already lives on this device with the
-      // correct answer/explanation attached once a quiz is graded.
       const local = tab === 'incorrect' ? getGuestIncorrect() : getGuestFlags()
       setItems(local.map((q: any) => ({ ...q, attempted: !!q.explanation })))
     }
@@ -115,9 +108,6 @@ export default function Review({ dark }: { dark: boolean }) {
   }
 
   function retryAll(list: ReviewItem[]) {
-    // A real graded quiz through MCQ.jsx — not just re-reading the
-    // explanation. Strip the answer/explanation fields before handing
-    // the set over, since a retry should feel like a fresh attempt.
     const retryQuestions = list.map(item => ({
       id: item.question_id || item.id,
       question: item.question,
@@ -138,8 +128,6 @@ export default function Review({ dark }: { dark: boolean }) {
     return matchesModule && matchesSearch
   })
 
-  // Only offer the module filter dropdown if the list actually spans
-  // more than one module — otherwise it's just clutter.
   const modulesInList = [...new Set(items.map(i => i.module_id).filter(Boolean))] as string[]
   const showModuleFilter = modulesInList.length > 1
 
@@ -150,6 +138,10 @@ export default function Review({ dark }: { dark: boolean }) {
     <div style={{ position: 'relative', minHeight: '100vh' }}>
       <PulseBackground />
       <div className="pulse-wide" style={{ position: 'relative', zIndex: 1, padding: '24px 20px 100px', fontFamily: pulseFonts.body }}>
+
+        <div style={{ marginBottom: 8 }}>
+          <BackButton dark={dark} fallback="/mcq" />
+        </div>
 
         <div style={{ textAlign: 'center', padding: '10px 0 16px' }}>
           <div style={{ fontSize: 40, marginBottom: 8 }}>📚</div>

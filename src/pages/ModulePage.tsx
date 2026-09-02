@@ -6,10 +6,12 @@ import { getPulseTheme, pulseFonts, pulseType } from '../premiumTheme'
 import ErrorBanner from '../components/ErrorBanner'
 import LiquidGlassCard from '@/components/ui/liquid-glass-card'
 import PulseBackground from '../components/pulse/PulseBackground'
+import BackButton from '../components/pulse/BackButton'
 import { useModules } from '../contexts'
 import { fetchModuleStages } from '../lib/moduleStages'
-import { FILE_CARDS } from '../lib/fileCards'
+import { fetchSubjectsForModule } from '../lib/subjects'
 import { ModuleIcon, ExamIcon, NotesIcon } from '../lib/medicalIcons'
+import { FILE_CARDS } from '../lib/fileCards'
 
 interface PageModule {
   id: string; name: string; icon?: string | null; color: string; status: 'active' | 'completed'
@@ -32,22 +34,27 @@ export default function ModulePage({ dark }: { dark: boolean }) {
   const [subjects, setSubjects] = useState<PageSubject[]>([])
 
   useEffect(() => {
+    let ignore = false
     supabase.from('site_settings').select('value').eq('key', 'drive_url').single()
-      .then(({ data }) => { if (data?.value) setDriveUrl(data.value) })
+      .then(({ data }) => { if (!ignore && data?.value) setDriveUrl(data.value) })
+    return () => { ignore = true }
   }, [])
 
   useEffect(() => {
+    let ignore = false
     supabase.from('files').select('type').eq('module_id', moduleId)
       .then(({ data, error }) => {
+        if (ignore) return
         if (data) setPresentFileTypes(new Set(data.map((f: any) => f.type)))
         if (error) setLoadError(true)
       })
-    fetchModuleStages(moduleId!).then(setExamStages)
-    supabase.from('subjects').select('*').eq('module_id', moduleId).order('name')
-      .then(({ data, error }) => {
-        if (data) setSubjects(data)
-        if (error) setLoadError(true)
-      })
+    fetchModuleStages(moduleId!).then(result => { if (!ignore) setExamStages(result) })
+    fetchSubjectsForModule(moduleId!).then(({ subjects, error }) => {
+      if (ignore) return
+      setSubjects(subjects)
+      if (error) setLoadError(true)
+    })
+    return () => { ignore = true }
   }, [moduleId])
 
   if (!module) return (
@@ -67,6 +74,10 @@ export default function ModulePage({ dark }: { dark: boolean }) {
     <div style={{ position: 'relative', minHeight: '100vh' }}>
       <PulseBackground />
       <div className="pulse-wide" style={{ position: 'relative', zIndex: 1, padding: '24px 20px 100px', fontFamily: pulseFonts.body }}>
+
+        <div style={{ marginBottom: 8 }}>
+          <BackButton dark={dark} fallback="/" />
+        </div>
 
         <div style={{ textAlign: 'center', padding: '20px 0 24px' }}>
           <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 10 }}>

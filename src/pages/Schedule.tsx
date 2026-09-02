@@ -8,13 +8,11 @@ import MediaOverlay from '../components/MediaOverlay'
 import LiquidGlassCard from '@/components/ui/liquid-glass-card'
 import PulseBackground from '../components/pulse/PulseBackground'
 import PulseGlassRow from '../components/pulse/PulseGlassRow'
+import BackButton from '../components/pulse/BackButton'
 import { getDriveOrRawUrl } from '../lib/embedUrl'
 import { useModules } from '../contexts'
 import { useHistoryOverlay } from '../lib/useHistoryOverlay'
 
-// Existing functional accent color for the Schedule feature (already
-// used this way elsewhere in the app, e.g. AnonQuestions) — kept as-is
-// rather than introducing a new accent.
 const SCHEDULE_ACCENT = '#a78bfa'
 
 const SECTION_GAP = 22
@@ -54,12 +52,8 @@ export default function Schedule({ dark }: { dark: boolean }) {
   const [viewer, setViewer] = useState<ScheduleRow | null>(null)
   const [loadError, setLoadError] = useState(false)
 
-  // Back closes the open schedule image/PDF viewer instead of leaving
-  // the Schedule page — see useHistoryOverlay.
   useHistoryOverlay(!!viewer, () => setViewer(null))
 
-  // Only active modules are offered here — a schedule for a completed
-  // module isn't something a student needs a tab to keep switching to.
   const activeModules = modules.filter(m => m.status === 'active')
 
   useEffect(() => {
@@ -90,6 +84,10 @@ export default function Schedule({ dark }: { dark: boolean }) {
     <div style={{ position: 'relative', minHeight: '100vh' }}>
       <PulseBackground />
       <div className="pulse-wide" style={{ position: 'relative', zIndex: 1, padding: '24px 20px 100px', fontFamily: pulseFonts.body }}>
+
+        <div style={{ marginBottom: 8 }}>
+          <BackButton dark={dark} fallback="/" />
+        </div>
 
         {(loadError || modulesError) && <ErrorBanner />}
 

@@ -6,6 +6,7 @@ import { getPulseTheme, pulseFonts } from '../premiumTheme'
 import { glassInput, glassPrimaryBtn } from '../components/pulse/PulseUI'
 import LiquidGlassCard from '@/components/ui/liquid-glass-card'
 import PulseBackground from '../components/pulse/PulseBackground'
+import BackButton from '../components/pulse/BackButton'
 import ErrorBanner from '../components/ErrorBanner'
 import ModuleTabs from '../components/ModuleTabs'
 import NotifyPermissionButton from '../components/NotifyPermissionButton'
@@ -14,27 +15,11 @@ import type { ChecklistTask } from '../types/checklist'
 
 const statNumStyle = { fontFamily: pulseFonts.display, fontWeight: 800, fontSize: 30 }
 
-// Consistent vertical rhythm between sections. IMPORTANT: this is
-// applied via a plain wrapping <div style={{ marginBottom }}> around
-// each LiquidGlassCard, NOT via LiquidGlassCard's own `style` prop —
-// that prop lands on an inner content div sitting inside an
-// overflow-hidden box, so margin passed there gets silently clipped
-// and never actually pushes cards apart. See liquid-glass-card.tsx.
 const SECTION_GAP = 22
 const TASK_GAP = 16
 
 const CHECKLIST_KEY_PREFIX = 'checklist_'
 
-// Guest (no-account) checklists live one localStorage key per module
-// (checklist_<moduleId>), created the first time that module's tab is
-// opened. Nothing ever removed those keys, so if a module is later
-// deleted or replaced by an admin, that guest's old checklist for it
-// stays in their browser forever — dead weight with no UI path to
-// reach or clear it. Run once modules have loaded: drop any
-// checklist_* key whose module id isn't in the current module list.
-// Signed-in users are unaffected by this either way — their data
-// lives in Supabase, and this function never touches anything but
-// checklist_* keys, which only guests ever write.
 function pruneOrphanedGuestChecklists(validModuleIds: Set<string>) {
   try {
     const keysToRemove: string[] = []
@@ -56,10 +41,6 @@ export default function Checklist({ dark }: { dark: boolean }) {
   const navigate = useNavigate()
   const { modules, modulesLoaded, modulesError } = useModules()
 
-  // ToastProvider.jsx is plain JS — its context default (`() => {}`)
-  // has no params, so TS infers useToast() as a zero-arg function and
-  // flags every showToast('message') call as "expected 0 arguments,
-  // got 1". This cast tells TS the real runtime signature.
   const showToast = useToast() as (message: string, type?: 'success' | 'error') => void
 
   const pt = getPulseTheme(dark)
@@ -78,9 +59,6 @@ export default function Checklist({ dark }: { dark: boolean }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [modulesLoaded, modules])
 
-  // Runs once per full page load, only after the real module list has
-  // actually arrived (never against a still-empty/loading list, which
-  // would wrongly look like "every module is orphaned").
   useEffect(() => {
     if (!modulesLoaded) return
     const validIds = new Set((modules as any[]).map(m => m.id))
@@ -90,7 +68,6 @@ export default function Checklist({ dark }: { dark: boolean }) {
 
   useEffect(() => { if (activeModule) fetchTasks() }, [activeModule, user])
 
-  // One-time "signed in" toast instead of a permanent card.
   const notifiedSignedInRef = useRef(false)
   useEffect(() => {
     if (user && !notifiedSignedInRef.current) {
@@ -195,6 +172,10 @@ export default function Checklist({ dark }: { dark: boolean }) {
       <PulseBackground />
       <div className="pulse-wide" style={{ position: 'relative', zIndex: 1, padding: '24px 20px 100px', fontFamily: pulseFonts.body }}>
 
+        <div style={{ marginBottom: 8 }}>
+          <BackButton dark={dark} fallback="/" />
+        </div>
+
         {modulesError && <ErrorBanner />}
 
         <div style={{ textAlign: 'center', padding: '10px 0 24px' }}>
@@ -220,7 +201,6 @@ export default function Checklist({ dark }: { dark: boolean }) {
           </div>
         )}
 
-        {/* Module row — centered and wrapping. */}
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: SECTION_GAP }}>
           <ModuleTabs
             modules={activeModulesList}
