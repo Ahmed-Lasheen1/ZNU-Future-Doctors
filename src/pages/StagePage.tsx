@@ -36,32 +36,52 @@ export default function StagePage({ dark }: { dark: boolean }) {
   const [driveUrl, setDriveUrl] = useState('')
   const [subjects, setSubjects] = useState<PageSubject[]>([])
 
-  useEffect(() => { fetchModuleStages(moduleId!).then(setStages) }, [moduleId])
+  useEffect(() => {
+    let ignore = false
+    fetchModuleStages(moduleId!).then(result => { if (!ignore) setStages(result) })
+    return () => { ignore = true }
+  }, [moduleId])
 
   useEffect(() => {
+    let ignore = false
     supabase.from('site_settings').select('key, value').in('key', ['drive_url', `drive_url_${stage}`])
       .then(({ data }) => {
-        if (!data) return
+        if (ignore || !data) return
         const byKey = Object.fromEntries(data.map((r: any) => [r.key, r.value]))
         setDriveUrl(byKey[`drive_url_${stage}`] || byKey['drive_url'] || '')
       })
+    return () => { ignore = true }
   }, [stage])
 
   useEffect(() => {
+    let ignore = false
+
     supabase.from('files').select('type').eq('module_id', moduleId).eq('exam_stage', stage)
       .then(({ data, error }) => {
+        if (ignore) return
         if (data) setPresentFileTypes(new Set(data.map((f: any) => f.type)))
         if (error) setLoadError(true)
       })
     supabase.from('summaries').select('*').eq('module_id', moduleId).eq('exam_stage', stage).order('created_at')
       .then(({ data, error }) => {
+        if (ignore) return
         if (data) setSummaries(data)
         if (error) setLoadError(true)
       })
     fetchSubjectsForModule(moduleId!).then(({ subjects, error }) => {
+      if (ignore) return
       setSubjects(subjects)
       if (error) setLoadError(true)
     })
+
+    // Cleanup runs before the next effect (i.e. the moment moduleId or
+    // stage changes again) and marks this run's in-flight requests as
+    // stale — if a slower earlier request resolves after a newer one
+    // already landed, its setState calls are now no-ops instead of
+    // silently overwriting fresher data with an older result. Pure
+    // correctness fix; no visible behavior change when navigation is
+    // at normal human speed.
+    return () => { ignore = true }
   }, [moduleId, stage])
 
   if (!module) return (
