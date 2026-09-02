@@ -308,7 +308,7 @@ export default function NavMenu({ dark, toggleTheme, align = 'left' }) {
               it — the icon, submit-on-Enter, click-to-submit — is
               unchanged. */}
           <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-            <SearchIcon size={16} color={pt.faint} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
+            <SearchIcon size={16} color={pt.faint} style={{ position: 'absolute', left: 16, top: '60%', transform: 'translateY(-60%)', pointerEvents: 'none' }} />
             <input
               value={searchValue}
               onChange={e => setSearchValue(e.target.value)}
