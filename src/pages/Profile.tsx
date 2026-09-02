@@ -9,6 +9,7 @@ import { containsProfanity } from '../lib/moderation'
 import { useToast } from '../components/ToastProvider'
 import LiquidGlassCard from '@/components/ui/liquid-glass-card'
 import PulseBackground from '../components/pulse/PulseBackground'
+import BackButton from '../components/pulse/BackButton'
 import PulseGlassRow from '../components/pulse/PulseGlassRow'
 import { getGuestHistory } from '../lib/reviewStorage'
 
@@ -187,6 +188,10 @@ export default function Profile({ dark }: { dark: boolean }) {
     <div style={{ position: 'relative', minHeight: '100vh' }}>
       <PulseBackground />
       <div className="pulse-wide" style={{ position: 'relative', zIndex: 1, padding: '24px 20px 100px', fontFamily: pulseFonts.body, maxWidth: 700, margin: '0 auto' }}>
+        
+         <div style={{ marginBottom: 8 }}>
+          <BackButton dark={dark} fallback="/" />
+        </div>
         
         {/* Tabs */}
         <div style={{ display: 'flex', gap: 8, marginBottom: 24 }}>
