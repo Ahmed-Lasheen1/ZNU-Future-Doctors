@@ -427,7 +427,7 @@ export default function Home({ dark, toggleTheme }: { dark: boolean; toggleTheme
                       onClick={() => navigate(`/module/${mod.id}`)}
                       style={{ borderRadius: 999, padding: '10px 18px 10px 10px', display: 'flex', alignItems: 'center', gap: 14 }}>
                       <div style={{
-                        width: 60, height: 46, borderRadius: '50%', flexShrink: 0,
+                        width: 46, height: 46, borderRadius: '50%', flexShrink: 0,
                         background: `${mod.color}22`, border: `1px solid ${mod.color}55`,
                         display: 'flex', alignItems: 'center', justifyContent: 'center'
                       }}>
