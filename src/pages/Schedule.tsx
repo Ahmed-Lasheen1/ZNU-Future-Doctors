@@ -10,6 +10,7 @@ import PulseBackground from '../components/pulse/PulseBackground'
 import PulseGlassRow from '../components/pulse/PulseGlassRow'
 import { getDriveOrRawUrl } from '../lib/embedUrl'
 import { useModules } from '../contexts'
+import { useHistoryOverlay } from '../lib/useHistoryOverlay'
 
 // Existing functional accent color for the Schedule feature (already
 // used this way elsewhere in the app, e.g. AnonQuestions) — kept as-is
@@ -53,6 +54,10 @@ export default function Schedule({ dark }: { dark: boolean }) {
   const [viewer, setViewer] = useState<ScheduleRow | null>(null)
   const [loadError, setLoadError] = useState(false)
 
+  // Back closes the open schedule image/PDF viewer instead of leaving
+  // the Schedule page — see useHistoryOverlay.
+  useHistoryOverlay(!!viewer, () => setViewer(null))
+
   // Only active modules are offered here — a schedule for a completed
   // module isn't something a student needs a tab to keep switching to.
   const activeModules = modules.filter(m => m.status === 'active')
@@ -65,14 +70,17 @@ export default function Schedule({ dark }: { dark: boolean }) {
   }, [modulesLoaded, modules])
 
   useEffect(() => {
+    let ignore = false
     async function fetchData() {
       setLoading(true)
       const { data, error } = await supabase.from('schedules').select('*').order('created_at')
+      if (ignore) return
       if (data) setSchedules(data as ScheduleRow[])
       if (error) setLoadError(true)
       setLoading(false)
     }
     fetchData()
+    return () => { ignore = true }
   }, [])
 
   const filtered = schedules.filter(s => s.module_id === activeModule && s.type === activeType)

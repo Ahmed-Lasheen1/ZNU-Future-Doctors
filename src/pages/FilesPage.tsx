@@ -10,6 +10,7 @@ import MediaOverlay from '../components/MediaOverlay'
 import LiquidGlassCard from '@/components/ui/liquid-glass-card'
 import PulseBackground from '../components/pulse/PulseBackground'
 import PulseGlassRow from '../components/pulse/PulseGlassRow'
+import { useHistoryOverlay } from '../lib/useHistoryOverlay'
 import { getDriveOrRawUrl, getVideoEmbedUrl } from '../lib/embedUrl'
 
 interface FilesModule {
@@ -82,6 +83,10 @@ export default function FilesPage({ dark }: { dark: boolean }) {
   const fileType = params.get('type')
   const moduleParam = params.get('module')
 
+  // Back closes whichever viewer (PDF/video/audio) is currently open
+  // instead of leaving FilesPage — see useHistoryOverlay.
+  useHistoryOverlay(!!viewer, () => setViewer(null))
+
   const activeModules = modules.filter(m => m.status === 'active')
 
   const titles: Record<string, string> = {
@@ -104,18 +109,21 @@ export default function FilesPage({ dark }: { dark: boolean }) {
   }, [modulesLoaded, modules, moduleParam])
 
   useEffect(() => {
+    let ignore = false
     async function fetchData() {
       setLoading(true)
       const [subRes, fileRes] = await Promise.all([
         supabase.from('subjects').select('*').order('name'),
         supabase.from('files').select('*').eq('type', fileType).order('created_at', { ascending: false })
       ])
+      if (ignore) return
       if (subRes.data) setSubjects(subRes.data)
       if (fileRes.data) setFiles(fileRes.data)
       if (subRes.error || fileRes.error) setLoadError(true)
       setLoading(false)
     }
     fetchData()
+    return () => { ignore = true }
   }, [fileType])
 
   const moduleSubjects = subjects.filter(s => s.module_id === activeModule)
