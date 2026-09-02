@@ -239,13 +239,30 @@ export default function NavMenu({ dark, toggleTheme, align = 'left' }) {
             below never sits under it. */}
         <div style={{ height: BUTTON_SIZE }} />
 
-        {/* Content — pulls down into place as it opens, pulls back up
-            as it closes, using the SAME `transition` object as the
-            panel's scale above (see useSyncedTransition), so the two
-            are locked to identical timing. */}
+        {/* Content — `y` stays on the same shared `transition` as the
+            panel's scale (so the "pull down/up" is locked to identical
+            timing, per the earlier request). `opacity` gets the SAME
+            Container Transform keyframe window as the panel now: per
+            MDN's spec, ANY ancestor with opacity < 1 becomes a
+            "backdrop root", meaning every row's own backdrop-filter
+            inside it can only see the (empty) space between rows —
+            not the real panel/page behind them — until this wrapper's
+            opacity is a true 1. That's the actual mechanism behind
+            "the buttons' blur is delayed": this opacity used to ride
+            the full, slow-to-settle morphEase curve, unlocking every
+            row's blur later than the panel's own (already-fixed)
+            blur. Windowing it the same way settles both at the same
+            point in the timeline. */}
         <motion.div
-          animate={{ y: open ? 0 : -16, opacity: open ? 1 : 0 }}
-          transition={transition}
+          animate={{ y: open ? 0 : -16, opacity: open ? [0, 0, 1, 1] : [1, 1, 0, 0] }}
+          transition={{
+            y: transition,
+            opacity: {
+              duration: open ? OPEN_DURATION : CLOSE_DURATION,
+              times: [0, 0.35, 0.65, 1],
+              ease: 'linear',
+            },
+          }}
           aria-hidden={!open}
           style={{ position: 'relative', zIndex: 1, width: PANEL_WIDTH, padding: '0 14px 16px', fontFamily: pulseFonts.body, display: 'flex', flexDirection: 'column', gap: 10 }}
         >
@@ -291,7 +308,7 @@ export default function NavMenu({ dark, toggleTheme, align = 'left' }) {
               it — the icon, submit-on-Enter, click-to-submit — is
               unchanged. */}
           <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-            <SearchIcon size={16} color={pt.faint} style={{ position: 'absolute', left: 16, top: '60%', transform: 'translateY(-60%)', pointerEvents: 'none' }} />
+            <SearchIcon size={16} color={pt.faint} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
             <input
               value={searchValue}
               onChange={e => setSearchValue(e.target.value)}
