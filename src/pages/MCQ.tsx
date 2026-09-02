@@ -757,7 +757,6 @@ export default function MCQ({ dark }: { dark: boolean }) {
                         background: `${MCQ_ACCENT}22`, border: `1px solid ${MCQ_ACCENT}55`,
                         color: MCQ_ACCENT, fontWeight: 800, fontSize: 12, whiteSpace: 'nowrap'
                       }}>Q{safeIndex + 1}</span>
-                      {isTutorMode && <InfoTag label="🎓 TUTOR — instant feedback" color={pt.cobalt} />}
                       {showSubjectTag && <InfoTag label={subj.name} color={subj.color || '#34d399'} />}
                       {showLessonTag && <InfoTag label={lesson.title} color="#818cf8" />}
                       {currentQuestion.source && <QuestionSourceBadge source={currentQuestion.source} />}
@@ -828,7 +827,7 @@ export default function MCQ({ dark }: { dark: boolean }) {
                               background: badgeBg,
                               border: `1.5px solid ${badgeBg === 'transparent' ? pt.border : badgeBg}`,
                               color: badgeColor, fontWeight: 800, fontSize: 'clamp(12px, 1vw, 14px)',
-                              marginTop: 1
+                              marginTop: -4
                             }}>{label.toUpperCase()}</span>
                             <span style={{
                               flex: 1, minWidth: 0, color: textColor,
