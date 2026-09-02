@@ -1,7 +1,9 @@
 import { createClient } from '@supabase/supabase-js'
 import webpush from 'web-push'
 
-const SUPABASE_URL = 'https://rbgfupgwmgvvrrzuawpo.supabase.co'
+// See api/push/broadcast.js for why this now comes from the
+// environment instead of a hardcoded literal.
+const SUPABASE_URL = process.env.SUPABASE_URL
 
 // The `deadline` column only stores a DATE (no time of day was ever
 // collected from the student). To make "6 hours before the deadline"
@@ -13,7 +15,7 @@ const SUPABASE_URL = 'https://rbgfupgwmgvvrrzuawpo.supabase.co'
 const EGYPT_TIMEZONE = 'Africa/Cairo'
 const REMINDER_WINDOW_HOURS = 6
 // Safety cap: don't fire reminders for tasks that are ALREADY more
-// than this many hours overdue â€” protects against a backlog of very
+// than this many hours overdue — protects against a backlog of very
 // old undone tasks all blowing up someone's phone the first time this
 // cron runs after being broken/paused for a while.
 const MAX_OVERDUE_HOURS = 24
@@ -57,16 +59,21 @@ function deadlineInstant(dateStr) {
 
 // Triggered every hour by a GitHub Actions cron job (see
 // .github/workflows/checklist-reminders-push.yml). Sends a reminder
-// ONLY to the specific student who owns the task â€” never a broadcast â€”
+// ONLY to the specific student who owns the task — never a broadcast —
 // by filtering push_subscriptions on that task's own user_id.
 //
 // Guest checklists (no account) live only in the browser's
 // localStorage and have no server-side row at all, so there is
-// nothing this cron can reach for them â€” this reminder only works for
+// nothing this cron can reach for them — this reminder only works for
 // signed-in accounts, which is an inherent limitation, not a bug.
 export default async function handler(req, res) {
   if (req.headers['x-cron-secret'] !== process.env.CRON_SECRET) {
     return res.status(401).json({ error: 'Unauthorized' })
+  }
+
+  if (!SUPABASE_URL) {
+    console.error('[checklist-reminders] Missing SUPABASE_URL environment variable.')
+    return res.status(500).json({ error: 'Server misconfiguration (missing SUPABASE_URL)' })
   }
 
   const supabase = createClient(SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY)
@@ -101,28 +108,28 @@ export default async function handler(req, res) {
   const expiredSubIds = []
 
   await Promise.all(due.map(async (task) => {
-    // Only THIS task's own owner â€” never every registered device.
+    // Only THIS task's own owner — never every registered device.
     const { data: subs } = await supabase
       .from('push_subscriptions')
       .select('*')
       .eq('user_id', task.user_id)
 
     if (!subs || subs.length === 0) {
-      // No push device for this student â€” nothing to send, but still
+      // No push device for this student — nothing to send, but still
       // mark it reminded so we don't keep re-checking it every hour.
       remindedTaskIds.push(task.id)
       return
     }
 
-    const moduleName = task.modules?.name ? `${task.modules.name} â€” ` : ''
-    const body = `${moduleName}"${task.text}" is due soon and still not checked off. â°`
+    const moduleName = task.modules?.name ? `${task.modules.name} — ` : ''
+    const body = `${moduleName}"${task.text}" is due soon and still not checked off. ⏰`
 
     let deliveredToAtLeastOne = false
     await Promise.all(subs.map(async (sub) => {
       try {
         await webpush.sendNotification(
           { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
-          JSON.stringify({ title: 'ðŸŽ¯ Checklist Reminder', body, url: '/checklist' })
+          JSON.stringify({ title: '🎯 Checklist Reminder', body, url: '/checklist' })
         )
         deliveredToAtLeastOne = true
       } catch (err) {

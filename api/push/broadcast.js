@@ -1,7 +1,12 @@
 import { createClient } from '@supabase/supabase-js'
 import webpush from 'web-push'
 
-const SUPABASE_URL = 'https://rbgfupgwmgvvrrzuawpo.supabase.co'
+// Read from the environment instead of a hardcoded literal — this
+// project URL is also referenced as a GitHub Actions secret
+// (SUPABASE_URL, see .github/workflows/supabase-keep-alive.yml), so
+// keeping a separate hardcoded copy here meant two sources of truth
+// that could silently drift if the project URL ever changed.
+const SUPABASE_URL = process.env.SUPABASE_URL
 
 webpush.setVapidDetails(
   'mailto:admin@znu-future-doctors.app',
@@ -15,6 +20,11 @@ webpush.setVapidDetails(
 // access token, and that user's profile must have role = 'admin'.
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
+
+  if (!SUPABASE_URL) {
+    console.error('[broadcast] Missing SUPABASE_URL environment variable.')
+    return res.status(500).json({ error: 'Server misconfiguration (missing SUPABASE_URL)' })
+  }
 
   const token = (req.headers.authorization || '').replace('Bearer ', '')
   if (!token) return res.status(401).json({ error: 'Missing auth token' })

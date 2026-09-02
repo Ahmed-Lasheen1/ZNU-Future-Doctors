@@ -1,7 +1,9 @@
 import { createClient } from '@supabase/supabase-js'
 import webpush from 'web-push'
 
-const SUPABASE_URL = 'https://rbgfupgwmgvvrrzuawpo.supabase.co'
+// See api/push/broadcast.js for why this now comes from the
+// environment instead of a hardcoded literal.
+const SUPABASE_URL = process.env.SUPABASE_URL
 
 webpush.setVapidDetails(
   'mailto:admin@znu-future-doctors.app',
@@ -16,6 +18,11 @@ webpush.setVapidDetails(
 export default async function handler(req, res) {
   if (req.headers['x-cron-secret'] !== process.env.CRON_SECRET) {
     return res.status(401).json({ error: 'Unauthorized' })
+  }
+
+  if (!SUPABASE_URL) {
+    console.error('[weekly-report] Missing SUPABASE_URL environment variable.')
+    return res.status(500).json({ error: 'Server misconfiguration (missing SUPABASE_URL)' })
   }
 
   const supabase = createClient(SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY)
