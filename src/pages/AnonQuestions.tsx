@@ -7,6 +7,7 @@ import { glassInput, glassPrimaryBtn } from '../components/pulse/PulseUI'
 import LiquidGlassCard from '@/components/ui/liquid-glass-card'
 import PulseBackground from '../components/pulse/PulseBackground'
 import BackButton from '../components/pulse/BackButton'
+import PageIntro from '../components/pulse/PageIntro'
 import NotifyPermissionButton from '../components/NotifyPermissionButton'
 import { getMyAnonTokens, addMyAnonToken, getNotifiedTokens, markTokensNotified } from '../lib/anonTracking'
 
@@ -110,13 +111,7 @@ export default function AnonQuestions({ dark }: { dark: boolean }) {
           <BackButton dark={dark} fallback="/" />
         </div>
 
-        <div style={{ textAlign: 'center', padding: '10px 0 16px' }}>
-          <div style={{ fontSize: 40, marginBottom: 8 }}>💬</div>
-          <h1 style={{ fontFamily: pulseFonts.display, fontWeight: 800, fontSize: 24, color: pt.text, marginBottom: 4 }}>
-            Anonymous Questions
-          </h1>
-          <p style={{ color: pt.sub, fontSize: 13 }}>Ask anything anonymously — no one knows who you are!</p>
-        </div>
+        <PageIntro dark={dark} emoji="💬" title="Anonymous Questions" subtitle="Ask anything anonymously — no one knows who you are!" paddingBottom={16} />
 
         <div style={{ marginBottom: 20 }}>
           <NotifyPermissionButton dark={dark} label="🔔 Notify me when my question is answered" />

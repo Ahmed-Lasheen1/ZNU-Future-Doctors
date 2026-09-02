@@ -9,6 +9,7 @@ import LiquidGlassCard from '@/components/ui/liquid-glass-card'
 import PulseBackground from '../components/pulse/PulseBackground'
 import PulseGlassRow from '../components/pulse/PulseGlassRow'
 import BackButton from '../components/pulse/BackButton'
+import PageIntro from '../components/pulse/PageIntro'
 import { getDriveOrRawUrl } from '../lib/embedUrl'
 import { useModules } from '../contexts'
 import { useHistoryOverlay } from '../lib/useHistoryOverlay'
@@ -101,14 +102,7 @@ export default function Schedule({ dark }: { dark: boolean }) {
             allow="autoplay" allowFullScreen={undefined}          />
         )}
 
-        <div style={{ textAlign: 'center', padding: '10px 0 24px' }}>
-          <div style={{ fontSize: 40, marginBottom: 8 }}>📅</div>
-          <h1 style={{
-            fontFamily: pulseFonts.display, fontWeight: 800, fontSize: 24,
-            color: pt.text, marginBottom: 4
-          }}>Schedules</h1>
-          <p style={{ color: pt.sub, fontSize: 13 }}>Study plans and exam dates, module by module</p>
-        </div>
+        <PageIntro dark={dark} emoji="📅" title="Schedules" subtitle="Study plans and exam dates, module by module" />
 
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: SECTION_GAP }}>
           <ModuleTabs

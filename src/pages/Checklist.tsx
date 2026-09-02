@@ -7,6 +7,7 @@ import { glassInput, glassPrimaryBtn } from '../components/pulse/PulseUI'
 import LiquidGlassCard from '@/components/ui/liquid-glass-card'
 import PulseBackground from '../components/pulse/PulseBackground'
 import BackButton from '../components/pulse/BackButton'
+import PageIntro from '../components/pulse/PageIntro'
 import ErrorBanner from '../components/ErrorBanner'
 import ModuleTabs from '../components/ModuleTabs'
 import NotifyPermissionButton from '../components/NotifyPermissionButton'
@@ -178,14 +179,7 @@ export default function Checklist({ dark }: { dark: boolean }) {
 
         {modulesError && <ErrorBanner />}
 
-        <div style={{ textAlign: 'center', padding: '10px 0 24px' }}>
-          <div style={{ fontSize: 40, marginBottom: 8 }}>🎯</div>
-          <h1 style={{
-            fontFamily: pulseFonts.display, fontWeight: 800, fontSize: 24,
-            color: pt.text, marginBottom: 4
-          }}>Checklist</h1>
-          <p style={{ color: pt.sub, fontSize: 13 }}>Track what's left before exam day</p>
-        </div>
+        <PageIntro dark={dark} emoji="🎯" title="Checklist" subtitle="Track what's left before exam day" />
 
         <div style={{ marginBottom: SECTION_GAP }}>
           <NotifyPermissionButton dark={dark} label="🔔 Enable deadline reminders" />

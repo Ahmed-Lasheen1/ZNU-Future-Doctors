@@ -9,6 +9,7 @@ import ErrorBanner from '../components/ErrorBanner'
 import LiquidGlassCard from '@/components/ui/liquid-glass-card'
 import PulseBackground from '../components/pulse/PulseBackground'
 import BackButton from '../components/pulse/BackButton'
+import PageIntro from '../components/pulse/PageIntro'
 import { ModuleIcon } from '../lib/medicalIcons'
 
 interface SearchModule {
@@ -121,13 +122,7 @@ export default function Search({ dark }: { dark: boolean }) {
           <BackButton dark={dark} fallback="/" />
         </div>
 
-        <div style={{ textAlign: 'center', padding: '10px 0 20px' }}>
-          <div style={{ fontSize: 40, marginBottom: 8 }}>🔍</div>
-          <h1 style={{ fontFamily: pulseFonts.display, fontWeight: 800, fontSize: 24, color: pt.text, marginBottom: 4 }}>
-            Search
-          </h1>
-          <p style={{ color: pt.sub, fontSize: 13 }}>Modules, files, questions, summaries & schedules</p>
-        </div>
+        <PageIntro dark={dark} emoji="🔍" title="Search" subtitle="Modules, files, questions, summaries & schedules" paddingBottom={20} />
 
         <input
           ref={inputRef}

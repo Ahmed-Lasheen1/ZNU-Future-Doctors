@@ -11,6 +11,7 @@ import LiquidGlassCard from '@/components/ui/liquid-glass-card'
 import PulseBackground from '../components/pulse/PulseBackground'
 import PulseGlassRow from '../components/pulse/PulseGlassRow'
 import BackButton from '../components/pulse/BackButton'
+import PageIntro from '../components/pulse/PageIntro'
 import { useHistoryOverlay } from '../lib/useHistoryOverlay'
 import { getDriveOrRawUrl, getVideoEmbedUrl } from '../lib/embedUrl'
 
@@ -161,12 +162,11 @@ export default function FilesPage({ dark }: { dark: boolean }) {
           <AudioViewer url={viewer.url} name={viewer.name} onClose={() => setViewer(null)} dark={dark} />
         )}
 
-        <div style={{ textAlign: 'center', padding: '10px 0 24px' }}>
-          <div style={{ fontSize: 40, marginBottom: 8 }}>{fileType ? titles[fileType]?.split(' ')[0] : '📁'}</div>
-          <h1 style={{ fontFamily: pulseFonts.display, fontWeight: 800, fontSize: 24, color: pt.text, marginBottom: 4 }}>
-            {fileType ? titles[fileType]?.split(' ').slice(1).join(' ') : 'Files'}
-          </h1>
-        </div>
+        <PageIntro
+          dark={dark}
+          emoji={fileType ? titles[fileType]?.split(' ')[0] : '📁'}
+          title={fileType ? titles[fileType]?.split(' ').slice(1).join(' ') : 'Files'}
+        />
 
         <ModuleTabs
           modules={activeModules}

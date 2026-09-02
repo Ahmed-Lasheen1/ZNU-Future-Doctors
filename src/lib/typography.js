@@ -17,6 +17,20 @@ export const type = {
     fontFamily: FONT_FAMILY, fontWeight: 700,
     fontSize: 'clamp(26px, 3vw, 36px)', lineHeight: 1.15, letterSpacing: '-0.025em',
   },
+  // Compact page-level heading used by lighter, single-purpose pages
+  // (Schedule, Checklist, Files, Anonymous Q&A, Search, Review) via
+  // the shared PageIntro component — distinct from `pageTitle` above,
+  // which is reserved for the larger, responsive clamp() heading
+  // ModulePage/SubjectPage/LessonPage/StagePage use for their main
+  // entity name. This exact { fontWeight: 800, fontSize: 24 } object
+  // used to be hand-copied independently into six separate page
+  // files — centralized here so changing this heading's size/weight
+  // everywhere is a one-line edit instead of a six-file find-and-
+  // replace (see PageIntro.tsx).
+  miniPageTitle: {
+    fontFamily: FONT_FAMILY, fontWeight: 800,
+    fontSize: 24, lineHeight: 1.2,
+  },
   // Section headings within a page
   sectionTitle: {
     fontFamily: FONT_FAMILY, fontWeight: 600,

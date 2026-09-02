@@ -11,6 +11,7 @@ import LiquidGlassCard from '@/components/ui/liquid-glass-card'
 import PulseBackground from '../components/pulse/PulseBackground'
 import PulseGlassRow from '../components/pulse/PulseGlassRow'
 import BackButton from '../components/pulse/BackButton'
+import PageIntro from '../components/pulse/PageIntro'
 import { getGuestFlags, getGuestIncorrect, toggleGuestFlag } from '../lib/reviewStorage'
 import QuestionSourceBadge from '../components/QuestionSourceBadge'
 
@@ -143,13 +144,7 @@ export default function Review({ dark }: { dark: boolean }) {
           <BackButton dark={dark} fallback="/mcq" />
         </div>
 
-        <div style={{ textAlign: 'center', padding: '10px 0 16px' }}>
-          <div style={{ fontSize: 40, marginBottom: 8 }}>📚</div>
-          <h1 style={{ fontFamily: pulseFonts.display, fontWeight: 800, fontSize: 24, color: pt.text, marginBottom: 4 }}>
-            Review
-          </h1>
-          <p style={{ color: pt.sub, fontSize: 13 }}>Questions you got wrong, and questions you flagged during a quiz</p>
-        </div>
+        <PageIntro dark={dark} emoji="📚" title="Review" subtitle="Questions you got wrong, and questions you flagged during a quiz" paddingBottom={16} />
 
         <div style={{ textAlign: 'center', marginBottom: SECTION_GAP }}>
           <PulseGlassRow dark={dark} radius={999} hoverTint={hoverTint} onClick={() => navigate('/profile?tab=history')}
