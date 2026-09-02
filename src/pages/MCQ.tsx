@@ -671,26 +671,15 @@ export default function MCQ({ dark }: { dark: boolean }) {
                   {quizMode === 'mock' ? formatTime(timeLeft) : formatTime(elapsedSeconds)}
                 </div>
 
-                {/* Time-remaining bar with an "even pace" marker at the
-                    fraction of time that would remain if the student
-                    were exactly on pace with questions answered so far
-                    — lets them see at a glance whether they're ahead
-                    or behind, without a second separate progress bar. */}
+                {/* Simple time-remaining bar, same color escalation as
+                    the timer digits — kept plain rather than layering
+                    extra comparison markers on it. */}
                 {quizMode === 'mock' && (
-                  <div style={{ position: 'relative', width: '100%', maxWidth: 260, margin: '10px auto 0', height: 5, borderRadius: 999, background: 'rgba(10,31,61,0.12)', overflow: 'visible' }}>
+                  <div style={{ width: '100%', maxWidth: 220, margin: '10px auto 0', height: 4, borderRadius: 999, background: 'rgba(10,31,61,0.12)', overflow: 'hidden' }}>
                     <div style={{
-                      position: 'absolute', inset: 0, borderRadius: 999, overflow: 'hidden'
-                    }}>
-                      <div style={{
-                        height: '100%', borderRadius: 999,
-                        width: `${(timeLeft / (MOCK_MINUTES * 60)) * 100}%`,
-                        background: timerColor(), transition: 'width 1s linear, background 0.5s ease'
-                      }} />
-                    </div>
-                    <div style={{
-                      position: 'absolute', top: -2, bottom: -2, width: 2, borderRadius: 1,
-                      left: `${Math.max(0, Math.min(100, ((total - answeredCount) / total) * 100))}%`,
-                      background: EXAM_TOP_TEXT, opacity: 0.55
+                      height: '100%', borderRadius: 999,
+                      width: `${(timeLeft / (MOCK_MINUTES * 60)) * 100}%`,
+                      background: timerColor(), transition: 'width 1s linear, background 0.5s ease'
                     }} />
                   </div>
                 )}
@@ -1044,6 +1033,13 @@ export default function MCQ({ dark }: { dark: boolean }) {
                 const isCorrect = result?.is_correct
                 const userAnswer = answers[qi]
                 const isLast = qi === quizQuestions.length - 1
+                // Same real-data tag rules as the taking screen, resolved
+                // per question since a mock exam's review list spans
+                // multiple subjects/lessons.
+                const subj = subjects.find(s => s.id === q.subject_id)
+                const lesson = lessons.find(l => l.id === q.lesson_id)
+                const showSubjectTag = quizMode === 'mock' && !!subj
+                const showLessonTag = !lessonFilter && !!lesson
                 return (
                   <div key={qi} style={{ marginBottom: isLast ? 0 : 14 }}>
                     <LiquidGlassCard dark={dark} delay={0} style={{
@@ -1062,6 +1058,8 @@ export default function MCQ({ dark }: { dark: boolean }) {
                           background: isCorrect ? 'rgba(74,222,128,0.16)' : 'rgba(248,113,113,0.16)',
                           color: isCorrect ? '#4ade80' : '#f87171'
                         }}>{isCorrect ? '✓ CORRECT' : userAnswer ? '✕ INCORRECT' : '— UNANSWERED'}</span>
+                        {showSubjectTag && <InfoTag label={subj.name} color={subj.color || '#34d399'} />}
+                        {showLessonTag && <InfoTag label={lesson.title} color="#818cf8" />}
                         {q.source && <QuestionSourceBadge source={q.source} />}
                       </div>
 
