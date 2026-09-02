@@ -10,9 +10,9 @@ import { useToast } from '../components/ToastProvider'
 import LiquidGlassCard from '@/components/ui/liquid-glass-card'
 import PulseBackground from '../components/pulse/PulseBackground'
 import PulseGlassRow from '../components/pulse/PulseGlassRow'
-import BackButton from '../components/pulse/BackButton'
 import { getGuestHistory } from '../lib/reviewStorage'
 
+// Small helper so a missing/blank name never crashes the avatar badge.
 function initialOf(name?: string | null) {
   return name && name.trim() ? name.trim().charAt(0).toUpperCase() : '?'
 }
@@ -187,11 +187,7 @@ export default function Profile({ dark }: { dark: boolean }) {
     <div style={{ position: 'relative', minHeight: '100vh' }}>
       <PulseBackground />
       <div className="pulse-wide" style={{ position: 'relative', zIndex: 1, padding: '24px 20px 100px', fontFamily: pulseFonts.body, maxWidth: 700, margin: '0 auto' }}>
-
-        <div style={{ marginBottom: 8 }}>
-          <BackButton dark={dark} fallback="/" />
-        </div>
-
+        
         {/* Tabs */}
         <div style={{ display: 'flex', gap: 8, marginBottom: 24 }}>
           {(['profile', 'leaderboard', 'history'] as const).map(t => {
@@ -227,6 +223,7 @@ export default function Profile({ dark }: { dark: boolean }) {
               <p style={{ color: pt.sub, textAlign: 'center' }}>Loading...</p>
             ) : profile ? (
               <div>
+                {/* Profile Card */}
                 <div style={{ marginBottom: 16 }}>
                   <LiquidGlassCard dark={dark} delay={0} style={{ padding: '28px 24px', textAlign: 'center' }}>
                     <div style={{
@@ -253,6 +250,7 @@ export default function Profile({ dark }: { dark: boolean }) {
                   </LiquidGlassCard>
                 </div>
 
+                {/* Info */}
                 <div style={{ marginBottom: 16 }}>
                   <LiquidGlassCard dark={dark} delay={0} style={{ padding: '20px 22px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
@@ -400,5 +398,31 @@ export default function Profile({ dark }: { dark: boolean }) {
               const mod = modules.find(m => m.id === h.module_id)
               const isLast = i === history.length - 1
               return (
-                <div key={i} style={{
-                  
+                <div key={i} style={{ marginBottom: isLast ? 0 : 10 }}>
+                  <LiquidGlassCard dark={dark} delay={i * 50} style={{
+                    padding: '14px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12
+                  }}>
+                    <div>
+                      <div style={{ ...pulseType.cardTitle, fontSize: 14, color: pt.textPrimary }}>
+                        {mod ? `${mod.icon} ${mod.name}` : 'Module'} · {h.quiz_type === 'mock' ? '📝 Mock' : '🧪 Practice'}
+                      </div>
+                      <div style={{ ...pulseType.small, color: pt.textMuted, marginTop: 2 }}>
+                        {new Date(h.completed_at).toLocaleDateString()} · {h.correct}/{h.total} correct
+                        {h.time_sec ? ` · ${Math.floor(h.time_sec / 60)}m ${h.time_sec % 60}s` : ''}
+                      </div>
+                    </div>
+                    <div style={{
+                      background: h.score >= 60 ? 'rgba(74,222,128,0.16)' : 'rgba(239,107,87,0.16)',
+                      color: h.score >= 60 ? pt.success : pt.danger,
+                      borderRadius: 999, padding: '4px 14px', fontWeight: 900, fontSize: 14, flexShrink: 0
+                    }}>{h.score}%</div>
+                  </LiquidGlassCard>
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
