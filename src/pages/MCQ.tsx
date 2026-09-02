@@ -471,6 +471,16 @@ export default function MCQ({ dark }: { dark: boolean }) {
         ...prev,
         [q.id]: { is_correct: r.is_correct, correct_answer: r.correct_answer, explanation: r.explanation }
       }))
+    } else {
+      // Previously this failed completely silently: the student's tap
+      // was already recorded in `answers` by selectAnswer, but no
+      // reveal ever appeared and nothing told them why — retapping
+      // other options looked like it was doing nothing at all. The
+      // answer is NOT locked at this point (selectAnswer's lock only
+      // engages once results[q.id] actually exists, which never
+      // happens here), so nothing needs to be "unlocked" — the fix is
+      // purely giving the student an explanation and a next step.
+      showToast('⚠️ Could not grade that answer — check your connection and try again', 'error')
     }
   }
 

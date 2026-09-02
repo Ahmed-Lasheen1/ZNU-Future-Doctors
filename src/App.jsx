@@ -5,6 +5,7 @@ import { supabase } from './supabase'
 import { getTheme } from './theme'
 import { fetchModulesSorted } from './lib/modules'
 import { subscribeOnlinePresence } from './lib/onlinePresence'
+import { migrateGuestDataIfNeeded } from './lib/migrateGuestData'
 import ErrorBoundary from './components/ErrorBoundary'
 import ToastProvider from './components/ToastProvider'
 import PulseOverlayHeader from './components/pulse/PulseOverlayHeader'
@@ -131,15 +132,31 @@ export default function App() {
       // before marking auth as loaded, so authLoaded=true always means
       // "we know, for sure, whether this person is an admin" — not
       // just "we know if they're signed in".
-      if (session?.user) await fetchProfile(session.user.id)
+      if (session?.user) {
+        await fetchProfile(session.user.id)
+        // Covers the case where a guest practiced on this device,
+        // then signed in on a PREVIOUS visit and this is simply a
+        // later reload with an already-persisted session — Supabase
+        // doesn't reliably re-fire a distinct "just signed in" event
+        // in that case, so this call has to happen here too, not only
+        // in onAuthStateChange below. migrateGuestDataIfNeeded is a
+        // no-op (single localStorage read, no network) whenever there
+        // is nothing local left to migrate, so calling it on every
+        // session check costs nothing once it has run once.
+        migrateGuestDataIfNeeded(session.user.id)
+      }
       setAuthLoaded(true)
     }
     initSession()
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null)
-      if (session?.user) fetchProfile(session.user.id)
-      else setProfile(null)
+      if (session?.user) {
+        fetchProfile(session.user.id)
+        migrateGuestDataIfNeeded(session.user.id)
+      } else {
+        setProfile(null)
+      }
     })
     return () => subscription.unsubscribe()
   }, [])

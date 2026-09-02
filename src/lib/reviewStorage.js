@@ -2,7 +2,9 @@
 // only when nobody is signed in, mirroring the same localStorage
 // pattern Checklist.jsx already uses for guests. Everything here is
 // scoped to a single browser; signing in switches to the real
-// Supabase-backed versions instead.
+// Supabase-backed versions instead (see lib/migrateGuestData.js for
+// the one-time handoff when a guest signs in with local data still
+// sitting here).
 
 const FLAGGED_KEY = 'mcq_flagged'
 const INCORRECT_KEY = 'mcq_incorrect'
@@ -30,6 +32,14 @@ export function toggleGuestFlag(entry) {
   list.push({ ...entry, flaggedAt: Date.now() })
   writeList(FLAGGED_KEY, list)
   return true
+}
+
+// Called once flagged_questions rows have been (attempted to be)
+// written server-side for a newly signed-in user — see
+// migrateGuestData.js. Safe to call even if the list was already
+// empty.
+export function clearGuestFlags() {
+  localStorage.removeItem(FLAGGED_KEY)
 }
 
 // ── Incorrect questions ───────────────────────────────────────────
@@ -61,6 +71,11 @@ export function enrichGuestFlagsWithResults(resultMap) {
   if (changed) writeList(FLAGGED_KEY, list)
 }
 
+// See clearGuestFlags above.
+export function clearGuestIncorrect() {
+  localStorage.removeItem(INCORRECT_KEY)
+}
+
 // ── Exam history ──────────────────────────────────────────────────
 export function getGuestHistory() { return readList(HISTORY_KEY) }
 
@@ -69,6 +84,11 @@ export function addGuestHistory(entry) {
   list.unshift({ ...entry, completed_at: Date.now() })
   if (list.length > 50) list.length = 50
   writeList(HISTORY_KEY, list)
+}
+
+// See clearGuestFlags above.
+export function clearGuestHistory() {
+  localStorage.removeItem(HISTORY_KEY)
 }
 
 // ── Active (in-progress) exam, for Resume ─────────────────────────
