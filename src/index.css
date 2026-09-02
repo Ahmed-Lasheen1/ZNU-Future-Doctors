@@ -164,3 +164,21 @@ h1, h2, h3 {
   animation: liquidSheenMove 14s ease-in-out infinite;
   will-change: transform;
 }
+
+/* Keyboard-only focus ring for glass rows/cards (starting with
+   NavMenu's GlassRow, reusable anywhere else that needs it).
+   Deliberately NOT tied to :hover — hover never fires from Tab
+   navigation, so without this a keyboard user gets zero indication of
+   where they are on a glass surface. :focus-visible (not plain
+   :focus) means mouse clicks still don't show a ring — only real
+   keyboard/assistive-tech focus does. White halo + accent ring is
+   background-agnostic on purpose: it needs to read on light glass,
+   dark glass, and busier backdrops alike, which a single-color ring
+   can't guarantee on its own. */
+.glass-focus-ring:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px rgba(255, 255, 255, 0.95),
+    0 0 0 4px #38bdf8,
+    0 0 0 5px rgba(0, 0, 0, 0.18);
+}

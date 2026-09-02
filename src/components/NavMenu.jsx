@@ -104,14 +104,22 @@ function LiquidBloom({ pt, open, align }) {
 // the panel itself — putting the hover `scale` on an ancestor while
 // backdrop-filter lives on a child breaks the blur the instant you
 // hover. Hover is now a "pop" (scale 1.05), not a color overlay.
-function GlassRow({ dark, radius = ROW_RADIUS, style = {}, children, onMouseEnter, onMouseLeave, ...rest }) {
+//
+// `glass-focus-ring` (defined in index.css) gives keyboard/
+// assistive-tech focus a real, visible ring — deliberately separate
+// from the hover pop above, since :hover never fires from Tab
+// navigation and every row here IS keyboard-operable (role="button",
+// tabIndex, Enter/Space). Without this, tabbing through the menu gave
+// no visual indication of where focus was at all.
+function GlassRow({ dark, radius = ROW_RADIUS, style = {}, children, onMouseEnter, onMouseLeave, className, ...rest }) {
   const [hovered, setHovered] = useState(false)
   return (
     <div
       {...rest}
+      className={['glass-focus-ring', className].filter(Boolean).join(' ')}
       onMouseEnter={e => { setHovered(true); onMouseEnter?.(e) }}
       onMouseLeave={e => { setHovered(false); onMouseLeave?.(e) }}
-      style={{ position: 'relative', ...style }}
+      style={{ position: 'relative', borderRadius: radius, ...style }}
     >
       <div style={{
         position: 'relative', isolation: 'isolate', overflow: 'hidden', borderRadius: radius,
@@ -308,7 +316,7 @@ export default function NavMenu({ dark, toggleTheme, align = 'left' }) {
               it — the icon, submit-on-Enter, click-to-submit — is
               unchanged. */}
           <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-            <SearchIcon size={16} color={pt.faint} style={{ position: 'absolute', left: 16, top: '60%', transform: 'translateY(-60%)', pointerEvents: 'none' }} />
+            <SearchIcon size={16} color={pt.faint} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
             <input
               value={searchValue}
               onChange={e => setSearchValue(e.target.value)}
