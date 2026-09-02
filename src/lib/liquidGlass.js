@@ -18,7 +18,7 @@ export function liquidGlassShadow(dark) {
 // modes). Without a real fallback plan, every glass surface in the app
 // would silently render as a nearly-invisible rectangle on those
 // devices — same failure Google's own Material guidance calls out and
-// the liquid-glass design writeups treat as a required "stress test",
+// the liquid-glass design writeups treat as a required "stress test,"
 // not an edge case. Because these are plain JS style objects (not CSS
 // classes), there's no `@supports` at-rule to reach for — this checks
 // support once via `CSS.supports()` and every card/row/panel in the
@@ -66,6 +66,17 @@ export function liquidGlassTint(dark) {
     return dark ? 'rgba(38, 44, 60, 0.82)' : 'rgba(255,255,255,0.82)'
   }
   return dark ? 'rgba(60, 60, 70, 0.35)' : 'rgba(255,255,255,0.35)'
+}
+
+// Shared border color for glass CONTAINERS that draw a real CSS
+// border directly on themselves (as opposed to PulseGlassRow's
+// layered boxShadow approach, which uses liquidGlassShadow instead).
+// Previously this exact literal pair was hardcoded separately inside
+// PulseUI.jsx's glassPanel() — now it's here so any future "reduce
+// the border brightness" request is a one-line change instead of a
+// grep-and-replace across files.
+export function glassBorderColor(dark) {
+  return dark ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.55)'
 }
 
 // ── Stabilized plate (optional) ─────────────────────────────────────

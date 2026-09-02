@@ -1,5 +1,5 @@
 import { getPulseTheme, pulseFonts } from '../../premiumTheme'
-import { liquidGlassBackdrop, liquidGlassTint } from '../../lib/liquidGlass'
+import { liquidGlassBackdrop, liquidGlassTint, glassBorderColor } from '../../lib/liquidGlass'
 
 // Shared glass-style primitives for the ZNU Pulse redesign — used by
 // Auth, ResetPassword, and (as we roll it out) every other page, so
@@ -19,6 +19,12 @@ import { liquidGlassBackdrop, liquidGlassTint } from '../../lib/liquidGlass'
 // for buttons/active-tab states, exactly as LiquidGlassCard and
 // PulseGlassRow already do) — so tuning glass opacity globally is now
 // genuinely a one-file change, everywhere in the app.
+//
+// glassPanel's border also used to hardcode its own
+// 'rgba(255,255,255,0.08)'/'rgba(255,255,255,0.55)' pair — now sourced
+// from glassBorderColor(dark) in liquidGlass.js, the same place
+// "reduce the border brightness" would be changed for every other
+// glass surface.
 //
 // Blur comes from liquidGlassBackdrop() (the same function
 // LiquidGlassCard, PulseGlassRow, and NavMenu's glass all use) instead
@@ -114,12 +120,9 @@ export function GradientBlobs({ pt }) {
 export function glassPanel(pt, dark, extra = {}) {
   return {
     position: 'relative', zIndex: 1,
-    // Was a one-off 'rgba(24,38,58,0.30)'/'rgba(255,255,255,0.28)'
-    // pair found nowhere else in the app — now the same shared
-    // neutral tint every other glass surface uses.
     background: liquidGlassTint(dark),
     ...liquidGlassBackdrop(),
-    border: `1px solid ${dark ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.55)'}`,
+    border: `1px solid ${glassBorderColor(dark)}`,
     borderRadius: 28, padding: '40px 36px', width: '92%', maxWidth: 400,
     ...extra
   }
