@@ -59,15 +59,28 @@ export default function SettingsTab({ dark }) {
   // Sends a real push notification to every registered device — see
   // api/push/broadcast.js. The server independently re-checks that
   // this account has role='admin' before sending anything.
+  //
+  // AUDIT FIX: every other irreversible action in Admin (deleting a
+  // module/subject/lesson/file/schedule/question/summary) already
+  // gates on window.confirm(...) before running — this was the one
+  // exception. Sending to "every device with notifications enabled"
+  // instantly and permanently (there's no recall for a push
+  // notification once it's delivered) is at least as consequential as
+  // any of those deletes, so it now gets the same confirmation step,
+  // worded to state exactly what's about to happen.
   async function sendBroadcast() {
-    if (!broadcastTitle.trim() || !broadcastBody.trim()) return showMsg('❌ Please fill in both fields')
+    const title = broadcastTitle.trim()
+    const body = broadcastBody.trim()
+    if (!title || !body) return showMsg('❌ Please fill in both fields')
+    if (!confirm(`Send "${title}" to every device with notifications enabled right now? This can't be undone once it's sent.`)) return
+
     setBroadcastSending(true)
     const { data: { session } } = await supabase.auth.getSession()
     try {
       const res = await fetch('/api/push/broadcast', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token}` },
-        body: JSON.stringify({ title: broadcastTitle.trim(), body: broadcastBody.trim() })
+        body: JSON.stringify({ title, body })
       })
       const result = await res.json()
       setBroadcastSending(false)
@@ -88,6 +101,7 @@ export default function SettingsTab({ dark }) {
         <h3 style={{ color: '#38bdf8', marginBottom: 8 }}>📢 Send Push Notification to Everyone</h3>
         <p style={{ color: c.sub, fontSize: 13, marginBottom: 16 }}>
           Delivered instantly to every device with notifications enabled — even if they don't have the site open right now.
+          You'll be asked to confirm before it sends.
         </p>
         <input placeholder="Title (e.g. New questions added!)" value={broadcastTitle} onChange={e => setBroadcastTitle(e.target.value)} style={inStyle} />
         <textarea placeholder="Message" value={broadcastBody} onChange={e => setBroadcastBody(e.target.value)} style={{ ...inStyle, minHeight: 70, resize: 'vertical' }} />
