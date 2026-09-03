@@ -113,6 +113,8 @@ const BRAND_WORDS_START = LOGO_DELAY + 0.45
 const BRAND_WORD_STAGGER = 0.2
 const BRAND_TAGLINE_DELAY = BRAND_WORDS_START + BRAND_WORD_STAGGER * 2 + 0.2
 
+interface WeeklySummary { totalAttempted: number; accuracy: number; topSubjectName: string | null }
+
 export default function Home({ dark, toggleTheme }: { dark: boolean; toggleTheme: () => void }) {
   const c = getTheme(dark)
   const pt = getPulseTheme(dark)
@@ -122,7 +124,7 @@ export default function Home({ dark, toggleTheme }: { dark: boolean; toggleTheme
   const [announcement, setAnnouncement] = useState('')
   const [streak, setStreak] = useState(0)
   const [pausedExam, setPausedExam] = useState<any>(null)
-  const [weeklySummary, setWeeklySummary] = useState<{ totalAttempted: number; accuracy: number; topSubjectName: string | null } | null>(null)
+  const [weeklySummary, setWeeklySummary] = useState<WeeklySummary | null>(null)
 
   // True only the first time Home mounts in this browser tab session
   // (survives reloads, resets when the tab closes). The full
@@ -135,45 +137,51 @@ export default function Home({ dark, toggleTheme }: { dark: boolean; toggleTheme
       .then(({ data }) => { if (data?.value) setAnnouncement(data.value) })
   }, [])
 
+  // AUDIT FIX: streak and the weekly accuracy/total-attempted summary
+  // used to each run their own independent supabase.from('exam_history')
+  // query for signed-in users — two round trips to the same table on
+  // every single Home load, one unfiltered (streak needs the
+  // student's FULL history, since a streak can span more than a
+  // week) and one filtered to the last 7 days (weekly summary). Both
+  // only ever need completed_at/total/correct/subject_id, so one
+  // unfiltered fetch now serves both: streak is computed from every
+  // row's completed_at, and the weekly summary is computed by
+  // filtering that same already-fetched result set to the last 7 days
+  // client-side, instead of asking the database for overlapping data
+  // twice. The guest (no-account) path was never actually duplicated
+  // — getGuestHistory() reads a local array from localStorage, not
+  // the network — so it's left exactly as it was, just now computed
+  // inside the same effect as the signed-in path for symmetry.
   useEffect(() => {
-    async function loadStreak() {
-      if (user) {
-        const { data } = await supabase.from('exam_history').select('completed_at').eq('user_id', user.id)
-        setStreak(computeStreak((data || []).map((r: any) => r.completed_at)))
-      } else {
-        setStreak(computeStreak(getGuestHistory().map((r: any) => r.completed_at)))
-      }
-    }
-    loadStreak()
-  }, [user])
-
-  useEffect(() => {
-    loadSavedActiveExam(user).then(setPausedExam)
-  }, [user])
-
-  useEffect(() => {
-    async function loadWeekly() {
+    async function loadStreakAndWeeklySummary() {
       const weekAgoMs = Date.now() - 7 * 24 * 60 * 60 * 1000
-      let rows: any[] = []
+
+      let rows: any[]
       if (user) {
         const { data } = await supabase
           .from('exam_history')
-          .select('total, correct, subject_id, completed_at')
+          .select('completed_at, total, correct, subject_id')
           .eq('user_id', user.id)
-          .gte('completed_at', new Date(weekAgoMs).toISOString())
         rows = data || []
       } else {
-        rows = getGuestHistory().filter((h: any) => h.completed_at >= weekAgoMs)
+        rows = getGuestHistory()
       }
 
-      if (rows.length === 0) { setWeeklySummary(null); return }
+      setStreak(computeStreak(rows.map((r: any) => r.completed_at)))
 
-      const totalAttempted = rows.reduce((a, h) => a + h.total, 0)
-      const totalCorrect = rows.reduce((a, h) => a + h.correct, 0)
+      const weeklyRows = rows.filter((r: any) => {
+        const ts = typeof r.completed_at === 'number' ? r.completed_at : new Date(r.completed_at).getTime()
+        return ts >= weekAgoMs
+      })
+
+      if (weeklyRows.length === 0) { setWeeklySummary(null); return }
+
+      const totalAttempted = weeklyRows.reduce((a, h) => a + h.total, 0)
+      const totalCorrect = weeklyRows.reduce((a, h) => a + h.correct, 0)
       const accuracy = totalAttempted > 0 ? Math.round((100 * totalCorrect) / totalAttempted) : 0
 
       const bySubject: Record<string, number> = {}
-      rows.forEach(h => { if (h.subject_id) bySubject[h.subject_id] = (bySubject[h.subject_id] || 0) + h.total })
+      weeklyRows.forEach(h => { if (h.subject_id) bySubject[h.subject_id] = (bySubject[h.subject_id] || 0) + h.total })
       const topSubjectId = Object.entries(bySubject).sort((a, b) => b[1] - a[1])[0]?.[0] || null
 
       let topSubjectName: string | null = null
@@ -184,7 +192,11 @@ export default function Home({ dark, toggleTheme }: { dark: boolean; toggleTheme
 
       setWeeklySummary({ totalAttempted, accuracy, topSubjectName })
     }
-    loadWeekly()
+    loadStreakAndWeeklySummary()
+  }, [user])
+
+  useEffect(() => {
+    loadSavedActiveExam(user).then(setPausedExam)
   }, [user])
 
   useEffect(() => {
