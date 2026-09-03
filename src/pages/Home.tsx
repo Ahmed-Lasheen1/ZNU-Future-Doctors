@@ -199,32 +199,19 @@ export default function Home({ dark, toggleTheme }: { dark: boolean; toggleTheme
     loadSavedActiveExam(user).then(setPausedExam)
   }, [user])
 
-  useEffect(() => {
-    async function checkExamReminders() {
-      if (!('Notification' in window) || Notification.permission !== 'granted') return
-      const { data } = await supabase.from('schedules').select('title, date, module_id').eq('type', 'exam').not('date', 'is', null)
-      if (!data || data.length === 0) return
-
-      const today = new Date(); today.setHours(0, 0, 0, 0)
-      const upcoming = data.filter((s: any) => {
-        const diffDays = Math.round((new Date(s.date).getTime() - today.getTime()) / (24 * 60 * 60 * 1000))
-        return diffDays >= 0 && diffDays <= 2
-      })
-      if (upcoming.length === 0) return
-
-      const todayStr = today.toDateString()
-      if (localStorage.getItem('exam_reminder_last_notify') === todayStr) return
-
-      upcoming.forEach((s: any) => {
-        const mod = modules.find(m => m.id === s.module_id)
-        new Notification('📝 Upcoming Exam', {
-          body: `${mod ? mod.name + ' — ' : ''}${s.title} is coming up soon!`
-        })
-      })
-      localStorage.setItem('exam_reminder_last_notify', todayStr)
-    }
-    checkExamReminders()
-  }, [modules])
+  // AUDIT FIX (H1): a client-side `checkExamReminders()` effect used to
+  // live here, firing an in-tab `new Notification(...)` for exams
+  // within 2 days whenever Home mounted (deduped once per calendar day
+  // via a localStorage flag). That duplicated
+  // api/push/exam-reminders.js, which already runs daily via GitHub
+  // Actions (.github/workflows/exam-reminders-push.yml) and delivers a
+  // real Web Push notification — including when the app isn't open at
+  // all, which the client-side version could never do anyway. A
+  // student with push enabled who also opened Home on reminder day
+  // could receive the same reminder twice, from two different code
+  // paths with two different dedup keys. The server-side cron is now
+  // the single source of truth for exam reminders; this effect has
+  // been removed rather than left to fire alongside it.
 
   const activeModules = modules.filter(m => m.status === 'active')
   const completedModules = modules.filter(m => m.status === 'completed')

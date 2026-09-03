@@ -693,6 +693,7 @@ export default function MCQ({ dark }: { dark: boolean }) {
           .exam-option { transition: transform 0.12s ease, background 0.15s ease, border-color 0.15s ease; }
           .exam-option:hover { background: var(--opt-hover-bg); }
           .exam-option:active { transform: scale(0.985); }
+          .exam-option:focus-visible { outline: 2px solid #38bdf8; outline-offset: 2px; }
           .exam-btn { transition: opacity 0.15s ease, transform 0.12s ease; }
           .exam-btn:active { transform: scale(0.97); }
           .kbd-hint { display: none; }
@@ -839,11 +840,13 @@ export default function MCQ({ dark }: { dark: boolean }) {
                   )
                 })()}
 
-                <p style={{
-                  ...pulseType.cardTitle, fontSize: `calc(clamp(18px, 1.8vw, 24px) * ${fontScale})`, color: pt.textPrimary,
-                  margin: '0 0 22px', lineHeight: 1.5, flexShrink: 0,
-                  wordBreak: 'break-word', overflowWrap: 'anywhere'
-                }}>
+                <p
+                  id={`mcq-question-text-${safeIndex}`}
+                  style={{
+                    ...pulseType.cardTitle, fontSize: `calc(clamp(18px, 1.8vw, 24px) * ${fontScale})`, color: pt.textPrimary,
+                    margin: '0 0 22px', lineHeight: 1.5, flexShrink: 0,
+                    wordBreak: 'break-word', overflowWrap: 'anywhere'
+                  }}>
                   {currentQuestion.question}
                 </p>
 
@@ -854,78 +857,107 @@ export default function MCQ({ dark }: { dark: boolean }) {
 
                   return (
                     <>
-                      {optionTexts(currentQuestion).map((opt: string, ai: number) => {
-                        const label = optionLabels[ai]
-                        const selected = answers[safeIndex] === label
-                        const isStruck = struck.has(label)
-                        const hoverBg = dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.045)'
+                      {/* AUDIT FIX (H3): options are now a real
+                          role="radiogroup" of role="radio" elements
+                          instead of plain onClick divs with no
+                          semantics — a screen reader previously
+                          announced nothing about these being
+                          selectable choices, and Tab/Enter/Space
+                          couldn't reach them at all (only the global
+                          1–4 keydown shortcut could select one). Each
+                          option is now independently focusable
+                          (tabIndex 0, or -1 once revealed/locked),
+                          exposes aria-checked, and responds to Enter
+                          and Space the same way a click does. The
+                          eliminate ("Ø") button is untouched — it
+                          already had its own aria-pressed/aria-label. */}
+                      <div role="radiogroup" aria-labelledby={`mcq-question-text-${safeIndex}`}>
+                        {optionTexts(currentQuestion).map((opt: string, ai: number) => {
+                          const label = optionLabels[ai]
+                          const selected = answers[safeIndex] === label
+                          const isStruck = struck.has(label)
+                          const hoverBg = dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.045)'
 
-                        // Tutor Mode reveal takes over the color coding
-                        // once this question has been graded; otherwise
-                        // it's just the normal selectable/selected state.
-                        let bg = selected ? `${pt.cobalt}18` : (dark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)')
-                        let border = selected ? pt.cobalt : pt.border
-                        let textColor = selected ? pt.cobalt : pt.text
-                        let badgeBg = selected ? pt.cobalt : 'transparent'
-                        let badgeColor = selected ? '#fff' : pt.sub
+                          // Tutor Mode reveal takes over the color coding
+                          // once this question has been graded; otherwise
+                          // it's just the normal selectable/selected state.
+                          let bg = selected ? `${pt.cobalt}18` : (dark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)')
+                          let border = selected ? pt.cobalt : pt.border
+                          let textColor = selected ? pt.cobalt : pt.text
+                          let badgeBg = selected ? pt.cobalt : 'transparent'
+                          let badgeColor = selected ? '#fff' : pt.sub
 
-                        if (revealed && result) {
-                          if (label === result.correct_answer) {
-                            bg = 'rgba(74,222,128,0.16)'; border = '#4ade80'; textColor = '#4ade80'
-                            badgeBg = '#4ade80'; badgeColor = '#08300f'
-                          } else if (label === answers[safeIndex]) {
-                            bg = 'rgba(248,113,113,0.16)'; border = '#f87171'; textColor = '#f87171'
-                            badgeBg = '#f87171'; badgeColor = '#3a0a0a'
-                          } else {
-                            textColor = pt.faint
+                          if (revealed && result) {
+                            if (label === result.correct_answer) {
+                              bg = 'rgba(74,222,128,0.16)'; border = '#4ade80'; textColor = '#4ade80'
+                              badgeBg = '#4ade80'; badgeColor = '#08300f'
+                            } else if (label === answers[safeIndex]) {
+                              bg = 'rgba(248,113,113,0.16)'; border = '#f87171'; textColor = '#f87171'
+                              badgeBg = '#f87171'; badgeColor = '#3a0a0a'
+                            } else {
+                              textColor = pt.faint
+                            }
                           }
-                        }
 
-                        const hoverBgFinal = revealed ? 'transparent' : selected ? `${pt.cobalt}20` : hoverBg
+                          const hoverBgFinal = revealed ? 'transparent' : selected ? `${pt.cobalt}20` : hoverBg
 
-                        return (
-                          <div
-                            key={ai}
-                            className="exam-option"
-                            onClick={() => !revealed && selectAnswer(safeIndex, label)}
-                            style={{
-                              ['--opt-hover-bg' as any]: hoverBgFinal,
-                              display: 'flex', alignItems: 'flex-start', gap: 12, flexShrink: 0, minWidth: 0,
-                              background: bg, border: `1.5px solid ${border}`,
-                              borderRadius: 14, padding: 'clamp(14px, 1.8vh, 20px) clamp(16px, 2vw, 24px)', marginBottom: 12,
-                              cursor: revealed ? 'default' : 'pointer', opacity: isStruck && !revealed ? 0.5 : 1,
-                              transition: 'opacity 0.15s ease'
-                            }}>
-                            <span style={{
-                              width: 'clamp(28px, 2.2vw, 34px)', height: 'clamp(28px, 2.2vw, 34px)', borderRadius: '50%', flexShrink: 0,
-                              display: 'flex', alignItems: 'center', justifyContent: 'center',
-                              background: badgeBg,
-                              border: `1.5px solid ${badgeBg === 'transparent' ? pt.border : badgeBg}`,
-                              color: badgeColor, fontWeight: 800, fontSize: 'clamp(12px, 1vw, 14px)',
-                              marginTop: -4
-                            }}>{label.toUpperCase()}</span>
-                            <span style={{
-                              flex: 1, minWidth: 0, color: textColor,
-                              fontSize: `calc(clamp(14px, 1.2vw, 17px) * ${fontScale})`, fontWeight: 600, lineHeight: 1.45,
-                              wordBreak: 'break-word', overflowWrap: 'anywhere',
-                              textDecoration: isStruck && !revealed ? 'line-through' : 'none'
-                            }}>{opt}</span>
-                            {!revealed && (
-                              <button
-                                onClick={(e) => { e.stopPropagation(); toggleStrike(safeIndex, label) }}
-                                aria-pressed={isStruck}
-                                aria-label={`Eliminate option ${label.toUpperCase()}`}
-                                className="exam-btn"
-                                style={{
-                                  flexShrink: 0, width: 26, height: 26, borderRadius: '50%',
-                                  background: isStruck ? (dark ? 'rgba(255,255,255,0.14)' : 'rgba(0,0,0,0.10)') : 'transparent',
-                                  border: `1px solid ${pt.border}`, color: pt.faint,
-                                  fontSize: 12, fontWeight: 800, cursor: 'pointer', lineHeight: 1
-                                }}>Ø</button>
-                            )}
-                          </div>
-                        )
-                      })}
+                          function handleOptionKeyDown(e: React.KeyboardEvent) {
+                            if (revealed) return
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault()
+                              selectAnswer(safeIndex, label)
+                            }
+                          }
+
+                          return (
+                            <div
+                              key={ai}
+                              className="exam-option"
+                              role="radio"
+                              aria-checked={selected}
+                              aria-label={`Option ${label.toUpperCase()}: ${opt}`}
+                              tabIndex={revealed ? -1 : 0}
+                              onClick={() => !revealed && selectAnswer(safeIndex, label)}
+                              onKeyDown={handleOptionKeyDown}
+                              style={{
+                                ['--opt-hover-bg' as any]: hoverBgFinal,
+                                display: 'flex', alignItems: 'flex-start', gap: 12, flexShrink: 0, minWidth: 0,
+                                background: bg, border: `1.5px solid ${border}`,
+                                borderRadius: 14, padding: 'clamp(14px, 1.8vh, 20px) clamp(16px, 2vw, 24px)', marginBottom: 12,
+                                cursor: revealed ? 'default' : 'pointer', opacity: isStruck && !revealed ? 0.5 : 1,
+                                transition: 'opacity 0.15s ease'
+                              }}>
+                              <span aria-hidden style={{
+                                width: 'clamp(28px, 2.2vw, 34px)', height: 'clamp(28px, 2.2vw, 34px)', borderRadius: '50%', flexShrink: 0,
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                background: badgeBg,
+                                border: `1.5px solid ${badgeBg === 'transparent' ? pt.border : badgeBg}`,
+                                color: badgeColor, fontWeight: 800, fontSize: 'clamp(12px, 1vw, 14px)',
+                                marginTop: -4
+                              }}>{label.toUpperCase()}</span>
+                              <span style={{
+                                flex: 1, minWidth: 0, color: textColor,
+                                fontSize: `calc(clamp(14px, 1.2vw, 17px) * ${fontScale})`, fontWeight: 600, lineHeight: 1.45,
+                                wordBreak: 'break-word', overflowWrap: 'anywhere',
+                                textDecoration: isStruck && !revealed ? 'line-through' : 'none'
+                              }}>{opt}</span>
+                              {!revealed && (
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); toggleStrike(safeIndex, label) }}
+                                  aria-pressed={isStruck}
+                                  aria-label={`Eliminate option ${label.toUpperCase()}`}
+                                  className="exam-btn"
+                                  style={{
+                                    flexShrink: 0, width: 26, height: 26, borderRadius: '50%',
+                                    background: isStruck ? (dark ? 'rgba(255,255,255,0.14)' : 'rgba(0,0,0,0.10)') : 'transparent',
+                                    border: `1px solid ${pt.border}`, color: pt.faint,
+                                    fontSize: 12, fontWeight: 800, cursor: 'pointer', lineHeight: 1
+                                  }}>Ø</button>
+                              )}
+                            </div>
+                          )
+                        })}
+                      </div>
 
                       {revealed && result && (
                         <div style={{
