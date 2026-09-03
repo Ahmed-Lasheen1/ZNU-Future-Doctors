@@ -17,6 +17,15 @@ type AccountType = 'university' | 'personal'
 type AuthMode = 'signin' | 'signup'
 type AuthStep = 'form' | 'verify'
 
+// Minimum password length enforced client-side. Raised from 6 to 8:
+// Supabase's server-side "leaked password protection" (HaveIBeenPwned
+// check) requires the Pro plan, which this project isn't on — a
+// longer minimum is the cheapest available mitigation for weak/reused
+// passwords without that server-side check. Kept as one constant so
+// it's a one-line change if the plan is ever upgraded and this is
+// revisited.
+const MIN_PASSWORD_LENGTH = 8
+
 function fireConfetti() {
   const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 999 }
   confetti({ ...defaults, particleCount: 50, origin: { x: 0, y: 1 }, angle: 60 })
@@ -75,7 +84,7 @@ export default function Auth({ dark = true }: { dark?: boolean }) {
   async function handleSignInSubmit() {
     setMessage('')
     if (!email.trim()) return setMessage('❌ Please enter your email')
-    if (!password || password.length < 6) return setMessage('❌ Password must be at least 6 characters')
+    if (!password || password.length < MIN_PASSWORD_LENGTH) return setMessage(`❌ Password must be at least ${MIN_PASSWORD_LENGTH} characters`)
     setLoading(true)
     const { error } = await supabase.auth.signInWithPassword({ email, password })
     setLoading(false)
@@ -92,8 +101,8 @@ export default function Auth({ dark = true }: { dark?: boolean }) {
     if (!name.trim()) return setMessage('❌ Please enter your name')
     if (containsProfanity(name)) return setMessage('❌ Please choose an appropriate name')
     if (containsProfanity(email.split('@')[0])) return setMessage('❌ The email contains inappropriate words')
-    if (!password || password.length < 6) return setMessage('❌ Password must be at least 6 characters')
-    if (!confirmPassword || confirmPassword.length < 6) return setMessage('❌ Please confirm your password')
+    if (!password || password.length < MIN_PASSWORD_LENGTH) return setMessage(`❌ Password must be at least ${MIN_PASSWORD_LENGTH} characters`)
+    if (!confirmPassword || confirmPassword.length < MIN_PASSWORD_LENGTH) return setMessage('❌ Please confirm your password')
     if (password !== confirmPassword) return setMessage('❌ Passwords do not match')
 
     setLoading(true)
@@ -266,7 +275,7 @@ export default function Auth({ dark = true }: { dark?: boolean }) {
                   <Lock size={15} color={pt.faint} style={{ flexShrink: 0 }} />
                   <input type={showPw ? 'text' : 'password'} value={password}
                     onChange={e => setPassword(e.target.value)}
-                    placeholder="Password (min 6 characters)" name="password" autoComplete="new-password"
+                    placeholder={`Password (min ${MIN_PASSWORD_LENGTH} characters)`} name="password" autoComplete="new-password"
                     style={inputResetStyle(pt)} />
                   <button type="button" onClick={() => setShowPw(!showPw)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: pt.sub, flexShrink: 0 }}>
                     {showPw ? <EyeOff size={15} /> : <Eye size={15} />}

@@ -13,6 +13,12 @@ import BackButton from '../components/pulse/BackButton'
 import PulseGlassRow from '../components/pulse/PulseGlassRow'
 import { getGuestHistory } from '../lib/reviewStorage'
 
+// See src/pages/Auth.tsx for why this is 8, not 6 — same reasoning,
+// kept as the same-named constant in both places since there's no
+// shared "auth constants" module yet. If a shared validation module
+// is ever introduced, this is the value to hoist into it first.
+const MIN_PASSWORD_LENGTH = 8
+
 // Small helper so a missing/blank name never crashes the avatar badge.
 function initialOf(name?: string | null) {
   return name && name.trim() ? name.trim().charAt(0).toUpperCase() : '?'
@@ -72,7 +78,7 @@ function EditProfileForm({ profile, dark, onUpdated, onProfileRefresh }: {
   }
 
   async function savePassword() {
-    if (!newPassword || newPassword.length < 6) return setMsg('❌ Password must be at least 6 characters')
+    if (!newPassword || newPassword.length < MIN_PASSWORD_LENGTH) return setMsg(`❌ Password must be at least ${MIN_PASSWORD_LENGTH} characters`)
     if (newPassword !== confirmPassword) return setMsg('❌ Passwords do not match')
     setSaving(true)
     setMsg('')
@@ -110,7 +116,7 @@ function EditProfileForm({ profile, dark, onUpdated, onProfileRefresh }: {
         </div>
 
         <label style={{ ...pulseType.small, color: pt.textMuted, display: 'block', marginBottom: 6 }}>Change Password</label>
-        <input type="password" placeholder="New password (min 6 characters)"
+        <input type="password" placeholder={`New password (min ${MIN_PASSWORD_LENGTH} characters)`}
           value={newPassword} onChange={e => setNewPassword(e.target.value)} style={inStyle} />
         <input type="password" placeholder="Confirm new password"
           value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)}
@@ -187,7 +193,7 @@ export default function Profile({ dark }: { dark: boolean }) {
   return (
     <div style={{ position: 'relative', minHeight: '100vh' }}>
       <PulseBackground />
-      <div className="pulse-wide" style={{ position: 'relative', zIndex: 1, padding: '24px 20px 100px', fontFamily: pulseFonts.body, maxWidth: 700, margin: '0 auto' }}>
+      <div className="pulse-wide" style={{ position: 'relative', zIndex: 1, padding: '24px 20px 100px', fontFamily: pulseFonts.body }}>
         
          <div style={{ marginBottom: 8 }}>
           <BackButton dark={dark} fallback="/" />
@@ -359,7 +365,7 @@ export default function Profile({ dark }: { dark: boolean }) {
                 role="button" tabIndex={0} style={{ display: 'inline-block' }}
                 onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate('/review') } }}>
                 <div style={{ padding: '8px 18px', ...pulseType.small, fontWeight: 700, color: pt.sub }}>
-                  📚 See my incorrect & flagged questions
+                  📚 See my full exam history
                 </div>
               </PulseGlassRow>
             </div>
@@ -383,7 +389,7 @@ export default function Profile({ dark }: { dark: boolean }) {
               <div style={{ marginBottom: 16 }}>
                 <LiquidGlassCard dark={dark} delay={0} style={{ padding: '10px 16px', textAlign: 'center' }}>
                   <span style={{ color: pt.cobalt, fontSize: 13 }}>
-                    💡 Showing history saved on this device only.{' '}
+                    💡 This list is saved on this device only.{' '}
                     <span style={{ cursor: 'pointer', textDecoration: 'underline' }} onClick={() => navigate('/auth')}>Sign in</span>{' '}
                     to keep it across devices.
                   </span>

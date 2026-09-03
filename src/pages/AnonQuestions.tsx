@@ -105,7 +105,7 @@ export default function AnonQuestions({ dark }: { dark: boolean }) {
   return (
     <div style={{ position: 'relative', minHeight: '100vh' }}>
       <PulseBackground />
-      <div className="pulse-wide" style={{ position: 'relative', zIndex: 1, padding: '24px 20px 100px', fontFamily: pulseFonts.body, maxWidth: 700, margin: '0 auto' }}>
+      <div className="pulse-wide" style={{ position: 'relative', zIndex: 1, padding: '24px 20px 100px', fontFamily: pulseFonts.body }}>
 
         <div style={{ marginBottom: 8 }}>
           <BackButton dark={dark} fallback="/" />
