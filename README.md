@@ -1,4 +1,4 @@
-# 🩺 ZNU Future Doctors
+# 🩺 ZNU Pulse
 
 > A modern digital platform built for the students of the Faculty of Medicine — Zagazig National University.
 
