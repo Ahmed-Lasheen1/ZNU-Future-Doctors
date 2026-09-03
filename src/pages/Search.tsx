@@ -102,15 +102,6 @@ export default function Search({ dark }: { dark: boolean }) {
     if (r.type === 'schedule') return navigate('/schedule')
   }
 
-  function handleResultKeyDown(r: SearchResult) {
-    return (e: React.KeyboardEvent) => {
-      if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault()
-        openResult(r)
-      }
-    }
-  }
-
   const inStyle = { ...glassInput(pt, dark), padding: '15px 20px', marginBottom: 0, borderRadius: 999, fontSize: 15 }
 
   return (
@@ -160,28 +151,23 @@ export default function Search({ dark }: { dark: boolean }) {
                   onClick={() => openResult(r)}
                   style={{ padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12 }}
                 >
-                  <div
-                    role="button" tabIndex={0} onKeyDown={handleResultKeyDown(r)}
-                    style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%' }}
-                  >
+                  <div style={{
+                    width: 38, height: 38, borderRadius: 10, flexShrink: 0,
+                    background: `${meta.color}20`, border: `1px solid ${meta.color}40`,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18
+                  }}>{meta.icon}</div>
+                  <div style={{ minWidth: 0, flex: 1 }}>
                     <div style={{
-                      width: 38, height: 38, borderRadius: 10, flexShrink: 0,
-                      background: `${meta.color}20`, border: `1px solid ${meta.color}40`,
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18
-                    }}>{meta.icon}</div>
-                    <div style={{ minWidth: 0, flex: 1 }}>
-                      <div style={{
-                        ...pulseType.cardTitle, color: pt.textPrimary,
-                        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'
-                      }}>{r.title}</div>
-                      <div style={{ ...pulseType.small, color: pt.textMuted, marginTop: 2, display: 'flex', alignItems: 'center', gap: 4 }}>
-                        {meta.label}
-                        {r.module && (
-                          <>
-                            · <ModuleIcon value={r.module.icon} size={12} color={pt.textMuted} /> {r.module.name}
-                          </>
-                        )}
-                      </div>
+                      ...pulseType.cardTitle, color: pt.textPrimary,
+                      overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'
+                    }}>{r.title}</div>
+                    <div style={{ ...pulseType.small, color: pt.textMuted, marginTop: 2, display: 'flex', alignItems: 'center', gap: 4 }}>
+                      {meta.label}
+                      {r.module && (
+                        <>
+                          · <ModuleIcon value={r.module.icon} size={12} color={pt.textMuted} /> {r.module.name}
+                        </>
+                      )}
                     </div>
                   </div>
                 </LiquidGlassCard>
