@@ -193,7 +193,7 @@ export default function Profile({ dark }: { dark: boolean }) {
   return (
     <div style={{ position: 'relative', minHeight: '100vh' }}>
       <PulseBackground />
-      <div className="pulse-wide" style={{ position: 'relative', zIndex: 1, padding: '24px 20px 100px', fontFamily: pulseFonts.body }}>
+      <div className="pulse-wide" style={{ position: 'relative', zIndex: 1, padding: '24px 20px 100px', fontFamily: pulseFonts.body, maxWidth: 700, margin: '0 auto' }}>
         
          <div style={{ marginBottom: 8 }}>
           <BackButton dark={dark} fallback="/" />
@@ -365,7 +365,7 @@ export default function Profile({ dark }: { dark: boolean }) {
                 role="button" tabIndex={0} style={{ display: 'inline-block' }}
                 onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate('/review') } }}>
                 <div style={{ padding: '8px 18px', ...pulseType.small, fontWeight: 700, color: pt.sub }}>
-                  📚 See my full exam history
+                  📚 See my incorrect & flagged questions
                 </div>
               </PulseGlassRow>
             </div>
@@ -389,7 +389,7 @@ export default function Profile({ dark }: { dark: boolean }) {
               <div style={{ marginBottom: 16 }}>
                 <LiquidGlassCard dark={dark} delay={0} style={{ padding: '10px 16px', textAlign: 'center' }}>
                   <span style={{ color: pt.cobalt, fontSize: 13 }}>
-                    💡 This list is saved on this device only.{' '}
+                    💡 Showing history saved on this device only.{' '}
                     <span style={{ cursor: 'pointer', textDecoration: 'underline' }} onClick={() => navigate('/auth')}>Sign in</span>{' '}
                     to keep it across devices.
                   </span>
