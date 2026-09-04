@@ -129,15 +129,31 @@ h1, h2, h3 {
   .card-grid { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 20px; }
 }
 
+/* AUDIT FIX: these two rules used to size each grid track with a bare
+   `1fr`. CSS Grid gives a bare `1fr` track an implicit MINIMUM width
+   equal to its content's natural (min-content) size — so a single
+   long, unwrapped module/card title in one cell forces that column
+   wider than its fair 1fr share, which in turn (a) makes sibling
+   cards in other columns a different width than it (the "cards aren't
+   the same size" symptom) and (b) can push the whole row past the
+   container's right edge, forcing horizontal scroll to see the
+   remaining cards. `minmax(0, 1fr)` removes that implicit minimum —
+   every column now genuinely shares the row equally regardless of
+   what's inside it, and long text wraps/truncates within its own cell
+   instead of stealing space from the rest of the row. This affects
+   every page that renders an `.auto-grid` (Summaries' module list,
+   Home's completed modules, ModulePage's exam-stage/lesson grids,
+   StagePage, SubjectPage's lesson grid) since they all share this one
+   class. */
 .auto-grid {
   display: grid;
   gap: 14px;
-  grid-template-columns: repeat(var(--auto-grid-cols, 4), 1fr);
+  grid-template-columns: repeat(var(--auto-grid-cols, 4), minmax(0, 1fr));
 }
 
 @media (max-width: 640px) {
   .auto-grid {
-    grid-template-columns: repeat(min(var(--auto-grid-cols, 4), 2), 1fr);
+    grid-template-columns: repeat(min(var(--auto-grid-cols, 4), 2), minmax(0, 1fr));
     gap: 12px;
   }
 }

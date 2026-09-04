@@ -12,6 +12,7 @@ import BackButton from '../components/pulse/BackButton'
 import { useModules } from '../contexts'
 import { fetchModuleStages } from '../lib/moduleStages'
 import { useHistoryOverlay } from '../lib/useHistoryOverlay'
+import { ModuleIcon } from '../lib/medicalIcons'
 
 interface SummaryModule {
   id: string; name: string; icon?: string | null; color: string; status: 'active' | 'completed'
@@ -59,8 +60,21 @@ function SummariesHome({ modules, onSelect, dark }: {
         {sorted.map((mod, i) => (
           <LiquidGlassCard key={mod.id} dark={dark} delay={i * 80} onClick={() => onSelect(mod)}
             style={{ padding: 24, textAlign: 'center', opacity: mod.status === 'active' ? 1 : 0.75 }}>
-            <div style={{ fontSize: 40, marginBottom: 10 }}>{mod.icon}</div>
-            <div style={{ ...pulseType.cardTitle, fontWeight: 900, color: mod.color, fontSize: 18, marginBottom: 6 }}>{mod.name}</div>
+            {/* AUDIT FIX: this used to render {mod.icon} as raw text.
+                Module icons are stored either as a plain emoji OR as
+                "icon:<key>" for the custom SVG icon set (see
+                lib/medicalIcons.tsx's ModuleIcon resolver) — rendered
+                raw, a custom icon printed its literal key string
+                (e.g. "icon:cardiology") instead of drawing anything.
+                Routed through the same ModuleIcon component every
+                other page already uses. */}
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 10 }}>
+              <ModuleIcon value={mod.icon} size={40} color={mod.color} />
+            </div>
+            <div style={{
+              ...pulseType.cardTitle, fontWeight: 900, color: mod.color, fontSize: 18, marginBottom: 6,
+              wordBreak: 'break-word', overflowWrap: 'anywhere'
+            }}>{mod.name}</div>
             <div style={{
               display: 'inline-block',
               background: mod.status === 'active' ? 'rgba(74,222,128,0.14)' : (dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)'),
@@ -118,18 +132,46 @@ function ModuleSummaries({ mod, onBack, dark, initialStage }: {
             passes onClick instead of relying on BackButton's default
             history behavior. */}
         <BackButton dark={dark} onClick={onBack} />
-        <h2 style={{ ...pulseType.sectionTitle, color: mod.color, flex: 1 }}>{mod.icon} {mod.name}</h2>
+        {/* AUDIT FIX: same raw-icon bug as SummariesHome above
+            ({mod.icon} rendered directly as text) — now routed
+            through ModuleIcon. Also gave the heading a proper flex
+            row with `minWidth: 0` + ellipsis on the name so a long
+            module name truncates gracefully instead of overflowing
+            past the back button on narrow screens. */}
+        <h2 style={{
+          ...pulseType.sectionTitle, color: mod.color, flex: 1,
+          display: 'flex', alignItems: 'center', gap: 8, minWidth: 0
+        }}>
+          <ModuleIcon value={mod.icon} size={22} color={mod.color} />
+          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{mod.name}</span>
+        </h2>
       </div>
 
       {loadError && <ErrorBanner />}
 
-      <div style={{ display: 'flex', gap: 8, overflowX: 'auto', marginBottom: 20, paddingBottom: 4 }}>
+      {/* AUDIT FIX: this row used to have no right-edge breathing
+          room and no scroll-snap, so on narrow screens the last stage
+          pill could sit flush against the viewport edge (or get
+          visually squeezed) with nothing anchoring the scroll — it
+          read as "cut off" rather than as an obviously scrollable
+          strip. `paddingRight` mirrors the row's own gap so the last
+          pill gets the same clearance as the first, `scrollSnapType`
+          + each pill's `scrollSnapAlign` settles the strip on a full
+          pill after a swipe instead of stopping mid-pill, and
+          `flexShrink: 0` on each pill guarantees none of them are
+          ever compressed narrower than their label. */}
+      <div style={{
+        display: 'flex', gap: 8, overflowX: 'auto', marginBottom: 20,
+        paddingBottom: 4, paddingRight: 8, scrollSnapType: 'x proximity',
+        WebkitOverflowScrolling: 'touch'
+      }}>
         {[{ value: 'all', label: 'All' }, ...stages.map(s => ({ value: s.value, label: `${s.emoji} ${s.title}` }))].map(stage => {
           const active = activeStage === stage.value
           return (
             <PulseGlassRow key={stage.value} dark={dark} radius={999} active={active}
               activeTint={`${mod.color}26`} hoverTint={hoverTint} onClick={() => setActiveStage(stage.value)}
               role="button" tabIndex={0}
+              style={{ flexShrink: 0, scrollSnapAlign: 'start' }}
               onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setActiveStage(stage.value) } }}>
               <div style={{ padding: '7px 16px', whiteSpace: 'nowrap', ...pulseType.small, fontWeight: 600, color: active ? mod.color : pt.sub }}>
                 {stage.label}
@@ -151,14 +193,17 @@ function ModuleSummaries({ mod, onBack, dark, initialStage }: {
         {filtered.map((sum, i) => (
           <LiquidGlassCard key={sum.id} dark={dark} delay={i * 70} onClick={() => setSelected(sum)}
             style={{ padding: '20px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14, minWidth: 0 }}>
               <div style={{
                 background: `${mod.color}20`, border: `1px solid ${mod.color}40`,
                 borderRadius: 12, width: 44, height: 44,
                 display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0
               }}>📝</div>
-              <div>
-                <div style={{ ...pulseType.cardTitle, color: pt.textPrimary, fontSize: 15 }}>{sum.title}</div>
+              <div style={{ minWidth: 0 }}>
+                <div style={{
+                  ...pulseType.cardTitle, color: pt.textPrimary, fontSize: 15,
+                  overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'
+                }}>{sum.title}</div>
                 <div style={{ ...pulseType.small, color: pt.textMuted, marginTop: 2 }}>{mod.name}</div>
               </div>
             </div>
