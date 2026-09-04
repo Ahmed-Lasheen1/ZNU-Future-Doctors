@@ -24,6 +24,11 @@ interface BackButtonProps {
 // lines up with the page content column beneath it instead of
 // floating at an unrelated indent.
 //
+// AUDIT FIX: the gap below the header was `+ 24px`, which read as
+// "floating a bit too low" rather than sitting snugly under the
+// header bar. Tightened to `+ 10px` — just enough breathing room to
+// keep it from touching the header, without the extra visual gap.
+//
 // z-index 400 — above ordinary page content (which never sets a
 // z-index above 1), but below the header (500) and the nav-menu
 // dropdown (1999/2000), so it never fights either for stacking order
@@ -43,7 +48,7 @@ export default function BackButton({ dark, fallback = '/', onClick, style }: Bac
     <div
       style={{
         position: 'fixed',
-        top: 'calc(76px + env(safe-area-inset-top) + 24px)',
+        top: 'calc(76px + env(safe-area-inset-top) + 10px)',
         left: 'clamp(20px, 4vw, 64px)',
         zIndex: 400,
       }}
