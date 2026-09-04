@@ -5,11 +5,20 @@ import { backBtnStyle } from '../theme'
 // LessonPage). This exact block used to be copy-pasted three times —
 // now it lives here once. Visual output is unchanged.
 //
+// AUDIT FIX: this previously set `height: '1000vh'` — ten full screens
+// tall instead of one. That left a massive dead-scroll region below
+// the header+iframe on every device (worst on mobile, where it made
+// the "full screen" viewer feel broken/endless). `100dvh` matches the
+// same dynamic-viewport-height convention already used by
+// PulseBackground.tsx elsewhere in this app, specifically to avoid
+// the iOS Safari address-bar collapse/expand gap that plain `100vh`
+// is prone to.
+//
 // `eyebrow` is optional — LessonPage's viewer never had one, so it's
 // simply omitted there instead of rendering an empty line.
 export default function SummaryOverlay({ onBack, eyebrow, title, titleColor, url }) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '1000vh' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100dvh' }}>
       <div style={{
         background: 'linear-gradient(135deg, #1a2a4a, #0f1e35)',
         borderBottom: '2px solid #2a4a7a',

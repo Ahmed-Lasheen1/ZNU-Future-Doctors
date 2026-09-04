@@ -54,6 +54,24 @@ const CLOSE_DURATION = 0.55
 // window), which replaced a cruder "give opacity a shorter duration"
 // version of this same idea.
 
+// AUDIT FIX (responsive/layout audit): on short viewports — landscape
+// phones, small foldables, anything shorter than roughly 500-550px
+// tall — this panel's content (profile row + search + 5 nav items +
+// theme switch + sign-out) can be taller than the available viewport
+// height. The OUTER panel below intentionally keeps `overflow:
+// 'hidden'` (required for its own backdrop-filter blur to sample
+// correctly — see the comment on that element), which means any
+// overflow there is silently CLIPPED, not scrollable: on a short
+// screen the bottom nav items (including Sign Out) could become
+// completely unreachable rather than just visually truncated. Rather
+// than touching the outer blur container's overflow behavior, the
+// INNER content wrapper gets its own height cap + scroll instead —
+// see its own comment further down for why this is the correct place
+// for it. `100dvh` (not `100vh`) matches the same dynamic-viewport
+// convention used elsewhere in this app (PulseBackground.tsx) to
+// avoid the iOS Safari address-bar collapse/expand gap.
+const PANEL_MAX_HEIGHT = 'calc(100dvh - 140px)'
+
 // Single transition object shared by BOTH the panel (scale/opacity)
 // and the content block (y/opacity) — using the literal same object
 // on both `animate` calls is what guarantees they move in lockstep:
@@ -214,6 +232,11 @@ export default function NavMenu({ dark, toggleTheme, align = 'left' }) {
           // ancestor it gets trapped sampling only within that
           // ancestor's own isolated layer, which has nothing behind
           // it — so it blurs nothing, regardless of the blur radius.
+          //
+          // This element deliberately does NOT get a maxHeight/scroll
+          // of its own (see PANEL_MAX_HEIGHT's comment above) — it has
+          // no explicit height, so it naturally shrinks to whatever
+          // its (now height-capped, scrollable) inner content needs.
           isolation: 'isolate', overflow: 'hidden', borderRadius: PANEL_RADIUS,
           ...liquidGlassBackdrop(),
         }}
@@ -270,7 +293,20 @@ export default function NavMenu({ dark, toggleTheme, align = 'left' }) {
             above: this is also unconditionally mounted, so without
             this it plays its own bogus "closing" slide/fade on every
             fresh mount of NavMenu, stacking with the panel's own
-            mount-flash into the "menu opens and closes" glitch. */}
+            mount-flash into the "menu opens and closes" glitch.
+
+            AUDIT FIX: added `maxHeight: PANEL_MAX_HEIGHT` +
+            `overflowY: 'auto'` (+ `WebkitOverflowScrolling: 'touch'`
+            for momentum scrolling on iOS). Previously this had no
+            height constraint at all, so on a short viewport (landscape
+            phones, small foldables) its content could exceed the
+            screen height and get silently clipped by the OUTER
+            panel's required `overflow: hidden` — with no way to
+            scroll down to the clipped items (including Sign Out).
+            Capping height here and scrolling internally keeps every
+            row reachable on any viewport, without touching the outer
+            element's overflow (which must stay `hidden` for its own
+            backdrop-filter blur to render correctly). */}
         <motion.div
           initial={false}
           animate={{ y: open ? 0 : -16, opacity: open ? [0, 0, 1, 1] : [1, 1, 0, 0] }}
@@ -283,7 +319,11 @@ export default function NavMenu({ dark, toggleTheme, align = 'left' }) {
             },
           }}
           aria-hidden={!open}
-          style={{ position: 'relative', zIndex: 1, width: PANEL_WIDTH, padding: '0 14px 16px', fontFamily: pulseFonts.body, display: 'flex', flexDirection: 'column', gap: 10 }}
+          style={{
+            position: 'relative', zIndex: 1, width: PANEL_WIDTH, padding: '0 14px 16px',
+            fontFamily: pulseFonts.body, display: 'flex', flexDirection: 'column', gap: 10,
+            maxHeight: PANEL_MAX_HEIGHT, overflowY: 'auto', WebkitOverflowScrolling: 'touch',
+          }}
         >
           {/* Profile / Sign In */}
           {user ? (
