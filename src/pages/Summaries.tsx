@@ -126,25 +126,30 @@ function ModuleSummaries({ mod, onBack, dark, initialStage }: {
 
   return (
     <div className="pulse-wide" style={{ position: 'relative', zIndex: 1, padding: '24px 20px 100px', fontFamily: pulseFonts.body }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
-        {/* "Back" here means "return to the module grid", a local
-            view switch, not real page navigation — that's why this
-            passes onClick instead of relying on BackButton's default
-            history behavior. */}
+      {/* "Back" here means "return to the module grid", a local
+          view switch, not real page navigation — that's why this
+          passes onClick instead of relying on BackButton's default
+          history behavior. BackButton renders as a fixed-position
+          pill regardless of where it sits in the markup, so it's kept
+          on its own line, same as every other page, rather than
+          inline next to the title. */}
+      <div style={{ marginBottom: 8 }}>
         <BackButton dark={dark} onClick={onBack} />
-        {/* AUDIT FIX: same raw-icon bug as SummariesHome above
-            ({mod.icon} rendered directly as text) — now routed
-            through ModuleIcon. Also gave the heading a proper flex
-            row with `minWidth: 0` + ellipsis on the name so a long
-            module name truncates gracefully instead of overflowing
-            past the back button on narrow screens. */}
-        <h2 style={{
-          ...pulseType.sectionTitle, color: mod.color, flex: 1,
-          display: 'flex', alignItems: 'center', gap: 8, minWidth: 0
-        }}>
-          <ModuleIcon value={mod.icon} size={22} color={mod.color} />
-          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{mod.name}</span>
-        </h2>
+      </div>
+
+      {/* Icon centered above the module name, same layout every other
+          module/subject/lesson/stage page in the app uses (see
+          ModulePage/StagePage/SubjectPage/LessonPage) — this used to
+          be a left-aligned row with the icon inline before the name,
+          which was the odd one out. */}
+      <div style={{ textAlign: 'center', padding: '10px 0 24px' }}>
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}>
+          <ModuleIcon value={mod.icon} size={44} color={mod.color} />
+        </div>
+        <h1 style={{
+          ...pulseType.pageTitle, fontSize: 24, color: mod.color, marginBottom: 6,
+          wordBreak: 'break-word', overflowWrap: 'anywhere'
+        }}>{mod.name}</h1>
       </div>
 
       {loadError && <ErrorBanner />}
