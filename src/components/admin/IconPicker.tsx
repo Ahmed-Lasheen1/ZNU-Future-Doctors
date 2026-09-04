@@ -1,9 +1,16 @@
-import { useState } from 'react'
+import { useState, type CSSProperties } from 'react'
 import { MEDICAL_ICONS } from '../../lib/medicalIcons'
+import type { PulseTheme } from '../../pages/admin/adminStyles'
 
-// Dropped into any admin form with an "emoji" field. Now takes the
-// Pulse theme object (`pt`) instead of the legacy `c` theme.
-export default function IconPicker({ value, onChange, inStyle, pt }) {
+interface IconPickerProps {
+  value: string
+  onChange: (value: string) => void
+  inStyle: CSSProperties
+  pt: PulseTheme
+}
+
+// Dropped into any admin form with an "emoji" field.
+export default function IconPicker({ value, onChange, inStyle, pt }: IconPickerProps) {
   const [query, setQuery] = useState('')
   const selectedKey = value && value.startsWith('icon:') ? value.slice(5) : null
 
