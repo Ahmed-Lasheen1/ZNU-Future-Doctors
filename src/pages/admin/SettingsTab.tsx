@@ -6,16 +6,20 @@ import LiquidGlassCard from '@/components/ui/liquid-glass-card'
 import { btnStyle, inStyle as adminInStyle } from './adminStyles'
 import { EXAM_STAGES as STAGE_META } from '../../lib/examStages'
 
-export default function SettingsTab({ dark }) {
+interface SettingsTabProps {
+  dark: boolean
+}
+
+export default function SettingsTab({ dark }: SettingsTabProps) {
   const pt = getPulseTheme(dark)
   const inStyle = adminInStyle(pt, dark)
   const [msg, setMsg] = useState('')
-  function showMsg(m) { setMsg(m); setTimeout(() => setMsg(''), 3000) }
+  function showMsg(m: string) { setMsg(m); setTimeout(() => setMsg(''), 3000) }
 
   const [announcement, setAnnouncement] = useState('')
   const [announcementSaving, setAnnouncementSaving] = useState(false)
   const [driveUrl, setDriveUrl] = useState('')
-  const [stageDriveUrls, setStageDriveUrls] = useState({ tbl: '', end_module: '', practical: '', final: '' })
+  const [stageDriveUrls, setStageDriveUrls] = useState<Record<string, string>>({ tbl: '', end_module: '', practical: '', final: '' })
   const [driveUrlSaving, setDriveUrlSaving] = useState(false)
   const [broadcastTitle, setBroadcastTitle] = useState('')
   const [broadcastBody, setBroadcastBody] = useState('')
@@ -27,7 +31,7 @@ export default function SettingsTab({ dark }) {
     const keys = ['home_announcement', 'drive_url', ...STAGE_META.map(s => `drive_url_${s.value}`)]
     const { data } = await supabase.from('site_settings').select('key, value').in('key', keys)
     if (data) {
-      const byKey = Object.fromEntries(data.map(r => [r.key, r.value || '']))
+      const byKey = Object.fromEntries(data.map((r: any) => [r.key, r.value || '']))
       setAnnouncement(byKey['home_announcement'] || '')
       setDriveUrl(byKey['drive_url'] || '')
       setStageDriveUrls({
@@ -86,7 +90,26 @@ export default function SettingsTab({ dark }) {
     <div>
       <InlineMessage message={msg} />
 
-      <div style={{ marginBottom: 16 }}>
+      {/* AUDIT FIX (big-screen productivity): these three independent
+          cards used to be one long single-column stack, forcing a lot
+          of scrolling on a wide monitor to get from the broadcast box
+          down to the announcement box. From 1100px up they now sit in
+          a responsive grid so an admin can see (and act on) more of
+          Settings at once; unchanged below that. */}
+      <style>{`
+        .settings-grid {
+          display: grid;
+          grid-template-columns: 1fr;
+          gap: 16px;
+          align-items: start;
+        }
+        @media (min-width: 1100px) {
+          .settings-grid { grid-template-columns: 1fr 1fr; }
+          .settings-grid-full { grid-column: 1 / -1; }
+        }
+      `}</style>
+
+      <div className="settings-grid">
         <LiquidGlassCard dark={dark} delay={0} style={{ padding: '20px 22px' }}>
           <h3 style={{ color: pt.cobalt, marginBottom: 8, fontWeight: 800 }}>📢 Send Push Notification to Everyone</h3>
           <p style={{ color: pt.textMuted, fontSize: 13, marginBottom: 16 }}>
@@ -99,9 +122,7 @@ export default function SettingsTab({ dark }) {
             {broadcastSending ? 'Sending...' : '📤 Send to Everyone'}
           </button>
         </LiquidGlassCard>
-      </div>
 
-      <div style={{ marginBottom: 16 }}>
         <LiquidGlassCard dark={dark} delay={0} style={{ padding: '20px 22px' }}>
           <h3 style={{ color: pt.cobalt, marginBottom: 8, fontWeight: 800 }}>📁 Google Drive Links</h3>
           <p style={{ color: pt.textMuted, fontSize: 13, marginBottom: 16 }}>
@@ -129,33 +150,35 @@ export default function SettingsTab({ dark }) {
             {driveUrlSaving ? 'Saving...' : 'Save Drive Links'}
           </button>
         </LiquidGlassCard>
-      </div>
 
-      <LiquidGlassCard dark={dark} delay={0} style={{ padding: '20px 22px' }}>
-        <h3 style={{ color: pt.cobalt, marginBottom: 8, fontWeight: 800 }}>📢 Home Page Announcement</h3>
-        <p style={{ color: pt.textMuted, fontSize: 13, marginBottom: 16 }}>
-          This shows in a banner at the top of the Home page for everyone.
-          Leave it empty to hide the banner completely. Press Enter for a
-          new line — it'll look exactly the same on the site. The box
-          below is styled exactly like it'll appear, so what you see here
-          is what students will see.
-        </p>
-        <textarea
-          placeholder="e.g. Pharma exam next week, study well! 🔥"
-          value={announcement}
-          onChange={e => setAnnouncement(e.target.value)}
-          style={{
-            width: '100%', minHeight: 100, padding: '14px 20px',
-            borderRadius: 16, border: `1px solid ${pt.cobaltBorder}`,
-            background: `linear-gradient(135deg, ${pt.cobaltSoft}, ${pt.indigoSoft})`,
-            color: pt.text, fontSize: 14, fontWeight: 600, lineHeight: 1.6,
-            textAlign: 'center', fontFamily: 'inherit', outline: 'none',
-            resize: 'vertical', marginBottom: 12, boxSizing: 'border-box'
-          }} />
-        <button onClick={saveAnnouncement} disabled={announcementSaving} style={{ ...btnStyle(pt, dark), width: '100%' }}>
-          {announcementSaving ? 'Saving...' : 'Save Announcement'}
-        </button>
-      </LiquidGlassCard>
+        <div className="settings-grid-full">
+          <LiquidGlassCard dark={dark} delay={0} style={{ padding: '20px 22px' }}>
+            <h3 style={{ color: pt.cobalt, marginBottom: 8, fontWeight: 800 }}>📢 Home Page Announcement</h3>
+            <p style={{ color: pt.textMuted, fontSize: 13, marginBottom: 16 }}>
+              This shows in a banner at the top of the Home page for everyone.
+              Leave it empty to hide the banner completely. Press Enter for a
+              new line — it'll look exactly the same on the site. The box
+              below is styled exactly like it'll appear, so what you see here
+              is what students will see.
+            </p>
+            <textarea
+              placeholder="e.g. Pharma exam next week, study well! 🔥"
+              value={announcement}
+              onChange={e => setAnnouncement(e.target.value)}
+              style={{
+                width: '100%', minHeight: 100, padding: '14px 20px',
+                borderRadius: 16, border: `1px solid ${pt.cobaltBorder}`,
+                background: `linear-gradient(135deg, ${pt.cobaltSoft}, ${pt.indigoSoft})`,
+                color: pt.text, fontSize: 14, fontWeight: 600, lineHeight: 1.6,
+                textAlign: 'center', fontFamily: 'inherit', outline: 'none',
+                resize: 'vertical', marginBottom: 12, boxSizing: 'border-box'
+              }} />
+            <button onClick={saveAnnouncement} disabled={announcementSaving} style={{ ...btnStyle(pt, dark), width: '100%' }}>
+              {announcementSaving ? 'Saving...' : 'Save Announcement'}
+            </button>
+          </LiquidGlassCard>
+        </div>
+      </div>
     </div>
   )
 }

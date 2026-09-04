@@ -3,23 +3,38 @@ import { supabase } from '../../supabase'
 import { getPulseTheme } from '../../premiumTheme'
 import InlineMessage from '../../components/InlineMessage'
 import ModuleSelect from './ModuleSelect'
+import AdminSplitLayout from './AdminSplitLayout'
 import LiquidGlassCard from '@/components/ui/liquid-glass-card'
 import { btnStyle, miniBtn, cancelBtnStyle, inStyle as adminInStyle } from './adminStyles'
 import { EXAM_STAGES as STAGE_META } from '../../lib/examStages'
 import { invalidateModuleStagesCache } from '../../lib/moduleStages'
+import type { AdminModule } from './adminTypes'
 
-function slugify(text) {
+interface StageRow {
+  id: string | null
+  value: string
+  title: string
+  emoji: string
+  color: string
+}
+
+interface StagesTabProps {
+  dark: boolean
+  modules: AdminModule[]
+}
+
+function slugify(text: string) {
   return text.toLowerCase().trim().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '') || 'stage'
 }
 
-export default function StagesTab({ dark, modules }) {
+export default function StagesTab({ dark, modules }: StagesTabProps) {
   const pt = getPulseTheme(dark)
   const inStyle = adminInStyle(pt, dark)
   const [msg, setMsg] = useState('')
-  function showMsg(m) { setMsg(m); setTimeout(() => setMsg(''), 3000) }
+  function showMsg(m: string) { setMsg(m); setTimeout(() => setMsg(''), 3000) }
 
   const [stageModuleId, setStageModuleId] = useState('')
-  const [moduleStagesList, setModuleStagesList] = useState([])
+  const [moduleStagesList, setModuleStagesList] = useState<StageRow[]>([])
   const [stagesIsCustom, setStagesIsCustom] = useState(false)
   const [stagesLoading, setStagesLoading] = useState(false)
   const [stagesSaving, setStagesSaving] = useState(false)
@@ -28,11 +43,11 @@ export default function StagesTab({ dark, modules }) {
     if (stageModuleId) loadModuleStagesForAdmin(stageModuleId)
   }, [stageModuleId])
 
-  async function loadModuleStagesForAdmin(moduleId) {
+  async function loadModuleStagesForAdmin(moduleId: string) {
     setStagesLoading(true)
     const { data } = await supabase.from('module_exam_stages').select('*').eq('module_id', moduleId).order('position')
     if (data && data.length > 0) {
-      setModuleStagesList(data.map(s => ({ id: s.id, value: s.value, title: s.title, emoji: s.emoji, color: s.color })))
+      setModuleStagesList(data.map((s: any) => ({ id: s.id, value: s.value, title: s.title, emoji: s.emoji, color: s.color })))
       setStagesIsCustom(true)
     } else {
       setModuleStagesList(STAGE_META.map(s => ({ id: null, value: s.value, title: s.title, emoji: s.emoji, color: s.color })))
@@ -41,10 +56,10 @@ export default function StagesTab({ dark, modules }) {
     setStagesLoading(false)
   }
 
-  function updateStageField(index, field, val) {
+  function updateStageField(index: number, field: keyof StageRow, val: string) {
     setModuleStagesList(prev => prev.map((s, i) => i === index ? { ...s, [field]: val } : s))
   }
-  function removeStageRow(index) {
+  function removeStageRow(index: number) {
     setModuleStagesList(prev => prev.filter((_, i) => i !== index))
   }
   function addStageRow() {
@@ -88,20 +103,25 @@ export default function StagesTab({ dark, modules }) {
     loadModuleStagesForAdmin(stageModuleId)
   }
 
-  return (
+  const form = (
+    <LiquidGlassCard dark={dark} delay={0} style={{ padding: '20px 22px' }}>
+      <h3 style={{ color: pt.cobalt, marginBottom: 8, fontWeight: 800 }}>🎯 Exam Stages per Module</h3>
+      <p style={{ color: pt.textMuted, fontSize: 13, marginBottom: 16 }}>
+        Every module starts with the same 4 default stages (TBL, End Module, Practical, Final). Pick a module
+        below to rename, add, or remove stages just for that module — everywhere else keeps the defaults
+        until you save changes here.
+      </p>
+      <ModuleSelect modules={modules} value={stageModuleId} onChange={setStageModuleId} dark={dark} />
+    </LiquidGlassCard>
+  )
+
+  const list = (
     <div>
-      <InlineMessage message={msg} />
-      <div style={{ marginBottom: 16 }}>
-        <LiquidGlassCard dark={dark} delay={0} style={{ padding: '20px 22px' }}>
-          <h3 style={{ color: pt.cobalt, marginBottom: 8, fontWeight: 800 }}>🎯 Exam Stages per Module</h3>
-          <p style={{ color: pt.textMuted, fontSize: 13, marginBottom: 16 }}>
-            Every module starts with the same 4 default stages (TBL, End Module, Practical, Final). Pick a module
-            below to rename, add, or remove stages just for that module — everywhere else keeps the defaults
-            until you save changes here.
-          </p>
-          <ModuleSelect modules={modules} value={stageModuleId} onChange={e => setStageModuleId(e.target.value)} inStyle={inStyle} />
+      {!stageModuleId && (
+        <LiquidGlassCard dark={dark} delay={0} style={{ padding: 40, textAlign: 'center' }}>
+          <p style={{ color: pt.sub }}>Pick a module on the left to edit its exam stages 🎯</p>
         </LiquidGlassCard>
-      </div>
+      )}
 
       {stageModuleId && (
         <LiquidGlassCard dark={dark} delay={0} style={{ padding: '20px 22px' }}>
@@ -116,24 +136,26 @@ export default function StagesTab({ dark, modules }) {
                 {stagesIsCustom ? '⚙️ Custom stages for this module' : '📌 Showing global defaults (not yet customized)'}
               </div>
 
-              {moduleStagesList.map((stage, i) => (
-                <div key={i} style={{ marginBottom: 14 }}>
-                  <div style={{
-                    display: 'grid', gridTemplateColumns: '50px 1fr 70px auto', gap: 8,
-                    alignItems: 'center'
-                  }}>
-                    <input value={stage.emoji} onChange={e => updateStageField(i, 'emoji', e.target.value)}
-                      style={{ ...inStyle, marginBottom: 0, textAlign: 'center', padding: '8px 4px' }} />
-                    <input value={stage.title} onChange={e => updateStageField(i, 'title', e.target.value)}
-                      style={{ ...inStyle, marginBottom: 0 }} />
-                    <input type="color" value={stage.color} onChange={e => updateStageField(i, 'color', e.target.value)}
-                      style={{ ...inStyle, marginBottom: 0, padding: 4, height: 42 }} />
-                    <button onClick={() => removeStageRow(i)} aria-label="Remove stage"
-                      style={miniBtn(pt, pt.danger)}>🗑</button>
+              <div className="admin-stage-grid">
+                {moduleStagesList.map((stage, i) => (
+                  <div key={i} style={{ marginBottom: 14 }}>
+                    <div style={{
+                      display: 'grid', gridTemplateColumns: '50px 1fr 70px auto', gap: 8,
+                      alignItems: 'center'
+                    }}>
+                      <input value={stage.emoji} onChange={e => updateStageField(i, 'emoji', e.target.value)}
+                        style={{ ...inStyle, marginBottom: 0, textAlign: 'center', padding: '8px 4px' }} />
+                      <input value={stage.title} onChange={e => updateStageField(i, 'title', e.target.value)}
+                        style={{ ...inStyle, marginBottom: 0 }} />
+                      <input type="color" value={stage.color} onChange={e => updateStageField(i, 'color', e.target.value)}
+                        style={{ ...inStyle, marginBottom: 0, padding: 4, height: 42 }} />
+                      <button onClick={() => removeStageRow(i)} aria-label="Remove stage"
+                        style={miniBtn(pt, pt.danger)}>🗑</button>
+                    </div>
+                    <div style={{ color: pt.textMuted, fontSize: 11, marginTop: 4, marginLeft: 2 }}>{stage.value}</div>
                   </div>
-                  <div style={{ color: pt.textMuted, fontSize: 11, marginTop: 4, marginLeft: 2 }}>{stage.value}</div>
-                </div>
-              ))}
+                ))}
+              </div>
 
               <button onClick={addStageRow} style={{
                 background: 'transparent', border: `1px dashed ${pt.border}`, borderRadius: 10,
@@ -155,6 +177,18 @@ export default function StagesTab({ dark, modules }) {
           )}
         </LiquidGlassCard>
       )}
+    </div>
+  )
+
+  return (
+    <div>
+      <InlineMessage message={msg} />
+      <style>{`
+        @media (min-width: 1300px) {
+          .admin-stage-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 20px; }
+        }
+      `}</style>
+      <AdminSplitLayout formWidth={340} form={form} list={list} />
     </div>
   )
 }

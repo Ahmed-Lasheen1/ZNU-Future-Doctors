@@ -4,8 +4,29 @@ import { getPulseTheme } from '../../premiumTheme'
 import { watchOnlineCount } from '../../lib/onlinePresence'
 import { ModuleIcon } from '../../lib/medicalIcons'
 import LiquidGlassCard from '@/components/ui/liquid-glass-card'
+import type { PulseTheme } from './adminStyles'
+import type { AdminModule } from './adminTypes'
 
-function StatCard({ label, value, color, pt, dark, loading }) {
+interface DifficultyRow {
+  question_id: string
+  question: string
+  module_id: string
+  incorrect_count: number
+  total_attempts: number
+  error_rate: number
+}
+
+interface StatCardProps {
+  label: string
+  value: number | string
+  color: string
+  pt: PulseTheme
+  dark: boolean
+  loading: boolean
+}
+
+function StatCard({ label, value, color, dark, loading }: StatCardProps) {
+  const pt = getPulseTheme(dark)
   return (
     <LiquidGlassCard dark={dark} delay={0} style={{ padding: '18px 20px', textAlign: 'center', flex: '1 1 140px' }}>
       <div style={{ color, fontWeight: 900, fontSize: 26 }}>
@@ -16,9 +37,14 @@ function StatCard({ label, value, color, pt, dark, loading }) {
   )
 }
 
-export default function AnalyticsTab({ dark, modules }) {
+interface AnalyticsTabProps {
+  dark: boolean
+  modules: AdminModule[]
+}
+
+export default function AnalyticsTab({ dark, modules }: AnalyticsTabProps) {
   const pt = getPulseTheme(dark)
-  const [difficulty, setDifficulty] = useState([])
+  const [difficulty, setDifficulty] = useState<DifficultyRow[]>([])
   const [difficultyLoading, setDifficultyLoading] = useState(false)
 
   const [onlineCount, setOnlineCount] = useState(0)
@@ -99,7 +125,10 @@ export default function AnalyticsTab({ dark, modules }) {
         </LiquidGlassCard>
       )}
 
-      <div style={{ display: 'grid', gap: 10 }}>
+      <div className="admin-list-grid">
+        <style>{`
+          @media (min-width: 1300px) { .admin-list-grid { grid-template-columns: 1fr 1fr; gap: 10px; } }
+        `}</style>
         {difficulty.map(row => {
           const mod = modules.find(m => m.id === row.module_id)
           return (
