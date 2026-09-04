@@ -152,6 +152,21 @@ export default function App() {
     }
   }
 
+  // Strips a stray, now-meaningless "#" (or leftover OAuth hash
+  // fragment) from the address bar once Supabase has already consumed
+  // whatever it needed from it. With flowType: 'pkce' (see
+  // src/supabase.js) this rarely has anything to actually clean up —
+  // PKCE returns the session via a ?code=... query param instead of a
+  // #access_token=... hash — but this stays as a harmless safety net
+  // for any stray "#" left behind by a redirect either way. Uses
+  // replaceState (not navigate) so it never adds a history entry or
+  // triggers a route change.
+  function cleanUpAuthHash() {
+    if (window.location.hash && window.location.hash !== '#/') {
+      window.history.replaceState(null, '', window.location.pathname + window.location.search)
+    }
+  }
+
   useEffect(() => {
     async function initSession() {
       const { data: { session } } = await supabase.auth.getSession()
@@ -174,6 +189,7 @@ export default function App() {
         // session check costs nothing once it has run once.
         migrateGuestDataIfNeeded(session.user.id)
       }
+      cleanUpAuthHash()
       setAuthLoaded(true)
     }
     initSession()
@@ -183,6 +199,7 @@ export default function App() {
       if (session?.user) {
         ensureProfile(session.user).then(() => fetchProfile(session.user.id))
         migrateGuestDataIfNeeded(session.user.id)
+        cleanUpAuthHash()
       } else {
         setProfile(null)
       }
