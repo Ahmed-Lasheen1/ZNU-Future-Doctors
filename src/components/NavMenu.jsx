@@ -112,31 +112,53 @@ function LiquidBloom({ pt, open, align }) {
   )
 }
 
-// NOTE (audit fix): this file used to define its own local `GlassRow`
-// component here — a byte-for-byte hand copy of
-// `src/components/pulse/PulseGlassRow.tsx` (same backdrop-blur +
-// shadow + tint + hover-scale recipe, same structure). That meant any
-// future change to the glass recipe (a blur value, an opacity, the
-// focus-ring behavior) had to be made in TWO places and manually kept
-// in sync — exactly the kind of duplication a "change the glass blur
-// everywhere" request should never have to fight through. This now
-// imports the shared `PulseGlassRow` instead. `PulseGlassRow` didn't
-// originally carry the `glass-focus-ring` class the local copy did;
-// that's added below via the `className` prop it already supports,
-// so keyboard-focus visibility on every menu row is unchanged from
-// before this fix.
+// NOTE (perf experiment): this used to delegate straight to the
+// shared PulseGlassRow (blur + shadow + tint + hover). Kept local and
+// self-contained here (not touching PulseGlassRow.tsx, which other
+// pages rely on) specifically so this can be reverted by restoring
+// the block below to:
+//
+// function GlassRow({ dark, radius = ROW_RADIUS, style = {}, children, ...rest }) {
+//   return (
+//     <PulseGlassRow
+//       dark={dark}
+//       radius={radius}
+//       className="glass-focus-ring"
+//       hoverTint={dark ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.35)'}
+//       style={style}
+//       {...rest}
+//     >
+//       {children}
+//     </PulseGlassRow>
+//   )
+// }
+//
+// The version below drops each row's own backdrop-filter blur (the
+// panel behind them already applies one real blur — see the outer
+// motion.div's liquidGlassBackdrop() below). Stacking ~8 additional
+// independent blurred layers inside one animating panel is a common
+// mobile-Safari jank source; this keeps the shadow/tint/hover glass
+// look but blurs once instead of nine times.
 function GlassRow({ dark, radius = ROW_RADIUS, style = {}, children, ...rest }) {
+  const [hovered, setHovered] = useState(false)
+  const interactive = !!rest.onClick
+  const hoverTint = dark ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.35)'
+
   return (
-    <PulseGlassRow
-      dark={dark}
-      radius={radius}
-      className="glass-focus-ring"
-      hoverTint={dark ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.35)'}
-      style={style}
+    <div
       {...rest}
+      className="glass-focus-ring"
+      onMouseEnter={() => interactive && setHovered(true)}
+      onMouseLeave={() => interactive && setHovered(false)}
+      style={{ position: 'relative', overflow: 'hidden', borderRadius: radius, cursor: interactive ? 'pointer' : 'default', ...style }}
     >
-      {children}
-    </PulseGlassRow>
+      <div aria-hidden style={{ position: 'absolute', inset: 0, borderRadius: 'inherit', boxShadow: liquidGlassShadow(dark) }} />
+      <div aria-hidden style={{ position: 'absolute', inset: 0, borderRadius: 'inherit', background: liquidGlassTint(dark) }} />
+      {hovered && (
+        <div aria-hidden style={{ position: 'absolute', inset: 0, borderRadius: 'inherit', background: hoverTint }} />
+      )}
+      <div style={{ position: 'relative', zIndex: 1 }}>{children}</div>
+    </div>
   )
 }
 
@@ -222,7 +244,15 @@ export default function NavMenu({ dark, toggleTheme, align = 'left' }) {
           // "heaviest use cases — full-screen panels, persistent
           // sidebars": promotes this to its own GPU layer ahead of
           // the animation instead of during it.
-          willChange: 'transform, opacity, backdrop-filter',
+          //
+          // PERF FIX: dropped 'backdrop-filter' from this hint list.
+          // The blur value itself never animates (only scale/opacity
+          // do — it's applied once on mount via liquidGlassBackdrop()
+          // below and stays constant), so hinting it here just told
+          // the browser to keep an extra isolated compositing layer
+          // reserved for no benefit. willChange should only list
+          // properties that actually change over time.
+          willChange: 'transform, opacity',
           // overflow-hidden + isolation:isolate + backdrop-filter all
           // live on THIS element — the same one that carries the
           // scale/opacity animation below. That co-location is what
