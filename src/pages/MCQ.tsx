@@ -12,6 +12,7 @@ import QuestionSourceBadge from '../components/QuestionSourceBadge'
 import LiquidGlassCard from '@/components/ui/liquid-glass-card'
 import PulseBackground from '../components/pulse/PulseBackground'
 import PulseGlassRow from '../components/pulse/PulseGlassRow'
+import BackButton from '../components/pulse/BackButton'
 import { fetchModuleStages } from '../lib/moduleStages'
 import {
   getGuestFlags, toggleGuestFlag,
@@ -715,7 +716,9 @@ export default function MCQ({ dark }: { dark: boolean }) {
 
         {/* Short entrance — a quick fade/slide, not a takeover. The
             real site header (rendered above this by App.jsx) stays
-            exactly where it is; exam mode is just this page's content. */}
+            exactly where it is; exam mode is just this page's content.
+            No BackButton in exam mode — the ✕ EXIT control in the
+            status header below is the intended way out of a quiz. */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -1248,6 +1251,13 @@ export default function MCQ({ dark }: { dark: boolean }) {
     <div style={{ position: 'relative', minHeight: '100vh' }}>
       <PulseBackground />
       <div className="pulse-wide" style={{ position: 'relative', zIndex: 1, padding: '24px 20px 100px', fontFamily: pulseFonts.body }}>
+        {/* Back button only lives on this browsing view — exam mode
+            (the `if (quizMode)` branch above, with its own separate
+            return) never renders this, so it can't show up mid-quiz. */}
+        <div style={{ marginBottom: 8 }}>
+          <BackButton dark={dark} fallback="/" />
+        </div>
+
         {(loadError || modulesError) && <ErrorBanner />}
         {usingCache && (
           <div style={{ marginBottom: 16 }}>
@@ -1306,13 +1316,28 @@ export default function MCQ({ dark }: { dark: boolean }) {
           </div>
         )}
 
-        <div style={{ display: 'flex', gap: 8, overflowX: 'auto', marginBottom: 16, paddingBottom: 4 }}>
+        {/* AUDIT FIX: mobile "cut off" feel — this row previously had
+            no right-edge padding and no scroll-snap, so on narrow
+            screens the last stage pill could sit flush against (or
+            past) the viewport edge with no visible anchor telling the
+            student more content is scrollable. paddingRight mirrors
+            the row's own gap so the last pill gets the same clearance
+            as the first; scrollSnapType + each pill's flexShrink:0 +
+            scrollSnapAlign settles the strip on a full pill after a
+            swipe instead of stopping mid-pill (same fix already
+            applied to Summaries.tsx's stage row). */}
+        <div style={{
+          display: 'flex', gap: 8, overflowX: 'auto', marginBottom: 16,
+          paddingBottom: 4, paddingRight: 8, scrollSnapType: 'x proximity',
+          WebkitOverflowScrolling: 'touch'
+        }}>
           {[{ value: 'all', label: 'All' }, ...stages.map(s => ({ value: s.value, label: `${s.emoji} ${s.title}` }))].map(stage => {
             const active = activeStage === stage.value
             return (
               <PulseGlassRow key={stage.value} dark={dark} radius={999} active={active}
                 activeTint={`${MCQ_ACCENT}26`} hoverTint={hoverTint} onClick={() => setActiveStage(stage.value)}
                 role="button" tabIndex={0}
+                style={{ flexShrink: 0, scrollSnapAlign: 'start' }}
                 onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setActiveStage(stage.value) } }}>
                 <div style={{ padding: '9px 16px', whiteSpace: 'nowrap', ...pulseType.button, color: active ? MCQ_ACCENT : pt.sub }}>{stage.label}</div>
               </PulseGlassRow>
@@ -1320,10 +1345,16 @@ export default function MCQ({ dark }: { dark: boolean }) {
           })}
         </div>
 
-        <div style={{ display: 'flex', gap: 8, overflowX: 'auto', marginBottom: 28, paddingBottom: 4 }}>
+        {/* Same "cut off" fix applied to the subject-filter row. */}
+        <div style={{
+          display: 'flex', gap: 8, overflowX: 'auto', marginBottom: 28,
+          paddingBottom: 4, paddingRight: 8, scrollSnapType: 'x proximity',
+          WebkitOverflowScrolling: 'touch'
+        }}>
           <PulseGlassRow dark={dark} radius={999} active={activeSubject === 'all'}
             activeTint={`${MCQ_ACCENT}26`} hoverTint={hoverTint} onClick={() => setActiveSubject('all')}
             role="button" tabIndex={0}
+            style={{ flexShrink: 0, scrollSnapAlign: 'start' }}
             onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setActiveSubject('all') } }}>
             <div style={{ padding: '9px 16px', whiteSpace: 'nowrap', ...pulseType.button, color: activeSubject === 'all' ? MCQ_ACCENT : pt.sub }}>All</div>
           </PulseGlassRow>
@@ -1333,6 +1364,7 @@ export default function MCQ({ dark }: { dark: boolean }) {
               <PulseGlassRow key={sub.id} dark={dark} radius={999} active={active}
                 activeTint={`${MCQ_ACCENT}26`} hoverTint={hoverTint} onClick={() => setActiveSubject(sub.id)}
                 role="button" tabIndex={0}
+                style={{ flexShrink: 0, scrollSnapAlign: 'start' }}
                 onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setActiveSubject(sub.id) } }}>
                 <div style={{ padding: '9px 16px', whiteSpace: 'nowrap', ...pulseType.button, color: active ? MCQ_ACCENT : pt.sub }}>{sub.name}</div>
               </PulseGlassRow>
@@ -1365,10 +1397,17 @@ export default function MCQ({ dark }: { dark: boolean }) {
           </LiquidGlassCard>
         </div>
 
-        {/* Practice by Subject — horizontal scroll-snap carousel */}
+        {/* Practice by Subject — horizontal scroll-snap carousel.
+            AUDIT FIX: cards clipped on hover — LiquidGlassCard scales
+            to 1.05 on hover, but this row had no top/side padding, so
+            the container's own box edge visually clipped the top and
+            sides of a hovered card. paddingTop + a touch of side
+            padding give the hover scale room to breathe; paddingBottom
+            bumped slightly too so the bottom edge isn't clipped either. */}
         <h3 style={{ ...pulseType.sectionLabel, color: pt.textMuted, marginBottom: 16 }}>Practice by Subject</h3>
         <div style={{
-          display: 'flex', gap: 14, overflowX: 'auto', paddingBottom: 10,
+          display: 'flex', gap: 14, overflowX: 'auto',
+          paddingTop: 8, paddingBottom: 14, paddingLeft: 2, paddingRight: 2,
           scrollSnapType: 'x mandatory'
         }}>
           {moduleSubjects.map((sub, i) => {
