@@ -162,6 +162,33 @@ h1, h2, h3 {
   .auto-grid { gap: 20px; }
 }
 
+/* Used by AutoGrid when there's exactly one card — a single grid
+   column with a bare 1fr track stretches to fill the entire row,
+   leaving a huge empty card on wide screens. This centers the lone
+   card instead and caps it at a reasonable width, so it reads as a
+   deliberately-sized card rather than an accidentally-stretched one. */
+.auto-grid-single {
+  display: flex;
+  justify-content: center;
+}
+
+.auto-grid-single > * {
+  width: 100%;
+  max-width: 420px;
+}
+
+/* Shared by ModulePage/StagePage for the "📝 Smart Summaries" +
+   "🧪 Practice" pair: each block gets a reasonable max width instead
+   of stretching full-bleed, and on screens wide enough for two
+   columns (tablet/desktop) they sit side by side automatically via
+   auto-fit; on narrow screens they stack as a single centered column. */
+.pulse-summary-practice-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 420px));
+  gap: 20px;
+  justify-content: center;
+}
+
 @media (max-width: 480px) {
   .smart-header-title {
     display: none;
