@@ -16,28 +16,27 @@ interface BackButtonProps {
 // moment the student scrolled down, and its resting position (before
 // any scrolling) depended on that page's own top padding.
 //
-// Positioned just below the app's own fixed header (see
-// PulseOverlayHeader / SiteHeader in App.jsx — height
-// `76px + env(safe-area-inset-top)`), with a left inset that
-// approximates `.pulse-wide`'s own padding steps (20px on mobile,
-// scaling up to 64px on very wide screens via clamp) so it still
-// lines up with the page content column beneath it instead of
-// floating at an unrelated indent.
+// AUDIT FIX (root cause, not just the earlier buffer trim): this used
+// to assume the header's total height was a flat `76px +
+// env(safe-area-inset-top)` — i.e. a fixed 16px PLUS the full
+// safe-area inset, added together. But the real header
+// (PulseOverlayHeader.tsx) sets its own top padding as
+// `max(16px, env(safe-area-inset-top))` — it uses WHICHEVER is
+// bigger, never both. On a phone with a notch/Dynamic Island, the
+// safe-area inset is typically 47–59px, so the old formula was
+// double-counting that extra 16px and placing this button about 16px
+// lower than the header's actual bottom edge — which is exactly why
+// trimming the old "+24px" buffer down to "+0px" didn't fully close
+// the gap; the leftover 16px was baked into the base formula itself,
+// not the tunable buffer.
 //
-// AUDIT FIX: the gap below the header was `+ 24px`, which read as
-// "floating a bit too low" rather than sitting snugly under the
-// header bar. Tightened to `+ 10px` — just enough breathing room to
-// keep it from touching the header, without the extra visual gap.
-//
-// z-index 400 — above ordinary page content (which never sets a
-// z-index above 1), but below the header (500) and the nav-menu
-// dropdown (1999/2000), so it never fights either for stacking order
-// even though the two never actually overlap on screen.
-//
-// Every call site still wraps this in its own
-// `<div style={{ marginBottom: 8 }}>` — harmless now, since a
-// position:fixed child no longer contributes to that div's height, so
-// it just collapses to (near) zero instead of reserving layout space.
+// Corrected to mirror the header's real math: `max(16px,
+// env(safe-area-inset-top))` for the top padding, `+ 44px` for the
+// logo/icon row height, `+ 16px` for the header's bottom padding —
+// i.e. the header's true rendered height — plus a small fixed gap so
+// the pill doesn't touch the header bar.
+const HEADER_GAP = 8
+
 export default function BackButton({ dark, fallback = '/', onClick, style }: BackButtonProps) {
   const pt = getPulseTheme(dark)
   const goBack = useGoBack(fallback)
@@ -48,7 +47,7 @@ export default function BackButton({ dark, fallback = '/', onClick, style }: Bac
     <div
       style={{
         position: 'fixed',
-        top: 'calc(76px + env(safe-area-inset-top) + 0px)',
+        top: `calc(max(16px, env(safe-area-inset-top)) + 60px + ${HEADER_GAP}px)`,
         left: 'clamp(20px, 4vw, 64px)',
         zIndex: 400,
       }}
