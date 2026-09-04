@@ -12,7 +12,6 @@ import BackButton from '../components/pulse/BackButton'
 import { useModules } from '../contexts'
 import { fetchModuleStages } from '../lib/moduleStages'
 import { useHistoryOverlay } from '../lib/useHistoryOverlay'
-import { autoGridStyle } from '../lib/gridLayout'
 import { ModuleIcon } from '../lib/medicalIcons'
 
 interface SummaryModule {
@@ -57,7 +56,7 @@ function SummariesHome({ modules, onSelect, dark }: {
         </LiquidGlassCard>
       )}
 
-      <div {...autoGridStyle(sorted.length, gridCols(sorted.length))}>
+      <div className="auto-grid" style={{ ['--auto-grid-cols' as any]: gridCols(sorted.length) }}>
         {sorted.map((mod, i) => (
           <LiquidGlassCard key={mod.id} dark={dark} delay={i * 80} onClick={() => onSelect(mod)}
             style={{ padding: 24, textAlign: 'center', opacity: mod.status === 'active' ? 1 : 0.75 }}>
