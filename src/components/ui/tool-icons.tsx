@@ -114,6 +114,126 @@ export function LeaderboardIcon({ color, size = 20 }: IconProps) {
   )
 }
 
+// ── Icons for ModulePage / StagePage section headers ────────────────
+// Replaces the plain emoji that were still hardcoded directly into
+// those two pages' section-title text (🎯 Exam Stage, 📖 Study by
+// Lesson, 📁 Study Materials, 📝 Smart Summaries, 🧪 Practice) with
+// the same hand-drawn, animated-stroke language as the four icons
+// above. The bigger icons already sitting inside the Smart
+// Summaries/Practice cards themselves (NotesIcon/ExamIcon in
+// lib/medicalIcons.tsx) were already real SVG, not emoji, so those
+// are untouched — this set is specifically for the small icon that
+// now sits next to each section's heading text.
+
+export function ExamStageIcon({ color, size = 20 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <circle cx="12" cy="12" r="9" stroke={color} strokeWidth="1.6" opacity="0.4" />
+      <circle cx="12" cy="12" r="5.5" stroke={color} strokeWidth="1.6" opacity="0.7" />
+      <motion.circle
+        cx="12" cy="12" r="2.1"
+        fill={color}
+        initial={{ scale: 0, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ duration: 0.5, delay: 0.45, ease: [0.34, 1.56, 0.64, 1] }}
+      />
+    </svg>
+  )
+}
+
+export function StudyByLessonIcon({ color, size = 20 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <path
+        d="M12 6c-1.7-1.4-3.9-2.2-6.6-2.2-.5 0-.9.4-.9.9v12.6c0 .5.4.9.9.9 2.7 0 4.9.8 6.6 2.2"
+        stroke={color}
+        strokeWidth="1.6"
+        strokeLinejoin="round"
+        opacity="0.85"
+      />
+      <motion.path
+        d="M12 6c1.7-1.4 3.9-2.2 6.6-2.2.5 0 .9.4.9.9v12.6c0 .5-.4.9-.9.9-2.7 0-4.9.8-6.6 2.2V6Z"
+        stroke={color}
+        strokeWidth="1.8"
+        strokeLinejoin="round"
+        fill="none"
+        initial={{ pathLength: 0, opacity: 0 }}
+        animate={{ pathLength: 1, opacity: 1 }}
+        transition={{ ...drawTransition, delay: 0.15 }}
+      />
+    </svg>
+  )
+}
+
+export function StudyMaterialsIcon({ color, size = 20 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <path
+        d="M3.5 6.6c0-.6.45-1.1 1-1.1h4.3c.3 0 .58.13.77.36l1.1 1.3c.19.23.47.36.77.36H19c.55 0 1 .5 1 1.1v9.2c0 .6-.45 1.1-1 1.1H4.5c-.55 0-1-.5-1-1.1V6.6Z"
+        stroke={color}
+        strokeWidth="1.6"
+        strokeLinejoin="round"
+        opacity="0.9"
+      />
+      <motion.path
+        d="M3.5 9.8H20"
+        stroke={color}
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        fill="none"
+        initial={{ pathLength: 0, opacity: 0 }}
+        animate={{ pathLength: 1, opacity: 1 }}
+        transition={{ ...drawTransition, delay: 0.15 }}
+      />
+    </svg>
+  )
+}
+
+export function SmartSummariesIcon({ color, size = 20 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <path d="M6 3.5h9l4 4v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-16a1 1 0 0 1 1-1Z" stroke={color} strokeWidth="1.6" strokeLinejoin="round" opacity="0.9" />
+      <path d="M15 3.5V7.5a1 1 0 0 0 1 1h4" stroke={color} strokeWidth="1.6" strokeLinejoin="round" opacity="0.55" />
+      <motion.path
+        d="M8.5 12.3h7M8.5 15.3h7M8.5 18.3h4"
+        stroke={color}
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        fill="none"
+        initial={{ pathLength: 0, opacity: 0 }}
+        animate={{ pathLength: 1, opacity: 1 }}
+        transition={{ ...drawTransition, delay: 0.15 }}
+      />
+    </svg>
+  )
+}
+
+export function PracticeIcon({ color, size = 20 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <path d="M9.5 2.5h5" stroke={color} strokeWidth="1.6" strokeLinecap="round" opacity="0.9" />
+      <path
+        d="M10.3 2.5v6.1c0 .3-.08.6-.24.85L5.7 16.4A2.4 2.4 0 0 0 7.7 20.2h8.6a2.4 2.4 0 0 0 2-3.8l-4.36-7a1.7 1.7 0 0 1-.24-.85V2.5"
+        stroke={color}
+        strokeWidth="1.6"
+        strokeLinejoin="round"
+        opacity="0.85"
+      />
+      <path d="M8 14.2h8" stroke={color} strokeWidth="1.6" opacity="0.5" />
+      <motion.path
+        d="M10 17.4h4M11 18.9h2"
+        stroke={color}
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        fill="none"
+        initial={{ pathLength: 0, opacity: 0 }}
+        animate={{ pathLength: 1, opacity: 1 }}
+        transition={{ ...drawTransition, delay: 0.15 }}
+      />
+    </svg>
+  )
+}
+
 // Home nav icon — built fresh to match the same hand-drawn, animated-
 // stroke language as the four icons above (thin static outline plus
 // one accent stroke that draws itself in on mount). None of the

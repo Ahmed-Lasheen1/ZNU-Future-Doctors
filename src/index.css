@@ -162,6 +162,25 @@ h1, h2, h3 {
   .auto-grid { gap: 20px; }
 }
 
+/* "Smart Summaries" + "Practice" pairing on ModulePage and StagePage
+   (and anywhere else that wants the same two-card layout). Stacked on
+   phones — each card still gets its own full-width row, same as
+   before — and sits side by side on one row from tablet width up, so
+   the pairing doesn't waste all the extra horizontal space on a
+   tablet/desktop viewport the way two full-width stacked cards would. */
+.summary-practice-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+  align-items: start;
+}
+
+@media (min-width: 768px) {
+  .summary-practice-row {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
 @media (max-width: 480px) {
   .smart-header-title {
     display: none;

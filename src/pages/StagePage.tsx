@@ -14,6 +14,7 @@ import { fetchSubjectsForModule } from '../lib/subjects'
 import { useHistoryOverlay } from '../lib/useHistoryOverlay'
 import { FILE_CARDS } from '../lib/fileCards'
 import { ModuleIcon, ExamIcon, NotesIcon } from '../lib/medicalIcons'
+import { StudyMaterialsIcon, StudyByLessonIcon, SmartSummariesIcon, PracticeIcon } from '@/components/ui/tool-icons'
 
 interface PageModule { id: string; name: string; icon?: string | null; color: string }
 interface PageSubject { id: string; module_id: string; name: string; icon?: string | null; color?: string | null }
@@ -129,7 +130,9 @@ export default function StagePage({ dark }: { dark: boolean }) {
 
         {(filteredFileCards.length > 0 || driveUrl) && (
           <div style={{ marginBottom: 32 }}>
-            <h2 style={{ ...pulseType.sectionLabel, color: pt.textMuted, marginBottom: 16 }}>📁 Study Materials</h2>
+            <h2 style={{ ...pulseType.sectionLabel, color: pt.textMuted, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <StudyMaterialsIcon color={pt.textMuted} size={14} /> Study Materials
+            </h2>
             {filteredFileCards.length > 0 && (
               <div className="auto-grid" style={{ ['--auto-grid-cols' as any]: gridCols(filteredFileCards.length) }}>
                 {filteredFileCards.map((card, i) => (
@@ -151,8 +154,10 @@ export default function StagePage({ dark }: { dark: boolean }) {
                   <div style={{
                     background: 'rgba(74,222,128,0.16)', border: '1px solid rgba(74,222,128,0.35)',
                     borderRadius: 12, width: 44, height: 44,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0
-                  }}>📁</div>
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
+                  }}>
+                    <StudyMaterialsIcon color="#4ade80" size={20} />
+                  </div>
                   <div>
                     <div style={{ ...pulseType.cardTitle, color: pt.textPrimary }}>University Google Drive</div>
                     <div style={{ ...pulseType.small, color: pt.textMuted, marginTop: 2 }}>Lectures, recordings & more</div>
@@ -165,7 +170,9 @@ export default function StagePage({ dark }: { dark: boolean }) {
 
         {subjects.length > 0 && (
           <div style={{ marginBottom: 32 }}>
-            <h2 style={{ ...pulseType.sectionLabel, color: pt.textMuted, marginBottom: 16 }}>📖 Study by Lesson</h2>
+            <h2 style={{ ...pulseType.sectionLabel, color: pt.textMuted, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <StudyByLessonIcon color={pt.textMuted} size={14} /> Study by Lesson
+            </h2>
             <div className="auto-grid" style={{ ['--auto-grid-cols' as any]: gridCols(subjects.length) }}>
               {subjects.map((sub, i) => (
                 <LiquidGlassCard key={sub.id} dark={dark} delay={i * 80}
@@ -181,28 +188,37 @@ export default function StagePage({ dark }: { dark: boolean }) {
           </div>
         )}
 
-        <div style={{ marginBottom: 32 }}>
-          <h2 style={{ ...pulseType.sectionLabel, color: pt.textMuted, marginBottom: 16 }}>📝 Smart Summaries</h2>
-          <LiquidGlassCard dark={dark} delay={0} onClick={openSummaries} style={{ padding: 24, textAlign: 'center' }}>
-            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}>
-              <NotesIcon color="#34d399" size={30} />
-            </div>
-            <div style={{ ...pulseType.cardTitle, color: pt.textPrimary }}>Summaries</div>
-            <div style={{ ...pulseType.small, color: pt.textMuted, marginTop: 4 }}>
-              {summaries.length === 0 ? `${meta.title} summaries` : summaries.length === 1 ? summaries[0].title : `${summaries.length} available`}
-            </div>
-          </LiquidGlassCard>
-        </div>
+        {/* Smart Summaries & Practice — side by side from tablet width
+            up (.summary-practice-row, see index.css), stacked on
+            phones like every other section on this page. */}
+        <div className="summary-practice-row" style={{ marginBottom: 32 }}>
+          <div>
+            <h2 style={{ ...pulseType.sectionLabel, color: pt.textMuted, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <SmartSummariesIcon color={pt.textMuted} size={14} /> Smart Summaries
+            </h2>
+            <LiquidGlassCard dark={dark} delay={0} onClick={openSummaries} style={{ padding: 24, textAlign: 'center' }}>
+              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}>
+                <NotesIcon color="#34d399" size={30} />
+              </div>
+              <div style={{ ...pulseType.cardTitle, color: pt.textPrimary }}>Summaries</div>
+              <div style={{ ...pulseType.small, color: pt.textMuted, marginTop: 4 }}>
+                {summaries.length === 0 ? `${meta.title} summaries` : summaries.length === 1 ? summaries[0].title : `${summaries.length} available`}
+              </div>
+            </LiquidGlassCard>
+          </div>
 
-        <div style={{ marginBottom: 32 }}>
-          <h2 style={{ ...pulseType.sectionLabel, color: pt.textMuted, marginBottom: 16 }}>🧪 Practice</h2>
-          <LiquidGlassCard dark={dark} delay={0} onClick={() => navigate(`/mcq?module=${moduleId}&stage=${stage}`)} style={{ padding: 24, textAlign: 'center' }}>
-            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}>
-              <ExamIcon color="#e2725b" size={30} />
-            </div>
-            <div style={{ ...pulseType.cardTitle, color: pt.textPrimary }}>MCQ Bank</div>
-            <div style={{ ...pulseType.small, color: pt.textMuted, marginTop: 4 }}>Practice {meta.title} questions</div>
-          </LiquidGlassCard>
+          <div>
+            <h2 style={{ ...pulseType.sectionLabel, color: pt.textMuted, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <PracticeIcon color={pt.textMuted} size={14} /> Practice
+            </h2>
+            <LiquidGlassCard dark={dark} delay={0} onClick={() => navigate(`/mcq?module=${moduleId}&stage=${stage}`)} style={{ padding: 24, textAlign: 'center' }}>
+              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}>
+                <ExamIcon color="#e2725b" size={30} />
+              </div>
+              <div style={{ ...pulseType.cardTitle, color: pt.textPrimary }}>MCQ Bank</div>
+              <div style={{ ...pulseType.small, color: pt.textMuted, marginTop: 4 }}>Practice {meta.title} questions</div>
+            </LiquidGlassCard>
+          </div>
         </div>
       </div>
     </div>
