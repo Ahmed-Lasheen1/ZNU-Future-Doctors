@@ -1,15 +1,16 @@
 import { useState } from 'react'
 import { supabase } from '../../supabase'
-import { getTheme, inputStyle } from '../../theme'
+import { getPulseTheme } from '../../premiumTheme'
 import InlineMessage from '../../components/InlineMessage'
 import ModuleSelect from './ModuleSelect'
 import IconPicker from '../../components/admin/IconPicker'
+import LiquidGlassCard from '@/components/ui/liquid-glass-card'
 import { ModuleIcon } from '../../lib/medicalIcons'
-import { btnStyle, miniBtn, cancelBtnStyle } from './adminStyles'
+import { btnStyle, miniBtn, cancelBtnStyle, inStyle as adminInStyle } from './adminStyles'
 
 export default function LessonsTab({ dark, modules, subjects, lessons, fetchLessons }) {
-  const c = getTheme(dark)
-  const inStyle = inputStyle(c)
+  const pt = getPulseTheme(dark)
+  const inStyle = adminInStyle(pt, dark)
   const [msg, setMsg] = useState('')
   function showMsg(m) { setMsg(m); setTimeout(() => setMsg(''), 3000) }
 
@@ -29,9 +30,6 @@ export default function LessonsTab({ dark, modules, subjects, lessons, fetchLess
   }
   async function saveLesson() {
     if (!lessonTitle || !lessonSubjectId || !lessonModuleId) return showMsg('❌ Pick a module, subject, and title first')
-    // Summaries are now managed entirely from the Summaries tab (which
-    // can link a summary to this lesson) rather than from a URL field
-    // stored directly on the lesson.
     const payload = { title: lessonTitle, subject_id: lessonSubjectId, module_id: lessonModuleId, icon: lessonIcon || null }
     if (editingLessonId) {
       const { error } = await supabase.from('lessons').update(payload).eq('id', editingLessonId)
@@ -56,25 +54,27 @@ export default function LessonsTab({ dark, modules, subjects, lessons, fetchLess
   return (
     <div>
       <InlineMessage message={msg} />
-      <div style={{ background: c.card, padding: '20px', borderRadius: '16px', border: `1px solid ${c.border}`, marginBottom: 16 }}>
-        <h3 style={{ color: '#38bdf8', marginBottom: 8 }}>{editingLessonId ? '✏️ Edit Lesson' : '➕ Add Lesson'}</h3>
-        <p style={{ color: c.sub, fontSize: 13, marginBottom: 16 }}>
-          A lesson lives under a subject and shows its own tagged question set (tag questions to a lesson from
-          the Questions tab). Add a summary for it from the Summaries tab.
-        </p>
-        <ModuleSelect modules={modules} value={lessonModuleId} onChange={e => { setLessonModuleId(e.target.value); setLessonSubjectId('') }} inStyle={inStyle} />
-        {lessonModuleId && (
-          <select value={lessonSubjectId} onChange={e => setLessonSubjectId(e.target.value)} style={inStyle}>
-            <option value="">Select Subject</option>
-            {filteredSubjects(lessonModuleId).map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-          </select>
-        )}
-        <input placeholder="Lesson title" value={lessonTitle} onChange={e => setLessonTitle(e.target.value)} style={inStyle} />
-        <IconPicker value={lessonIcon} onChange={setLessonIcon} inStyle={inStyle} c={c} />
-        <div style={{ display: 'flex', gap: 8 }}>
-          <button onClick={saveLesson} style={{ ...btnStyle, flex: 1 }}>{editingLessonId ? 'Save Changes' : 'Add Lesson'}</button>
-          {editingLessonId && <button onClick={resetLessonForm} style={cancelBtnStyle(c)}>Cancel</button>}
-        </div>
+      <div style={{ marginBottom: 16 }}>
+        <LiquidGlassCard dark={dark} delay={0} style={{ padding: '20px 22px' }}>
+          <h3 style={{ color: pt.cobalt, marginBottom: 8, fontWeight: 800 }}>{editingLessonId ? '✏️ Edit Lesson' : '➕ Add Lesson'}</h3>
+          <p style={{ color: pt.textMuted, fontSize: 13, marginBottom: 16 }}>
+            A lesson lives under a subject and shows its own tagged question set (tag questions to a lesson from
+            the Questions tab). Add a summary for it from the Summaries tab.
+          </p>
+          <ModuleSelect modules={modules} value={lessonModuleId} onChange={e => { setLessonModuleId(e.target.value); setLessonSubjectId('') }} inStyle={inStyle} />
+          {lessonModuleId && (
+            <select value={lessonSubjectId} onChange={e => setLessonSubjectId(e.target.value)} style={inStyle}>
+              <option value="">Select Subject</option>
+              {filteredSubjects(lessonModuleId).map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+            </select>
+          )}
+          <input placeholder="Lesson title" value={lessonTitle} onChange={e => setLessonTitle(e.target.value)} style={inStyle} />
+          <IconPicker value={lessonIcon} onChange={setLessonIcon} inStyle={inStyle} pt={pt} />
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button onClick={saveLesson} style={{ ...btnStyle(pt, dark), flex: 1 }}>{editingLessonId ? 'Save Changes' : 'Add Lesson'}</button>
+            {editingLessonId && <button onClick={resetLessonForm} style={cancelBtnStyle(pt, dark)}>Cancel</button>}
+          </div>
+        </LiquidGlassCard>
       </div>
 
       {modules.map(mod => {
@@ -89,21 +89,23 @@ export default function LessonsTab({ dark, modules, subjects, lessons, fetchLess
               if (subLessons.length === 0) return null
               return (
                 <div key={sub.id} style={{ marginBottom: 10 }}>
-                  <div style={{ color: c.sub, fontSize: 12, fontWeight: 700, marginBottom: 6 }}>{sub.name}</div>
-                  {subLessons.map(l => (
-                    <div key={l.id} style={{ background: c.card, padding: '12px 16px', borderRadius: 12, border: `1px solid ${c.border}`, marginBottom: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <span style={{ display: 'inline-flex' }}>
-                          <ModuleIcon value={l.icon || '📘'} size={18} color="#34d399" />
-                        </span>
-                        <span style={{ color: c.text, fontWeight: 600 }}>{l.title}</span>
-                      </div>
-                      <div style={{ display: 'flex', gap: 8 }}>
-                        <button onClick={() => editLesson(l)} aria-label={`Edit lesson: ${l.title}`} style={{ ...miniBtn, borderColor: '#38bdf8', color: '#38bdf8' }}>✏️</button>
-                        <button onClick={() => deleteLesson(l.id)} aria-label={`Delete lesson: ${l.title}`} style={{ ...miniBtn, borderColor: '#ef4444', color: '#ef4444' }}>🗑</button>
-                      </div>
-                    </div>
-                  ))}
+                  <div style={{ color: pt.textMuted, fontSize: 12, fontWeight: 700, marginBottom: 6 }}>{sub.name}</div>
+                  <div style={{ display: 'grid', gap: 10 }}>
+                    {subLessons.map(l => (
+                      <LiquidGlassCard key={l.id} dark={dark} delay={0} style={{ padding: '12px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                          <span style={{ display: 'inline-flex' }}>
+                            <ModuleIcon value={l.icon || '📘'} size={18} color="#34d399" />
+                          </span>
+                          <span style={{ color: pt.text, fontWeight: 600 }}>{l.title}</span>
+                        </div>
+                        <div style={{ display: 'flex', gap: 8 }}>
+                          <button onClick={() => editLesson(l)} aria-label={`Edit lesson: ${l.title}`} style={miniBtn(pt, pt.cobalt)}>✏️</button>
+                          <button onClick={() => deleteLesson(l.id)} aria-label={`Delete lesson: ${l.title}`} style={miniBtn(pt, pt.danger)}>🗑</button>
+                        </div>
+                      </LiquidGlassCard>
+                    ))}
+                  </div>
                 </div>
               )
             })}

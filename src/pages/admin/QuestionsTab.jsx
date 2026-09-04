@@ -1,17 +1,18 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../supabase'
-import { getTheme, inputStyle } from '../../theme'
+import { getPulseTheme } from '../../premiumTheme'
 import InlineMessage from '../../components/InlineMessage'
 import ModuleSelect from './ModuleSelect'
-import { btnStyle, miniBtn, cancelBtnStyle, LIST_LIMIT } from './adminStyles'
+import LiquidGlassCard from '@/components/ui/liquid-glass-card'
+import { btnStyle, miniBtn, cancelBtnStyle, inStyle as adminInStyle, LIST_LIMIT } from './adminStyles'
 import { EXAM_STAGES as STAGE_META } from '../../lib/examStages'
 import { fetchModuleStages } from '../../lib/moduleStages'
 
 const EXAM_STAGES = STAGE_META.map(s => ({ value: s.value, label: `${s.emoji} ${s.title}` }))
 
 export default function QuestionsTab({ dark, modules, subjects, lessons }) {
-  const c = getTheme(dark)
-  const inStyle = inputStyle(c)
+  const pt = getPulseTheme(dark)
+  const inStyle = adminInStyle(pt, dark)
   const [msg, setMsg] = useState('')
   function showMsg(m) { setMsg(m); setTimeout(() => setMsg(''), 3000) }
 
@@ -28,7 +29,6 @@ export default function QuestionsTab({ dark, modules, subjects, lessons }) {
   const [qSubjectId, setQSubjectId] = useState('')
   const [qLessonId, setQLessonId] = useState('')
   const [qExamType, setQExamType] = useState('both')
-  // Empty string = "no specific stage" — optional, same as subject/lesson.
   const [qExamStage, setQExamStage] = useState('')
   const [qStageOptions, setQStageOptions] = useState(EXAM_STAGES)
   const [qSource, setQSource] = useState('')
@@ -42,11 +42,6 @@ export default function QuestionsTab({ dark, modules, subjects, lessons }) {
   }, [qModuleId])
 
   async function fetchQuestions() {
-    // Note: `correct` and `explanation` are intentionally excluded — those
-    // two columns are blocked at the database level for everyone, including
-    // this admin panel's LIST view. Editing a specific question instead
-    // goes through admin_get_question / admin_update_question, which
-    // check the caller is actually an admin before revealing them.
     const { data } = await supabase
       .from('questions')
       .select('id, question, module_id, subject_id, lesson_id, exam_type, exam_stage, source, created_at')
@@ -73,8 +68,6 @@ export default function QuestionsTab({ dark, modules, subjects, lessons }) {
     setQSubjectId(''); setQLessonId(''); setQExamStage('')
   }
   async function saveQuestion() {
-    // Only the question text, its 4 options and the module are
-    // required — subject, lesson and exam stage are all optional.
     if (!qText || !qA || !qB || !qC || !qD || !qModuleId) return
     if (editingQuestionId) {
       const { error } = await supabase.rpc('admin_update_question', {
@@ -97,15 +90,6 @@ export default function QuestionsTab({ dark, modules, subjects, lessons }) {
     }
   }
 
-  // Parses a block of pasted text into multiple questions at once.
-  // Expected format per question, separated by a blank line:
-  //   Q: question text
-  //   A) option a
-  //   B) option b
-  //   C) option c
-  //   D) option d
-  //   Correct: B
-  //   Explanation: optional explanation
   function parseBulkQuestions(text) {
     const blocks = text.split(/\n\s*\n/).map(b => b.trim()).filter(Boolean)
     const questions = []
@@ -188,66 +172,73 @@ export default function QuestionsTab({ dark, modules, subjects, lessons }) {
   return (
     <div>
       <InlineMessage message={msg} />
-      <div style={{ background: c.card, padding: '20px', borderRadius: '16px', border: `1px solid ${c.border}` }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-          <h3 style={{ color: '#38bdf8' }}>
-            {editingQuestionId ? '✏️ Edit Question' : bulkMode ? '📋 Bulk Add Questions' : '➕ Add MCQ Question'}
-          </h3>
-          {!editingQuestionId && (
-            <button onClick={() => setBulkMode(!bulkMode)} style={{
-              background: 'transparent', border: `1px solid ${c.border}`,
-              borderRadius: 8, padding: '6px 12px', cursor: 'pointer',
-              color: c.sub, fontFamily: 'inherit', fontSize: 12, fontWeight: 700
-            }}>{bulkMode ? '✏️ Single Add' : '📋 Bulk Add'}</button>
+      <div style={{ marginBottom: 16 }}>
+        <LiquidGlassCard dark={dark} delay={0} style={{ padding: '20px 22px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 8 }}>
+            <h3 style={{ color: pt.cobalt, fontWeight: 800 }}>
+              {editingQuestionId ? '✏️ Edit Question' : bulkMode ? '📋 Bulk Add Questions' : '➕ Add MCQ Question'}
+            </h3>
+            {!editingQuestionId && (
+              <button onClick={() => setBulkMode(!bulkMode)} style={{
+                background: 'transparent', border: `1px solid ${pt.border}`,
+                borderRadius: 8, padding: '6px 12px', cursor: 'pointer',
+                color: pt.sub, fontFamily: 'inherit', fontSize: 12, fontWeight: 700
+              }}>{bulkMode ? '✏️ Single Add' : '📋 Bulk Add'}</button>
+            )}
+          </div>
+
+          <ModuleSelect modules={modules} value={qModuleId} onChange={e => { setQModuleId(e.target.value); setQSubjectId(''); setQLessonId('') }} inStyle={inStyle} />
+          <label style={{ color: pt.textMuted, fontSize: 12, display: 'block', marginBottom: 4 }}>Subject (optional)</label>
+          <select value={qSubjectId} onChange={e => { setQSubjectId(e.target.value); setQLessonId('') }} style={inStyle} disabled={!qModuleId}>
+            <option value="">All Subjects</option>
+            {filteredSubjects(qModuleId).map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+          </select>
+          {qSubjectId && filteredLessons(qSubjectId).length > 0 && (
+            <>
+              <label style={{ color: pt.textMuted, fontSize: 12, display: 'block', marginBottom: 4 }}>Lesson (optional)</label>
+              <select value={qLessonId} onChange={e => setQLessonId(e.target.value)} style={inStyle}>
+                <option value="">No specific lesson</option>
+                {filteredLessons(qSubjectId).map(l => <option key={l.id} value={l.id}>{l.title}</option>)}
+              </select>
+            </>
           )}
-        </div>
+          <div className="admin-form-row-2">
+            <div>
+              <label style={{ color: pt.textMuted, fontSize: 12, display: 'block', marginBottom: 4 }}>Use In</label>
+              <select value={qExamType} onChange={e => setQExamType(e.target.value)} style={inStyle}>
+                <option value="both">Practice + Mock Exam</option>
+                <option value="practice">Practice Only</option>
+                <option value="mock">Mock Exam Only</option>
+              </select>
+            </div>
+            <div>
+              <label style={{ color: pt.textMuted, fontSize: 12, display: 'block', marginBottom: 4 }}>Exam Stage (optional)</label>
+              <select value={qExamStage} onChange={e => setQExamStage(e.target.value)} style={inStyle}>
+                <option value="">No specific stage</option>
+                {qStageOptions.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+              </select>
+            </div>
+          </div>
+          <label style={{ color: pt.textMuted, fontSize: 12, display: 'block', marginBottom: 4 }}>Source (optional)</label>
+          <select value={qSource} onChange={e => setQSource(e.target.value)} style={inStyle}>
+            <option value="">No tag</option>
+            <option value="ai">🤖 AI</option>
+            <option value="courses">📚 Courses</option>
+            <option value="university">🎓 University Doctors</option>
+          </select>
 
-        <ModuleSelect modules={modules} value={qModuleId} onChange={e => { setQModuleId(e.target.value); setQSubjectId(''); setQLessonId('') }} inStyle={inStyle} />
-        <label style={{ color: c.sub, fontSize: 12, display: 'block', marginBottom: 4 }}>Subject (optional)</label>
-        <select value={qSubjectId} onChange={e => { setQSubjectId(e.target.value); setQLessonId('') }} style={inStyle} disabled={!qModuleId}>
-          <option value="">All Subjects</option>
-          {filteredSubjects(qModuleId).map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-        </select>
-        {qSubjectId && filteredLessons(qSubjectId).length > 0 && (
-          <>
-            <label style={{ color: c.sub, fontSize: 12, display: 'block', marginBottom: 4 }}>Lesson (optional)</label>
-            <select value={qLessonId} onChange={e => setQLessonId(e.target.value)} style={inStyle}>
-              <option value="">No specific lesson</option>
-              {filteredLessons(qSubjectId).map(l => <option key={l.id} value={l.id}>{l.title}</option>)}
-            </select>
-          </>
-        )}
-        <label style={{ color: c.sub, fontSize: 12, display: 'block', marginBottom: 4 }}>Use In</label>
-        <select value={qExamType} onChange={e => setQExamType(e.target.value)} style={inStyle}>
-          <option value="both">Practice + Mock Exam</option>
-          <option value="practice">Practice Only</option>
-          <option value="mock">Mock Exam Only</option>
-        </select>
-        <label style={{ color: c.sub, fontSize: 12, display: 'block', marginBottom: 4 }}>Exam Stage (optional)</label>
-        <select value={qExamStage} onChange={e => setQExamStage(e.target.value)} style={inStyle}>
-          <option value="">No specific stage</option>
-          {qStageOptions.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
-        </select>
-        <label style={{ color: c.sub, fontSize: 12, display: 'block', marginBottom: 4 }}>Source (optional)</label>
-        <select value={qSource} onChange={e => setQSource(e.target.value)} style={inStyle}>
-          <option value="">No tag</option>
-          <option value="ai">🤖 AI</option>
-          <option value="courses">📚 Courses</option>
-          <option value="university">🎓 University Doctors</option>
-        </select>
-
-        {bulkMode && !editingQuestionId ? (
-          <>
-            <p style={{ color: c.sub, fontSize: 12, marginBottom: 8, lineHeight: 1.6 }}>
-              Paste as many questions as you want below, one after another,
-              separated by an empty line. Every question in this box will
-              be added to the module/subject/type selected above. Format:
-            </p>
-            <pre style={{
-              background: c.input, border: `1px solid ${c.border}`, borderRadius: 10,
-              padding: 12, fontSize: 11, color: c.sub, marginBottom: 12,
-              whiteSpace: 'pre-wrap', lineHeight: 1.6
-            }}>{`Q: What is the powerhouse of the cell?
+          {bulkMode && !editingQuestionId ? (
+            <>
+              <p style={{ color: pt.textMuted, fontSize: 12, marginBottom: 8, lineHeight: 1.6 }}>
+                Paste as many questions as you want below, one after another,
+                separated by an empty line. Every question in this box will
+                be added to the module/subject/type selected above. Format:
+              </p>
+              <pre style={{
+                background: pt.surfaceFlat, border: `1px solid ${pt.border}`, borderRadius: 10,
+                padding: 12, fontSize: 11, color: pt.sub, marginBottom: 12,
+                whiteSpace: 'pre-wrap', lineHeight: 1.6, overflowX: 'auto'
+              }}>{`Q: What is the powerhouse of the cell?
 A) Nucleus
 B) Mitochondria
 C) Ribosome
@@ -261,38 +252,39 @@ B) ...
 C) ...
 D) ...
 Correct: A`}</pre>
-            <textarea
-              placeholder="Paste your questions here..."
-              value={bulkText}
-              onChange={e => setBulkText(e.target.value)}
-              style={{ ...inStyle, minHeight: 240, resize: 'vertical', fontFamily: 'monospace', fontSize: 12 }} />
-            <button onClick={bulkAddQuestions} disabled={bulkSaving} style={btnStyle}>
-              {bulkSaving ? 'Adding...' : 'Parse & Add All'}
-            </button>
-          </>
-        ) : (
-          <>
-            <textarea placeholder="Question" value={qText} onChange={e => setQText(e.target.value)} style={{ ...inStyle, minHeight: 80, resize: 'vertical' }} />
-            {['A', 'B', 'C', 'D'].map((opt, i) => (
-              <input key={opt} placeholder={`Option ${opt}`}
-                value={[qA, qB, qC, qD][i]}
-                onChange={e => [setQA, setQB, setQC, setQD][i](e.target.value)}
-                style={inStyle} />
-            ))}
-            <label style={{ color: c.sub, fontSize: 12, display: 'block', marginBottom: 4 }}>Correct Answer</label>
-            <select value={qCorrect} onChange={e => setQCorrect(e.target.value)} style={inStyle}>
-              <option value="a">A</option>
-              <option value="b">B</option>
-              <option value="c">C</option>
-              <option value="d">D</option>
-            </select>
-            <textarea placeholder="Explanation (optional)" value={qExplanation} onChange={e => setQExplanation(e.target.value)} style={{ ...inStyle, minHeight: 60, resize: 'vertical' }} />
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button onClick={saveQuestion} style={{ ...btnStyle, flex: 1 }}>{editingQuestionId ? 'Save Changes' : 'Add Question'}</button>
-              {editingQuestionId && <button onClick={resetQuestionForm} style={cancelBtnStyle(c)}>Cancel</button>}
-            </div>
-          </>
-        )}
+              <textarea
+                placeholder="Paste your questions here..."
+                value={bulkText}
+                onChange={e => setBulkText(e.target.value)}
+                style={{ ...inStyle, minHeight: 240, resize: 'vertical', fontFamily: 'monospace', fontSize: 12 }} />
+              <button onClick={bulkAddQuestions} disabled={bulkSaving} style={{ ...btnStyle(pt, dark), width: '100%' }}>
+                {bulkSaving ? 'Adding...' : 'Parse & Add All'}
+              </button>
+            </>
+          ) : (
+            <>
+              <textarea placeholder="Question" value={qText} onChange={e => setQText(e.target.value)} style={{ ...inStyle, minHeight: 80, resize: 'vertical' }} />
+              {['A', 'B', 'C', 'D'].map((opt, i) => (
+                <input key={opt} placeholder={`Option ${opt}`}
+                  value={[qA, qB, qC, qD][i]}
+                  onChange={e => [setQA, setQB, setQC, setQD][i](e.target.value)}
+                  style={inStyle} />
+              ))}
+              <label style={{ color: pt.textMuted, fontSize: 12, display: 'block', marginBottom: 4 }}>Correct Answer</label>
+              <select value={qCorrect} onChange={e => setQCorrect(e.target.value)} style={inStyle}>
+                <option value="a">A</option>
+                <option value="b">B</option>
+                <option value="c">C</option>
+                <option value="d">D</option>
+              </select>
+              <textarea placeholder="Explanation (optional)" value={qExplanation} onChange={e => setQExplanation(e.target.value)} style={{ ...inStyle, minHeight: 60, resize: 'vertical' }} />
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button onClick={saveQuestion} style={{ ...btnStyle(pt, dark), flex: 1 }}>{editingQuestionId ? 'Save Changes' : 'Add Question'}</button>
+                {editingQuestionId && <button onClick={resetQuestionForm} style={cancelBtnStyle(pt, dark)}>Cancel</button>}
+              </div>
+            </>
+          )}
+        </LiquidGlassCard>
       </div>
 
       {questions.length > 0 && (
@@ -302,16 +294,18 @@ Correct: A`}</pre>
             if (modQuestions.length === 0) return null
             return (
               <div key={mod.id} style={{ marginBottom: 16 }}>
-                <h4 style={{ color: mod.color, marginBottom: 8 }}>{mod.icon} {mod.name} <span style={{ color: c.sub, fontSize: 12, fontWeight: 400 }}>({modQuestions.length})</span></h4>
-                {modQuestions.map(q => (
-                  <div key={q.id} style={{ background: c.card, padding: '12px 16px', borderRadius: 12, border: `1px solid ${c.border}`, marginBottom: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10 }}>
-                    <span style={{ color: c.text, fontWeight: 600, fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{q.question}</span>
-                    <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
-                      <button onClick={() => editQuestion(q)} aria-label="Edit question" style={{ ...miniBtn, borderColor: '#38bdf8', color: '#38bdf8' }}>✏️</button>
-                      <button onClick={() => deleteQuestion(q.id)} aria-label="Delete question" style={{ ...miniBtn, borderColor: '#ef4444', color: '#ef4444' }}>🗑</button>
-                    </div>
-                  </div>
-                ))}
+                <h4 style={{ color: mod.color, marginBottom: 8 }}>{mod.icon} {mod.name} <span style={{ color: pt.textMuted, fontSize: 12, fontWeight: 400 }}>({modQuestions.length})</span></h4>
+                <div style={{ display: 'grid', gap: 10 }}>
+                  {modQuestions.map(q => (
+                    <LiquidGlassCard key={q.id} dark={dark} delay={0} style={{ padding: '12px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                      <span style={{ color: pt.text, fontWeight: 600, fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 100 }}>{q.question}</span>
+                      <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+                        <button onClick={() => editQuestion(q)} aria-label="Edit question" style={miniBtn(pt, pt.cobalt)}>✏️</button>
+                        <button onClick={() => deleteQuestion(q.id)} aria-label="Delete question" style={miniBtn(pt, pt.danger)}>🗑</button>
+                      </div>
+                    </LiquidGlassCard>
+                  ))}
+                </div>
               </div>
             )
           })}

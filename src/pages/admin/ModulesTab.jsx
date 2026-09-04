@@ -1,14 +1,15 @@
 import { useState } from 'react'
 import { supabase } from '../../supabase'
-import { getTheme, inputStyle } from '../../theme'
+import { getPulseTheme } from '../../premiumTheme'
 import InlineMessage from '../../components/InlineMessage'
 import IconPicker from '../../components/admin/IconPicker'
+import LiquidGlassCard from '@/components/ui/liquid-glass-card'
 import { ModuleIcon } from '../../lib/medicalIcons'
-import { btnStyle, miniBtn, cancelBtnStyle } from './adminStyles'
+import { btnStyle, miniBtn, cancelBtnStyle, inStyle as adminInStyle } from './adminStyles'
 
 export default function ModulesTab({ dark, modules, fetchModules }) {
-  const c = getTheme(dark)
-  const inStyle = inputStyle(c)
+  const pt = getPulseTheme(dark)
+  const inStyle = adminInStyle(pt, dark)
   const [msg, setMsg] = useState('')
   function showMsg(m) { setMsg(m); setTimeout(() => setMsg(''), 3000) }
 
@@ -61,70 +62,76 @@ export default function ModulesTab({ dark, modules, fetchModules }) {
   return (
     <div>
       <InlineMessage message={msg} />
-      <div style={{ background: c.card, padding: '20px', borderRadius: '16px', border: `1px solid ${c.border}`, marginBottom: 16 }}>
-        <h3 style={{ color: '#38bdf8', marginBottom: 16 }}>{editingModuleId ? '✏️ Edit Module' : '➕ Add Module'}</h3>
-        <input placeholder="Module name" value={modName} onChange={e => setModName(e.target.value)} style={inStyle} />
+      <div style={{ marginBottom: 16 }}>
+        <LiquidGlassCard dark={dark} delay={0} style={{ padding: '20px 22px' }}>
+          <h3 style={{ color: pt.cobalt, marginBottom: 16, fontWeight: 800 }}>{editingModuleId ? '✏️ Edit Module' : '➕ Add Module'}</h3>
+          <input placeholder="Module name" value={modName} onChange={e => setModName(e.target.value)} style={inStyle} />
 
-        <IconPicker value={modIcon} onChange={setModIcon} inStyle={inStyle} c={c} />
+          <IconPicker value={modIcon} onChange={setModIcon} inStyle={inStyle} pt={pt} />
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-          <div>
-            <label style={{ color: c.sub, fontSize: 12, display: 'block', marginBottom: 4 }}>Color</label>
-            <input type="color" value={modColor} onChange={e => setModColor(e.target.value)} style={{ ...inStyle, padding: 4, height: 42 }} />
+          <div className="admin-form-row-2">
+            <div>
+              <label style={{ color: pt.textMuted, fontSize: 12, display: 'block', marginBottom: 4 }}>Color</label>
+              <input type="color" value={modColor} onChange={e => setModColor(e.target.value)} style={{ ...inStyle, padding: 4, height: 48, marginBottom: 0 }} />
+            </div>
+            <div>
+              <label style={{ color: pt.textMuted, fontSize: 12, display: 'block', marginBottom: 4 }}>Status</label>
+              <select value={modStatus} onChange={e => setModStatus(e.target.value)} style={{ ...inStyle, marginBottom: 0 }}>
+                <option value="active">Active</option>
+                <option value="completed">Completed</option>
+              </select>
+            </div>
           </div>
-          <div>
-            <label style={{ color: c.sub, fontSize: 12, display: 'block', marginBottom: 4 }}>Status</label>
-            <select value={modStatus} onChange={e => setModStatus(e.target.value)} style={inStyle}>
-              <option value="active">Active</option>
-              <option value="completed">Completed</option>
-            </select>
+          <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+            <button onClick={saveModule} style={{ ...btnStyle(pt, dark), flex: 1 }}>{editingModuleId ? 'Save Changes' : 'Add Module'}</button>
+            {editingModuleId && <button onClick={resetModuleForm} style={cancelBtnStyle(pt, dark)}>Cancel</button>}
           </div>
-        </div>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <button onClick={saveModule} style={{ ...btnStyle, flex: 1 }}>{editingModuleId ? 'Save Changes' : 'Add Module'}</button>
-          {editingModuleId && <button onClick={resetModuleForm} style={cancelBtnStyle(c)}>Cancel</button>}
-        </div>
+        </LiquidGlassCard>
       </div>
 
       {activeModules.length > 0 && (
         <div style={{ marginBottom: 16 }}>
           <h4 style={{ color: '#22c55e', marginBottom: 8 }}>🟢 Active</h4>
-          {activeModules.map(mod => (
-            <div key={mod.id} style={{ background: c.card, padding: '12px 16px', borderRadius: 12, border: `1px solid ${c.border}`, marginBottom: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <span style={{ display: 'inline-flex' }}>
-                  <ModuleIcon value={mod.icon} size={24} color={mod.color} />
-                </span>
-                <div style={{ color: mod.color, fontWeight: 700 }}>{mod.name}</div>
-              </div>
-              <div style={{ display: 'flex', gap: 8 }}>
-                <button onClick={() => editModule(mod)} aria-label={`Edit module: ${mod.name}`} style={{ ...miniBtn, borderColor: '#38bdf8', color: '#38bdf8' }}>✏️</button>
-                <button onClick={() => toggleModuleStatus(mod)} style={{ ...miniBtn, borderColor: '#f59e0b', color: '#f59e0b' }}>⏸ Done</button>
-                <button onClick={() => deleteModule(mod.id)} aria-label={`Delete module: ${mod.name}`} style={{ ...miniBtn, borderColor: '#ef4444', color: '#ef4444' }}>🗑</button>
-              </div>
-            </div>
-          ))}
+          <div style={{ display: 'grid', gap: 10 }}>
+            {activeModules.map(mod => (
+              <LiquidGlassCard key={mod.id} dark={dark} delay={0} style={{ padding: '14px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <span style={{ display: 'inline-flex' }}>
+                    <ModuleIcon value={mod.icon} size={24} color={mod.color} />
+                  </span>
+                  <div style={{ color: mod.color, fontWeight: 700 }}>{mod.name}</div>
+                </div>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button onClick={() => editModule(mod)} aria-label={`Edit module: ${mod.name}`} style={miniBtn(pt, pt.cobalt)}>✏️</button>
+                  <button onClick={() => toggleModuleStatus(mod)} style={miniBtn(pt, pt.amber)}>⏸ Done</button>
+                  <button onClick={() => deleteModule(mod.id)} aria-label={`Delete module: ${mod.name}`} style={miniBtn(pt, pt.danger)}>🗑</button>
+                </div>
+              </LiquidGlassCard>
+            ))}
+          </div>
         </div>
       )}
 
       {completedModules.length > 0 && (
         <div>
-          <h4 style={{ color: '#64748b', marginBottom: 8 }}>✅ Completed</h4>
-          {completedModules.map(mod => (
-            <div key={mod.id} style={{ background: c.card, padding: '12px 16px', borderRadius: 12, border: `1px solid ${c.border}`, marginBottom: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <span style={{ display: 'inline-flex' }}>
-                  <ModuleIcon value={mod.icon} size={24} color={mod.color} />
-                </span>
-                <div style={{ color: mod.color, fontWeight: 700 }}>{mod.name}</div>
-              </div>
-              <div style={{ display: 'flex', gap: 8 }}>
-                <button onClick={() => editModule(mod)} aria-label={`Edit module: ${mod.name}`} style={{ ...miniBtn, borderColor: '#38bdf8', color: '#38bdf8' }}>✏️</button>
-                <button onClick={() => toggleModuleStatus(mod)} style={{ ...miniBtn, borderColor: '#22c55e', color: '#22c55e' }}>▶ Active</button>
-                <button onClick={() => deleteModule(mod.id)} aria-label={`Delete module: ${mod.name}`} style={{ ...miniBtn, borderColor: '#ef4444', color: '#ef4444' }}>🗑</button>
-              </div>
-            </div>
-          ))}
+          <h4 style={{ color: pt.textMuted, marginBottom: 8 }}>✅ Completed</h4>
+          <div style={{ display: 'grid', gap: 10 }}>
+            {completedModules.map(mod => (
+              <LiquidGlassCard key={mod.id} dark={dark} delay={0} style={{ padding: '14px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <span style={{ display: 'inline-flex' }}>
+                    <ModuleIcon value={mod.icon} size={24} color={mod.color} />
+                  </span>
+                  <div style={{ color: mod.color, fontWeight: 700 }}>{mod.name}</div>
+                </div>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button onClick={() => editModule(mod)} aria-label={`Edit module: ${mod.name}`} style={miniBtn(pt, pt.cobalt)}>✏️</button>
+                  <button onClick={() => toggleModuleStatus(mod)} style={miniBtn(pt, '#22c55e')}>▶ Active</button>
+                  <button onClick={() => deleteModule(mod.id)} aria-label={`Delete module: ${mod.name}`} style={miniBtn(pt, pt.danger)}>🗑</button>
+                </div>
+              </LiquidGlassCard>
+            ))}
+          </div>
         </div>
       )}
     </div>

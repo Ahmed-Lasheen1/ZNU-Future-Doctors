@@ -1,17 +1,18 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../supabase'
-import { getTheme, inputStyle } from '../../theme'
+import { getPulseTheme } from '../../premiumTheme'
 import InlineMessage from '../../components/InlineMessage'
 import ModuleSelect from './ModuleSelect'
-import { btnStyle, miniBtn, cancelBtnStyle, LIST_LIMIT } from './adminStyles'
+import LiquidGlassCard from '@/components/ui/liquid-glass-card'
+import { btnStyle, miniBtn, cancelBtnStyle, inStyle as adminInStyle, LIST_LIMIT } from './adminStyles'
 import { EXAM_STAGES as STAGE_META } from '../../lib/examStages'
 import { fetchModuleStages } from '../../lib/moduleStages'
 
 const EXAM_STAGES = STAGE_META.map(s => ({ value: s.value, label: `${s.emoji} ${s.title}` }))
 
 export default function FilesTab({ dark, modules, subjects, lessons }) {
-  const c = getTheme(dark)
-  const inStyle = inputStyle(c)
+  const pt = getPulseTheme(dark)
+  const inStyle = adminInStyle(pt, dark)
   const [msg, setMsg] = useState('')
   function showMsg(m) { setMsg(m); setTimeout(() => setMsg(''), 3000) }
 
@@ -24,16 +25,11 @@ export default function FilesTab({ dark, modules, subjects, lessons }) {
   const [fileModuleId, setFileModuleId] = useState('')
   const [fileSubjectId, setFileSubjectId] = useState('')
   const [fileLessonId, setFileLessonId] = useState('')
-  // Empty string = "no specific stage" — exam stage is entirely
-  // optional now, so a file can be added with just a module.
   const [fileExamStage, setFileExamStage] = useState('')
   const [fileStageOptions, setFileStageOptions] = useState(EXAM_STAGES)
 
   useEffect(() => { fetchFiles() }, [])
 
-  // Every place that lets an admin pick an exam stage for a piece of
-  // content should offer THAT module's actual stage set, not just the
-  // 4 global defaults.
   useEffect(() => {
     fetchModuleStages(fileModuleId).then(list => setFileStageOptions(list.map(s => ({ value: s.value, label: `${s.emoji} ${s.title}` }))))
   }, [fileModuleId])
@@ -54,9 +50,6 @@ export default function FilesTab({ dark, modules, subjects, lessons }) {
     setFileSubjectId(''); setFileLessonId(''); setFileExamStage('')
   }
   async function saveFile() {
-    // Only name, URL and module are required — subject, lesson and
-    // exam stage are all optional, so a file can be scoped to just a
-    // module and nothing more.
     if (!fileName || !fileUrl || !fileModuleId) return
     const payload = {
       name: fileName, url: fileUrl, type: fileType,
@@ -89,52 +82,62 @@ export default function FilesTab({ dark, modules, subjects, lessons }) {
   return (
     <div>
       <InlineMessage message={msg} />
-      <div style={{ background: c.card, padding: '20px', borderRadius: '16px', border: `1px solid ${c.border}` }}>
-        <h3 style={{ color: '#38bdf8', marginBottom: 16 }}>{editingFileId ? '✏️ Edit File / Recording' : '➕ Add File / Recording'}</h3>
-        <input placeholder="File name" value={fileName} onChange={e => setFileName(e.target.value)} style={inStyle} />
-        <input placeholder="URL (Drive / YouTube / SoundCloud)" value={fileUrl} onChange={e => setFileUrl(e.target.value)} style={inStyle} />
-        <label style={{ color: c.sub, fontSize: 12, display: 'block', marginBottom: 4 }}>Content Type</label>
-        <select value={fileType} onChange={e => setFileType(e.target.value)} style={inStyle}>
-          <option value="sharah">📖 Explanation Files</option>
-          <option value="questions">❓ Question Files</option>
-          <option value="lectures">🎥 Lecture Recordings</option>
-          <option value="courses">🎓 Course Recordings</option>
-        </select>
-        <label style={{ color: c.sub, fontSize: 12, display: 'block', marginBottom: 4 }}>File Type</label>
-        <select value={fileFileType} onChange={e => setFileFileType(e.target.value)} style={inStyle}>
-          <option value="pdf">📄 PDF</option>
-          <option value="video">🎥 Video</option>
-          <option value="audio">🎵 Audio</option>
-        </select>
-        <label style={{ color: c.sub, fontSize: 12, display: 'block', marginBottom: 4 }}>Module</label>
-        <ModuleSelect modules={modules} value={fileModuleId} onChange={e => { setFileModuleId(e.target.value); setFileSubjectId(''); setFileLessonId('') }} inStyle={inStyle} />
+      <div style={{ marginBottom: 16 }}>
+        <LiquidGlassCard dark={dark} delay={0} style={{ padding: '20px 22px' }}>
+          <h3 style={{ color: pt.cobalt, marginBottom: 16, fontWeight: 800 }}>{editingFileId ? '✏️ Edit File / Recording' : '➕ Add File / Recording'}</h3>
+          <input placeholder="File name" value={fileName} onChange={e => setFileName(e.target.value)} style={inStyle} />
+          <input placeholder="URL (Drive / YouTube / SoundCloud)" value={fileUrl} onChange={e => setFileUrl(e.target.value)} style={inStyle} />
 
-        <label style={{ color: c.sub, fontSize: 12, display: 'block', marginBottom: 4 }}>Subject (optional)</label>
-        <select value={fileSubjectId} onChange={e => { setFileSubjectId(e.target.value); setFileLessonId('') }} style={inStyle} disabled={!fileModuleId}>
-          <option value="">All Subjects</option>
-          {filteredSubjects(fileModuleId).map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-        </select>
+          <div className="admin-form-row-2">
+            <div>
+              <label style={{ color: pt.textMuted, fontSize: 12, display: 'block', marginBottom: 4 }}>Content Type</label>
+              <select value={fileType} onChange={e => setFileType(e.target.value)} style={inStyle}>
+                <option value="sharah">📖 Explanation Files</option>
+                <option value="questions">❓ Question Files</option>
+                <option value="lectures">🎥 Lecture Recordings</option>
+                <option value="courses">🎓 Course Recordings</option>
+              </select>
+            </div>
+            <div>
+              <label style={{ color: pt.textMuted, fontSize: 12, display: 'block', marginBottom: 4 }}>File Type</label>
+              <select value={fileFileType} onChange={e => setFileFileType(e.target.value)} style={inStyle}>
+                <option value="pdf">📄 PDF</option>
+                <option value="video">🎥 Video</option>
+                <option value="audio">🎵 Audio</option>
+              </select>
+            </div>
+          </div>
 
-        {fileSubjectId && filteredLessons(fileSubjectId).length > 0 && (
-          <>
-            <label style={{ color: c.sub, fontSize: 12, display: 'block', marginBottom: 4 }}>Lesson (optional)</label>
-            <select value={fileLessonId} onChange={e => setFileLessonId(e.target.value)} style={inStyle}>
-              <option value="">No specific lesson</option>
-              {filteredLessons(fileSubjectId).map(l => <option key={l.id} value={l.id}>{l.title}</option>)}
-            </select>
-          </>
-        )}
+          <label style={{ color: pt.textMuted, fontSize: 12, display: 'block', marginBottom: 4 }}>Module</label>
+          <ModuleSelect modules={modules} value={fileModuleId} onChange={e => { setFileModuleId(e.target.value); setFileSubjectId(''); setFileLessonId('') }} inStyle={inStyle} />
 
-        <label style={{ color: c.sub, fontSize: 12, display: 'block', marginBottom: 4 }}>Exam Stage (optional)</label>
-        <select value={fileExamStage} onChange={e => setFileExamStage(e.target.value)} style={inStyle}>
-          <option value="">No specific stage</option>
-          {fileStageOptions.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
-        </select>
+          <label style={{ color: pt.textMuted, fontSize: 12, display: 'block', marginBottom: 4 }}>Subject (optional)</label>
+          <select value={fileSubjectId} onChange={e => { setFileSubjectId(e.target.value); setFileLessonId('') }} style={inStyle} disabled={!fileModuleId}>
+            <option value="">All Subjects</option>
+            {filteredSubjects(fileModuleId).map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+          </select>
 
-        <div style={{ display: 'flex', gap: 8 }}>
-          <button onClick={saveFile} style={{ ...btnStyle, flex: 1 }}>{editingFileId ? 'Save Changes' : 'Add File'}</button>
-          {editingFileId && <button onClick={resetFileForm} style={cancelBtnStyle(c)}>Cancel</button>}
-        </div>
+          {fileSubjectId && filteredLessons(fileSubjectId).length > 0 && (
+            <>
+              <label style={{ color: pt.textMuted, fontSize: 12, display: 'block', marginBottom: 4 }}>Lesson (optional)</label>
+              <select value={fileLessonId} onChange={e => setFileLessonId(e.target.value)} style={inStyle}>
+                <option value="">No specific lesson</option>
+                {filteredLessons(fileSubjectId).map(l => <option key={l.id} value={l.id}>{l.title}</option>)}
+              </select>
+            </>
+          )}
+
+          <label style={{ color: pt.textMuted, fontSize: 12, display: 'block', marginBottom: 4 }}>Exam Stage (optional)</label>
+          <select value={fileExamStage} onChange={e => setFileExamStage(e.target.value)} style={inStyle}>
+            <option value="">No specific stage</option>
+            {fileStageOptions.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+          </select>
+
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button onClick={saveFile} style={{ ...btnStyle(pt, dark), flex: 1 }}>{editingFileId ? 'Save Changes' : 'Add File'}</button>
+            {editingFileId && <button onClick={resetFileForm} style={cancelBtnStyle(pt, dark)}>Cancel</button>}
+          </div>
+        </LiquidGlassCard>
       </div>
 
       {files.length > 0 && (
@@ -145,18 +148,20 @@ export default function FilesTab({ dark, modules, subjects, lessons }) {
             return (
               <div key={mod.id} style={{ marginBottom: 16 }}>
                 <h4 style={{ color: mod.color, marginBottom: 8 }}>{mod.icon} {mod.name}</h4>
-                {modFiles.map(f => (
-                  <div key={f.id} style={{ background: c.card, padding: '12px 16px', borderRadius: 12, border: `1px solid ${c.border}`, marginBottom: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div>
-                      <span style={{ color: c.text, fontWeight: 600 }}>{f.name}</span>
-                      <span style={{ color: c.sub, fontSize: 12, marginLeft: 8 }}>· {f.type} · {f.file_type}</span>
-                    </div>
-                    <div style={{ display: 'flex', gap: 8 }}>
-                      <button onClick={() => editFile(f)} aria-label={`Edit file: ${f.name}`} style={{ ...miniBtn, borderColor: '#38bdf8', color: '#38bdf8' }}>✏️</button>
-                      <button onClick={() => deleteFile(f.id)} aria-label={`Delete file: ${f.name}`} style={{ ...miniBtn, borderColor: '#ef4444', color: '#ef4444' }}>🗑</button>
-                    </div>
-                  </div>
-                ))}
+                <div style={{ display: 'grid', gap: 10 }}>
+                  {modFiles.map(f => (
+                    <LiquidGlassCard key={f.id} dark={dark} delay={0} style={{ padding: '12px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
+                      <div>
+                        <span style={{ color: pt.text, fontWeight: 600 }}>{f.name}</span>
+                        <span style={{ color: pt.textMuted, fontSize: 12, marginLeft: 8 }}>· {f.type} · {f.file_type}</span>
+                      </div>
+                      <div style={{ display: 'flex', gap: 8 }}>
+                        <button onClick={() => editFile(f)} aria-label={`Edit file: ${f.name}`} style={miniBtn(pt, pt.cobalt)}>✏️</button>
+                        <button onClick={() => deleteFile(f.id)} aria-label={`Delete file: ${f.name}`} style={miniBtn(pt, pt.danger)}>🗑</button>
+                      </div>
+                    </LiquidGlassCard>
+                  ))}
+                </div>
               </div>
             )
           })}

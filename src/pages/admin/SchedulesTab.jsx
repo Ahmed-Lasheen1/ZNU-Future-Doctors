@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../supabase'
-import { getTheme, inputStyle } from '../../theme'
+import { getPulseTheme } from '../../premiumTheme'
 import InlineMessage from '../../components/InlineMessage'
 import ModuleSelect from './ModuleSelect'
-import { btnStyle, miniBtn, cancelBtnStyle, LIST_LIMIT } from './adminStyles'
+import LiquidGlassCard from '@/components/ui/liquid-glass-card'
+import { btnStyle, miniBtn, cancelBtnStyle, inStyle as adminInStyle, LIST_LIMIT } from './adminStyles'
 
 export default function SchedulesTab({ dark, modules }) {
-  const c = getTheme(dark)
-  const inStyle = inputStyle(c)
+  const pt = getPulseTheme(dark)
+  const inStyle = adminInStyle(pt, dark)
   const [msg, setMsg] = useState('')
   function showMsg(m) { setMsg(m); setTimeout(() => setMsg(''), 3000) }
 
@@ -60,27 +61,29 @@ export default function SchedulesTab({ dark, modules }) {
   return (
     <div>
       <InlineMessage message={msg} />
-      <div style={{ background: c.card, padding: '20px', borderRadius: '16px', border: `1px solid ${c.border}` }}>
-        <h3 style={{ color: '#38bdf8', marginBottom: 16 }}>{editingScheduleId ? '✏️ Edit Schedule' : '➕ Add Schedule'}</h3>
-        <input placeholder="Title (e.g. Week 1)" value={schTitle} onChange={e => setSchTitle(e.target.value)} style={inStyle} />
-        <input placeholder="Image URL (Google Drive)" value={schUrl} onChange={e => setSchUrl(e.target.value)} style={inStyle} />
-        <label style={{ color: c.sub, fontSize: 12, display: 'block', marginBottom: 4 }}>Type</label>
-        <select value={schType} onChange={e => setSchType(e.target.value)} style={inStyle}>
-          <option value="study">📅 Study Schedule</option>
-          <option value="exam">📝 Exam Schedule</option>
-        </select>
-        {schType === 'exam' && (
-          <>
-            <label style={{ color: c.sub, fontSize: 12, display: 'block', marginBottom: 4 }}>Exam Date (for reminder notifications)</label>
-            <input type="date" value={schDate} onChange={e => setSchDate(e.target.value)} style={inStyle} />
-          </>
-        )}
-        <label style={{ color: c.sub, fontSize: 12, display: 'block', marginBottom: 4 }}>Module</label>
-        <ModuleSelect modules={modules} value={schModuleId} onChange={e => setSchModuleId(e.target.value)} inStyle={inStyle} />
-        <div style={{ display: 'flex', gap: 8 }}>
-          <button onClick={saveSchedule} style={{ ...btnStyle, flex: 1 }}>{editingScheduleId ? 'Save Changes' : 'Add Schedule'}</button>
-          {editingScheduleId && <button onClick={resetScheduleForm} style={cancelBtnStyle(c)}>Cancel</button>}
-        </div>
+      <div style={{ marginBottom: 16 }}>
+        <LiquidGlassCard dark={dark} delay={0} style={{ padding: '20px 22px' }}>
+          <h3 style={{ color: pt.cobalt, marginBottom: 16, fontWeight: 800 }}>{editingScheduleId ? '✏️ Edit Schedule' : '➕ Add Schedule'}</h3>
+          <input placeholder="Title (e.g. Week 1)" value={schTitle} onChange={e => setSchTitle(e.target.value)} style={inStyle} />
+          <input placeholder="Image URL (Google Drive)" value={schUrl} onChange={e => setSchUrl(e.target.value)} style={inStyle} />
+          <label style={{ color: pt.textMuted, fontSize: 12, display: 'block', marginBottom: 4 }}>Type</label>
+          <select value={schType} onChange={e => setSchType(e.target.value)} style={inStyle}>
+            <option value="study">📅 Study Schedule</option>
+            <option value="exam">📝 Exam Schedule</option>
+          </select>
+          {schType === 'exam' && (
+            <>
+              <label style={{ color: pt.textMuted, fontSize: 12, display: 'block', marginBottom: 4 }}>Exam Date (for reminder notifications)</label>
+              <input type="date" value={schDate} onChange={e => setSchDate(e.target.value)} style={inStyle} />
+            </>
+          )}
+          <label style={{ color: pt.textMuted, fontSize: 12, display: 'block', marginBottom: 4 }}>Module</label>
+          <ModuleSelect modules={modules} value={schModuleId} onChange={e => setSchModuleId(e.target.value)} inStyle={inStyle} />
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button onClick={saveSchedule} style={{ ...btnStyle(pt, dark), flex: 1 }}>{editingScheduleId ? 'Save Changes' : 'Add Schedule'}</button>
+            {editingScheduleId && <button onClick={resetScheduleForm} style={cancelBtnStyle(pt, dark)}>Cancel</button>}
+          </div>
+        </LiquidGlassCard>
       </div>
 
       {schedules.length > 0 && (
@@ -91,18 +94,20 @@ export default function SchedulesTab({ dark, modules }) {
             return (
               <div key={mod.id} style={{ marginBottom: 16 }}>
                 <h4 style={{ color: mod.color, marginBottom: 8 }}>{mod.icon} {mod.name}</h4>
-                {modSchedules.map(s => (
-                  <div key={s.id} style={{ background: c.card, padding: '12px 16px', borderRadius: 12, border: `1px solid ${c.border}`, marginBottom: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div>
-                      <span style={{ color: c.text, fontWeight: 600 }}>{s.title}</span>
-                      <span style={{ color: c.sub, fontSize: 12, marginLeft: 8 }}>· {s.type}{s.date ? ` · 📅 ${s.date}` : ''}</span>
-                    </div>
-                    <div style={{ display: 'flex', gap: 8 }}>
-                      <button onClick={() => editSchedule(s)} aria-label={`Edit schedule: ${s.title}`} style={{ ...miniBtn, borderColor: '#38bdf8', color: '#38bdf8' }}>✏️</button>
-                      <button onClick={() => deleteSchedule(s.id)} aria-label={`Delete schedule: ${s.title}`} style={{ ...miniBtn, borderColor: '#ef4444', color: '#ef4444' }}>🗑</button>
-                    </div>
-                  </div>
-                ))}
+                <div style={{ display: 'grid', gap: 10 }}>
+                  {modSchedules.map(s => (
+                    <LiquidGlassCard key={s.id} dark={dark} delay={0} style={{ padding: '12px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
+                      <div>
+                        <span style={{ color: pt.text, fontWeight: 600 }}>{s.title}</span>
+                        <span style={{ color: pt.textMuted, fontSize: 12, marginLeft: 8 }}>· {s.type}{s.date ? ` · 📅 ${s.date}` : ''}</span>
+                      </div>
+                      <div style={{ display: 'flex', gap: 8 }}>
+                        <button onClick={() => editSchedule(s)} aria-label={`Edit schedule: ${s.title}`} style={miniBtn(pt, pt.cobalt)}>✏️</button>
+                        <button onClick={() => deleteSchedule(s.id)} aria-label={`Delete schedule: ${s.title}`} style={miniBtn(pt, pt.danger)}>🗑</button>
+                      </div>
+                    </LiquidGlassCard>
+                  ))}
+                </div>
               </div>
             )
           })}

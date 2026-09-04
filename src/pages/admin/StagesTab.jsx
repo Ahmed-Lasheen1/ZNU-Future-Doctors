@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../supabase'
-import { getTheme, inputStyle } from '../../theme'
+import { getPulseTheme } from '../../premiumTheme'
 import InlineMessage from '../../components/InlineMessage'
 import ModuleSelect from './ModuleSelect'
-import { btnStyle, miniBtn, cancelBtnStyle } from './adminStyles'
+import LiquidGlassCard from '@/components/ui/liquid-glass-card'
+import { btnStyle, miniBtn, cancelBtnStyle, inStyle as adminInStyle } from './adminStyles'
 import { EXAM_STAGES as STAGE_META } from '../../lib/examStages'
 import { invalidateModuleStagesCache } from '../../lib/moduleStages'
 
@@ -12,8 +13,8 @@ function slugify(text) {
 }
 
 export default function StagesTab({ dark, modules }) {
-  const c = getTheme(dark)
-  const inStyle = inputStyle(c)
+  const pt = getPulseTheme(dark)
+  const inStyle = adminInStyle(pt, dark)
   const [msg, setMsg] = useState('')
   function showMsg(m) { setMsg(m); setTimeout(() => setMsg(''), 3000) }
 
@@ -58,8 +59,6 @@ export default function StagesTab({ dark, modules }) {
     if (!stageModuleId) return
     if (moduleStagesList.length === 0) return showMsg('❌ A module needs at least one exam stage')
     setStagesSaving(true)
-    // Simplest correct approach: replace the whole set atomically rather
-    // than diffing row-by-row (a module only has a handful of stages).
     await supabase.from('module_exam_stages').delete().eq('module_id', stageModuleId)
     const rows = moduleStagesList.map((s, i) => ({
       module_id: stageModuleId,
@@ -72,14 +71,6 @@ export default function StagesTab({ dark, modules }) {
     const { error } = await supabase.from('module_exam_stages').insert(rows)
     setStagesSaving(false)
     if (error) return showMsg('❌ ' + error.message)
-    // AUDIT FIX: fetchModuleStages() (used by MCQ, StagePage, Summaries,
-    // and this same admin's Questions/Files/Summaries tabs) now caches
-    // the whole module_exam_stages table in memory instead of
-    // re-querying it on every mount — see src/lib/moduleStages.js. That
-    // makes this invalidation call necessary: without it, everyone —
-    // including this same admin, in this same session — would keep
-    // seeing the pre-edit stage set until a full page reload, since
-    // nothing else would ever know the cache had gone stale.
     invalidateModuleStagesCache()
     showMsg('✅ Stages saved for this module!')
     setStagesIsCustom(true)
@@ -100,67 +91,69 @@ export default function StagesTab({ dark, modules }) {
   return (
     <div>
       <InlineMessage message={msg} />
-      <div style={{ background: c.card, padding: '20px', borderRadius: '16px', border: `1px solid ${c.border}`, marginBottom: 16 }}>
-        <h3 style={{ color: '#38bdf8', marginBottom: 8 }}>🎯 Exam Stages per Module</h3>
-        <p style={{ color: c.sub, fontSize: 13, marginBottom: 16 }}>
-          Every module starts with the same 4 default stages (TBL, End Module, Practical, Final). Pick a module
-          below to rename, add, or remove stages just for that module — everywhere else keeps the defaults
-          until you save changes here.
-        </p>
-        <ModuleSelect modules={modules} value={stageModuleId} onChange={e => setStageModuleId(e.target.value)} inStyle={inStyle} />
+      <div style={{ marginBottom: 16 }}>
+        <LiquidGlassCard dark={dark} delay={0} style={{ padding: '20px 22px' }}>
+          <h3 style={{ color: pt.cobalt, marginBottom: 8, fontWeight: 800 }}>🎯 Exam Stages per Module</h3>
+          <p style={{ color: pt.textMuted, fontSize: 13, marginBottom: 16 }}>
+            Every module starts with the same 4 default stages (TBL, End Module, Practical, Final). Pick a module
+            below to rename, add, or remove stages just for that module — everywhere else keeps the defaults
+            until you save changes here.
+          </p>
+          <ModuleSelect modules={modules} value={stageModuleId} onChange={e => setStageModuleId(e.target.value)} inStyle={inStyle} />
+        </LiquidGlassCard>
       </div>
 
       {stageModuleId && (
-        <div style={{ background: c.card, padding: '20px', borderRadius: '16px', border: `1px solid ${c.border}` }}>
-          {stagesLoading && <p style={{ color: c.sub, textAlign: 'center' }}>Loading...</p>}
+        <LiquidGlassCard dark={dark} delay={0} style={{ padding: '20px 22px' }}>
+          {stagesLoading && <p style={{ color: pt.sub, textAlign: 'center' }}>Loading...</p>}
 
           {!stagesLoading && (
             <>
               <div style={{
                 fontSize: 12, fontWeight: 700, marginBottom: 16,
-                color: stagesIsCustom ? '#f59e0b' : c.sub
+                color: stagesIsCustom ? pt.amber : pt.sub
               }}>
                 {stagesIsCustom ? '⚙️ Custom stages for this module' : '📌 Showing global defaults (not yet customized)'}
               </div>
 
               {moduleStagesList.map((stage, i) => (
-                <div key={i} style={{
-                  display: 'grid', gridTemplateColumns: '50px 1fr 70px 1fr auto', gap: 8,
-                  alignItems: 'center', marginBottom: 10
-                }}>
-                  <input value={stage.emoji} onChange={e => updateStageField(i, 'emoji', e.target.value)}
-                    style={{ ...inStyle, marginTop: 0, textAlign: 'center', padding: '8px 4px' }} />
-                  <input value={stage.title} onChange={e => updateStageField(i, 'title', e.target.value)}
-                    style={{ ...inStyle, marginTop: 0 }} />
-                  <input type="color" value={stage.color} onChange={e => updateStageField(i, 'color', e.target.value)}
-                    style={{ ...inStyle, marginTop: 0, padding: 4, height: 42 }} />
-                  <div style={{ color: c.sub, fontSize: 11, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {stage.value}
+                <div key={i} style={{ marginBottom: 14 }}>
+                  <div style={{
+                    display: 'grid', gridTemplateColumns: '50px 1fr 70px auto', gap: 8,
+                    alignItems: 'center'
+                  }}>
+                    <input value={stage.emoji} onChange={e => updateStageField(i, 'emoji', e.target.value)}
+                      style={{ ...inStyle, marginBottom: 0, textAlign: 'center', padding: '8px 4px' }} />
+                    <input value={stage.title} onChange={e => updateStageField(i, 'title', e.target.value)}
+                      style={{ ...inStyle, marginBottom: 0 }} />
+                    <input type="color" value={stage.color} onChange={e => updateStageField(i, 'color', e.target.value)}
+                      style={{ ...inStyle, marginBottom: 0, padding: 4, height: 42 }} />
+                    <button onClick={() => removeStageRow(i)} aria-label="Remove stage"
+                      style={miniBtn(pt, pt.danger)}>🗑</button>
                   </div>
-                  <button onClick={() => removeStageRow(i)} aria-label="Remove stage"
-                    style={{ ...miniBtn, borderColor: '#ef4444', color: '#ef4444' }}>🗑</button>
+                  <div style={{ color: pt.textMuted, fontSize: 11, marginTop: 4, marginLeft: 2 }}>{stage.value}</div>
                 </div>
               ))}
 
               <button onClick={addStageRow} style={{
-                background: 'transparent', border: `1px dashed ${c.border}`, borderRadius: 10,
-                padding: '10px', width: '100%', cursor: 'pointer', color: c.sub,
+                background: 'transparent', border: `1px dashed ${pt.border}`, borderRadius: 10,
+                padding: '10px', width: '100%', cursor: 'pointer', color: pt.sub,
                 fontFamily: 'inherit', fontSize: 13, fontWeight: 700, marginBottom: 16
               }}>+ Add Stage</button>
 
-              <div style={{ display: 'flex', gap: 8 }}>
-                <button onClick={saveModuleStages} disabled={stagesSaving} style={{ ...btnStyle, flex: 1 }}>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                <button onClick={saveModuleStages} disabled={stagesSaving} style={{ ...btnStyle(pt, dark), flex: 1 }}>
                   {stagesSaving ? 'Saving...' : '✅ Save Stages'}
                 </button>
                 {stagesIsCustom && (
-                  <button onClick={resetModuleStages} disabled={stagesSaving} style={cancelBtnStyle(c)}>
+                  <button onClick={resetModuleStages} disabled={stagesSaving} style={cancelBtnStyle(pt, dark)}>
                     Reset to Default
                   </button>
                 )}
               </div>
             </>
           )}
-        </div>
+        </LiquidGlassCard>
       )}
     </div>
   )
