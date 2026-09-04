@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, type CSSProperties, type ReactNode, type KeyboardEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Search as SearchIcon } from 'lucide-react'
@@ -11,15 +11,35 @@ import { glassInput } from './pulse/PulseUI'
 import { liquidGlassShadow, liquidGlassBackdrop, liquidGlassTint } from '../lib/liquidGlass'
 import PulseGlassRow from './pulse/PulseGlassRow'
 
+type PulseTheme = ReturnType<typeof getPulseTheme>
+type Align = 'left' | 'right'
+
+interface AuthUser {
+  id: string
+  email?: string
+}
+interface AuthProfile {
+  name?: string | null
+  points?: number | null
+  role?: string | null
+}
+
 // Same morph curve the liquid floating-menu reference uses.
-const morphEase = [0.22, 1, 0.36, 1]
+const morphEase = [0.22, 1, 0.36, 1] as const
+
+interface NavItem {
+  label: string
+  href: string
+  Icon: (props: { color: string; size?: number }) => JSX.Element
+  accent: 'cobalt' | 'indigo' | 'amber'
+}
 
 // Same icon set Home.tsx's own tool cards use for these four, plus a
 // freshly-built HomeIcon (see tool-icons.tsx) for the one item that
 // didn't have a matching glyph anywhere yet. `accent` mirrors Home's
 // own accent assignment per card (indigo/amber alternating) so the
 // menu's colors read as the same system, not a new one.
-const navItems = [
+const navItems: NavItem[] = [
   { label: 'Home', href: '/', Icon: HomeIcon, accent: 'cobalt' },
   { label: 'Schedules', href: '/schedule', Icon: ScheduleIcon, accent: 'indigo' },
   { label: 'Checklist', href: '/checklist', Icon: ChecklistIcon, accent: 'amber' },
@@ -27,7 +47,7 @@ const navItems = [
   { label: 'Leaderboard', href: '/profile?tab=leaderboard', Icon: LeaderboardIcon, accent: 'amber' },
 ]
 
-function initialOf(name) {
+function initialOf(name?: string | null): string {
   return name && name.trim() ? name.trim().charAt(0).toUpperCase() : '?'
 }
 
@@ -76,17 +96,23 @@ const PANEL_MAX_HEIGHT = 'calc(100dvh - 140px)'
 // and the content block (y/opacity) — using the literal same object
 // on both `animate` calls is what guarantees they move in lockstep:
 // same duration, same easing curve, starting the same frame.
-function useSyncedTransition(open) {
+function useSyncedTransition(open: boolean) {
   return open
     ? { duration: OPEN_DURATION, ease: morphEase }
     : { duration: CLOSE_DURATION, ease: morphEase }
+}
+
+interface LiquidBloomProps {
+  pt: PulseTheme
+  open: boolean
+  align: Align
 }
 
 // ── Liquid fill burst ───────────────────────────────────────────────
 // The reference's "dark circle growing from the bottom" moment,
 // reinterpreted as a soft glass-tinted bloom. Mounted only while open
 // so it costs nothing at rest, and only transform/opacity animate.
-function LiquidBloom({ pt, open, align }) {
+function LiquidBloom({ pt, open, align }: LiquidBloomProps) {
   return (
     <AnimatePresence>
       {open && (
@@ -105,11 +131,23 @@ function LiquidBloom({ pt, open, align }) {
             background: `radial-gradient(circle, ${pt.cobalt}30, ${pt.indigo}18 55%, transparent 72%)`,
             transformOrigin: align === 'right' ? 'top right' : 'top left',
             willChange: 'transform, opacity',
-          }}
+          } as CSSProperties}
         />
       )}
     </AnimatePresence>
   )
+}
+
+interface GlassRowProps {
+  dark: boolean
+  radius?: number
+  style?: CSSProperties
+  children: ReactNode
+  onClick?: () => void
+  role?: string
+  tabIndex?: number
+  onKeyDown?: (e: KeyboardEvent<HTMLDivElement>) => void
+  'aria-label'?: string
 }
 
 // NOTE (perf experiment): this used to delegate straight to the
@@ -118,7 +156,7 @@ function LiquidBloom({ pt, open, align }) {
 // pages rely on) specifically so this can be reverted by restoring
 // the block below to:
 //
-// function GlassRow({ dark, radius = ROW_RADIUS, style = {}, children, ...rest }) {
+// function GlassRow({ dark, radius = ROW_RADIUS, style = {}, children, ...rest }: GlassRowProps) {
 //   return (
 //     <PulseGlassRow
 //       dark={dark}
@@ -139,14 +177,15 @@ function LiquidBloom({ pt, open, align }) {
 // independent blurred layers inside one animating panel is a common
 // mobile-Safari jank source; this keeps the shadow/tint/hover glass
 // look but blurs once instead of nine times.
-function GlassRow({ dark, radius = ROW_RADIUS, style = {}, children, ...rest }) {
+function GlassRow({ dark, radius = ROW_RADIUS, style = {}, children, onClick, ...rest }: GlassRowProps) {
   const [hovered, setHovered] = useState(false)
-  const interactive = !!rest.onClick
+  const interactive = !!onClick
   const hoverTint = dark ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.35)'
 
   return (
     <div
       {...rest}
+      onClick={onClick}
       className="glass-focus-ring"
       onMouseEnter={() => interactive && setHovered(true)}
       onMouseLeave={() => interactive && setHovered(false)}
@@ -162,30 +201,40 @@ function GlassRow({ dark, radius = ROW_RADIUS, style = {}, children, ...rest }) 
   )
 }
 
-export default function NavMenu({ dark, toggleTheme, align = 'left' }) {
+interface NavMenuProps {
+  dark: boolean
+  toggleTheme: () => void
+  align?: Align
+}
+
+export default function NavMenu({ dark, toggleTheme, align = 'left' }: NavMenuProps) {
   const [open, setOpen] = useState(false)
   const [searchValue, setSearchValue] = useState('')
   const navigate = useNavigate()
-  const { user, profile, signOut } = useAuth()
-  const wrapperRef = useRef(null)
+  const { user, profile, signOut } = useAuth() as {
+    user: AuthUser | null
+    profile: AuthProfile | null
+    signOut: () => Promise<void>
+  }
+  const wrapperRef = useRef<HTMLDivElement>(null)
   const pt = getPulseTheme(dark)
   const transition = useSyncedTransition(open)
 
   useEffect(() => {
     if (!open) return
-    function onClickOutside(e) {
-      if (wrapperRef.current && !wrapperRef.current.contains(e.target)) setOpen(false)
+    function onClickOutside(e: MouseEvent) {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) setOpen(false)
     }
-    function onEscape(e) { if (e.key === 'Escape') setOpen(false) }
+    function onEscape(e: KeyboardEvent | globalThis.KeyboardEvent) { if (e.key === 'Escape') setOpen(false) }
     document.addEventListener('mousedown', onClickOutside)
-    document.addEventListener('keydown', onEscape)
+    document.addEventListener('keydown', onEscape as EventListener)
     return () => {
       document.removeEventListener('mousedown', onClickOutside)
-      document.removeEventListener('keydown', onEscape)
+      document.removeEventListener('keydown', onEscape as EventListener)
     }
   }, [open])
 
-  function goTo(path) { setOpen(false); navigate(path) }
+  function goTo(path: string) { setOpen(false); navigate(path) }
 
   function submitSearch() {
     const q = searchValue.trim()
@@ -200,7 +249,7 @@ export default function NavMenu({ dark, toggleTheme, align = 'left' }) {
     navigate('/')
   }
 
-  const cornerSide = align === 'right' ? 'right' : 'left'
+  const cornerSide: Align = align === 'right' ? 'right' : 'left'
 
   return (
     <div ref={wrapperRef} style={{ position: 'relative', width: BUTTON_SIZE, height: BUTTON_SIZE }}>
@@ -269,7 +318,7 @@ export default function NavMenu({ dark, toggleTheme, align = 'left' }) {
           // its (now height-capped, scrollable) inner content needs.
           isolation: 'isolate', overflow: 'hidden', borderRadius: PANEL_RADIUS,
           ...liquidGlassBackdrop(),
-        }}
+        } as CSSProperties}
         // This is Material Design's "Container Transform" pattern —
         // the same one Google names for exactly "a search bar into
         // expanded search." Its actual technique: don't make opacity
@@ -298,7 +347,7 @@ export default function NavMenu({ dark, toggleTheme, align = 'left' }) {
         <div aria-hidden className="pointer-events-none" style={{ position: 'absolute', inset: 0, borderRadius: 'inherit', boxShadow: liquidGlassShadow(dark) }} />
         <div aria-hidden className="pointer-events-none" style={{ position: 'absolute', inset: 0, borderRadius: 'inherit', background: liquidGlassTint(dark) }} />
 
-        <LiquidBloom pt={pt} open={open} align={align} />
+        <LiquidBloom pt={pt} open={open} align={cornerSide} />
 
         {/* Spacer matching the real button's footprint, so the list
             below never sits under it. */}
@@ -353,7 +402,7 @@ export default function NavMenu({ dark, toggleTheme, align = 'left' }) {
             position: 'relative', zIndex: 1, width: PANEL_WIDTH, padding: '0 14px 16px',
             fontFamily: pulseFonts.body, display: 'flex', flexDirection: 'column', gap: 10,
             maxHeight: PANEL_MAX_HEIGHT, overflowY: 'auto', WebkitOverflowScrolling: 'touch',
-          }}
+          } as CSSProperties}
         >
           {/* Profile / Sign In */}
           {user ? (
