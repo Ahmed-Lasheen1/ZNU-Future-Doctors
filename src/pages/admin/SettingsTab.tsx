@@ -3,7 +3,7 @@ import { supabase } from '../../supabase'
 import { getPulseTheme } from '../../premiumTheme'
 import InlineMessage from '../../components/InlineMessage'
 import LiquidGlassCard from '@/components/ui/liquid-glass-card'
-import { btnStyle, inStyle as adminInStyle } from './adminStyles'
+import { btnStyle, inStyle as adminInStyle, fieldLabel } from './adminStyles'
 import { EXAM_STAGES as STAGE_META } from '../../lib/examStages'
 
 interface SettingsTabProps {
@@ -90,28 +90,38 @@ export default function SettingsTab({ dark }: SettingsTabProps) {
     <div>
       <InlineMessage message={msg} />
 
-      {/* AUDIT FIX (big-screen productivity): these three independent
-          cards used to be one long single-column stack, forcing a lot
-          of scrolling on a wide monitor to get from the broadcast box
-          down to the announcement box. From 1100px up they now sit in
-          a responsive grid so an admin can see (and act on) more of
-          Settings at once; unchanged below that. */}
+      {/* AUDIT FIX (messy layout): the three cards used to be one
+          uneven single-column stack — a short broadcast card, then a
+          tall drive-links card with every stage input stacked
+          vertically, then the announcement box. Regrouped into two
+          clear rows: two similarly-sized action cards up top
+          (Broadcast / Announcement — the "write something, send it"
+          pair), then Drive Links on its own full-width row below with
+          its per-stage inputs laid out as a compact grid instead of a
+          long vertical list, so the card's height stops dwarfing
+          everything else on the page. */}
       <style>{`
-        .settings-grid {
+        .settings-row {
           display: grid;
           grid-template-columns: 1fr;
           gap: 16px;
-          align-items: start;
         }
-        @media (min-width: 1100px) {
-          .settings-grid { grid-template-columns: 1fr 1fr; }
-          .settings-grid-full { grid-column: 1 / -1; }
+        @media (min-width: 900px) {
+          .settings-row { grid-template-columns: 1fr 1fr; align-items: start; }
+        }
+        .drive-links-grid {
+          display: grid;
+          grid-template-columns: 1fr;
+          gap: 12px 16px;
+        }
+        @media (min-width: 640px) {
+          .drive-links-grid { grid-template-columns: 1fr 1fr; }
         }
       `}</style>
 
-      <div className="settings-grid">
+      <div className="settings-row" style={{ marginBottom: 16 }}>
         <LiquidGlassCard dark={dark} delay={0} style={{ padding: '20px 22px' }}>
-          <h3 style={{ color: pt.cobalt, marginBottom: 8, fontWeight: 800 }}>📢 Send Push Notification to Everyone</h3>
+          <h3 style={{ color: pt.cobalt, marginBottom: 8, fontWeight: 800 }}>📢 Push Notification to Everyone</h3>
           <p style={{ color: pt.textMuted, fontSize: 13, marginBottom: 16 }}>
             Delivered instantly to every device with notifications enabled — even if they don't have the site open right now.
             You'll be asked to confirm before it sends.
@@ -124,61 +134,61 @@ export default function SettingsTab({ dark }: SettingsTabProps) {
         </LiquidGlassCard>
 
         <LiquidGlassCard dark={dark} delay={0} style={{ padding: '20px 22px' }}>
-          <h3 style={{ color: pt.cobalt, marginBottom: 8, fontWeight: 800 }}>📁 Google Drive Links</h3>
+          <h3 style={{ color: pt.cobalt, marginBottom: 8, fontWeight: 800 }}>📢 Home Page Announcement</h3>
           <p style={{ color: pt.textMuted, fontSize: 13, marginBottom: 16 }}>
-            Set a different Drive folder per exam stage (TBL, End Module, Practical, Final) so students land in the
-            right folder immediately from that stage's page. Leave a stage empty to fall back to the Default link
-            below — leave everything empty to hide the button entirely.
+            Shows in a banner at the top of the Home page for everyone. Leave it empty to hide the banner
+            completely. The box below is styled exactly like it'll appear on the site.
           </p>
-          <label style={{ color: pt.textMuted, fontSize: 12, display: 'block', marginBottom: 4 }}>Default (fallback)</label>
-          <input
-            placeholder="https://drive.google.com/..."
-            value={driveUrl}
-            onChange={e => setDriveUrl(e.target.value)}
-            style={inStyle} />
+          <textarea
+            placeholder="e.g. Pharma exam next week, study well! 🔥"
+            value={announcement}
+            onChange={e => setAnnouncement(e.target.value)}
+            style={{
+              width: '100%', minHeight: 96, padding: '14px 20px',
+              borderRadius: 16, border: `1px solid ${pt.cobaltBorder}`,
+              background: `linear-gradient(135deg, ${pt.cobaltSoft}, ${pt.indigoSoft})`,
+              color: pt.text, fontSize: 14, fontWeight: 600, lineHeight: 1.6,
+              textAlign: 'center', fontFamily: 'inherit', outline: 'none',
+              resize: 'vertical', marginBottom: 12, boxSizing: 'border-box'
+            }} />
+          <button onClick={saveAnnouncement} disabled={announcementSaving} style={{ ...btnStyle(pt, dark), width: '100%' }}>
+            {announcementSaving ? 'Saving...' : 'Save Announcement'}
+          </button>
+        </LiquidGlassCard>
+      </div>
+
+      <LiquidGlassCard dark={dark} delay={0} style={{ padding: '20px 22px' }}>
+        <h3 style={{ color: pt.cobalt, marginBottom: 8, fontWeight: 800 }}>📁 Google Drive Links</h3>
+        <p style={{ color: pt.textMuted, fontSize: 13, marginBottom: 16 }}>
+          Set a different Drive folder per exam stage so students land in the right folder immediately from
+          that stage's page. Leave a stage empty to fall back to the default — leave everything empty to hide
+          the button entirely.
+        </p>
+
+        <label style={fieldLabel(pt)}>Default (fallback)</label>
+        <input
+          placeholder="https://drive.google.com/..."
+          value={driveUrl}
+          onChange={e => setDriveUrl(e.target.value)}
+          style={{ ...inStyle, marginBottom: 16 }} />
+
+        <div className="drive-links-grid" style={{ marginBottom: 16 }}>
           {STAGE_META.map(s => (
             <div key={s.value}>
-              <label style={{ color: pt.textMuted, fontSize: 12, display: 'block', marginBottom: 4 }}>{s.emoji} {s.title}</label>
+              <label style={fieldLabel(pt)}>{s.emoji} {s.title}</label>
               <input
                 placeholder="https://drive.google.com/... (optional)"
                 value={stageDriveUrls[s.value] || ''}
                 onChange={e => setStageDriveUrls(prev => ({ ...prev, [s.value]: e.target.value }))}
-                style={inStyle} />
+                style={{ ...inStyle, marginBottom: 0 }} />
             </div>
           ))}
-          <button onClick={saveDriveLinks} disabled={driveUrlSaving} style={{ ...btnStyle(pt, dark), width: '100%' }}>
-            {driveUrlSaving ? 'Saving...' : 'Save Drive Links'}
-          </button>
-        </LiquidGlassCard>
-
-        <div className="settings-grid-full">
-          <LiquidGlassCard dark={dark} delay={0} style={{ padding: '20px 22px' }}>
-            <h3 style={{ color: pt.cobalt, marginBottom: 8, fontWeight: 800 }}>📢 Home Page Announcement</h3>
-            <p style={{ color: pt.textMuted, fontSize: 13, marginBottom: 16 }}>
-              This shows in a banner at the top of the Home page for everyone.
-              Leave it empty to hide the banner completely. Press Enter for a
-              new line — it'll look exactly the same on the site. The box
-              below is styled exactly like it'll appear, so what you see here
-              is what students will see.
-            </p>
-            <textarea
-              placeholder="e.g. Pharma exam next week, study well! 🔥"
-              value={announcement}
-              onChange={e => setAnnouncement(e.target.value)}
-              style={{
-                width: '100%', minHeight: 100, padding: '14px 20px',
-                borderRadius: 16, border: `1px solid ${pt.cobaltBorder}`,
-                background: `linear-gradient(135deg, ${pt.cobaltSoft}, ${pt.indigoSoft})`,
-                color: pt.text, fontSize: 14, fontWeight: 600, lineHeight: 1.6,
-                textAlign: 'center', fontFamily: 'inherit', outline: 'none',
-                resize: 'vertical', marginBottom: 12, boxSizing: 'border-box'
-              }} />
-            <button onClick={saveAnnouncement} disabled={announcementSaving} style={{ ...btnStyle(pt, dark), width: '100%' }}>
-              {announcementSaving ? 'Saving...' : 'Save Announcement'}
-            </button>
-          </LiquidGlassCard>
         </div>
-      </div>
+
+        <button onClick={saveDriveLinks} disabled={driveUrlSaving} style={{ ...btnStyle(pt, dark), width: '100%' }}>
+          {driveUrlSaving ? 'Saving...' : 'Save Drive Links'}
+        </button>
+      </LiquidGlassCard>
     </div>
   )
 }

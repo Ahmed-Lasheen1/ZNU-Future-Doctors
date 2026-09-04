@@ -40,10 +40,12 @@ export default function AdminSplitLayout({ form, list, formWidth = 380 }: AdminS
           }
           .admin-split-form {
             position: sticky;
-            /* Sits below BackButton (fixed, see BackButton.tsx's own
-               top offset) with matching breathing room. */
-            top: calc(max(16px, env(safe-area-inset-top)) + 110px);
-            max-height: calc(100vh - max(16px, env(safe-area-inset-top)) - 130px);
+            /* The tab row above this scrolls away with the page (it's
+               not fixed), so this only needs a small gap from the
+               viewport's own top edge once scrolled — not the height
+               of Admin.tsx's in-flow header/tabs block. */
+            top: calc(max(16px, env(safe-area-inset-top)) + 12px);
+            max-height: calc(100vh - max(16px, env(safe-area-inset-top)) - 32px);
             overflow-y: auto;
             /* Own scrollbar shouldn't visually collide with sticky glass edges */
             paddingBottom: 4px;

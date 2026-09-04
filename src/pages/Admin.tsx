@@ -99,20 +99,23 @@ export default function Admin({ dark }: AdminProps) {
   return (
     <div style={{ position: 'relative', minHeight: '100vh' }}>
       <PulseBackground />
-      {/* AUDIT FIX (big-screen productivity): this panel used to cap
-          at maxWidth 900 no matter how wide the monitor was, and the
-          tab switcher was a horizontal-scroll-only strip even on
-          desktop — an odd fit for something an admin sits in front of
-          for a while. From 1000px up, tabs move into a sticky vertical
-          rail on the left (so the current section is always visible
-          without scrolling back up) and the content column gets real
-          room to breathe. Under 1000px this renders exactly as
-          before: horizontal tab strip, single column. */}
-      <div className="pulse-wide admin-shell" style={{ position: 'relative', zIndex: 1, padding: '24px 20px 100px', fontFamily: pulseFonts.body, maxWidth: 1500, margin: '0 auto' }}>
+      {/* AUDIT FIX: the sidebar-nav experiment traded away the
+          familiar top tab strip and, combined with the old 48px
+          title padding, left a lot of dead space between the site
+          header and any actual content. Tabs are back on top (a
+          single wrapping row on desktop, horizontal-scroll on
+          mobile — unchanged from the original), and every spacing
+          value between the fixed header and the tab row has been
+          trimmed down so content starts right away instead of after
+          a big empty gap. */}
+      <div className="pulse-wide admin-shell" style={{ position: 'relative', zIndex: 1, padding: '4px 20px 100px', fontFamily: pulseFonts.body, maxWidth: 1500, margin: '0 auto' }}>
         <style>{`
           .admin-tabs {
             display: flex; gap: 8px; overflow-x: auto; padding-bottom: 8px;
-            margin-bottom: 20px; -webkit-overflow-scrolling: touch;
+            margin-bottom: 16px; -webkit-overflow-scrolling: touch;
+          }
+          @media (min-width: 720px) {
+            .admin-tabs { flex-wrap: wrap; overflow-x: visible; }
           }
           .admin-form-row-2 {
             display: grid; grid-template-columns: 1fr; gap: 0; margin-bottom: 12px;
@@ -120,58 +123,47 @@ export default function Admin({ dark }: AdminProps) {
           @media (min-width: 640px) {
             .admin-form-row-2 { grid-template-columns: 1fr 1fr; gap: 12px; }
           }
-          @media (min-width: 1000px) {
-            .admin-shell-body { display: grid; grid-template-columns: 220px 1fr; gap: 28px; align-items: start; }
-            .admin-tabs {
-              flex-direction: column; overflow-x: visible; padding-bottom: 0; margin-bottom: 0;
-              position: sticky; top: calc(max(16px, env(safe-area-inset-top)) + 110px);
-            }
-          }
         `}</style>
 
-        <div style={{ marginBottom: 8 }}>
+        <div style={{ marginBottom: 4 }}>
           <BackButton dark={dark} fallback="/" />
         </div>
 
-        <div style={{ textAlign: 'center', padding: '48px 0 20px' }}>
-          <div style={{ fontSize: 40, marginBottom: 8 }}>⚙️</div>
-          <h1 style={{ ...pulseType.miniPageTitle, color: pt.text }}>Admin Panel</h1>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0 16px' }}>
+          <span style={{ fontSize: 26 }}>⚙️</span>
+          <h1 style={{ ...pulseType.miniPageTitle, fontSize: 20, color: pt.text }}>Admin Panel</h1>
         </div>
 
-        <div className="admin-shell-body">
-          <div className="admin-tabs">
-            {TABS.map(t => {
-              const active = activeTab === t
-              return (
-                <PulseGlassRow
-                  key={t} dark={dark} radius={999} active={active}
-                  activeTint={`${pt.cobalt}26`}
-                  hoverTint={dark ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.35)'}
-                  onClick={() => setActiveTab(t)} role="button" tabIndex={0}
-                  onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setActiveTab(t) } }}
-                  style={{ flexShrink: 0 }}
-                >
-                  <div style={{ padding: '9px 16px', whiteSpace: 'nowrap', ...pulseType.button, color: active ? pt.cobalt : pt.sub }}>
-                    {TAB_LABELS[t]}
-                  </div>
-                </PulseGlassRow>
-              )
-            })}
-          </div>
-
-          <div style={{ minWidth: 0 }}>
-            {activeTab === 'modules' && <ModulesTab {...tabProps} />}
-            {activeTab === 'subjects' && <SubjectsTab {...tabProps} />}
-            {activeTab === 'lessons' && <LessonsTab {...tabProps} />}
-            {activeTab === 'files' && <FilesTab {...tabProps} />}
-            {activeTab === 'schedules' && <SchedulesTab {...tabProps} />}
-            {activeTab === 'questions' && <QuestionsTab {...tabProps} />}
-            {activeTab === 'summaries' && <SummariesTab {...tabProps} />}
-            {activeTab === 'stages' && <StagesTab {...tabProps} />}
-            {activeTab === 'analytics' && <AnalyticsTab {...tabProps} />}
-            {activeTab === 'settings' && <SettingsTab {...tabProps} />}
-          </div>
+        <div className="admin-tabs">
+          {TABS.map(t => {
+            const active = activeTab === t
+            return (
+              <PulseGlassRow
+                key={t} dark={dark} radius={999} active={active}
+                activeTint={`${pt.cobalt}26`}
+                hoverTint={dark ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.35)'}
+                onClick={() => setActiveTab(t)} role="button" tabIndex={0}
+                onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setActiveTab(t) } }}
+                style={{ flexShrink: 0 }}
+              >
+                <div style={{ padding: '9px 16px', whiteSpace: 'nowrap', ...pulseType.button, color: active ? pt.cobalt : pt.sub }}>
+                  {TAB_LABELS[t]}
+                </div>
+              </PulseGlassRow>
+            )
+          })}
         </div>
+
+        {activeTab === 'modules' && <ModulesTab {...tabProps} />}
+        {activeTab === 'subjects' && <SubjectsTab {...tabProps} />}
+        {activeTab === 'lessons' && <LessonsTab {...tabProps} />}
+        {activeTab === 'files' && <FilesTab {...tabProps} />}
+        {activeTab === 'schedules' && <SchedulesTab {...tabProps} />}
+        {activeTab === 'questions' && <QuestionsTab {...tabProps} />}
+        {activeTab === 'summaries' && <SummariesTab {...tabProps} />}
+        {activeTab === 'stages' && <StagesTab {...tabProps} />}
+        {activeTab === 'analytics' && <AnalyticsTab {...tabProps} />}
+        {activeTab === 'settings' && <SettingsTab {...tabProps} />}
       </div>
     </div>
   )
