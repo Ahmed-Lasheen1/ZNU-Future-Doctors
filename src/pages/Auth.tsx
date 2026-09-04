@@ -47,6 +47,33 @@ function fireConfetti() {
   confetti({ ...defaults, particleCount: 50, origin: { x: 1, y: 1 }, angle: 120 })
 }
 
+// Standard multi-color "G" glyph — kept as a small inline SVG rather
+// than pulling in an icon-pack dependency just for one logo.
+function GoogleIcon({ size = 18 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 48 48" aria-hidden="true">
+      <path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z"/>
+      <path fill="#FF3D00" d="M6.306 14.691l6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 16.318 4 9.656 8.337 6.306 14.691z"/>
+      <path fill="#4CAF50" d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238C29.211 35.091 26.715 36 24 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z"/>
+      <path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303c-.792 2.237-2.231 4.166-4.087 5.571.001-.001 6.19 5.238 6.19 5.238C39.836 41.075 44 34.5 44 24c0-1.341-.138-2.65-.389-3.917z"/>
+    </svg>
+  )
+}
+
+// Kept local to this file since it's currently only used here —
+// a plain "or" divider bracketed by two hairlines, matching the
+// glass shell's border color so it never looks like a hardcoded
+// gray line dropped into a themed page.
+function OrDivider({ pt }: { pt: ReturnType<typeof getPulseTheme> }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '2px 0' }}>
+      <div style={{ height: 1, background: pt.border, flex: 1 }} />
+      <span style={{ color: pt.textMuted, fontSize: 11, fontWeight: 700, letterSpacing: 1 }}>OR</span>
+      <div style={{ height: 1, background: pt.border, flex: 1 }} />
+    </div>
+  )
+}
+
 export default function Auth({ dark = true }: { dark?: boolean }) {
   const navigate = useNavigate()
   const pt = getPulseTheme(dark)
@@ -61,6 +88,7 @@ export default function Auth({ dark = true }: { dark?: boolean }) {
   const [confirmPassword, setConfirmPassword] = useState('')
   const [otp, setOtp] = useState('')
   const [loading, setLoading] = useState(false)
+  const [googleLoading, setGoogleLoading] = useState(false)
   const [message, setMessage] = useState('')
   const [showPw, setShowPw] = useState(false)
   const [showConfirmPw, setShowConfirmPw] = useState(false)
@@ -94,6 +122,29 @@ export default function Auth({ dark = true }: { dark?: boolean }) {
 
   function resetAll() {
     setStep('form'); setName(''); setEmail(''); setPassword(''); setConfirmPassword(''); setOtp(''); setMessage('')
+  }
+
+  // Google sign-in — same flow for both "Sign In" and "Create
+  // account" tabs, since Google itself already handles "does this
+  // person have an account or not" (Supabase creates the auth.users
+  // row on first login automatically). This is now the primary,
+  // default way to get into the app; the email/password form below
+  // remains for anyone who prefers it or doesn't use Google.
+  async function handleGoogleSignIn() {
+    setMessage('')
+    setGoogleLoading(true)
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/`,
+      }
+    })
+    if (error) {
+      setGoogleLoading(false)
+      setMessage('❌ ' + error.message)
+    }
+    // On success the browser navigates away to Google, then back to
+    // redirectTo — nothing further to do here.
   }
 
   async function handleSignInSubmit() {
@@ -170,6 +221,29 @@ export default function Auth({ dark = true }: { dark?: boolean }) {
 
   const handleSubmit = mode === 'signin' ? handleSignInSubmit : handleSignupSubmit
 
+  // Shared "Continue with Google" button — a solid white pill (Google's
+  // own brand guidance) rather than another glass row, so it reads as
+  // the visually distinct, primary option above the email form.
+  const googleButton = (
+    <button
+      type="button"
+      onClick={handleGoogleSignIn}
+      disabled={googleLoading || loading}
+      style={{
+        width: '100%', padding: '13px', borderRadius: 999,
+        background: '#fff', border: '1px solid rgba(0,0,0,0.12)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+        cursor: (googleLoading || loading) ? 'not-allowed' : 'pointer',
+        opacity: (googleLoading || loading) ? 0.7 : 1,
+        fontFamily: pulseFonts.body, fontWeight: 700, fontSize: 14, color: '#1f1f1f',
+        boxShadow: '0 4px 14px rgba(0,0,0,0.12)'
+      }}
+    >
+      <GoogleIcon size={18} />
+      {googleLoading ? 'Redirecting to Google...' : 'Continue with Google'}
+    </button>
+  )
+
   return (
     <div style={{ position: 'relative', minHeight: '100vh' }}>
       <PulseBackground />
@@ -224,6 +298,9 @@ export default function Auth({ dark = true }: { dark?: boolean }) {
               <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                 <p style={{ fontSize: 22, fontWeight: 300, color: pt.text, textAlign: 'center', fontFamily: pulseFonts.display }}>Welcome back</p>
 
+                {googleButton}
+                <OrDivider pt={pt} />
+
                 <GlassField dark={dark}>
                   <input type="email" value={email} onChange={e => setEmail(e.target.value)}
                     onKeyDown={e => e.key === 'Enter' && handleSubmit()}
@@ -257,6 +334,9 @@ export default function Auth({ dark = true }: { dark?: boolean }) {
             ) : (
               <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                 <p style={{ fontSize: 22, fontWeight: 300, color: pt.text, textAlign: 'center', fontFamily: pulseFonts.display }}>Create your account</p>
+
+                {googleButton}
+                <OrDivider pt={pt} />
 
                 <div style={{ display: 'flex', gap: 8 }}>
                   <AccountToggle dark={dark} pt={pt} active={accountType === 'university'} onClick={() => { setAccountType('university'); setEmail('') }}>

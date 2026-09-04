@@ -124,6 +124,34 @@ export default function App() {
     return unsubscribe
   }, [])
 
+  async function fetchProfile(userId) {
+    const { data } = await supabase.from('profiles').select('*').eq('id', userId).single()
+    if (data) setProfile(data)
+  }
+
+  // Safety net for Google sign-ins: the app's own email/password
+  // signup flow (see Auth.tsx) passes name/account_type into
+  // signUp()'s options, which whatever creates `profiles` rows today
+  // presumably reads. Google OAuth users never go through that
+  // signUp() call at all — Supabase creates their auth.users row
+  // directly on first Google login — so without this, a first-time
+  // Google sign-in could end up with no profile row at all (blank
+  // name everywhere, points that never persist). This checks once per
+  // sign-in and only inserts if nothing exists yet; existing users
+  // (including existing Google users on a later visit) are untouched.
+  async function ensureProfile(user) {
+    try {
+      const { data: existing } = await supabase.from('profiles').select('id').eq('id', user.id).maybeSingle()
+      if (existing) return
+      const meta = user.user_metadata || {}
+      const fallbackName = meta.full_name || meta.name || (user.email ? user.email.split('@')[0] : 'Student')
+      const { error } = await supabase.from('profiles').insert([{ id: user.id, name: fallbackName, points: 0 }])
+      if (error) console.warn('[ensureProfile] Could not create profile row:', error.message)
+    } catch (e) {
+      console.warn('[ensureProfile] Unexpected error:', e)
+    }
+  }
+
   useEffect(() => {
     async function initSession() {
       const { data: { session } } = await supabase.auth.getSession()
@@ -133,6 +161,7 @@ export default function App() {
       // "we know, for sure, whether this person is an admin" — not
       // just "we know if they're signed in".
       if (session?.user) {
+        await ensureProfile(session.user)
         await fetchProfile(session.user.id)
         // Covers the case where a guest practiced on this device,
         // then signed in on a PREVIOUS visit and this is simply a
@@ -152,7 +181,7 @@ export default function App() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null)
       if (session?.user) {
-        fetchProfile(session.user.id)
+        ensureProfile(session.user).then(() => fetchProfile(session.user.id))
         migrateGuestDataIfNeeded(session.user.id)
       } else {
         setProfile(null)
@@ -160,11 +189,6 @@ export default function App() {
     })
     return () => subscription.unsubscribe()
   }, [])
-
-  async function fetchProfile(userId) {
-    const { data } = await supabase.from('profiles').select('*').eq('id', userId).single()
-    if (data) setProfile(data)
-  }
 
   async function signOut() {
     await supabase.auth.signOut()
