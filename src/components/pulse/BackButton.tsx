@@ -48,7 +48,7 @@ export default function BackButton({ dark, fallback = '/', onClick, style }: Bac
     <div
       style={{
         position: 'fixed',
-        top: 'calc(76px + env(safe-area-inset-top) + 10px)',
+        top: 'calc(76px + env(safe-area-inset-top) + 0px)',
         left: 'clamp(20px, 4vw, 64px)',
         zIndex: 400,
       }}
