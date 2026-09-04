@@ -35,7 +35,7 @@ interface BackButtonProps {
 // logo/icon row height, `+ 16px` for the header's bottom padding —
 // i.e. the header's true rendered height — plus a small fixed gap so
 // the pill doesn't touch the header bar.
-const HEADER_GAP = 8
+const HEADER_GAP = 1
 
 export default function BackButton({ dark, fallback = '/', onClick, style }: BackButtonProps) {
   const pt = getPulseTheme(dark)
