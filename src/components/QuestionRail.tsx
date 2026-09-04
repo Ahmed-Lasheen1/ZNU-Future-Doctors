@@ -23,7 +23,20 @@ export default function QuestionRail({
   const c = getTheme(dark)
 
   return (
-    <div style={{ display: 'flex', gap: 4, marginBottom: 18, alignItems: 'flex-end' }}>
+    <div style={{
+      display: 'flex',
+      // AUDIT FIX: this was a flat `gap: 4`. Practice quizzes run up
+      // to 50 questions and mock exams up to 36 — at 50 segments that's
+      // 49 gaps × 4px = 196px eaten by gaps alone, which on a ~360-380px
+      // mobile viewport left each segment only 3-4px wide (before its
+      // own border/shadow), collapsing the rail into an indistinguishable
+      // stripe right on the device this "jump to question" control
+      // matters most on. clamp() lets the gap shrink proportionally on
+      // narrow screens while resolving to the exact same 4px as before
+      // on desktop (0.6vw only exceeds 4px above ~666px viewport width).
+      gap: 'clamp(1px, 0.6vw, 4px)',
+      marginBottom: 18, alignItems: 'flex-end'
+    }}>
       {Array.from({ length: total }, (_, i) => {
         const isCurrent = i === currentIndex
         const isAnswered = answeredIndexes.has(i)

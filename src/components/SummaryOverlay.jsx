@@ -9,7 +9,7 @@ import { backBtnStyle } from '../theme'
 // simply omitted there instead of rendering an empty line.
 export default function SummaryOverlay({ onBack, eyebrow, title, titleColor, url }) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '1000vh' }}>
       <div style={{
         background: 'linear-gradient(135deg, #1a2a4a, #0f1e35)',
         borderBottom: '2px solid #2a4a7a',

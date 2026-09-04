@@ -571,8 +571,21 @@ export default function MCQ({ dark }: { dark: boolean }) {
     const scorePercent = total > 0 ? Math.round((correctCount / total) * 100) : 0
     const timeSec = quizMode === 'mock' ? Math.max(0, MOCK_MINUTES * 60 - timeLeft) : null
     setFinishTimeSec(quizMode === 'mock' ? (timeSec as number) : elapsedSeconds)
-    const historyModuleId = quizMode === 'retry' ? (quizQuestions[0]?.module_id || null) : activeModule
-    const historySubjectId = (quizMode === 'practice' || quizMode === 'retry') ? (quizQuestions[0]?.subject_id || null) : null
+    // AUDIT FIX: only attribute a retry batch to a single module/subject
+    // when every question in it actually shares one — "Retry All" from
+    // Review.tsx can span every module/subject site-wide, and silently
+    // filing that under just the first question's module was corrupting
+    // per-module history stats.
+    const retryModuleIsUniform = quizMode === 'retry' && quizQuestions.every(q => q.module_id === quizQuestions[0]?.module_id)
+    const retrySubjectIsUniform = quizMode === 'retry' && quizQuestions.every(q => q.subject_id === quizQuestions[0]?.subject_id)
+    const historyModuleId = quizMode === 'retry'
+      ? (retryModuleIsUniform ? (quizQuestions[0]?.module_id || null) : null)
+      : activeModule
+    const historySubjectId = quizMode === 'practice'
+      ? (quizQuestions[0]?.subject_id || null)
+      : quizMode === 'retry'
+        ? (retrySubjectIsUniform ? (quizQuestions[0]?.subject_id || null) : null)
+        : null
 
     if (!error && user) {
       const toRecord = quizQuestions
