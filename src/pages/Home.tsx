@@ -42,7 +42,7 @@ const MODULE_BLURBS: Record<string, string> = {
 }
 function moduleBlurb(name: string) {
   const key = Object.keys(MODULE_BLURBS).find(k => name.toLowerCase().includes(k))
-  return key ? MODULE_BLURBS[key] : 'Master the essentials of this module.'
+  return key ? MODULE_BLURBS[key] : ''
 }
 
 // ── Custom line-art icons for the Weekly Report card ────────────────
