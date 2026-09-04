@@ -26,6 +26,21 @@ type AuthStep = 'form' | 'verify'
 // revisited.
 const MIN_PASSWORD_LENGTH = 8
 
+// AUDIT FIX: university-email validation used to be a plain
+// `email.includes('@med.znu.edu.eg')` check. `.includes()` only
+// confirms the substring appears SOMEWHERE in the string — an address
+// like "student@med.znu.edu.eg.attacker.com" also contains
+// "@med.znu.edu.eg", but the real domain (and the mail server that
+// actually receives Supabase's verification email) is attacker.com,
+// not ZNU's. Anyone who controls that domain could sign up, receive
+// and verify the OTP themselves, and end up with a "university"
+// account plus a university_code extracted from a spoofed address —
+// defeating the one thing this account type is supposed to guarantee.
+// Anchored to require the address to END in exactly this domain, the
+// same way the personal-Gmail regex a few lines below already does it
+// correctly.
+const UNIVERSITY_EMAIL_REGEX = /^[^\s@]+@med\.znu\.edu\.eg$/i
+
 function fireConfetti() {
   const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 999 }
   confetti({ ...defaults, particleCount: 50, origin: { x: 0, y: 1 }, angle: 60 })
@@ -74,8 +89,8 @@ export default function Auth({ dark = true }: { dark?: boolean }) {
 
   const extractCode = (e: string) => e.split('@')[0]
   const universityCodePreview =
-    mode === 'signup' && accountType === 'university' && email.includes('@med.znu.edu.eg')
-      ? extractCode(email) : null
+    mode === 'signup' && accountType === 'university' && UNIVERSITY_EMAIL_REGEX.test(email.trim())
+      ? extractCode(email.trim()) : null
 
   function resetAll() {
     setStep('form'); setName(''); setEmail(''); setPassword(''); setConfirmPassword(''); setOtp(''); setMessage('')
@@ -95,8 +110,8 @@ export default function Auth({ dark = true }: { dark?: boolean }) {
   async function handleSignupSubmit() {
     setMessage('')
     const valid = accountType === 'university'
-      ? email.includes('@med.znu.edu.eg')
-      : /^[^\s@]+@gmail\.com$/i.test(email)
+      ? UNIVERSITY_EMAIL_REGEX.test(email.trim())
+      : /^[^\s@]+@gmail\.com$/i.test(email.trim())
     if (!valid) return setMessage(accountType === 'university' ? '❌ Please use your ZNU email (@med.znu.edu.eg)' : '❌ Please enter a valid Gmail address')
     if (!name.trim()) return setMessage('❌ Please enter your name')
     if (containsProfanity(name)) return setMessage('❌ Please choose an appropriate name')
@@ -106,7 +121,7 @@ export default function Auth({ dark = true }: { dark?: boolean }) {
     if (password !== confirmPassword) return setMessage('❌ Passwords do not match')
 
     setLoading(true)
-    const universityCode = accountType === 'university' ? extractCode(email) : null
+    const universityCode = accountType === 'university' ? extractCode(email.trim()) : null
     const { data, error } = await supabase.auth.signUp({
       email, password,
       options: { data: { name: name.trim(), account_type: accountType, university_code: universityCode } }

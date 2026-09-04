@@ -13,6 +13,20 @@ import { getMyAnonTokens, addMyAnonToken, getNotifiedTokens, markTokensNotified 
 
 const QNA_ACCENT = '#a78bfa'
 
+// AUDIT FIX: this page has no admin gate at all — EVERY visitor
+// (student or admin) triggers fetchQuestions() on every visit, and
+// the query previously had no `.limit()` whatsoever. As the table
+// grows across semesters, every single page load would eventually
+// pull the ENTIRE anonymous_questions history for every single
+// visitor. Capped here the same way every other list in the app
+// already is (see LIST_LIMIT in src/pages/admin/adminStyles.js), but
+// ordered unanswered-first so a pending question can never silently
+// fall off the end of the window just because it's old — only excess
+// already-answered history ever gets trimmed. (If the unanswered
+// backlog itself ever exceeds this limit, that's a sign admins are
+// badly behind, not a bug in this fetch.)
+const RECENT_QUESTIONS_LIMIT = 300
+
 interface AnonQuestion {
   id: string
   question: string
@@ -29,6 +43,7 @@ export default function AnonQuestions({ dark }: { dark: boolean }) {
 
   const [questions, setQuestions] = useState<AnonQuestion[]>([])
   const [myQuestions, setMyQuestions] = useState<AnonQuestion[]>([])
+  const [hasMore, setHasMore] = useState(false)
   const [newQ, setNewQ] = useState('')
   const [loading, setLoading] = useState(true)
   const [msg, setMsg] = useState('')
@@ -55,8 +70,13 @@ export default function AnonQuestions({ dark }: { dark: boolean }) {
     const { data } = await supabase
       .from('anonymous_questions')
       .select('id, question, answer, answered, created_at')
+      .order('answered', { ascending: true })
       .order('created_at', { ascending: false })
-    if (data) setQuestions(data)
+      .limit(RECENT_QUESTIONS_LIMIT)
+    if (data) {
+      setQuestions(data)
+      setHasMore(data.length === RECENT_QUESTIONS_LIMIT)
+    }
     setLoading(false)
   }
 
@@ -249,6 +269,11 @@ export default function AnonQuestions({ dark }: { dark: boolean }) {
               </div>
             )
           })}
+          {!loading && hasMore && (
+            <p style={{ color: pt.sub, fontSize: 11, textAlign: 'center', marginTop: 12 }}>
+              Showing the {RECENT_QUESTIONS_LIMIT} most recent questions.
+            </p>
+          )}
         </div>
       </div>
     </div>

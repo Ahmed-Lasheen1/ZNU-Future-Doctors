@@ -5,6 +5,7 @@ import InlineMessage from '../../components/InlineMessage'
 import ModuleSelect from './ModuleSelect'
 import { btnStyle, miniBtn, cancelBtnStyle } from './adminStyles'
 import { EXAM_STAGES as STAGE_META } from '../../lib/examStages'
+import { invalidateModuleStagesCache } from '../../lib/moduleStages'
 
 function slugify(text) {
   return text.toLowerCase().trim().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '') || 'stage'
@@ -71,6 +72,15 @@ export default function StagesTab({ dark, modules }) {
     const { error } = await supabase.from('module_exam_stages').insert(rows)
     setStagesSaving(false)
     if (error) return showMsg('❌ ' + error.message)
+    // AUDIT FIX: fetchModuleStages() (used by MCQ, StagePage, Summaries,
+    // and this same admin's Questions/Files/Summaries tabs) now caches
+    // the whole module_exam_stages table in memory instead of
+    // re-querying it on every mount — see src/lib/moduleStages.js. That
+    // makes this invalidation call necessary: without it, everyone —
+    // including this same admin, in this same session — would keep
+    // seeing the pre-edit stage set until a full page reload, since
+    // nothing else would ever know the cache had gone stale.
+    invalidateModuleStagesCache()
     showMsg('✅ Stages saved for this module!')
     setStagesIsCustom(true)
     loadModuleStagesForAdmin(stageModuleId)
@@ -82,6 +92,7 @@ export default function StagesTab({ dark, modules }) {
     setStagesSaving(true)
     await supabase.from('module_exam_stages').delete().eq('module_id', stageModuleId)
     setStagesSaving(false)
+    invalidateModuleStagesCache()
     showMsg('✅ Reset to default stages')
     loadModuleStagesForAdmin(stageModuleId)
   }
