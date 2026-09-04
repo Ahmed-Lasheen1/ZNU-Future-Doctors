@@ -162,11 +162,14 @@ h1, h2, h3 {
   .auto-grid { gap: 20px; }
 }
 
-/* Used by AutoGrid when there's exactly one card — a single grid
+/* Used by AutoGrid.jsx when there's exactly one card — a single grid
    column with a bare 1fr track stretches to fill the entire row,
-   leaving a huge empty card on wide screens. This centers the lone
-   card instead and caps it at a reasonable width, so it reads as a
-   deliberately-sized card rather than an accidentally-stretched one. */
+   leaving one lonely card sprawled edge-to-edge with a huge amount of
+   empty visual weight on tablet/desktop. This centers the lone card
+   instead and caps it at a reasonable width, so it reads as a
+   deliberately-sized card rather than an accidentally-stretched one.
+   This is a fix to the AutoGrid system itself — every page using
+   AutoGrid gets this automatically, nothing page-specific here. */
 .auto-grid-single {
   display: flex;
   justify-content: center;
@@ -177,16 +180,23 @@ h1, h2, h3 {
   max-width: 420px;
 }
 
-/* Shared by ModulePage/StagePage for the "📝 Smart Summaries" +
-   "🧪 Practice" pair: each block gets a reasonable max width instead
-   of stretching full-bleed, and on screens wide enough for two
-   columns (tablet/desktop) they sit side by side automatically via
-   auto-fit; on narrow screens they stack as a single centered column. */
+/* Wrapper for the "📝 Smart Summaries" + "🧪 Practice" pair on
+   ModulePage/StagePage. The cards themselves are completely
+   unchanged (same padding, same full-width-of-their-column look as
+   before) — this just controls how many columns the pair sits in.
+   One column (stacked, same as before) until the viewport is wide
+   enough for two side by side (tablet/desktop), then it switches to
+   two equal columns. */
 .pulse-summary-practice-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 420px));
-  gap: 20px;
-  justify-content: center;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+
+@media (min-width: 900px) {
+  .pulse-summary-practice-grid {
+    grid-template-columns: 1fr 1fr;
+  }
 }
 
 @media (max-width: 480px) {
