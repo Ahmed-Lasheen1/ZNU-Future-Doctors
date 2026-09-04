@@ -12,6 +12,7 @@ import { useModules } from '../contexts'
 import { fetchModuleStages, stageMetaFrom } from '../lib/moduleStages'
 import { fetchSubjectsForModule } from '../lib/subjects'
 import { useHistoryOverlay } from '../lib/useHistoryOverlay'
+import { autoGridStyle } from '../lib/gridLayout'
 import { FILE_CARDS } from '../lib/fileCards'
 import { ModuleIcon, ExamIcon, NotesIcon } from '../lib/medicalIcons'
 
@@ -131,7 +132,7 @@ export default function StagePage({ dark }: { dark: boolean }) {
           <div style={{ marginBottom: 32 }}>
             <h2 style={{ ...pulseType.sectionLabel, color: pt.textMuted, marginBottom: 16 }}>📁 Study Materials</h2>
             {filteredFileCards.length > 0 && (
-              <div className="auto-grid" style={{ ['--auto-grid-cols' as any]: gridCols(filteredFileCards.length) }}>
+              <div {...autoGridStyle(filteredFileCards.length, gridCols(filteredFileCards.length))}>
                 {filteredFileCards.map((card, i) => (
                   <LiquidGlassCard key={i} dark={dark} delay={i * 80}
                     onClick={() => navigate(`/files?type=${card.type}&module=${moduleId}`)}
@@ -166,7 +167,7 @@ export default function StagePage({ dark }: { dark: boolean }) {
         {subjects.length > 0 && (
           <div style={{ marginBottom: 32 }}>
             <h2 style={{ ...pulseType.sectionLabel, color: pt.textMuted, marginBottom: 16 }}>📖 Study by Lesson</h2>
-            <div className="auto-grid" style={{ ['--auto-grid-cols' as any]: gridCols(subjects.length) }}>
+            <div {...autoGridStyle(subjects.length, gridCols(subjects.length))}>
               {subjects.map((sub, i) => (
                 <LiquidGlassCard key={sub.id} dark={dark} delay={i * 80}
                   onClick={() => navigate(`/module/${moduleId}/subject/${sub.id}`)}
@@ -182,7 +183,7 @@ export default function StagePage({ dark }: { dark: boolean }) {
         )}
 
         {/* Smart Summaries & Practice — side by side on tablet/desktop,
-            stacked and centered on mobile (see .pulse-summary-practice-grid) */}
+            stacked on mobile (see .pulse-summary-practice-grid) */}
         <div className="pulse-summary-practice-grid" style={{ marginBottom: 32 }}>
           <div>
             <h2 style={{ ...pulseType.sectionLabel, color: pt.textMuted, marginBottom: 16 }}>📝 Smart Summaries</h2>

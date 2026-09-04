@@ -13,6 +13,7 @@ import { useModules } from '../contexts'
 import { fetchSubjectById } from '../lib/subjects'
 import { fetchLessonsForSubject } from '../lib/lessons'
 import { useHistoryOverlay } from '../lib/useHistoryOverlay'
+import { autoGridStyle } from '../lib/gridLayout'
 import { ModuleIcon, ExamIcon, NotesIcon } from '../lib/medicalIcons'
 
 interface PageModule { id: string; name: string; icon?: string | null; color: string }
@@ -143,7 +144,7 @@ export default function SubjectPage({ dark }: { dark: boolean }) {
         )}
 
         {lessons.length > 0 && (
-          <div className="auto-grid" style={{ ['--auto-grid-cols' as any]: gridCols(lessons.length) }}>
+          <div {...autoGridStyle(lessons.length, gridCols(lessons.length))}>
             {lessons.map((lesson, i) => (
               <LiquidGlassCard key={lesson.id} dark={dark} delay={i * 80}
                 onClick={() => navigate(`/module/${moduleId}/subject/${subjectId}/lesson/${lesson.id}`)}
