@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { getTheme } from '../theme'
+import { getPulseTheme, ON_GRADIENT_TOP } from '../premiumTheme'
 import { useAuth } from '../contexts'
 import { subscribeToPush } from '../lib/pushNotifications'
 import { supabase } from '../supabase'
@@ -16,7 +16,7 @@ import { useToast } from './ToastProvider'
 export default function NotifyPermissionButton({ dark, label = '🔔 Enable notifications' }) {
   const { user } = useAuth()
   const showToast = useToast()
-  const c = getTheme(dark)
+  const pt = getPulseTheme(dark)
   const [busy, setBusy] = useState(false)
   const [needsAction, setNeedsAction] = useState(false)
   const [checked, setChecked] = useState(false)
@@ -154,7 +154,7 @@ export default function NotifyPermissionButton({ dark, label = '🔔 Enable noti
     return (
       <div style={{
         textAlign: 'center', margin: '0 auto 16px', maxWidth: 360,
-        color: c.sub, fontSize: 11, lineHeight: 1.5
+        color: ON_GRADIENT_TOP.muted, fontSize: 11, lineHeight: 1.5
       }}>
         🔕 Notifications aren't supported in this browser. On iPhone, add this site to your
         Home Screen first (Share → Add to Home Screen), then open it from there.
@@ -166,7 +166,7 @@ export default function NotifyPermissionButton({ dark, label = '🔔 Enable noti
     return (
       <div style={{
         textAlign: 'center', margin: '0 auto 16px', maxWidth: 360,
-        color: '#ef4444', fontSize: 11, lineHeight: 1.5
+        color: pt.danger, fontSize: 11, lineHeight: 1.5
       }}>
         🔕 Notifications are blocked for this site. Enable them from your browser's site settings, then reload the page.
       </div>
@@ -177,8 +177,8 @@ export default function NotifyPermissionButton({ dark, label = '🔔 Enable noti
 
   return (
     <button onClick={handleClick} disabled={busy} style={{
-      background: 'transparent', border: `1px solid ${c.border}`, borderRadius: 20,
-      padding: '6px 16px', color: c.sub, cursor: busy ? 'not-allowed' : 'pointer', fontFamily: 'inherit',
+      background: 'transparent', border: `1px solid ${pt.border}`, borderRadius: 20,
+      padding: '6px 16px', color: ON_GRADIENT_TOP.secondary, cursor: busy ? 'not-allowed' : 'pointer', fontFamily: 'inherit',
       fontSize: 12, fontWeight: 700, display: 'block', margin: '0 auto 16px',
       opacity: busy ? 0.6 : 1
     }}>

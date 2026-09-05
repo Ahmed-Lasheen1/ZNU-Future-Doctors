@@ -2,7 +2,7 @@
 import { useState, useEffect, Suspense, lazy } from 'react'
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom'
 import { supabase } from './supabase'
-import { getTheme } from './theme'
+import { getPulseTheme } from './premiumTheme'
 import { fetchModulesSorted } from './lib/modules'
 import { subscribeOnlinePresence } from './lib/onlinePresence'
 import { migrateGuestDataIfNeeded } from './lib/migrateGuestData'
@@ -49,12 +49,12 @@ export { ThemeContext, AuthContext, ModulesContext, useTheme, useAuth, useModule
 export { default as NavMenu } from './components/NavMenu'
 
 function PageLoader({ dark }) {
-  const c = getTheme(dark)
+  const pt = getPulseTheme(dark)
   return (
     <div style={{
       minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center'
     }}>
-      <div style={{ color: c.sub, fontSize: 14, fontWeight: 600 }}>Loading...</div>
+      <div style={{ color: pt.textMuted, fontSize: 14, fontWeight: 600 }}>Loading...</div>
     </div>
   )
 }
@@ -225,7 +225,7 @@ export default function App() {
         <Router>
           <div style={{
             background: bg,
-            minHeight: '100vh', color: getTheme(dark).text,
+            minHeight: '100vh', color: getPulseTheme(dark).text,
             display: 'flex', flexDirection: 'column',
             fontFamily: "'Segoe UI', sans-serif"
           }}>
