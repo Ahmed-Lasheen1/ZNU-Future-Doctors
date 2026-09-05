@@ -96,10 +96,9 @@ export default function StagePage({ dark }: { dark: boolean }) {
 
   if (selectedSummary) return (
     <SummaryOverlay
+      dark={dark}
       onBack={() => setSelectedSummary(null)}
-      eyebrow={`${module.name} · ${meta.title}`}
       title={selectedSummary.title}
-      titleColor={module.color}
       url={selectedSummary.url}
     />
   )

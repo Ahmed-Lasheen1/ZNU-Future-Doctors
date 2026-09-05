@@ -64,7 +64,7 @@ export default function LessonPage({ dark }: { dark: boolean }) {
   )
 
   if (selectedSummary) return (
-    <SummaryOverlay onBack={() => setSelectedSummary(null)} title={selectedSummary.title} titleColor={pt.success} url={selectedSummary.url} eyebrow={undefined} />
+    <SummaryOverlay dark={dark} onBack={() => setSelectedSummary(null)} title={selectedSummary.title} url={selectedSummary.url} />
   )
 
   function openSummary() {

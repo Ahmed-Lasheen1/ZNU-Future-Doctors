@@ -71,7 +71,7 @@ export default function SubjectPage({ dark }: { dark: boolean }) {
   )
 
   if (selectedSummary) return (
-    <SummaryOverlay onBack={() => setSelectedSummary(null)} eyebrow={subject?.name} title={selectedSummary.title} titleColor={pt.success} url={selectedSummary.url} />
+    <SummaryOverlay dark={dark} onBack={() => setSelectedSummary(null)} title={selectedSummary.title} url={selectedSummary.url} />
   )
 
   function openAllSummaries() {

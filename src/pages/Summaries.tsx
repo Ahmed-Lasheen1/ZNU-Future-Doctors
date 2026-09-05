@@ -62,14 +62,6 @@ function SummariesHome({ modules, onSelect, dark }: {
         {sorted.map((mod, i) => (
           <LiquidGlassCard key={mod.id} dark={dark} delay={i * 80} onClick={() => onSelect(mod)}
             style={{ padding: 24, textAlign: 'center', opacity: mod.status === 'active' ? 1 : 0.75 }}>
-            {/* AUDIT FIX: this used to render {mod.icon} as raw text.
-                Module icons are stored either as a plain emoji OR as
-                "icon:<key>" for the custom SVG icon set (see
-                lib/medicalIcons.tsx's ModuleIcon resolver) — rendered
-                raw, a custom icon printed its literal key string
-                (e.g. "icon:cardiology") instead of drawing anything.
-                Routed through the same ModuleIcon component every
-                other page already uses. */}
             <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 10 }}>
               <ModuleIcon value={mod.icon} size={40} color={mod.color} />
             </div>
@@ -122,7 +114,7 @@ function ModuleSummaries({ mod, onBack, dark, initialStage }: {
   const filtered = summaries.filter(s => activeStage === 'all' || (s.exam_stage || 'general') === activeStage)
 
   if (selected) return (
-    <SummaryOverlay onBack={() => setSelected(null)} eyebrow={mod.name} title={selected.title} titleColor={mod.color} url={selected.url} />
+    <SummaryOverlay dark={dark} onBack={() => setSelected(null)} title={selected.title} url={selected.url} />
   )
 
   return (
@@ -130,19 +122,11 @@ function ModuleSummaries({ mod, onBack, dark, initialStage }: {
       {/* "Back" here means "return to the module grid", a local
           view switch, not real page navigation — that's why this
           passes onClick instead of relying on BackButton's default
-          history behavior. BackButton renders as a fixed-position
-          pill regardless of where it sits in the markup, so it's kept
-          on its own line, same as every other page, rather than
-          inline next to the title. */}
+          history behavior. */}
       <div style={{ marginBottom: 8 }}>
         <BackButton dark={dark} onClick={onBack} />
       </div>
 
-      {/* Icon centered above the module name, same layout every other
-          module/subject/lesson/stage page in the app uses (see
-          ModulePage/StagePage/SubjectPage/LessonPage) — this used to
-          be a left-aligned row with the icon inline before the name,
-          which was the odd one out. */}
       <div style={{ textAlign: 'center', padding: '10px 0 24px' }}>
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}>
           <ModuleIcon value={mod.icon} size={44} color={mod.color} />

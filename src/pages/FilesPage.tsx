@@ -141,6 +141,7 @@ export default function FilesPage({ dark }: { dark: boolean }) {
 
         {viewer && viewer.file_type === 'pdf' && (
           <MediaOverlay
+            dark={dark}
             onClose={() => setViewer(null)}
             src={getDriveOrRawUrl(viewer.url)}
             iframeTitle="PDF Viewer"
@@ -149,6 +150,7 @@ export default function FilesPage({ dark }: { dark: boolean }) {
         )}
         {viewer && viewer.file_type === 'video' && (
           <MediaOverlay
+            dark={dark}
             onClose={() => setViewer(null)}
             src={getVideoEmbedUrl(viewer.url)}
             iframeTitle="Video Player"

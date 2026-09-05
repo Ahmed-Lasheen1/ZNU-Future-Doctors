@@ -94,6 +94,7 @@ export default function Schedule({ dark }: { dark: boolean }) {
 
         {viewer && (
           <MediaOverlay
+            dark={dark}
             onClose={() => setViewer(null)}
             src={getDriveOrRawUrl(viewer.url)}
             iframeTitle={viewer.title}
