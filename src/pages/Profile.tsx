@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { supabase } from '../supabase'
-import { useAuth, useModules } from '../contexts'
+import { useAuth } from '../contexts'
 import { getPulseTheme, pulseFonts, pulseType, ON_GRADIENT_TOP } from '../premiumTheme'
 import { glassInput, glassPrimaryBtn, glassGhostBtn } from '../components/pulse/PulseUI'
 import { containsProfanity } from '../lib/moderation'
@@ -11,7 +11,6 @@ import LiquidGlassCard from '@/components/ui/liquid-glass-card'
 import PulseBackground from '../components/pulse/PulseBackground'
 import BackButton from '../components/pulse/BackButton'
 import PulseGlassRow from '../components/pulse/PulseGlassRow'
-import { getGuestHistory } from '../lib/reviewStorage'
 
 // See src/pages/Auth.tsx for why this is 8, not 6 — same reasoning,
 // kept as the same-named constant in both places since there's no
@@ -29,23 +28,6 @@ interface Profile {
   name: string
   points: number
   university_code?: string | null
-}
-
-interface HistoryRow {
-  module_id?: string | null
-  quiz_type: string
-  total: number
-  correct: number
-  score: number
-  time_sec?: number | null
-  completed_at: string | number
-}
-
-interface ProfileModule {
-  id: string
-  name: string
-  icon?: string | null
-  color: string
 }
 
 function EditProfileForm({ profile, dark, onUpdated, onProfileRefresh }: {
@@ -136,25 +118,21 @@ export default function Profile({ dark }: { dark: boolean }) {
     signOut: () => Promise<void>
     fetchProfile: (id: string) => Promise<void>
   }
-  const { modules } = useModules() as { modules: ProfileModule[] }
   const navigate = useNavigate()
   const location = useLocation()
   const pt = getPulseTheme(dark)
 
   const [profile, setProfile] = useState<Profile | null>(null)
   const [leaderboard, setLeaderboard] = useState<Profile[]>([])
-  const [tab, setTab] = useState<'profile' | 'leaderboard' | 'history'>(() => {
+  const [tab, setTab] = useState<'profile' | 'leaderboard'>(() => {
     const params = new URLSearchParams(location.search)
     const t = params.get('tab')
-    return t === 'leaderboard' || t === 'history' ? t : 'profile'
+    return t === 'leaderboard' ? t : 'profile'
   })
   const [loading, setLoading] = useState(true)
   const [editing, setEditing] = useState(false)
-  const [history, setHistory] = useState<HistoryRow[]>([])
-  const [historyLoading, setHistoryLoading] = useState(true)
 
   useEffect(() => { fetchData() }, [user])
-  useEffect(() => { if (tab === 'history') loadHistory() }, [tab, user])
 
   async function fetchData() {
     setLoading(true)
@@ -171,22 +149,6 @@ export default function Profile({ dark }: { dark: boolean }) {
     setLoading(false)
   }
 
-  async function loadHistory() {
-    setHistoryLoading(true)
-    if (user) {
-      const { data } = await supabase
-        .from('exam_history')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('completed_at', { ascending: false })
-        .limit(50)
-      setHistory((data || []) as HistoryRow[])
-    } else {
-      setHistory(getGuestHistory() as HistoryRow[])
-    }
-    setHistoryLoading(false)
-  }
-
   const medalColors = [pt.amber, '#94a3b8', '#cd7c2f']
   const hoverTint = dark ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.35)'
 
@@ -199,9 +161,10 @@ export default function Profile({ dark }: { dark: boolean }) {
           <BackButton dark={dark} fallback="/" />
         </div>
         
-        {/* Tabs */}
+        {/* Tabs — history now lives on the Review page (/review), so
+            it's no longer one of the tabs here. */}
         <div style={{ display: 'flex', gap: 8, marginBottom: 24 }}>
-          {(['profile', 'leaderboard', 'history'] as const).map(t => {
+          {(['profile', 'leaderboard'] as const).map(t => {
             const active = tab === t
             return (
               <PulseGlassRow
@@ -212,7 +175,7 @@ export default function Profile({ dark }: { dark: boolean }) {
                 style={{ flex: 1, textAlign: 'center' }}
               >
                 <div style={{ padding: '10px', ...pulseType.button, color: active ? pt.cobalt : pt.sub }}>
-                  {t === 'profile' ? '👤 Profile' : t === 'leaderboard' ? '🏆 Leaderboard' : '🕘 History'}
+                  {t === 'profile' ? '👤 Profile' : '🏆 Leaderboard'}
                 </div>
               </PulseGlassRow>
             )
@@ -259,6 +222,18 @@ export default function Profile({ dark }: { dark: boolean }) {
                       <span style={{ color: pt.textMuted, fontSize: 13 }}>points</span>
                     </div>
                   </LiquidGlassCard>
+                </div>
+
+                {/* Link out to exam history & mistakes — now its own
+                    page (Review) instead of a tab here. */}
+                <div style={{ textAlign: 'center', marginBottom: 16 }}>
+                  <PulseGlassRow dark={dark} radius={999} hoverTint={hoverTint} onClick={() => navigate('/review')}
+                    role="button" tabIndex={0} style={{ display: 'inline-block' }}
+                    onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate('/review') } }}>
+                    <div style={{ padding: '8px 18px', ...pulseType.small, fontWeight: 700, color: pt.sub }}>
+                      🕘 View exam history & mistakes
+                    </div>
+                  </PulseGlassRow>
                 </div>
 
                 {/* Info */}
@@ -347,86 +322,6 @@ export default function Profile({ dark }: { dark: boolean }) {
                       <span style={{ fontSize: 14 }}>⭐</span>
                       <span style={{ color: pt.amber, fontWeight: 900, fontSize: 16 }}>{student.points}</span>
                     </div>
-                  </LiquidGlassCard>
-                </div>
-              )
-            })}
-          </div>
-        )}
-
-        {tab === 'history' && (
-          <div>
-            <h2 style={{ ...pulseType.sectionTitle, color: '#e2725b', textAlign: 'center', marginBottom: 8 }}>
-              🕘 Exam History
-            </h2>
-
-            <div style={{ textAlign: 'center', marginBottom: 16 }}>
-              <PulseGlassRow dark={dark} radius={999} hoverTint={hoverTint} onClick={() => navigate('/review')}
-                role="button" tabIndex={0} style={{ display: 'inline-block' }}
-                onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate('/review') } }}>
-                <div style={{ padding: '8px 18px', ...pulseType.small, fontWeight: 700, color: pt.sub }}>
-                  📚 See my incorrect & flagged questions
-                </div>
-              </PulseGlassRow>
-            </div>
-
-            {!historyLoading && history.length > 0 && (() => {
-              const totalAttempted = history.reduce((a, h) => a + h.total, 0)
-              const totalCorrect = history.reduce((a, h) => a + h.correct, 0)
-              const accuracy = totalAttempted > 0 ? Math.round((totalCorrect / totalAttempted) * 100) : null
-              if (accuracy === null) return null
-              return (
-                <div style={{ textAlign: 'center', marginBottom: 20 }}>
-                  <span style={{ color: '#e2725b', fontWeight: 900, fontSize: 20 }}>🎯 {accuracy}%</span>
-                  <span style={{ color: pt.sub, fontSize: 12, fontWeight: 600, marginLeft: 8 }}>
-                    overall accuracy ({totalCorrect}/{totalAttempted})
-                  </span>
-                </div>
-              )
-            })()}
-
-            {!user && (
-              <div style={{ marginBottom: 16 }}>
-                <LiquidGlassCard dark={dark} delay={0} style={{ padding: '10px 16px', textAlign: 'center' }}>
-                  <span style={{ color: pt.cobalt, fontSize: 13 }}>
-                    💡 Showing history saved on this device only.{' '}
-                    <span style={{ cursor: 'pointer', textDecoration: 'underline' }} onClick={() => navigate('/auth')}>Sign in</span>{' '}
-                    to keep it across devices.
-                  </span>
-                </LiquidGlassCard>
-              </div>
-            )}
-
-            {historyLoading && <p style={{ color: ON_GRADIENT_TOP.secondary, textAlign: 'center' }}>Loading...</p>}
-
-            {!historyLoading && history.length === 0 && (
-              <LiquidGlassCard dark={dark} delay={0} style={{ padding: 40, textAlign: 'center' }}>
-                <p style={{ color: pt.sub }}>No exams attempted yet 📚</p>
-              </LiquidGlassCard>
-            )}
-
-            {!historyLoading && history.map((h, i) => {
-              const mod = modules.find(m => m.id === h.module_id)
-              const isLast = i === history.length - 1
-              return (
-                <div key={i} style={{ marginBottom: isLast ? 0 : 10 }}>
-                  <LiquidGlassCard dark={dark} delay={i * 50} style={{
-                    padding: '14px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12
-                  }}>
-                    <div>
-                      <div style={{ ...pulseType.cardTitle, fontSize: 14, color: pt.textPrimary }}>
-                        {mod ? `${mod.icon} ${mod.name}` : 'Module'} · {h.quiz_type === 'mock' ? '📝 Mock' : '🧪 Practice'}
-                      </div>
-                      <div style={{ ...pulseType.small, color: pt.textMuted, marginTop: 2 }}>
-                        {new Date(h.completed_at).toLocaleDateString()} · {h.correct}/{h.total} correct
-                        {h.time_sec ? ` · ${Math.floor(h.time_sec / 60)}m ${h.time_sec % 60}s` : ''}
-                      </div>
-                    </div>
-                    <div style={{
-                      background: h.score >= 60 ? 'rgba(74,222,128,0.16)' : 'rgba(239,107,87,0.16)',
-                      color: h.score >= 60 ? pt.success : pt.danger,
-                      borderRadius: 999, padding: '4px 14px', fontWeight: 900, fontSize: 14, flexShrink: 0
-                    }}>{h.score}%</div>
                   </LiquidGlassCard>
                 </div>
               )

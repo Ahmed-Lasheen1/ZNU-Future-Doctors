@@ -489,6 +489,24 @@ export default function MCQ({ dark }: { dark: boolean }) {
     const scorePercent = total > 0 ? Math.round((correctCount / total) * 100) : 0
     const timeSec = quizMode === 'mock' ? Math.max(0, MOCK_MINUTES * 60 - timeLeft) : null
     setFinishTimeSec(quizMode === 'mock' ? (timeSec as number) : elapsedSeconds)
+
+    // Snapshot of every question this attempt got wrong — saved
+    // alongside the exam_history row so Review's History tab can show
+    // exactly what was missed in THIS attempt, later, even if the
+    // question bank itself changes or a question gets deleted.
+    const incorrectSnapshots = quizQuestions
+      .filter(q => resultMap[q.id] && !resultMap[q.id].is_correct)
+      .map(q => ({
+        question_id: q.id,
+        question: q.question,
+        option_a: q.option_a, option_b: q.option_b, option_c: q.option_c, option_d: q.option_d,
+        correct_answer: resultMap[q.id].correct_answer,
+        explanation: resultMap[q.id].explanation,
+        module_id: q.module_id || null,
+        subject_id: q.subject_id || null,
+        source: q.source || null,
+      }))
+
     const retryModuleIsUniform = quizMode === 'retry' && quizQuestions.every(q => q.module_id === quizQuestions[0]?.module_id)
     const retrySubjectIsUniform = quizMode === 'retry' && quizQuestions.every(q => q.subject_id === quizQuestions[0]?.subject_id)
     const historyModuleId = quizMode === 'retry'
@@ -533,7 +551,8 @@ export default function MCQ({ dark }: { dark: boolean }) {
         module_id: historyModuleId,
         quiz_type: quizMode,
         subject_id: historySubjectId,
-        total, correct: correctCount, score: scorePercent, time_sec: timeSec
+        total, correct: correctCount, score: scorePercent, time_sec: timeSec,
+        incorrect_questions: incorrectSnapshots
       }).then(({ error: historyError }: any) => {
         if (historyError) console.warn('[MCQ] exam_history insert failed:', historyError)
       })
@@ -551,7 +570,8 @@ export default function MCQ({ dark }: { dark: boolean }) {
       enrichGuestFlagsWithResults(resultMap)
       addGuestHistory({
         module_id: historyModuleId, quiz_type: quizMode,
-        total, correct: correctCount, score: scorePercent, time_sec: timeSec
+        total, correct: correctCount, score: scorePercent, time_sec: timeSec,
+        incorrect_questions: incorrectSnapshots
       })
     }
   }
