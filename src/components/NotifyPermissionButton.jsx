@@ -1,140 +1,70 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import { getPulseTheme, ON_GRADIENT_TOP } from '../premiumTheme'
-import { useAuth } from '../contexts'
-import { subscribeToPush } from '../lib/pushNotifications'
-import { supabase } from '../supabase'
 import { useToast } from './ToastProvider'
+import { useNotificationStatus } from '../lib/useNotificationStatus'
+import { subscribeToPush } from '../lib/pushNotifications'
+import { useOncePerSession } from '../lib/useOncePerSession'
 
-// Small reusable "🔔 Enable notifications" button.
+// Small reusable "🔔 Enable notifications" call-to-action button.
 //
-// Does NOT rely on localStorage to remember "already synced" — iOS
-// can clear a Home Screen PWA's storage between launches, which was
-// making this button reappear even though the subscription was fine.
-// Instead, on every mount it asks Supabase directly whether THIS
-// device's current push endpoint is already saved, which is the only
-// source of truth that actually matters.
+// Support/permission/subscription state comes from the shared
+// useNotificationStatus hook — the same one the persistent toggle on
+// the Profile page reads (see NotificationToggle.tsx) — so the two
+// can never disagree about whether notifications are actually on for
+// this device.
+//
+// AUDIT FIX: the "not supported" and "blocked" cases used to render a
+// permanent paragraph of explanatory text inline, on every page this
+// button happens to be mounted on (Home, Checklist, AnonQuestions).
+// Both are now a single toast, shown once per browser tab session
+// (see useOncePerSession) — the student can check or fix their
+// notification setting any time from the toggle on the Profile page.
 export default function NotifyPermissionButton({ dark, label = '🔔 Enable notifications' }) {
-  const { user } = useAuth()
-  const showToast = useToast()
   const pt = getPulseTheme(dark)
+  const showToast = useToast()
+  const { supported, permission, enabled, checked, refresh } = useNotificationStatus()
   const [busy, setBusy] = useState(false)
-  const [needsAction, setNeedsAction] = useState(false)
-  const [checked, setChecked] = useState(false)
-  // Tracks Notification.permission itself, not just derived UI state —
-  // re-read on every check() call so a permission change made from the
-  // browser's own site-settings UI (not this button) is picked up the
-  // next time the tab becomes active again, instead of only at mount.
-  const [permission, setPermission] = useState(() =>
-    typeof window !== 'undefined' && 'Notification' in window ? Notification.permission : null
-  )
 
-  const supported = typeof window !== 'undefined' && 'Notification' in window && 'serviceWorker' in navigator && 'PushManager' in window
-
-  const check = useCallback(async () => {
-    if (!supported) { setChecked(true); return }
-
-    const currentPermission = Notification.permission
-    setPermission(currentPermission)
-
-    if (currentPermission === 'default') {
-      setNeedsAction(true)
-      setChecked(true)
-      return
-    }
-
-    if (currentPermission === 'denied') {
-      setNeedsAction(false)
-      setChecked(true)
-      return
-    }
-
-    // permission === 'granted' — verify against the server, not a
-    // local flag, since local storage isn't reliable on iOS PWAs.
-    try {
-      const reg = await navigator.serviceWorker.ready
-      const sub = await reg.pushManager.getSubscription()
-
-      if (!sub) {
-        // Browser says granted but has no actual subscription object
-        // (can happen after iOS clears things) — needs a fresh one.
-        setNeedsAction(true)
-        setChecked(true)
-        return
-      }
-
-      // Uses the push_subscription_exists RPC rather than a direct
-      // table select — push_subscriptions no longer grants broad
-      // SELECT (a plain select would only ever see a row you already
-      // own, never an unclaimed one, so it couldn't tell "not saved
-      // yet" apart from "saved but not claimed by me yet"). The RPC
-      // answers the actual question this check needs — "does a row
-      // for this endpoint exist at all" — without exposing anyone's
-      // keys.
-      const { data: exists, error } = await supabase.rpc('push_subscription_exists', { p_endpoint: sub.endpoint })
-
-      if (!error && exists) {
-        // Confirmed present on the server — nothing to do.
-        setNeedsAction(false)
-      } else {
-        // Either the row genuinely isn't there, or this device's
-        // subscription hasn't been claimed under the signed-in
-        // account yet — try to (re)save/claim it silently once
-        // before bothering the student.
-        const result = await subscribeToPush()
-        setNeedsAction(!result.success)
-      }
-      setChecked(true)
-    } catch {
-      setNeedsAction(true)
-      setChecked(true)
-    }
-  }, [supported])
+  const canToastUnsupported = useOncePerSession('znu_notif_unsupported_toast')
+  const canToastDenied = useOncePerSession('znu_notif_denied_toast')
 
   useEffect(() => {
-    let cancelled = false
-
-    async function run() {
-      if (cancelled) return
-      await check()
+    if (!checked || !canToastUnsupported) return
+    if (!supported) {
+      showToast("🔕 Notifications aren't supported in this browser. On iPhone, add this site to your Home Screen first (Share → Add to Home Screen), then open it from there.", 'error')
     }
-    run()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [checked, supported])
 
-    // Re-check whenever the tab regains focus/visibility — catches a
-    // permission grant/denial made from the browser's own site-
-    // settings UI while this tab was backgrounded, which the original
-    // mount-only check would otherwise miss until a full reload.
-    function onVisibilityChange() {
-      if (document.visibilityState === 'visible') check()
+  useEffect(() => {
+    if (!checked || !canToastDenied) return
+    if (supported && permission === 'denied') {
+      showToast("🔕 Notifications are blocked for this site. Enable them from your browser's site settings, then reload the page.", 'error')
     }
-    document.addEventListener('visibilitychange', onVisibilityChange)
-    window.addEventListener('focus', onVisibilityChange)
-
-    return () => {
-      cancelled = true
-      document.removeEventListener('visibilitychange', onVisibilityChange)
-      window.removeEventListener('focus', onVisibilityChange)
-    }
-  }, [check, user?.id])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [checked, supported, permission])
 
   async function handleClick() {
     setBusy(true)
     let perm = permission
     if (perm === 'default') {
       perm = await Notification.requestPermission()
-      setPermission(perm)
     }
 
     if (perm !== 'granted') {
       setBusy(false)
-      showToast('🔕 Notifications permission was not granted', 'error')
+      showToast(perm === 'denied'
+        ? "🔕 Notifications are blocked for this site. Enable them from your browser's site settings, then reload the page."
+        : '🔕 Notifications permission was not granted', 'error')
+      await refresh()
       return
     }
 
     const result = await subscribeToPush()
     setBusy(false)
+    await refresh()
 
     if (result.success) {
-      setNeedsAction(false)
       showToast('✅ Notifications enabled!')
       return
     }
@@ -149,31 +79,9 @@ export default function NotifyPermissionButton({ dark, label = '🔔 Enable noti
   }
 
   if (!checked) return null
-
-  if (!supported) {
-    return (
-      <div style={{
-        textAlign: 'center', margin: '0 auto 16px', maxWidth: 360,
-        color: ON_GRADIENT_TOP.muted, fontSize: 11, lineHeight: 1.5
-      }}>
-        🔕 Notifications aren't supported in this browser. On iPhone, add this site to your
-        Home Screen first (Share → Add to Home Screen), then open it from there.
-      </div>
-    )
-  }
-
-  if (permission === 'denied') {
-    return (
-      <div style={{
-        textAlign: 'center', margin: '0 auto 16px', maxWidth: 360,
-        color: pt.danger, fontSize: 11, lineHeight: 1.5
-      }}>
-        🔕 Notifications are blocked for this site. Enable them from your browser's site settings, then reload the page.
-      </div>
-    )
-  }
-
-  if (!needsAction) return null
+  if (!supported) return null
+  if (permission === 'denied') return null
+  if (enabled) return null
 
   return (
     <button onClick={handleClick} disabled={busy} style={{
