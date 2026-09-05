@@ -194,13 +194,33 @@ export default function App() {
     }
     initSession()
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null)
+    // AUDIT FIX (push-notification race for brand-new accounts): this
+    // used to be a plain (non-async) callback that called
+    // `setUser(session.user)` FIRST and only THEN kicked off
+    // `ensureProfile(session.user).then(...)` in the background,
+    // unawaited. That meant the app treated the person as "signed in"
+    // (Home's notification banner included) the instant sign-in/OTP-
+    // verification/Google-OAuth completed, while their `profiles` row
+    // might still be mid-insert. A brand-new user who tapped "Enable
+    // notifications" in that window had their push subscription saved
+    // against an account whose profile row didn't exist yet, and the
+    // save failed ("Could not save your subscription — try again
+    // later"). Existing users never hit this, since their profile row
+    // was created long ago on their original sign-up. This mirrors
+    // initSession() above (which already awaits ensureProfile before
+    // doing anything else) — now onAuthStateChange does the same:
+    // ensureProfile is awaited BEFORE setUser flips the app into
+    // "signed in", so by the time anything interactive renders, the
+    // profile row is guaranteed to already exist.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session?.user) {
-        ensureProfile(session.user).then(() => fetchProfile(session.user.id))
+        await ensureProfile(session.user)
+        setUser(session.user)
+        await fetchProfile(session.user.id)
         migrateGuestDataIfNeeded(session.user.id)
         cleanUpAuthHash()
       } else {
+        setUser(null)
         setProfile(null)
       }
     })
