@@ -56,7 +56,10 @@ export function GhostButton({ dark, onClick, children }: { dark: boolean; onClic
       tabIndex={onClick ? 0 : undefined}
       onKeyDown={onClick ? (e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick() } }) : undefined}
     >
-      <div style={{ padding: '11px', textAlign: 'center', fontSize: 13, fontWeight: 700, color: dark ? '#fff' : '#0f172a', fontFamily: pulseFonts.body }}>
+      {/* AUDIT FIX: light-mode text was '#0f172a' — not the exact
+          Light Liquid Glass primary. Now uses the exact spec values
+          (#FFFFFF dark / #10243A light) for text on a glass surface. */}
+      <div style={{ padding: '11px', textAlign: 'center', fontSize: 13, fontWeight: 700, color: dark ? '#FFFFFF' : '#10243A', fontFamily: pulseFonts.body }}>
         {children}
       </div>
     </PulseGlassRow>

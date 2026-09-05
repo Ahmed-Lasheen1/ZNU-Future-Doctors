@@ -1,6 +1,6 @@
 // src/components/pulse/PulseBrand.tsx
 import { motion } from 'framer-motion'
-import { getPulseTheme, pulseFonts, pulseType } from '../../premiumTheme'
+import { getPulseTheme, pulseFonts, pulseType, ON_GRADIENT_TOP } from '../../premiumTheme'
 
 const LOGO_SRC = '/icon-192.png'
 
@@ -36,6 +36,12 @@ const brandWordItem = {
   visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: 'easeOut' } },
 }
 
+// This brand block always sits directly on the light/top portion of
+// the fixed PULSE_BG gradient — regardless of the app's light/dark
+// theme toggle, since that gradient never changes with the theme.
+// `pt` below is still used for the decorative logo box (a small glass
+// chip), but the plain "ZNU"/tagline text uses ON_GRADIENT_TOP, not
+// the Liquid Glass text tokens, since it isn't sitting on any glass.
 export default function PulseBrand({ dark, logoSize = 44, fontSize = 20, animation, instant = false }: PulseBrandProps) {
   const pt = getPulseTheme(false)
 
@@ -52,7 +58,7 @@ export default function PulseBrand({ dark, logoSize = 44, fontSize = 20, animati
         <div style={{
           ...pulseType.sectionTitle,
           fontFamily: pulseFonts.display, fontWeight: 800, fontSize, letterSpacing: 1,
-          color: pt.textPrimary, lineHeight: 1
+          color: ON_GRADIENT_TOP.primary, lineHeight: 1
         }}>
           ZNU <span style={{ color: pt.cobalt }}>PULSE</span>
         </div>
@@ -89,7 +95,7 @@ export default function PulseBrand({ dark, logoSize = 44, fontSize = 20, animati
           style={{
             ...pulseType.sectionTitle,
             fontFamily: pulseFonts.display, fontWeight: 800, fontSize, letterSpacing: 1.2,
-            color: pt.textPrimary, lineHeight: 1
+            color: ON_GRADIENT_TOP.primary, lineHeight: 1
           }}
         >
           <motion.span variants={brandWordItem} style={{ display: 'inline-block' }}>ZNU</motion.span>
@@ -103,7 +109,7 @@ export default function PulseBrand({ dark, logoSize = 44, fontSize = 20, animati
           style={{
             ...pulseType.sectionLabel,
             fontSize: 9, letterSpacing: 2.5,
-            color: pt.textMuted, marginTop: 5,
+            color: ON_GRADIENT_TOP.muted, marginTop: 5,
           }}
         >For Future Doctors</motion.div>
       </div>

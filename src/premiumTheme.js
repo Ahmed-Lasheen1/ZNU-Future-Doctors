@@ -16,6 +16,28 @@ export const pulseWeights = {
   bold: 700,
 }
 
+// ── Text directly on the PULSE_BG gradient (no glass underneath) ───
+// PULSE_BG is a fixed, theme-independent gradient (see
+// PulseBackground.tsx) that always runs pale blue at the top to dark
+// navy at the bottom, in both light and dark mode. Anything rendered
+// straight on top of it — not inside a LiquidGlassCard/PulseGlassRow —
+// needs colors picked for whichever zone it actually sits in, not the
+// Liquid Glass tokens below (those assume a tinted, blurred backdrop).
+// These two token sets are the only approved colors for that case.
+export const ON_GRADIENT_TOP = {
+  // Text over the light/upper portion of the gradient.
+  primary: '#062B50',
+  secondary: '#062B50',
+  muted: 'rgba(6,43,80,0.62)',
+}
+
+export const ON_GRADIENT_BOTTOM = {
+  // Text over the dark/lower portion of the gradient.
+  primary: '#FFFFFF',
+  secondary: 'rgba(255,255,255,0.80)',
+  muted: 'rgba(255,255,255,0.62)',
+}
+
 export function getPulseTheme(dark) {
   return dark
     ? {
@@ -28,17 +50,15 @@ export function getPulseTheme(dark) {
         border: '#3A527A66',
         borderStrong: '#4A6690',
 
-        // Text — Dark Glass Cards high-contrast palette. Pure white
-        // primary for titles/big numbers; Bright Ice Gray secondary
-        // (bumped up from the old muted slate-blue) so labels and
-        // metadata stay legible on a frosted dark surface instead of
-        // blending into it.
+        // Text — Dark Liquid Glass. Primary #FFFFFF, Secondary
+        // rgba(255,255,255,.82), Muted rgba(255,255,255,.62) — exact
+        // values, not opacity applied to primary.
         text: '#FFFFFF',
-        sub: '#E2E8F0',
-        faint: '#E2E8F0',
+        sub: 'rgba(255,255,255,0.82)',
+        faint: 'rgba(255,255,255,0.62)',
         textPrimary: '#FFFFFF',
-        textSecondary: '#E2E8F0',
-        textMuted: '#E2E8F0',
+        textSecondary: 'rgba(255,255,255,0.82)',
+        textMuted: 'rgba(255,255,255,0.62)',
 
         // Accents — Bright Cyan for links/tags/progress rings; Neon
         // Orange reserved for status/streak indicators specifically
@@ -72,17 +92,14 @@ export function getPulseTheme(dark) {
         border: '#C7D3E3',
         borderStrong: '#AFC0D6',
 
-        // Text — Light Glass Cards high-contrast palette. Midnight
-        // Black primary (bumped from near-black slate) maximizes
-        // weight against the translucent light-blue background; Dark
-        // Navy Gray secondary keeps small metadata legible instead of
-        // blending into the card.
-        text: '#030712',
-        sub: '#1E293B',
-        faint: '#1E293B',
-        textPrimary: '#030712',
-        textSecondary: '#1E293B',
-        textMuted: '#1E293B',
+        // Text — Light Liquid Glass. Primary #10243A, Secondary
+        // #29445C, Muted #526A7F — exact values.
+        text: '#10243A',
+        sub: '#29445C',
+        faint: '#526A7F',
+        textPrimary: '#10243A',
+        textSecondary: '#29445C',
+        textMuted: '#526A7F',
 
         // Accents — Electric Cyan/Blue replaces the old soft purple-
         // leaning blue for tags/stats; Vibrant Crimson Orange for

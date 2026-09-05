@@ -503,8 +503,11 @@ export default function Home({ dark, toggleTheme }: { dark: boolean; toggleTheme
                   <div style={{ ...pulseType.cardTitle, fontSize: 'clamp(13px, 1.1vw, 16px)', color: pt.textSecondary, marginBottom: 8 }}>{mod.name}</div>
                   <div style={{
                     ...pulseType.small, fontSize: 11,
-                    display: 'inline-block', background: `${pt.textMuted}20`, color: pt.textMuted,
-                    border: `1px solid ${pt.textMuted}40`, borderRadius: 20, padding: '2px 10px'
+                    display: 'inline-block',
+                    background: dark ? 'rgba(255,255,255,0.12)' : '#526A7F20',
+                    color: pt.textMuted,
+                    border: `1px solid ${dark ? 'rgba(255,255,255,0.24)' : '#526A7F40'}`,
+                    borderRadius: 20, padding: '2px 10px'
                   }}>✓ Completed</div>
                 </LiquidGlassCard>
               ))}

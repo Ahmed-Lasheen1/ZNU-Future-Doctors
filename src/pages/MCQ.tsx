@@ -4,7 +4,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { supabase } from '../supabase'
 import { useAuth, useModules } from '../contexts'
-import { getPulseTheme, pulseFonts, pulseType } from '../premiumTheme'
+import { getPulseTheme, pulseFonts, pulseType, ON_GRADIENT_TOP, ON_GRADIENT_BOTTOM } from '../premiumTheme'
 import { useToast } from '../components/ToastProvider'
 import ErrorBanner from '../components/ErrorBanner'
 import QuestionRail from '../components/QuestionRail'
@@ -38,12 +38,13 @@ const MCQ_ACCENT = '#e2725b'
 // "the mini status header sits in the light top zone", "everything
 // below the first divider sits in the medium/dark zone" — actually
 // hold in practice.
-const EXAM_TOP_TEXT = '#0a1f3d'                 // dark navy — for the light top of the gradient
-const EXAM_TOP_TEXT_MUTED = 'rgba(10,31,61,0.62)'
-const EXAM_TOP_AMBER = '#b45309'                // deepened amber — still legible on pale blue
-const EXAM_TOP_RED = '#b91c1c'                  // deepened red — still legible on pale blue
-const EXAM_LOW_TEXT = '#f5faff'                 // near-white — for the medium/dark lower gradient
-const EXAM_LOW_TEXT_MUTED = 'rgba(245,250,255,0.72)'
+const EXAM_TOP_TEXT = ON_GRADIENT_TOP.primary          // #062B50 — text directly on the light/top of the gradient
+const EXAM_TOP_TEXT_MUTED = ON_GRADIENT_TOP.muted      // rgba(6,43,80,0.62)
+const EXAM_TOP_AMBER = '#b45309'                // functional warning state — unchanged
+const EXAM_TOP_RED = '#b91c1c'                  // functional danger state — unchanged
+const EXAM_LOW_TEXT = ON_GRADIENT_BOTTOM.primary       // #FFFFFF — text directly on the dark/lower gradient
+const EXAM_LOW_SECONDARY = ON_GRADIENT_BOTTOM.secondary // rgba(255,255,255,0.80)
+const EXAM_LOW_TEXT_MUTED = ON_GRADIENT_BOTTOM.muted    // rgba(255,255,255,0.62)
 const EXAM_LOW_SHADOW = '0 1px 6px rgba(1,12,74,0.5)'
 const EXAM_DIVIDER = 'rgba(255,255,255,0.28)'   // reads on both light and dark portions
 
@@ -1021,7 +1022,7 @@ export default function MCQ({ dark }: { dark: boolean }) {
                   textShadow: EXAM_LOW_SHADOW, fontSize: 13, fontWeight: 700, letterSpacing: 1.5
                 }}>PREVIOUS</button>
 
-                <span style={{ color: EXAM_LOW_TEXT_MUTED, textShadow: EXAM_LOW_SHADOW, fontSize: 11, fontWeight: 700 }}>{answeredCount}/{total}</span>
+                <span style={{ color: EXAM_LOW_SECONDARY, textShadow: EXAM_LOW_SHADOW, fontSize: 11, fontWeight: 700 }}>{answeredCount}/{total}</span>
 
                 {!isLastQuestion ? (
                   <button onClick={goNext} className="exam-btn" style={{
@@ -1061,7 +1062,7 @@ export default function MCQ({ dark }: { dark: boolean }) {
               <div style={{ height: 1, background: EXAM_DIVIDER, marginBottom: 18 }} />
 
               <div style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.5, color: EXAM_LOW_TEXT_MUTED, textShadow: EXAM_LOW_SHADOW, marginBottom: 2 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.5, color: EXAM_LOW_SECONDARY, textShadow: EXAM_LOW_SHADOW, marginBottom: 2 }}>
                   {quizMode === 'mock' ? 'MOCK EXAM COMPLETE' : quizMode === 'retry' ? 'RETRY COMPLETE' : 'PRACTICE COMPLETE'}
                 </div>
                 <div style={{
@@ -1081,12 +1082,12 @@ export default function MCQ({ dark }: { dark: boolean }) {
 
               {subjectStats.length > 1 && (
                 <div style={{ marginTop: 20 }}>
-                  <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.5, color: EXAM_LOW_TEXT_MUTED, textShadow: EXAM_LOW_SHADOW, marginBottom: 10 }}>YOUR PERFORMANCE</div>
+                  <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.5, color: EXAM_LOW_SECONDARY, textShadow: EXAM_LOW_SHADOW, marginBottom: 10 }}>YOUR PERFORMANCE</div>
                   {subjectStats.map(s => (
                     <div key={s.id} style={{ marginBottom: 8 }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
                         <span style={{ color: EXAM_LOW_TEXT, textShadow: EXAM_LOW_SHADOW, fontSize: 12, fontWeight: 600 }}>{s.name}</span>
-                        <span style={{ color: EXAM_LOW_TEXT_MUTED, textShadow: EXAM_LOW_SHADOW, fontSize: 12, fontWeight: 700 }}>{s.accuracy}</span>
+                        <span style={{ color: EXAM_LOW_SECONDARY, textShadow: EXAM_LOW_SHADOW, fontSize: 12, fontWeight: 700 }}>{s.accuracy}</span>
                       </div>
                       <div style={{
                         height: 4, borderRadius: 999, overflow: 'hidden',
@@ -1105,7 +1106,7 @@ export default function MCQ({ dark }: { dark: boolean }) {
 
               {weakestSubject && (
                 <div style={{ marginTop: 20 }}>
-                  <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.5, color: EXAM_LOW_TEXT_MUTED, textShadow: EXAM_LOW_SHADOW, marginBottom: 8 }}>FOCUS NEXT</div>
+                  <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.5, color: EXAM_LOW_SECONDARY, textShadow: EXAM_LOW_SHADOW, marginBottom: 8 }}>FOCUS NEXT</div>
                   <LiquidGlassCard dark={dark} delay={0} style={{ padding: '16px 20px' }}>
                     <div style={{ color: MCQ_ACCENT, fontWeight: 800, fontSize: 15, marginBottom: 4, textTransform: 'uppercase', letterSpacing: 0.5 }}>
                       {weakestSubject.name}
