@@ -1,5 +1,3 @@
-import { getTheme } from '../theme'
-
 interface QuestionRailProps {
   total: number
   currentIndex: number
@@ -20,8 +18,6 @@ interface QuestionRailProps {
 export default function QuestionRail({
   total, currentIndex, answeredIndexes, flaggedIndexes, onGoTo, dark, accent
 }: QuestionRailProps) {
-  const c = getTheme(dark)
-
   return (
     <div style={{
       display: 'flex',
