@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../supabase'
-import { getPulseTheme, pulseFonts, pulseType } from '../premiumTheme'
+import { getPulseTheme, pulseFonts, pulseType, ON_GRADIENT_TOP } from '../premiumTheme'
 import ErrorBanner from '../components/ErrorBanner'
 import LiquidGlassCard from '@/components/ui/liquid-glass-card'
 import PulseBackground from '../components/pulse/PulseBackground'
@@ -61,7 +61,7 @@ export default function ModulePage({ dark }: { dark: boolean }) {
   if (!module) return (
     <div style={{ position: 'relative', minHeight: '100vh' }}>
       <PulseBackground />
-      <div style={{ position: 'relative', zIndex: 1, padding: 24, textAlign: 'center', color: pt.sub }}>
+      <div style={{ position: 'relative', zIndex: 1, padding: 24, textAlign: 'center', color: ON_GRADIENT_TOP.secondary }}>
         {(loadError || modulesError)
           ? <ErrorBanner message="Couldn't load this module — check your connection." />
           : !modulesLoaded ? 'Loading...' : "This module doesn't exist or was removed."}
@@ -97,7 +97,7 @@ export default function ModulePage({ dark }: { dark: boolean }) {
           <div style={{
             display: 'inline-block',
             background: module.status === 'active' ? 'rgba(74,222,128,0.14)' : (dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)'),
-            color: module.status === 'active' ? '#4ade80' : pt.textMuted,
+            color: module.status === 'active' ? '#4ade80' : ON_GRADIENT_TOP.muted,
             border: `1px solid ${module.status === 'active' ? 'rgba(74,222,128,0.35)' : pt.border}`,
             borderRadius: 999, padding: '4px 14px', fontSize: 12, fontWeight: 700
           }}>
@@ -107,8 +107,8 @@ export default function ModulePage({ dark }: { dark: boolean }) {
 
         {/* Exam Stage */}
         <div style={{ marginBottom: 32 }}>
-          <h2 style={{ ...pulseType.sectionLabel, color: pt.textMuted, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
-            <ExamStageIcon color={pt.textMuted} size={14} /> Exam Stage
+          <h2 style={{ ...pulseType.sectionLabel, color: ON_GRADIENT_TOP.muted, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+            <ExamStageIcon color={ON_GRADIENT_TOP.muted} size={14} /> Exam Stage
           </h2>
           <div className="auto-grid" style={{ ['--auto-grid-cols' as any]: gridCols(examStages.length) }}>
             {examStages.map((stage, i) => (
@@ -125,8 +125,8 @@ export default function ModulePage({ dark }: { dark: boolean }) {
         {/* Study by Lesson */}
         {subjects.length > 0 && (
           <div style={{ marginBottom: 32 }}>
-            <h2 style={{ ...pulseType.sectionLabel, color: pt.textMuted, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
-              <StudyByLessonIcon color={pt.textMuted} size={14} /> Study by Lesson
+            <h2 style={{ ...pulseType.sectionLabel, color: ON_GRADIENT_TOP.muted, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <StudyByLessonIcon color={ON_GRADIENT_TOP.muted} size={14} /> Study by Lesson
             </h2>
             <div className="auto-grid" style={{ ['--auto-grid-cols' as any]: gridCols(subjects.length) }}>
               {subjects.map((sub, i) => (
@@ -146,8 +146,8 @@ export default function ModulePage({ dark }: { dark: boolean }) {
         {/* Study Materials */}
         {(filteredFileCards.length > 0 || driveUrl) && (
           <div style={{ marginBottom: 32 }}>
-            <h2 style={{ ...pulseType.sectionLabel, color: pt.textMuted, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
-              <StudyMaterialsIcon color={pt.textMuted} size={14} /> Study Materials
+            <h2 style={{ ...pulseType.sectionLabel, color: ON_GRADIENT_TOP.muted, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <StudyMaterialsIcon color={ON_GRADIENT_TOP.muted} size={14} /> Study Materials
             </h2>
             {filteredFileCards.length > 0 && (
               filteredFileCards.length === 1 ? (
@@ -186,8 +186,8 @@ export default function ModulePage({ dark }: { dark: boolean }) {
             phones like every other section on this page. */}
         <div className="summary-practice-row" style={{ marginBottom: 32 }}>
           <div>
-            <h2 style={{ ...pulseType.sectionLabel, color: pt.textMuted, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
-              <SmartSummariesIcon color={pt.textMuted} size={14} /> Smart Summaries
+            <h2 style={{ ...pulseType.sectionLabel, color: ON_GRADIENT_TOP.muted, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <SmartSummariesIcon color={ON_GRADIENT_TOP.muted} size={14} /> Smart Summaries
             </h2>
             <LiquidGlassCard dark={dark} delay={0} onClick={() => navigate(`/summaries?module=${moduleId}`)} style={{ padding: 24, textAlign: 'center' }}>
               <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}>
@@ -199,8 +199,8 @@ export default function ModulePage({ dark }: { dark: boolean }) {
           </div>
 
           <div>
-            <h2 style={{ ...pulseType.sectionLabel, color: pt.textMuted, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
-              <PracticeIcon color={pt.textMuted} size={14} /> Practice
+            <h2 style={{ ...pulseType.sectionLabel, color: ON_GRADIENT_TOP.muted, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <PracticeIcon color={ON_GRADIENT_TOP.muted} size={14} /> Practice
             </h2>
             <LiquidGlassCard dark={dark} delay={0} onClick={() => navigate(`/mcq?module=${moduleId}`)} style={{ padding: 24, textAlign: 'center' }}>
               <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}>

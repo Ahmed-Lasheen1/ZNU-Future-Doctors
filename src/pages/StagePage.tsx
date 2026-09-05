@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../supabase'
-import { getPulseTheme, pulseFonts, pulseType } from '../premiumTheme'
+import { getPulseTheme, pulseFonts, pulseType, ON_GRADIENT_TOP } from '../premiumTheme'
 import ErrorBanner from '../components/ErrorBanner'
 import LiquidGlassCard from '@/components/ui/liquid-glass-card'
 import PulseBackground from '../components/pulse/PulseBackground'
@@ -86,7 +86,7 @@ export default function StagePage({ dark }: { dark: boolean }) {
   if (!module) return (
     <div style={{ position: 'relative', minHeight: '100vh' }}>
       <PulseBackground />
-      <div style={{ position: 'relative', zIndex: 1, padding: 24, textAlign: 'center', color: pt.sub }}>
+      <div style={{ position: 'relative', zIndex: 1, padding: 24, textAlign: 'center', color: ON_GRADIENT_TOP.secondary }}>
         {(loadError || modulesError)
           ? <ErrorBanner message="Couldn't load this module — check your connection." />
           : !modulesLoaded ? 'Loading...' : "This module doesn't exist or was removed."}
@@ -132,15 +132,15 @@ export default function StagePage({ dark }: { dark: boolean }) {
         <div style={{ textAlign: 'center', padding: '10px 0 30px' }}>
           <div style={{ fontSize: 44, marginBottom: 8 }}>{meta.emoji}</div>
           <h1 style={{ ...pulseType.pageTitle, fontSize: 24, color: meta.color, marginBottom: 6 }}>{meta.title}</h1>
-          <div style={{ color: pt.sub, fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-            <ModuleIcon value={module.icon} size={14} color={pt.sub} /> {module.name}
+          <div style={{ color: ON_GRADIENT_TOP.secondary, fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+            <ModuleIcon value={module.icon} size={14} color={ON_GRADIENT_TOP.secondary} /> {module.name}
           </div>
         </div>
 
         {(filteredFileCards.length > 0 || driveUrl) && (
           <div style={{ marginBottom: 32 }}>
-            <h2 style={{ ...pulseType.sectionLabel, color: pt.textMuted, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
-              <StudyMaterialsIcon color={pt.textMuted} size={14} /> Study Materials
+            <h2 style={{ ...pulseType.sectionLabel, color: ON_GRADIENT_TOP.muted, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <StudyMaterialsIcon color={ON_GRADIENT_TOP.muted} size={14} /> Study Materials
             </h2>
             {filteredFileCards.length > 0 && (
               filteredFileCards.length === 1 ? (
@@ -176,8 +176,8 @@ export default function StagePage({ dark }: { dark: boolean }) {
 
         {subjects.length > 0 && (
           <div style={{ marginBottom: 32 }}>
-            <h2 style={{ ...pulseType.sectionLabel, color: pt.textMuted, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
-              <StudyByLessonIcon color={pt.textMuted} size={14} /> Study by Lesson
+            <h2 style={{ ...pulseType.sectionLabel, color: ON_GRADIENT_TOP.muted, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <StudyByLessonIcon color={ON_GRADIENT_TOP.muted} size={14} /> Study by Lesson
             </h2>
             <div className="auto-grid" style={{ ['--auto-grid-cols' as any]: gridCols(subjects.length) }}>
               {subjects.map((sub, i) => (
@@ -199,8 +199,8 @@ export default function StagePage({ dark }: { dark: boolean }) {
             phones like every other section on this page. */}
         <div className="summary-practice-row" style={{ marginBottom: 32 }}>
           <div>
-            <h2 style={{ ...pulseType.sectionLabel, color: pt.textMuted, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
-              <SmartSummariesIcon color={pt.textMuted} size={14} /> Smart Summaries
+            <h2 style={{ ...pulseType.sectionLabel, color: ON_GRADIENT_TOP.muted, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <SmartSummariesIcon color={ON_GRADIENT_TOP.muted} size={14} /> Smart Summaries
             </h2>
             <LiquidGlassCard dark={dark} delay={0} onClick={openSummaries} style={{ padding: 24, textAlign: 'center' }}>
               <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}>
@@ -214,8 +214,8 @@ export default function StagePage({ dark }: { dark: boolean }) {
           </div>
 
           <div>
-            <h2 style={{ ...pulseType.sectionLabel, color: pt.textMuted, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
-              <PracticeIcon color={pt.textMuted} size={14} /> Practice
+            <h2 style={{ ...pulseType.sectionLabel, color: ON_GRADIENT_TOP.muted, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <PracticeIcon color={ON_GRADIENT_TOP.muted} size={14} /> Practice
             </h2>
             <LiquidGlassCard dark={dark} delay={0} onClick={() => navigate(`/mcq?module=${moduleId}&stage=${stage}`)} style={{ padding: 24, textAlign: 'center' }}>
               <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}>

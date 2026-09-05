@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../supabase'
-import { getPulseTheme, pulseFonts, pulseType } from '../premiumTheme'
+import { getPulseTheme, pulseFonts, pulseType, ON_GRADIENT_TOP } from '../premiumTheme'
 import ErrorBanner from '../components/ErrorBanner'
 import LiquidGlassCard from '@/components/ui/liquid-glass-card'
 import PulseBackground from '../components/pulse/PulseBackground'
@@ -55,7 +55,7 @@ export default function LessonPage({ dark }: { dark: boolean }) {
   if (!module) return (
     <div style={{ position: 'relative', minHeight: '100vh' }}>
       <PulseBackground />
-      <div style={{ position: 'relative', zIndex: 1, padding: 24, textAlign: 'center', color: pt.sub }}>
+      <div style={{ position: 'relative', zIndex: 1, padding: 24, textAlign: 'center', color: ON_GRADIENT_TOP.secondary }}>
         {(loadError || modulesError)
           ? <ErrorBanner message="Couldn't load this — check your connection." />
           : !modulesLoaded ? 'Loading...' : "This module doesn't exist or was removed."}
@@ -82,7 +82,7 @@ export default function LessonPage({ dark }: { dark: boolean }) {
           <BackButton dark={dark} fallback={`/module/${moduleId}/subject/${subjectId}`} />
         </div>
 
-        {loading && <p style={{ color: pt.sub, textAlign: 'center' }}>Loading...</p>}
+        {loading && <p style={{ color: ON_GRADIENT_TOP.secondary, textAlign: 'center' }}>Loading...</p>}
         {loadError && <ErrorBanner />}
 
         {lesson && (
@@ -92,8 +92,8 @@ export default function LessonPage({ dark }: { dark: boolean }) {
                 <ModuleIcon value={lesson.icon || '📘'} size={44} color="#34d399" />
               </div>
               <h1 style={{ ...pulseType.pageTitle, fontSize: 24, color: '#34d399', marginBottom: 6 }}>{lesson.title}</h1>
-              <div style={{ color: pt.sub, fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-                <ModuleIcon value={module.icon} size={14} color={pt.sub} /> {module.name}
+              <div style={{ color: ON_GRADIENT_TOP.secondary, fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                <ModuleIcon value={module.icon} size={14} color={ON_GRADIENT_TOP.secondary} /> {module.name}
               </div>
             </div>
 
@@ -103,8 +103,8 @@ export default function LessonPage({ dark }: { dark: boolean }) {
                 Summaries + Practice pairing. */}
             <div className="summary-practice-row" style={{ marginBottom: 32 }}>
               <div>
-                <h2 style={{ ...pulseType.sectionLabel, color: pt.textMuted, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <SmartSummariesIcon color={pt.textMuted} size={14} /> Summary
+                <h2 style={{ ...pulseType.sectionLabel, color: ON_GRADIENT_TOP.muted, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <SmartSummariesIcon color={ON_GRADIENT_TOP.muted} size={14} /> Summary
                 </h2>
                 {summaries.length > 0 ? (
                   <LiquidGlassCard dark={dark} delay={0} onClick={openSummary} style={{ padding: 24, textAlign: 'center' }}>
@@ -138,8 +138,8 @@ export default function LessonPage({ dark }: { dark: boolean }) {
               </div>
 
               <div>
-                <h2 style={{ ...pulseType.sectionLabel, color: pt.textMuted, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <PracticeIcon color={pt.textMuted} size={14} /> Practice
+                <h2 style={{ ...pulseType.sectionLabel, color: ON_GRADIENT_TOP.muted, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <PracticeIcon color={ON_GRADIENT_TOP.muted} size={14} /> Practice
                 </h2>
                 {questionCount > 0 ? (
                   <LiquidGlassCard dark={dark} delay={0} onClick={() => navigate(`/mcq?module=${moduleId}&lesson=${lessonId}`)} style={{ padding: 24, textAlign: 'center' }}>
