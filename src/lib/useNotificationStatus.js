@@ -1,108 +1,83 @@
+import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../supabase'
+import { subscribeToPush } from './pushNotifications'
 
-// Set as VITE_VAPID_PUBLIC_KEY in Vercel's environment variables —
-// safe to expose to the browser (that's the whole point of the
-// public half of the VAPID keypair). The private key never goes
-// near client code.
-const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY
+// Shared "is push actually working on this device right now" check —
+// used by both NotifyPermissionButton (the inline call-to-action on
+// Home/Checklist/AnonQuestions) and NotificationToggle (the
+// persistent on/off switch on the Profile page), so the two never
+// disagree about what "enabled" means. `enabled` here means a real,
+// server-verified subscription — not just Notification.permission
+// being 'granted', which can be true even with no working
+// subscription behind it (see the RPC check below).
+export function useNotificationStatus() {
+  const supported = typeof window !== 'undefined' && 'Notification' in window && 'serviceWorker' in navigator && 'PushManager' in window
+  const [permission, setPermission] = useState(() =>
+    typeof window !== 'undefined' && 'Notification' in window ? Notification.permission : null
+  )
+  const [enabled, setEnabled] = useState(false)
+  const [checked, setChecked] = useState(false)
 
-function urlBase64ToUint8Array(base64String) {
-  const padding = '='.repeat((4 - (base64String.length % 4)) % 4)
-  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/')
-  const rawData = window.atob(base64)
-  return Uint8Array.from([...rawData].map((c) => c.charCodeAt(0)))
-}
+  const check = useCallback(async () => {
+    if (!supported) { setChecked(true); return }
 
-// Call this right after Notification permission is granted, and also
-// silently on every page load (see NotifyPermissionButton) to keep the
-// server-side record in sync. Reuses an existing subscription if the
-// browser already has one; otherwise creates one and saves it.
-//
-// Saves it via the upsert_push_subscription RPC rather than a direct
-// table upsert. Direct table access to push_subscriptions is
-// intentionally locked down now (RLS only exposes a row you already
-// own, nothing "unclaimed") — the RPC is a security-definer function
-// that can see the one row matching this exact endpoint, insert it if
-// new, and claim it for the signed-in caller (via auth.uid(), not a
-// client-supplied id) without ever needing broader table access. If
-// the endpoint is already claimed by a DIFFERENT account, the RPC
-// silently no-ops rather than overwriting someone else's keys.
-//
-// Returns { success: boolean, reason?: string } so the caller can
-// actually tell the student what went wrong instead of nothing
-// happening with no explanation.
-export async function subscribeToPush() {
-  if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-    console.warn('[push] Push not supported in this browser.')
-    return { success: false, reason: 'unsupported' }
-  }
+    const currentPermission = Notification.permission
+    setPermission(currentPermission)
 
-  if (!VAPID_PUBLIC_KEY) {
-    console.error('[push] Missing VITE_VAPID_PUBLIC_KEY — check Vercel env vars and redeploy.')
-    return { success: false, reason: 'missing_vapid_key' }
-  }
-
-  try {
-    const reg = await navigator.serviceWorker.ready
-    let sub = await reg.pushManager.getSubscription()
-    if (!sub) {
-      sub = await reg.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
-      })
+    if (currentPermission !== 'granted') {
+      setEnabled(false)
+      setChecked(true)
+      return
     }
 
-    const subJson = sub.toJSON()
-    const { error } = await supabase.rpc('upsert_push_subscription', {
-      p_endpoint: subJson.endpoint,
-      p_p256dh: subJson.keys.p256dh,
-      p_auth: subJson.keys.auth
-    })
+    try {
+      const reg = await navigator.serviceWorker.ready
+      const sub = await reg.pushManager.getSubscription()
 
-    if (error) {
-      console.error('[push] Could not save subscription to Supabase:', error)
-      return { success: false, reason: 'db_insert_failed', error }
+      if (!sub) {
+        setEnabled(false)
+        setChecked(true)
+        return
+      }
+
+      // See push_subscription_exists' own comment in pushNotifications.js
+      // for why this goes through an RPC rather than a direct select.
+      const { data: exists, error } = await supabase.rpc('push_subscription_exists', { p_endpoint: sub.endpoint })
+
+      if (!error && exists) {
+        setEnabled(true)
+      } else {
+        // Browser has a subscription object and permission is granted,
+        // but the server doesn't have (or can't yet claim) it — try to
+        // silently (re)save it once before reporting "off".
+        const result = await subscribeToPush()
+        setEnabled(!!result.success)
+      }
+    } catch {
+      setEnabled(false)
     }
+    setChecked(true)
+  }, [supported])
 
-    return { success: true, endpoint: subJson.endpoint }
-  } catch (e) {
-    console.error('[push] Subscription failed:', e)
-    return { success: false, reason: 'subscribe_exception', error: e }
-  }
-}
+  useEffect(() => {
+    let cancelled = false
+    check()
 
-// Turns push off for this device — used by the Profile page's
-// notification toggle. Unsubscribes the browser's own PushManager
-// subscription (so it genuinely stops receiving pushes) and removes
-// the matching row from push_subscriptions (so this device also stops
-// counting toward Admin Analytics' "Notifications Enabled" stat).
-//
-// The delete is a direct table call rather than an RPC, on the same
-// assumption subscribeToPush's RLS comment describes: a caller can
-// only ever see/mutate a row it already owns, so a plain delete
-// filtered to this device's own endpoint is safe — there's no
-// "someone else's row" it could reach.
-export async function unsubscribeFromPush() {
-  if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-    return { success: false, reason: 'unsupported' }
-  }
-
-  try {
-    const reg = await navigator.serviceWorker.ready
-    const sub = await reg.pushManager.getSubscription()
-    if (!sub) return { success: true } // nothing to turn off
-
-    const endpoint = sub.endpoint
-    await sub.unsubscribe()
-
-    const { error } = await supabase.from('push_subscriptions').delete().eq('endpoint', endpoint)
-    if (error) {
-      console.warn('[push] Could not remove subscription from Supabase:', error)
-      return { success: false, reason: 'db_delete_failed', error }
+    // Re-check whenever the tab regains focus/visibility — catches a
+    // permission grant/denial made from the browser's own site-
+    // settings UI while this tab was backgrounded.
+    function onVisibilityChange() {
+      if (document.visibilityState === 'visible' && !cancelled) check()
     }
-    return { success: true }
-  } catch (e) {
-    console.warn('[push] Unsubscribe failed:', e)
-    return { success: false, reason: 'unsubscribe_exception', error: e }
-  }
+    document.addEventListener('visibilitychange', onVisibilityChange)
+    window.addEventListener('focus', onVisibilityChange)
+
+    return () => {
+      cancelled = true
+      document.removeEventListener('visibilitychange', onVisibilityChange)
+      window.removeEventListener('focus', onVisibilityChange)
+    }
+  }, [check])
+
+  return { supported, permission, enabled, checked, refresh: check }
 }

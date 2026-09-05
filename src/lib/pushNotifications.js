@@ -70,3 +70,39 @@ export async function subscribeToPush() {
     return { success: false, reason: 'subscribe_exception', error: e }
   }
 }
+
+// Turns push off for this device — used by the Profile page's
+// notification toggle. Unsubscribes the browser's own PushManager
+// subscription (so it genuinely stops receiving pushes) and removes
+// the matching row from push_subscriptions (so this device also stops
+// counting toward Admin Analytics' "Notifications Enabled" stat).
+//
+// The delete is a direct table call rather than an RPC, on the same
+// assumption subscribeToPush's RLS comment describes: a caller can
+// only ever see/mutate a row it already owns, so a plain delete
+// filtered to this device's own endpoint is safe — there's no
+// "someone else's row" it could reach.
+export async function unsubscribeFromPush() {
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+    return { success: false, reason: 'unsupported' }
+  }
+
+  try {
+    const reg = await navigator.serviceWorker.ready
+    const sub = await reg.pushManager.getSubscription()
+    if (!sub) return { success: true } // nothing to turn off
+
+    const endpoint = sub.endpoint
+    await sub.unsubscribe()
+
+    const { error } = await supabase.from('push_subscriptions').delete().eq('endpoint', endpoint)
+    if (error) {
+      console.warn('[push] Could not remove subscription from Supabase:', error)
+      return { success: false, reason: 'db_delete_failed', error }
+    }
+    return { success: true }
+  } catch (e) {
+    console.warn('[push] Unsubscribe failed:', e)
+    return { success: false, reason: 'unsubscribe_exception', error: e }
+  }
+}
