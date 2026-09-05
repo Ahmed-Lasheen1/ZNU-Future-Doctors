@@ -28,7 +28,7 @@ export const ON_GRADIENT_TOP = {
   // Text over the light/upper portion of the gradient.
   primary: '#062B50',
   secondary: '#062B50',
-  muted: 'rgba(6,43,80,0.62)',
+  muted: '#405A70',
 }
 
 export const ON_GRADIENT_BOTTOM = {
