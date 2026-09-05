@@ -1,40 +1,38 @@
-import { backBtnStyle } from '../premiumTheme'
-
-// Full-screen "back + title + iframe" chrome shared by every page that
-// opens a summary or lesson in an embedded viewer (StagePage, Summaries,
-// LessonPage). This exact block used to be copy-pasted three times —
-// now it lives here once. Visual output is unchanged.
+// Full-screen "back + iframe" viewer shared by every page that opens
+// a summary or lesson in an embedded viewer (StagePage, Summaries,
+// SubjectPage, LessonPage).
 //
-// AUDIT FIX: this previously set `height: '1000vh'` — ten full screens
-// tall instead of one. That left a massive dead-scroll region below
-// the header+iframe on every device (worst on mobile, where it made
-// the "full screen" viewer feel broken/endless). `100dvh` matches the
-// same dynamic-viewport-height convention already used by
-// PulseBackground.tsx elsewhere in this app, specifically to avoid
-// the iOS Safari address-bar collapse/expand gap that plain `100vh`
-// is prone to.
+// AUDIT FIX: dropped the old solid header bar (dark navy gradient +
+// eyebrow/title text + boxy "← Back" pill from the pre-liquid-glass
+// design, sourced from the now-retired theme.js). Replaced with a
+// single small floating glass-style back button in the top-left
+// corner — same treatment as MediaOverlay.jsx's fix and consistent
+// with the rest of the app's overlay chrome.
 //
-// `eyebrow` is optional — LessonPage's viewer never had one, so it's
-// simply omitted there instead of rendering an empty line.
-export default function SummaryOverlay({ onBack, eyebrow, title, titleColor, url }) {
+// `100dvh` (not `100vh`) matches the same dynamic-viewport-height
+// convention used elsewhere in this app (PulseBackground.tsx) to
+// avoid the iOS Safari address-bar collapse/expand gap.
+export default function SummaryOverlay({ onBack, url, title }) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100dvh' }}>
-      <div style={{
-        background: 'linear-gradient(135deg, #1a2a4a, #0f1e35)',
-        borderBottom: '2px solid #2a4a7a',
-        padding: '12px 20px',
-        display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0
-      }}>
-        <button onClick={onBack} style={backBtnStyle()}>← Back</button>
-        <div style={{ flex: 1, textAlign: 'center' }}>
-          {eyebrow && (
-            <div style={{ fontSize: 11, color: '#7eb8ff', letterSpacing: 2, textTransform: 'uppercase' }}>{eyebrow}</div>
-          )}
-          <div style={{ fontSize: 16, fontWeight: 900, color: titleColor }}>{title}</div>
-        </div>
-        <div style={{ width: 80 }} />
-      </div>
-      <iframe src={url} style={{ flex: 1, border: 'none', width: '100%' }} title={title} />
+    <div style={{ position: 'fixed', inset: 0, height: '100dvh', background: '#000', zIndex: 2000 }}>
+      <button
+        onClick={onBack}
+        style={{
+          position: 'absolute',
+          top: 'max(16px, env(safe-area-inset-top))',
+          left: 16,
+          zIndex: 2001,
+          display: 'flex', alignItems: 'center', gap: 6,
+          padding: '8px 18px', borderRadius: 999,
+          background: 'rgba(255,255,255,0.10)',
+          backdropFilter: 'blur(5px) saturate(100%)',
+          WebkitBackdropFilter: 'blur(5px) saturate(100%)',
+          border: '1px solid rgba(255,255,255,0.18)',
+          color: '#fff', fontSize: 13, fontWeight: 700,
+          cursor: 'pointer'
+        }}
+      >← Back</button>
+      <iframe src={url} style={{ height: '100%', width: '100%', border: 'none' }} title={title} />
     </div>
   )
 }
