@@ -71,6 +71,15 @@ export default function ModulePage({ dark }: { dark: boolean }) {
 
   const filteredFileCards = FILE_CARDS.filter(card => presentFileTypes.has(card.type))
 
+  const renderFileCard = (card: typeof FILE_CARDS[number], i: number) => (
+    <LiquidGlassCard key={i} dark={dark} delay={i * 80}
+      onClick={() => navigate(`/files?type=${card.type}&module=${moduleId}`)}
+      style={{ padding: 'clamp(20px, 2vw, 28px)', textAlign: 'center' }}>
+      <div style={{ fontSize: 'clamp(28px, 3vw, 42px)', marginBottom: 8 }}>{card.emoji}</div>
+      <div style={{ ...pulseType.cardTitle, fontSize: 'clamp(13px, 1.1vw, 16px)', color: pt.textPrimary }}>{card.title}</div>
+    </LiquidGlassCard>
+  )
+
   return (
     <div style={{ position: 'relative', minHeight: '100vh' }}>
       <PulseBackground />
@@ -141,20 +150,17 @@ export default function ModulePage({ dark }: { dark: boolean }) {
               <StudyMaterialsIcon color={pt.textMuted} size={14} /> Study Materials
             </h2>
             {filteredFileCards.length > 0 && (
-              <div className="auto-grid" style={{ ['--auto-grid-cols' as any]: gridCols(filteredFileCards.length) }}>
-                {filteredFileCards.map((card, i) => (
-                  <LiquidGlassCard key={i} dark={dark} delay={i * 80}
-                    onClick={() => navigate(`/files?type=${card.type}&module=${moduleId}`)}
-                    style={{ padding: 'clamp(20px, 2vw, 28px)', textAlign: 'center' }}>
-                    <div style={{ fontSize: 'clamp(28px, 3vw, 42px)', marginBottom: 8 }}>{card.emoji}</div>
-                    <div style={{ ...pulseType.cardTitle, fontSize: 'clamp(13px, 1.1vw, 16px)', color: pt.textPrimary }}>{card.title}</div>
-                  </LiquidGlassCard>
-                ))}
-              </div>
+              filteredFileCards.length === 1 ? (
+                <div className="auto-grid-single">{renderFileCard(filteredFileCards[0], 0)}</div>
+              ) : (
+                <div className="auto-grid" style={{ ['--auto-grid-cols' as any]: gridCols(filteredFileCards.length) }}>
+                  {filteredFileCards.map(renderFileCard)}
+                </div>
+              )
             )}
 
             {driveUrl && (
-              <div style={{ marginTop: filteredFileCards.length > 0 ? 16 : 0 }}>
+              <div className="auto-grid-single" style={{ marginTop: filteredFileCards.length > 0 ? 16 : 0 }}>
                 <LiquidGlassCard dark={dark} delay={0}
                   onClick={() => window.open(driveUrl, '_blank', 'noopener,noreferrer')}
                   style={{ padding: '16px 20px', display: 'flex', alignItems: 'center', gap: 14 }}>

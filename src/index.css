@@ -162,6 +162,20 @@ h1, h2, h3 {
   .auto-grid { gap: 20px; }
 }
 
+/* Centers a single card rather than letting it stretch across a
+   whole grid row's width just because it happens to be alone —
+   ModulePage/StagePage's Study Materials section uses this when only
+   one file-type card is present, and always for the University
+   Google Drive link card, since there's only ever exactly one of
+   those. width:100% + max-width means it's still full-width on
+   narrow phones and only actually caps/centers once there's room to
+   spare. */
+.auto-grid-single {
+  width: 100%;
+  max-width: 420px;
+  margin: 0 auto;
+}
+
 /* "Smart Summaries" + "Practice" pairing on ModulePage and StagePage
    (and anywhere else that wants the same two-card layout). Stacked on
    phones — each card still gets its own full-width row, same as
