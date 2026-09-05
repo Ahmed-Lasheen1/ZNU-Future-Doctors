@@ -71,7 +71,7 @@ export default function SubjectPage({ dark }: { dark: boolean }) {
   )
 
   if (selectedSummary) return (
-    <SummaryOverlay onBack={() => setSelectedSummary(null)} eyebrow={subject?.name} title={selectedSummary.title} titleColor="#34d399" url={selectedSummary.url} />
+    <SummaryOverlay onBack={() => setSelectedSummary(null)} eyebrow={subject?.name} title={selectedSummary.title} titleColor={pt.success} url={selectedSummary.url} />
   )
 
   function openAllSummaries() {
@@ -94,7 +94,7 @@ export default function SubjectPage({ dark }: { dark: boolean }) {
       onClick={() => navigate(`/module/${moduleId}/subject/${subjectId}/lesson/${lesson.id}`)}
       style={{ padding: 'clamp(20px, 2vw, 28px)', textAlign: 'center' }}>
       <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}>
-        <ModuleIcon value={lesson.icon || '📘'} size={36} color="#34d399" />
+        <ModuleIcon value={lesson.icon || '📘'} size={36} color={pt.success} />
       </div>
       <div style={{ ...pulseType.cardTitle, fontSize: 'clamp(13px, 1.1vw, 16px)', color: pt.textPrimary }}>{lesson.title}</div>
     </LiquidGlassCard>
@@ -111,9 +111,9 @@ export default function SubjectPage({ dark }: { dark: boolean }) {
 
         <div style={{ textAlign: 'center', padding: '10px 0 30px' }}>
           <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}>
-            <ModuleIcon value={subject?.icon || '📖'} size={44} color={subject?.color || '#34d399'} />
+            <ModuleIcon value={subject?.icon || '📖'} size={44} color={subject?.color || pt.success} />
           </div>
-          <h1 style={{ ...pulseType.pageTitle, fontSize: 24, color: subject?.color || '#34d399', marginBottom: 6 }}>{subject ? subject.name : ''}</h1>
+          <h1 style={{ ...pulseType.pageTitle, fontSize: 24, color: subject?.color || pt.success, marginBottom: 6 }}>{subject ? subject.name : ''}</h1>
           <div style={{ color: ON_GRADIENT_TOP.secondary, fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
             <ModuleIcon value={module.icon} size={14} color={ON_GRADIENT_TOP.secondary} /> {module.name}
           </div>
@@ -130,8 +130,8 @@ export default function SubjectPage({ dark }: { dark: boolean }) {
           <LiquidGlassCard dark={dark} delay={0} onClick={openAllSummaries}
             style={{ width: 'clamp(130px, 32vw, 180px)', padding: '22px 16px', textAlign: 'center' }}>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-              <NotesIcon color="#34d399" size={28} />
-              <span style={{ color: '#34d399', fontWeight: 700, fontSize: 14 }}>All Summaries</span>
+              <NotesIcon color={pt.success} size={28} />
+              <span style={{ color: pt.success, fontWeight: 700, fontSize: 14 }}>All Summaries</span>
             </div>
           </LiquidGlassCard>
         </div>
@@ -142,7 +142,7 @@ export default function SubjectPage({ dark }: { dark: boolean }) {
               <LiquidGlassCard key={s.id} dark={dark} delay={i * 60}
                 onClick={() => setSelectedSummary({ title: s.title, url: s.url })}
                 style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
-                <NotesIcon color="#34d399" size={16} />
+                <NotesIcon color={pt.success} size={16} />
                 <span style={{ color: pt.textPrimary, fontSize: 13, fontWeight: 600 }}>{s.title}</span>
               </LiquidGlassCard>
             ))}

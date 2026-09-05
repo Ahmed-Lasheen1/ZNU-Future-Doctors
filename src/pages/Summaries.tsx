@@ -12,7 +12,7 @@ import BackButton from '../components/pulse/BackButton'
 import { useModules } from '../contexts'
 import { fetchModuleStages } from '../lib/moduleStages'
 import { useHistoryOverlay } from '../lib/useHistoryOverlay'
-import { ModuleIcon } from '../lib/medicalIcons'
+import { ModuleIcon, NotesIcon } from '../lib/medicalIcons'
 
 interface SummaryModule {
   id: string; name: string; icon?: string | null; color: string; status: 'active' | 'completed'
@@ -40,10 +40,12 @@ function SummariesHome({ modules, onSelect, dark }: {
       </div>
 
       <div style={{ textAlign: 'center', padding: '20px 0 24px' }}>
-        <div style={{ fontSize: 48, marginBottom: 12 }}>📝</div>
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 12 }}>
+          <NotesIcon color={pt.success} size={48} />
+        </div>
         <h1 style={{
           ...pulseType.pageTitle, fontSize: 26,
-          background: 'linear-gradient(135deg, #34d399, #38bdf8)',
+          background: `linear-gradient(135deg, ${pt.success}, ${pt.cobalt})`,
           WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
           marginBottom: 8
         }}>Smart Summaries</h1>
@@ -178,8 +180,10 @@ function ModuleSummaries({ mod, onBack, dark, initialStage }: {
               <div style={{
                 background: `${mod.color}20`, border: `1px solid ${mod.color}40`,
                 borderRadius: 12, width: 44, height: 44,
-                display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0
-              }}>📝</div>
+                display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
+              }}>
+                <NotesIcon color={mod.color} size={20} />
+              </div>
               <div style={{ minWidth: 0 }}>
                 <div style={{
                   ...pulseType.cardTitle, color: pt.textPrimary, fontSize: 15,

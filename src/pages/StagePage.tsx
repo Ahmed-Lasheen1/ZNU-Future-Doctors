@@ -158,11 +158,11 @@ export default function StagePage({ dark }: { dark: boolean }) {
                   onClick={() => window.open(driveUrl, '_blank', 'noopener,noreferrer')}
                   style={{ padding: '16px 20px', display: 'flex', alignItems: 'center', gap: 14 }}>
                   <div style={{
-                    background: 'rgba(74,222,128,0.16)', border: '1px solid rgba(74,222,128,0.35)',
+                    background: `${pt.cobalt}20`, border: `1px solid ${pt.cobaltBorder}`,
                     borderRadius: 12, width: 44, height: 44,
                     display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
                   }}>
-                    <StudyMaterialsIcon color="#4ade80" size={20} />
+                    <StudyMaterialsIcon color={pt.cobalt} size={20} />
                   </div>
                   <div>
                     <div style={{ ...pulseType.cardTitle, color: pt.textPrimary }}>University Google Drive</div>
@@ -204,7 +204,7 @@ export default function StagePage({ dark }: { dark: boolean }) {
             </h2>
             <LiquidGlassCard dark={dark} delay={0} onClick={openSummaries} style={{ padding: 24, textAlign: 'center' }}>
               <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}>
-                <NotesIcon color="#34d399" size={30} />
+                <NotesIcon color={pt.success} size={30} />
               </div>
               <div style={{ ...pulseType.cardTitle, color: pt.textPrimary }}>Summaries</div>
               <div style={{ ...pulseType.small, color: pt.textMuted, marginTop: 4 }}>
