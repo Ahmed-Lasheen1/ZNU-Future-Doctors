@@ -7,7 +7,7 @@ import ErrorBanner from '../components/ErrorBanner'
 import SummaryOverlay from '../components/SummaryOverlay'
 import LiquidGlassCard from '@/components/ui/liquid-glass-card'
 import PulseBackground from '../components/pulse/PulseBackground'
-import PulseGlassRow from '../components/pulse/PulseGlassRow'
+import TabRow from '../components/TabRow'
 import BackButton from '../components/pulse/BackButton'
 import { useModules } from '../contexts'
 import { fetchModuleStages } from '../lib/moduleStages'
@@ -101,7 +101,6 @@ function ModuleSummaries({ mod, onBack, dark, initialStage }: {
   const [loadError, setLoadError] = useState(false)
   const [activeStage, setActiveStage] = useState(initialStage || 'all')
   const [stages, setStages] = useState<ExamStage[]>([])
-  const hoverTint = dark ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.35)'
 
   // Back button closes this open summary before it ever falls through
   // to the outer "which module" back handled by Summaries below.
@@ -154,37 +153,14 @@ function ModuleSummaries({ mod, onBack, dark, initialStage }: {
 
       {loadError && <ErrorBanner />}
 
-      {/* AUDIT FIX: this row used to have no right-edge breathing
-          room and no scroll-snap, so on narrow screens the last stage
-          pill could sit flush against the viewport edge (or get
-          visually squeezed) with nothing anchoring the scroll — it
-          read as "cut off" rather than as an obviously scrollable
-          strip. `paddingRight` mirrors the row's own gap so the last
-          pill gets the same clearance as the first, `scrollSnapType`
-          + each pill's `scrollSnapAlign` settles the strip on a full
-          pill after a swipe instead of stopping mid-pill, and
-          `flexShrink: 0` on each pill guarantees none of them are
-          ever compressed narrower than their label. */}
-      <div style={{
-        display: 'flex', gap: 8, overflowX: 'auto', marginBottom: 20,
-        paddingBottom: 4, paddingRight: 8, scrollSnapType: 'x proximity',
-        WebkitOverflowScrolling: 'touch'
-      }}>
-        {[{ value: 'all', label: 'All' }, ...stages.map(s => ({ value: s.value, label: `${s.emoji} ${s.title}` }))].map(stage => {
-          const active = activeStage === stage.value
-          return (
-            <PulseGlassRow key={stage.value} dark={dark} radius={999} active={active}
-              activeTint={`${mod.color}26`} hoverTint={hoverTint} onClick={() => setActiveStage(stage.value)}
-              role="button" tabIndex={0}
-              style={{ flexShrink: 0, scrollSnapAlign: 'start' }}
-              onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setActiveStage(stage.value) } }}>
-              <div style={{ padding: '7px 16px', whiteSpace: 'nowrap', ...pulseType.small, fontWeight: 600, color: active ? mod.color : pt.sub }}>
-                {stage.label}
-              </div>
-            </PulseGlassRow>
-          )
-        })}
-      </div>
+      <TabRow
+        items={[{ value: 'all', label: 'All' }, ...stages.map(s => ({ value: s.value, label: `${s.emoji} ${s.title}` }))]}
+        active={activeStage}
+        onSelect={setActiveStage}
+        dark={dark}
+        accentColor={mod.color}
+        style={{ marginBottom: 20 }}
+      />
 
       {loading && <p style={{ color: pt.sub, textAlign: 'center' }}>Loading...</p>}
 

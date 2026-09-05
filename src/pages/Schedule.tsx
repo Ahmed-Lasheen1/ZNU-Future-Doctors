@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../supabase'
 import { getPulseTheme, pulseFonts, pulseType } from '../premiumTheme'
 import ErrorBanner from '../components/ErrorBanner'
-import ModuleTabs from '../components/ModuleTabs'
+import TabRow from '../components/TabRow'
 import MediaOverlay from '../components/MediaOverlay'
 import LiquidGlassCard from '@/components/ui/liquid-glass-card'
 import PulseBackground from '../components/pulse/PulseBackground'
@@ -105,9 +105,9 @@ export default function Schedule({ dark }: { dark: boolean }) {
         <PageIntro dark={dark} emoji="📅" title="Schedules" subtitle="Study plans and exam dates, module by module" />
 
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: SECTION_GAP }}>
-          <ModuleTabs
-            modules={activeModules}
-            activeModule={activeModule}
+          <TabRow
+            items={activeModules.map(m => ({ value: m.id, label: m.name, icon: m.icon, color: m.color, completed: m.status === 'completed' }))}
+            active={activeModule}
             onSelect={setActiveModule}
             dark={dark}
             style={{ justifyContent: 'center', flexWrap: 'wrap', overflowX: 'visible', marginBottom: 0, rowGap: 10 }}

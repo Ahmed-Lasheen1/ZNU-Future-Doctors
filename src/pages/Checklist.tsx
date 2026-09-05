@@ -9,7 +9,7 @@ import PulseBackground from '../components/pulse/PulseBackground'
 import BackButton from '../components/pulse/BackButton'
 import PageIntro from '../components/pulse/PageIntro'
 import ErrorBanner from '../components/ErrorBanner'
-import ModuleTabs from '../components/ModuleTabs'
+import TabRow from '../components/TabRow'
 import NotifyPermissionButton from '../components/NotifyPermissionButton'
 import { useToast } from '../components/ToastProvider'
 import type { ChecklistTask } from '../types/checklist'
@@ -196,9 +196,11 @@ export default function Checklist({ dark }: { dark: boolean }) {
         )}
 
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: SECTION_GAP }}>
-          <ModuleTabs
-            modules={activeModulesList}
-            activeModule={activeModule}
+          <TabRow
+            items={activeModulesList.map((m: any) => ({
+              value: m.id, label: m.name, icon: m.icon, color: m.color, completed: m.status === 'completed'
+            }))}
+            active={activeModule}
             onSelect={setActiveModule}
             dark={dark}
             style={{

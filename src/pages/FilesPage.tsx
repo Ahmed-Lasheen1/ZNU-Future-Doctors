@@ -5,11 +5,10 @@ import { supabase } from '../supabase'
 import { getPulseTheme, pulseFonts, pulseType } from '../premiumTheme'
 import { useModules } from '../contexts'
 import ErrorBanner from '../components/ErrorBanner'
-import ModuleTabs from '../components/ModuleTabs'
+import TabRow from '../components/TabRow'
 import MediaOverlay from '../components/MediaOverlay'
 import LiquidGlassCard from '@/components/ui/liquid-glass-card'
 import PulseBackground from '../components/pulse/PulseBackground'
-import PulseGlassRow from '../components/pulse/PulseGlassRow'
 import BackButton from '../components/pulse/BackButton'
 import PageIntro from '../components/pulse/PageIntro'
 import { useHistoryOverlay } from '../lib/useHistoryOverlay'
@@ -129,8 +128,6 @@ export default function FilesPage({ dark }: { dark: boolean }) {
     return moduleMatch && subjectMatch
   })
 
-  const hoverTint = dark ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.35)'
-
   return (
     <div style={{ position: 'relative', minHeight: '100vh' }}>
       <PulseBackground />
@@ -168,33 +165,22 @@ export default function FilesPage({ dark }: { dark: boolean }) {
           title={fileType ? titles[fileType]?.split(' ').slice(1).join(' ') : 'Files'}
         />
 
-        <ModuleTabs
-          modules={activeModules}
-          activeModule={activeModule}
+        <TabRow
+          items={activeModules.map(m => ({ value: m.id, label: m.name, icon: m.icon, color: m.color, completed: m.status === 'completed' }))}
+          active={activeModule}
           onSelect={(id) => { setActiveModule(id); setActiveSubject('all') }}
           dark={dark}
         />
 
         {moduleSubjects.length > 0 && (
-          <div style={{ display: 'flex', gap: 8, overflowX: 'auto', marginBottom: 20, paddingBottom: 4 }}>
-            <PulseGlassRow dark={dark} radius={999} active={activeSubject === 'all'}
-              activeTint={`${FILE_ACCENT}26`} hoverTint={hoverTint} onClick={() => setActiveSubject('all')}
-              role="button" tabIndex={0}
-              onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setActiveSubject('all') } }}>
-              <div style={{ padding: '9px 16px', whiteSpace: 'nowrap', ...pulseType.button, color: activeSubject === 'all' ? FILE_ACCENT : pt.sub }}>All</div>
-            </PulseGlassRow>
-            {moduleSubjects.map(sub => {
-              const active = activeSubject === sub.id
-              return (
-                <PulseGlassRow key={sub.id} dark={dark} radius={999} active={active}
-                  activeTint={`${FILE_ACCENT}26`} hoverTint={hoverTint} onClick={() => setActiveSubject(sub.id)}
-                  role="button" tabIndex={0}
-                  onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setActiveSubject(sub.id) } }}>
-                  <div style={{ padding: '9px 16px', whiteSpace: 'nowrap', ...pulseType.button, color: active ? FILE_ACCENT : pt.sub }}>{sub.name}</div>
-                </PulseGlassRow>
-              )
-            })}
-          </div>
+          <TabRow
+            items={[{ value: 'all', label: 'All' }, ...moduleSubjects.map(sub => ({ value: sub.id, label: sub.name }))]}
+            active={activeSubject}
+            onSelect={setActiveSubject}
+            dark={dark}
+            accentColor={FILE_ACCENT}
+            style={{ marginBottom: 20 }}
+          />
         )}
 
         {loading && <p style={{ color: pt.sub, textAlign: 'center' }}>Loading...</p>}

@@ -9,6 +9,7 @@ import { useToast } from '../components/ToastProvider'
 import ErrorBanner from '../components/ErrorBanner'
 import QuestionRail from '../components/QuestionRail'
 import QuestionSourceBadge from '../components/QuestionSourceBadge'
+import TabRow from '../components/TabRow'
 import LiquidGlassCard from '@/components/ui/liquid-glass-card'
 import PulseBackground from '../components/pulse/PulseBackground'
 import PulseGlassRow from '../components/pulse/PulseGlassRow'
@@ -1316,61 +1317,23 @@ export default function MCQ({ dark }: { dark: boolean }) {
           </div>
         )}
 
-        {/* AUDIT FIX: mobile "cut off" feel — this row previously had
-            no right-edge padding and no scroll-snap, so on narrow
-            screens the last stage pill could sit flush against (or
-            past) the viewport edge with no visible anchor telling the
-            student more content is scrollable. paddingRight mirrors
-            the row's own gap so the last pill gets the same clearance
-            as the first; scrollSnapType + each pill's flexShrink:0 +
-            scrollSnapAlign settles the strip on a full pill after a
-            swipe instead of stopping mid-pill (same fix already
-            applied to Summaries.tsx's stage row). */}
-        <div style={{
-          display: 'flex', gap: 8, overflowX: 'auto', marginBottom: 16,
-          paddingBottom: 4, paddingRight: 8, scrollSnapType: 'x proximity',
-          WebkitOverflowScrolling: 'touch'
-        }}>
-          {[{ value: 'all', label: 'All' }, ...stages.map(s => ({ value: s.value, label: `${s.emoji} ${s.title}` }))].map(stage => {
-            const active = activeStage === stage.value
-            return (
-              <PulseGlassRow key={stage.value} dark={dark} radius={999} active={active}
-                activeTint={`${MCQ_ACCENT}26`} hoverTint={hoverTint} onClick={() => setActiveStage(stage.value)}
-                role="button" tabIndex={0}
-                style={{ flexShrink: 0, scrollSnapAlign: 'start' }}
-                onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setActiveStage(stage.value) } }}>
-                <div style={{ padding: '9px 16px', whiteSpace: 'nowrap', ...pulseType.button, color: active ? MCQ_ACCENT : pt.sub }}>{stage.label}</div>
-              </PulseGlassRow>
-            )
-          })}
-        </div>
+        <TabRow
+          items={[{ value: 'all', label: 'All' }, ...stages.map(s => ({ value: s.value, label: `${s.emoji} ${s.title}` }))]}
+          active={activeStage}
+          onSelect={setActiveStage}
+          dark={dark}
+          accentColor={MCQ_ACCENT}
+          style={{ marginBottom: 16 }}
+        />
 
-        {/* Same "cut off" fix applied to the subject-filter row. */}
-        <div style={{
-          display: 'flex', gap: 8, overflowX: 'auto', marginBottom: 28,
-          paddingBottom: 4, paddingRight: 8, scrollSnapType: 'x proximity',
-          WebkitOverflowScrolling: 'touch'
-        }}>
-          <PulseGlassRow dark={dark} radius={999} active={activeSubject === 'all'}
-            activeTint={`${MCQ_ACCENT}26`} hoverTint={hoverTint} onClick={() => setActiveSubject('all')}
-            role="button" tabIndex={0}
-            style={{ flexShrink: 0, scrollSnapAlign: 'start' }}
-            onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setActiveSubject('all') } }}>
-            <div style={{ padding: '9px 16px', whiteSpace: 'nowrap', ...pulseType.button, color: activeSubject === 'all' ? MCQ_ACCENT : pt.sub }}>All</div>
-          </PulseGlassRow>
-          {moduleSubjects.map(sub => {
-            const active = activeSubject === sub.id
-            return (
-              <PulseGlassRow key={sub.id} dark={dark} radius={999} active={active}
-                activeTint={`${MCQ_ACCENT}26`} hoverTint={hoverTint} onClick={() => setActiveSubject(sub.id)}
-                role="button" tabIndex={0}
-                style={{ flexShrink: 0, scrollSnapAlign: 'start' }}
-                onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setActiveSubject(sub.id) } }}>
-                <div style={{ padding: '9px 16px', whiteSpace: 'nowrap', ...pulseType.button, color: active ? MCQ_ACCENT : pt.sub }}>{sub.name}</div>
-              </PulseGlassRow>
-            )
-          })}
-        </div>
+        <TabRow
+          items={[{ value: 'all', label: 'All' }, ...moduleSubjects.map(sub => ({ value: sub.id, label: sub.name }))]}
+          active={activeSubject}
+          onSelect={setActiveSubject}
+          dark={dark}
+          accentColor={MCQ_ACCENT}
+          style={{ marginBottom: 28 }}
+        />
 
         {loading && <p style={{ color: pt.sub, textAlign: 'center' }}>Loading...</p>}
 
