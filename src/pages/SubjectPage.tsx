@@ -84,6 +84,22 @@ export default function SubjectPage({ dark }: { dark: boolean }) {
     }
   }
 
+  // Same reasoning as ModulePage/StagePage's renderFileCard: a single
+  // lesson used to still go through the full-width `.auto-grid`
+  // (gridCols(1) === 1 column stretched to the row's whole width) —
+  // pulled the card markup out here so it can be reused unchanged
+  // inside `.auto-grid-single` for that one-lesson case below.
+  const renderLessonCard = (lesson: Lesson, i: number) => (
+    <LiquidGlassCard key={lesson.id} dark={dark} delay={i * 80}
+      onClick={() => navigate(`/module/${moduleId}/subject/${subjectId}/lesson/${lesson.id}`)}
+      style={{ padding: 'clamp(20px, 2vw, 28px)', textAlign: 'center' }}>
+      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}>
+        <ModuleIcon value={lesson.icon || '📘'} size={36} color="#34d399" />
+      </div>
+      <div style={{ ...pulseType.cardTitle, fontSize: 'clamp(13px, 1.1vw, 16px)', color: pt.textPrimary }}>{lesson.title}</div>
+    </LiquidGlassCard>
+  )
+
   return (
     <div style={{ position: 'relative', minHeight: '100vh' }}>
       <PulseBackground />
@@ -143,18 +159,13 @@ export default function SubjectPage({ dark }: { dark: boolean }) {
         )}
 
         {lessons.length > 0 && (
-          <div className="auto-grid" style={{ ['--auto-grid-cols' as any]: gridCols(lessons.length) }}>
-            {lessons.map((lesson, i) => (
-              <LiquidGlassCard key={lesson.id} dark={dark} delay={i * 80}
-                onClick={() => navigate(`/module/${moduleId}/subject/${subjectId}/lesson/${lesson.id}`)}
-                style={{ padding: 'clamp(20px, 2vw, 28px)', textAlign: 'center' }}>
-                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}>
-                  <ModuleIcon value={lesson.icon || '📘'} size={36} color="#34d399" />
-                </div>
-                <div style={{ ...pulseType.cardTitle, fontSize: 'clamp(13px, 1.1vw, 16px)', color: pt.textPrimary }}>{lesson.title}</div>
-              </LiquidGlassCard>
-            ))}
-          </div>
+          lessons.length === 1 ? (
+            <div className="auto-grid-single">{renderLessonCard(lessons[0], 0)}</div>
+          ) : (
+            <div className="auto-grid" style={{ ['--auto-grid-cols' as any]: gridCols(lessons.length) }}>
+              {lessons.map(renderLessonCard)}
+            </div>
+          )
         )}
       </div>
     </div>

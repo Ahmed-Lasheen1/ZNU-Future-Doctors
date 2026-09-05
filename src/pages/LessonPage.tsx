@@ -12,6 +12,7 @@ import { useModules } from '../contexts'
 import { fetchLessonById } from '../lib/lessons'
 import { useHistoryOverlay } from '../lib/useHistoryOverlay'
 import { ModuleIcon, ExamIcon, NotesIcon } from '../lib/medicalIcons'
+import { SmartSummariesIcon, PracticeIcon } from '@/components/ui/tool-icons'
 
 interface PageModule { id: string; name: string; icon?: string | null; color: string }
 interface Lesson { id: string; title: string; icon?: string | null }
@@ -96,54 +97,64 @@ export default function LessonPage({ dark }: { dark: boolean }) {
               </div>
             </div>
 
-            <div style={{ marginBottom: 32 }}>
-              <h2 style={{ ...pulseType.sectionLabel, color: pt.textMuted, marginBottom: 16 }}>📝 Summary</h2>
-              {summaries.length > 0 ? (
-                <LiquidGlassCard dark={dark} delay={0} onClick={openSummary} style={{ padding: 24, textAlign: 'center' }}>
-                  <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}>
-                    <NotesIcon color="#34d399" size={30} />
-                  </div>
-                  <div style={{ ...pulseType.cardTitle, color: pt.textPrimary }}>
-                    {summaries.length === 1 ? 'Open Lesson Summary' : 'Summaries'}
-                  </div>
-                  {summaries.length > 1 && (
-                    <div style={{ ...pulseType.small, color: pt.textMuted, marginTop: 4 }}>{summaries.length} available</div>
-                  )}
-                </LiquidGlassCard>
-              ) : (
-                <LiquidGlassCard dark={dark} delay={0} style={{ padding: 32, textAlign: 'center' }}>
-                  <p style={{ color: pt.sub, fontSize: 13 }}>No summary added yet 🚧</p>
-                </LiquidGlassCard>
-              )}
+            {/* Summary & Practice — side by side from tablet width up
+                (.summary-practice-row, see index.css), stacked on
+                phones. Same layout as ModulePage/StagePage's Smart
+                Summaries + Practice pairing. */}
+            <div className="summary-practice-row" style={{ marginBottom: 32 }}>
+              <div>
+                <h2 style={{ ...pulseType.sectionLabel, color: pt.textMuted, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <SmartSummariesIcon color={pt.textMuted} size={14} /> Summary
+                </h2>
+                {summaries.length > 0 ? (
+                  <LiquidGlassCard dark={dark} delay={0} onClick={openSummary} style={{ padding: 24, textAlign: 'center' }}>
+                    <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}>
+                      <NotesIcon color="#34d399" size={30} />
+                    </div>
+                    <div style={{ ...pulseType.cardTitle, color: pt.textPrimary }}>
+                      {summaries.length === 1 ? 'Open Lesson Summary' : 'Summaries'}
+                    </div>
+                    {summaries.length > 1 && (
+                      <div style={{ ...pulseType.small, color: pt.textMuted, marginTop: 4 }}>{summaries.length} available</div>
+                    )}
+                  </LiquidGlassCard>
+                ) : (
+                  <LiquidGlassCard dark={dark} delay={0} style={{ padding: 32, textAlign: 'center' }}>
+                    <p style={{ color: pt.sub, fontSize: 13 }}>No summary added yet 🚧</p>
+                  </LiquidGlassCard>
+                )}
 
-              {showSummaryPicker && summaries.length > 1 && (
-                <div style={{ display: 'grid', gap: 10, marginTop: 12 }}>
-                  {summaries.map((s, i) => (
-                    <LiquidGlassCard key={s.id} dark={dark} delay={i * 60} onClick={() => setSelectedSummary(s)}
-                      style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <NotesIcon color="#34d399" size={16} />
-                      <span style={{ color: pt.textPrimary, fontSize: 13, fontWeight: 600 }}>{s.title}</span>
-                    </LiquidGlassCard>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <div style={{ marginBottom: 32 }}>
-              <h2 style={{ ...pulseType.sectionLabel, color: pt.textMuted, marginBottom: 16 }}>🧪 Practice</h2>
-              {questionCount > 0 ? (
-                <LiquidGlassCard dark={dark} delay={0} onClick={() => navigate(`/mcq?module=${moduleId}&lesson=${lessonId}`)} style={{ padding: 24, textAlign: 'center' }}>
-                  <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}>
-                    <ExamIcon color="#e2725b" size={30} />
+                {showSummaryPicker && summaries.length > 1 && (
+                  <div style={{ display: 'grid', gap: 10, marginTop: 12 }}>
+                    {summaries.map((s, i) => (
+                      <LiquidGlassCard key={s.id} dark={dark} delay={i * 60} onClick={() => setSelectedSummary(s)}
+                        style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <NotesIcon color="#34d399" size={16} />
+                        <span style={{ color: pt.textPrimary, fontSize: 13, fontWeight: 600 }}>{s.title}</span>
+                      </LiquidGlassCard>
+                    ))}
                   </div>
-                  <div style={{ ...pulseType.cardTitle, color: pt.textPrimary }}>Practice This Lesson</div>
-                  <div style={{ ...pulseType.small, color: pt.textMuted, marginTop: 4 }}>{questionCount} question{questionCount === 1 ? '' : 's'}</div>
-                </LiquidGlassCard>
-              ) : (
-                <LiquidGlassCard dark={dark} delay={0} style={{ padding: 32, textAlign: 'center' }}>
-                  <p style={{ color: pt.sub, fontSize: 13 }}>No questions tagged to this lesson yet 🚧</p>
-                </LiquidGlassCard>
-              )}
+                )}
+              </div>
+
+              <div>
+                <h2 style={{ ...pulseType.sectionLabel, color: pt.textMuted, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <PracticeIcon color={pt.textMuted} size={14} /> Practice
+                </h2>
+                {questionCount > 0 ? (
+                  <LiquidGlassCard dark={dark} delay={0} onClick={() => navigate(`/mcq?module=${moduleId}&lesson=${lessonId}`)} style={{ padding: 24, textAlign: 'center' }}>
+                    <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}>
+                      <ExamIcon color="#e2725b" size={30} />
+                    </div>
+                    <div style={{ ...pulseType.cardTitle, color: pt.textPrimary }}>Practice This Lesson</div>
+                    <div style={{ ...pulseType.small, color: pt.textMuted, marginTop: 4 }}>{questionCount} question{questionCount === 1 ? '' : 's'}</div>
+                  </LiquidGlassCard>
+                ) : (
+                  <LiquidGlassCard dark={dark} delay={0} style={{ padding: 32, textAlign: 'center' }}>
+                    <p style={{ color: pt.sub, fontSize: 13 }}>No questions tagged to this lesson yet 🚧</p>
+                  </LiquidGlassCard>
+                )}
+              </div>
             </div>
           </>
         )}
