@@ -4,7 +4,6 @@ import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useAuth, useModules } from '../contexts'
 import NavMenu from '../components/NavMenu'
-import { getTheme } from '../theme'
 import { getPulseTheme, pulseFonts, pulseType } from '../premiumTheme'
 import { supabase } from '../supabase'
 import ErrorBanner from '../components/ErrorBanner'
@@ -116,7 +115,6 @@ const BRAND_TAGLINE_DELAY = BRAND_WORDS_START + BRAND_WORD_STAGGER * 2 + 0.2
 interface WeeklySummary { totalAttempted: number; accuracy: number; topSubjectName: string | null }
 
 export default function Home({ dark, toggleTheme }: { dark: boolean; toggleTheme: () => void }) {
-  const c = getTheme(dark)
   const pt = getPulseTheme(dark)
   const navigate = useNavigate()
   const { user, profile } = useAuth() as any

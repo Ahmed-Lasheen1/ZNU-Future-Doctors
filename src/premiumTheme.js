@@ -150,3 +150,18 @@ export function pulseGlass(dark) {
         ].join(', '),
       }
 }
+
+// Shared "← Back" pill button used at the top of full-screen viewer
+// pages (SummaryOverlay). Moved here from the now-retired theme.js —
+// same visual output, just sourced from the Pulse system instead of
+// the old one so theme.js can be deleted with nothing left pointing
+// at it.
+export function backBtnStyle() {
+  return {
+    background: 'rgba(255,255,255,0.08)',
+    border: '2px solid rgba(255,255,255,0.15)',
+    borderRadius: 10, padding: '6px 14px',
+    color: '#94a3b8', cursor: 'pointer',
+    fontSize: 12, fontWeight: 700, fontFamily: pulseFonts.body
+  }
+}

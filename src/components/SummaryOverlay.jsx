@@ -1,4 +1,4 @@
-import { backBtnStyle } from '../theme'
+import { backBtnStyle } from '../premiumTheme'
 
 // Full-screen "back + title + iframe" chrome shared by every page that
 // opens a summary or lesson in an embedded viewer (StagePage, Summaries,
