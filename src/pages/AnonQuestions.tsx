@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../supabase'
 import { useAuth } from '../contexts'
-import { getPulseTheme, pulseFonts, pulseType } from '../premiumTheme'
+import { getPulseTheme, pulseFonts, pulseType, ON_GRADIENT_TOP } from '../premiumTheme'
 import { glassInput, glassPrimaryBtn } from '../components/pulse/PulseUI'
 import LiquidGlassCard from '@/components/ui/liquid-glass-card'
 import PulseBackground from '../components/pulse/PulseBackground'
@@ -238,7 +238,7 @@ export default function AnonQuestions({ dark }: { dark: boolean }) {
           <h3 style={{ ...pulseType.sectionLabel, color: '#4ade80', marginBottom: 12 }}>
             ✅ Answered Questions ({answeredQs.length})
           </h3>
-          {loading && <p style={{ color: pt.sub, textAlign: 'center' }}>Loading...</p>}
+          {loading && <p style={{ color: ON_GRADIENT_TOP.secondary, textAlign: 'center' }}>Loading...</p>}
           {!loading && answeredQs.length === 0 && (
             <LiquidGlassCard dark={dark} delay={0} style={{ padding: 40, textAlign: 'center' }}>
               <p style={{ color: pt.sub }}>No answered questions yet 🚧</p>

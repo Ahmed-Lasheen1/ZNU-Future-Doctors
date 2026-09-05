@@ -1273,7 +1273,7 @@ export default function MCQ({ dark }: { dark: boolean }) {
 
         <div style={{ textAlign: 'center', padding: '10px 0 16px' }}>
           <div style={{ fontSize: 40, marginBottom: 8 }}>🧪</div>
-          <h1 style={{ fontFamily: pulseFonts.display, fontWeight: 800, fontSize: 24, color: pt.text, marginBottom: 4 }}>MCQ Bank</h1>
+          <h1 style={{ fontFamily: pulseFonts.display, fontWeight: 800, fontSize: 24, color: ON_GRADIENT_TOP.primary, marginBottom: 4 }}>MCQ Bank</h1>
         </div>
 
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
@@ -1336,7 +1336,7 @@ export default function MCQ({ dark }: { dark: boolean }) {
           style={{ marginBottom: 28 }}
         />
 
-        {loading && <p style={{ color: pt.sub, textAlign: 'center' }}>Loading...</p>}
+        {loading && <p style={{ color: ON_GRADIENT_TOP.secondary, textAlign: 'center' }}>Loading...</p>}
 
         {/* Mock Exam — hero banner */}
         <div style={{ marginBottom: 32 }}>
@@ -1368,7 +1368,7 @@ export default function MCQ({ dark }: { dark: boolean }) {
             sides of a hovered card. paddingTop + a touch of side
             padding give the hover scale room to breathe; paddingBottom
             bumped slightly too so the bottom edge isn't clipped either. */}
-        <h3 style={{ ...pulseType.sectionLabel, color: pt.textMuted, marginBottom: 16 }}>Practice by Subject</h3>
+        <h3 style={{ ...pulseType.sectionLabel, color: ON_GRADIENT_TOP.muted, marginBottom: 16 }}>Practice by Subject</h3>
         <div style={{
           display: 'flex', gap: 14, overflowX: 'auto',
           paddingTop: 8, paddingBottom: 14, paddingLeft: 2, paddingRight: 2,

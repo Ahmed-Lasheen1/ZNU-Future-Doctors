@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { supabase } from '../supabase'
 import { useAuth, useModules } from '../contexts'
-import { getPulseTheme, pulseFonts, pulseType } from '../premiumTheme'
+import { getPulseTheme, pulseFonts, pulseType, ON_GRADIENT_TOP } from '../premiumTheme'
 import { glassInput, glassPrimaryBtn, glassGhostBtn } from '../components/pulse/PulseUI'
 import { containsProfanity } from '../lib/moderation'
 import { useToast } from '../components/ToastProvider'
@@ -231,7 +231,7 @@ export default function Profile({ dark }: { dark: boolean }) {
                 </button>
               </LiquidGlassCard>
             ) : loading ? (
-              <p style={{ color: pt.sub, textAlign: 'center' }}>Loading...</p>
+              <p style={{ color: ON_GRADIENT_TOP.secondary, textAlign: 'center' }}>Loading...</p>
             ) : profile ? (
               <div>
                 {/* Profile Card */}
@@ -397,7 +397,7 @@ export default function Profile({ dark }: { dark: boolean }) {
               </div>
             )}
 
-            {historyLoading && <p style={{ color: pt.sub, textAlign: 'center' }}>Loading...</p>}
+            {historyLoading && <p style={{ color: ON_GRADIENT_TOP.secondary, textAlign: 'center' }}>Loading...</p>}
 
             {!historyLoading && history.length === 0 && (
               <LiquidGlassCard dark={dark} delay={0} style={{ padding: 40, textAlign: 'center' }}>

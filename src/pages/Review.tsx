@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../supabase'
 import { useAuth, useModules } from '../contexts'
-import { getPulseTheme, pulseFonts, pulseType } from '../premiumTheme'
+import { getPulseTheme, pulseFonts, pulseType, ON_GRADIENT_TOP } from '../premiumTheme'
 import { glassInput } from '../components/pulse/PulseUI'
 import { useToast } from '../components/ToastProvider'
 import ErrorBanner from '../components/ErrorBanner'
@@ -189,7 +189,7 @@ export default function Review({ dark }: { dark: boolean }) {
           </div>
         )}
 
-        {loading && <p style={{ color: pt.sub, textAlign: 'center' }}>Loading...</p>}
+        {loading && <p style={{ color: ON_GRADIENT_TOP.secondary, textAlign: 'center' }}>Loading...</p>}
 
         {!loading && items.length === 0 && (
           <LiquidGlassCard dark={dark} delay={0} style={{ padding: 40, textAlign: 'center', marginBottom: SECTION_GAP }}>

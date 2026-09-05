@@ -1,7 +1,7 @@
 // src/pages/Schedule.tsx
 import { useState, useEffect } from 'react'
 import { supabase } from '../supabase'
-import { getPulseTheme, pulseFonts, pulseType } from '../premiumTheme'
+import { getPulseTheme, pulseFonts, pulseType, ON_GRADIENT_TOP } from '../premiumTheme'
 import ErrorBanner from '../components/ErrorBanner'
 import TabRow from '../components/TabRow'
 import MediaOverlay from '../components/MediaOverlay'
@@ -143,7 +143,7 @@ export default function Schedule({ dark }: { dark: boolean }) {
         </div>
 
         {!modulesLoaded || loading ? (
-          <p style={{ color: pt.sub, textAlign: 'center' }}>Loading...</p>
+          <p style={{ color: ON_GRADIENT_TOP.secondary, textAlign: 'center' }}>Loading...</p>
         ) : filtered.length === 0 ? (
           <LiquidGlassCard dark={dark} delay={0} style={{ padding: 40, textAlign: 'center' }}>
             <p style={{ color: pt.sub }}>No schedules yet 🚧</p>

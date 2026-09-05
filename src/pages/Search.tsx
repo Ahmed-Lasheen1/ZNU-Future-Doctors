@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { supabase } from '../supabase'
-import { getPulseTheme, pulseFonts, pulseType } from '../premiumTheme'
+import { getPulseTheme, pulseFonts, pulseType, ON_GRADIENT_TOP } from '../premiumTheme'
 import { glassInput } from '../components/pulse/PulseUI'
 import { useModules } from '../contexts'
 import ErrorBanner from '../components/ErrorBanner'
@@ -128,10 +128,10 @@ export default function Search({ dark }: { dark: boolean }) {
         {error && <ErrorBanner message="Search failed — check your connection and try again." />}
 
         {query.trim().length > 0 && query.trim().length < 2 && (
-          <p style={{ color: pt.sub, textAlign: 'center', fontSize: 13 }}>Keep typing — at least 2 characters.</p>
+          <p style={{ color: ON_GRADIENT_TOP.secondary, textAlign: 'center', fontSize: 13 }}>Keep typing — at least 2 characters.</p>
         )}
 
-        {loading && <p style={{ color: pt.sub, textAlign: 'center' }}>Searching...</p>}
+        {loading && <p style={{ color: ON_GRADIENT_TOP.secondary, textAlign: 'center' }}>Searching...</p>}
 
         {!loading && results && results.length === 0 && (
           <LiquidGlassCard dark={dark} delay={0} style={{ padding: 40, textAlign: 'center' }}>

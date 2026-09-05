@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../supabase'
 import { useAuth, useModules } from '../contexts'
-import { getPulseTheme, pulseFonts } from '../premiumTheme'
+import { getPulseTheme, pulseFonts, ON_GRADIENT_TOP } from '../premiumTheme'
 import { glassInput, glassPrimaryBtn } from '../components/pulse/PulseUI'
 import LiquidGlassCard from '@/components/ui/liquid-glass-card'
 import PulseBackground from '../components/pulse/PulseBackground'
@@ -257,7 +257,7 @@ export default function Checklist({ dark }: { dark: boolean }) {
           </LiquidGlassCard>
         </div>
 
-        {!modulesLoaded && <p style={{ color: pt.sub, textAlign: 'center' }}>Loading...</p>}
+        {!modulesLoaded && <p style={{ color: ON_GRADIENT_TOP.secondary, textAlign: 'center' }}>Loading...</p>}
 
         {modulesLoaded && tasks.length === 0 && (
           <LiquidGlassCard dark={dark} delay={200} style={{ padding: 40, textAlign: 'center' }}>

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../supabase'
 import { useAuth, useModules } from '../contexts'
-import { getPulseTheme, pulseFonts, pulseType } from '../premiumTheme'
+import { getPulseTheme, pulseFonts, pulseType, ON_GRADIENT_TOP } from '../premiumTheme'
 import PulseBackground from '../components/pulse/PulseBackground'
 import PulseGlassRow from '../components/pulse/PulseGlassRow'
 import BackButton from '../components/pulse/BackButton'
@@ -80,13 +80,15 @@ export default function Admin({ dark }: AdminProps) {
   // Security-through-obscurity note (unchanged): this only hides that
   // an admin panel exists from casual visitors — real protection is
   // Supabase RLS. While auth is still loading, show a blank state
-  // instead of flashing 404.
+  // instead of flashing 404 for a moment on every visit (including
+  // the real admin's own) before we actually know if this person is
+  // signed in and what their role is.
   if (!authLoaded) {
     return (
       <div style={{ position: 'relative', minHeight: '100vh' }}>
         <PulseBackground />
         <div style={{ position: 'relative', zIndex: 1, height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ color: pt.sub, fontSize: 14, fontWeight: 600 }}>Loading...</div>
+          <div style={{ color: ON_GRADIENT_TOP.secondary, fontSize: 14, fontWeight: 600 }}>Loading...</div>
         </div>
       </div>
     )

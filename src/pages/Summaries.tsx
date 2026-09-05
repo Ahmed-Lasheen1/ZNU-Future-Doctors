@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react'
 import { useLocation } from 'react-router-dom'
 import { supabase } from '../supabase'
-import { getPulseTheme, pulseFonts, pulseType } from '../premiumTheme'
+import { getPulseTheme, pulseFonts, pulseType, ON_GRADIENT_TOP } from '../premiumTheme'
 import ErrorBanner from '../components/ErrorBanner'
 import SummaryOverlay from '../components/SummaryOverlay'
 import LiquidGlassCard from '@/components/ui/liquid-glass-card'
@@ -47,7 +47,7 @@ function SummariesHome({ modules, onSelect, dark }: {
           WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
           marginBottom: 8
         }}>Smart Summaries</h1>
-        <p style={{ color: pt.sub, fontSize: 14 }}>Interactive study summaries for each module</p>
+        <p style={{ color: ON_GRADIENT_TOP.secondary, fontSize: 14 }}>Interactive study summaries for each module</p>
       </div>
 
       {sorted.length === 0 && (
@@ -162,7 +162,7 @@ function ModuleSummaries({ mod, onBack, dark, initialStage }: {
         style={{ marginBottom: 20 }}
       />
 
-      {loading && <p style={{ color: pt.sub, textAlign: 'center' }}>Loading...</p>}
+      {loading && <p style={{ color: ON_GRADIENT_TOP.secondary, textAlign: 'center' }}>Loading...</p>}
 
       {!loading && filtered.length === 0 && (
         <LiquidGlassCard dark={dark} delay={0} style={{ padding: 40, textAlign: 'center' }}>
