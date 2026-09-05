@@ -119,19 +119,19 @@ export default function SubjectPage({ dark }: { dark: boolean }) {
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: 12, marginBottom: 28 }}>
+        <div style={{ display: 'flex', gap: 16, marginBottom: 28, justifyContent: 'center' }}>
           <LiquidGlassCard dark={dark} delay={0} onClick={() => navigate(`/mcq?module=${moduleId}&subject=${subjectId}`)}
-            style={{ flex: 1, padding: '16px 12px', textAlign: 'center' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
-              <ExamIcon color="#e2725b" size={22} />
-              <span style={{ color: '#e2725b', fontWeight: 700, fontSize: 13 }}>All MCQs</span>
+            style={{ width: 'clamp(130px, 32vw, 180px)', padding: '22px 16px', textAlign: 'center' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+              <ExamIcon color="#e2725b" size={28} />
+              <span style={{ color: '#e2725b', fontWeight: 700, fontSize: 14 }}>All MCQs</span>
             </div>
           </LiquidGlassCard>
           <LiquidGlassCard dark={dark} delay={0} onClick={openAllSummaries}
-            style={{ flex: 1, padding: '16px 12px', textAlign: 'center' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
-              <NotesIcon color="#34d399" size={22} />
-              <span style={{ color: '#34d399', fontWeight: 700, fontSize: 13 }}>All Summaries</span>
+            style={{ width: 'clamp(130px, 32vw, 180px)', padding: '22px 16px', textAlign: 'center' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+              <NotesIcon color="#34d399" size={28} />
+              <span style={{ color: '#34d399', fontWeight: 700, fontSize: 14 }}>All Summaries</span>
             </div>
           </LiquidGlassCard>
         </div>
