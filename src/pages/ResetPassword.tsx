@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../supabase'
-import { getPulseTheme, pulseFonts } from '../premiumTheme'
+import { getPulseTheme, pulseFonts, ON_GRADIENT_TOP } from '../premiumTheme'
 import PulseBackground from '../components/pulse/PulseBackground'
 import PulseBrand from '../components/pulse/PulseBrand'
 import { GlassField, PrimaryButton, GhostButton, AuthMessage, inputResetStyle } from '../components/pulse/AuthPrimitives'
@@ -45,7 +45,13 @@ export default function ResetPassword({ dark = true }: { dark?: boolean }) {
           <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 24 }}>
             <PulseBrand dark={dark} logoSize={56} fontSize={26} />
           </div>
-          <p style={{ textAlign: 'center', fontSize: 12, color: pt.sub, marginBottom: 20, fontFamily: pulseFonts.body }}>
+          {/* AUDIT FIX: this subtitle renders directly on
+              PulseBackground (no glass surface behind it), but used
+              to read Glass tokens (pt.sub) — a text color meant for
+              text on a tinted glass backdrop. Corrected to the
+              gradient-zone token for text on the light/top portion of
+              PULSE_BG. */}
+          <p style={{ textAlign: 'center', fontSize: 12, color: ON_GRADIENT_TOP.secondary, marginBottom: 20, fontFamily: pulseFonts.body }}>
             Set a new password
           </p>
 

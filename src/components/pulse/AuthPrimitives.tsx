@@ -49,6 +49,16 @@ export function PrimaryButton({ pt, disabled, onClick, children }: {
 }
 
 export function GhostButton({ dark, onClick, children }: { dark: boolean; onClick?: () => void; children: ReactNode }) {
+  // AUDIT FIX: this used to hardcode `dark ? '#FFFFFF' : '#10243A'`
+  // inline instead of referencing PremiumTheme. The literal values
+  // happened to numerically match pt.text in both themes, but
+  // duplicating an approved token's value inline — rather than
+  // reading it from the theme — is exactly the kind of drift this
+  // audit exists to catch (a later change to the Dark/Light Glass
+  // primary text token would silently NOT apply here). Now sources
+  // `pt.text` directly, so this button always tracks the single
+  // source of truth in premiumTheme.js.
+  const pt = getPulseTheme(dark)
   return (
     <PulseGlassRow
       dark={dark} radius={999} onClick={onClick}
@@ -56,10 +66,7 @@ export function GhostButton({ dark, onClick, children }: { dark: boolean; onClic
       tabIndex={onClick ? 0 : undefined}
       onKeyDown={onClick ? (e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick() } }) : undefined}
     >
-      {/* AUDIT FIX: light-mode text was '#0f172a' — not the exact
-          Light Liquid Glass primary. Now uses the exact spec values
-          (#FFFFFF dark / #10243A light) for text on a glass surface. */}
-      <div style={{ padding: '11px', textAlign: 'center', fontSize: 13, fontWeight: 700, color: dark ? '#FFFFFF' : '#10243A', fontFamily: pulseFonts.body }}>
+      <div style={{ padding: '11px', textAlign: 'center', fontSize: 13, fontWeight: 700, color: pt.text, fontFamily: pulseFonts.body }}>
         {children}
       </div>
     </PulseGlassRow>

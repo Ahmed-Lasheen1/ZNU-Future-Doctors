@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useAuth, useModules } from '../contexts'
 import NavMenu from '../components/NavMenu'
-import { getPulseTheme, pulseFonts, pulseType } from '../premiumTheme'
+import { getPulseTheme, pulseFonts, pulseType, ON_GRADIENT_TOP, ON_GRADIENT_BOTTOM } from '../premiumTheme'
 import { supabase } from '../supabase'
 import ErrorBanner from '../components/ErrorBanner'
 import AutoGrid from '../components/AutoGrid'
@@ -214,18 +214,28 @@ export default function Home({ dark, toggleTheme }: { dark: boolean; toggleTheme
   const activeModules = modules.filter(m => m.status === 'active')
   const completedModules = modules.filter(m => m.status === 'completed')
 
-  // Section eyebrow labels ("⚡ TOOLS", "✓ COMPLETED MODULES") — now
-  // driven entirely by the shared sectionLabel typography token
-  // (Sora, 600 weight, uppercase, +0.16em tracking) instead of local
-  // ad-hoc sizing, so every uppercase label in the app matches.
-  const sectionTitle = (text: string, delaySeconds: number) => (
+  // Section eyebrow labels ("⚡ TOOLS", "✓ COMPLETED MODULES") — these
+  // render directly on PulseBackground (outside any LiquidGlassCard),
+  // so they must use the gradient-zone tokens (ON_GRADIENT_TOP /
+  // ON_GRADIENT_BOTTOM), never the Glass tokens (pt.textMuted).
+  //
+  // AUDIT FIX: both headings used to read the Glass token
+  // `pt.textMuted` even though neither sits on a glass surface. Which
+  // gradient zone applies depends on where the section actually sits
+  // on the page: "⚡ Tools" is still within the first fold (light/top
+  // zone), while "✓ Completed Modules" only appears after scrolling
+  // well past the fold, into the gradient's dark lower zone — the
+  // same reasoning Footer.jsx already documents for its own text
+  // color. `zone` lets each call site pick the correct one instead of
+  // both sharing one Glass-token color regardless of position.
+  const sectionTitle = (text: string, delaySeconds: number, zone: 'top' | 'bottom' = 'top') => (
     <motion.h2
       initial={playEntrance ? { opacity: 0, y: 20 } : false}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.7, delay: delaySeconds }}
       style={{
         ...pulseType.sectionLabel,
-        color: pt.textMuted,
+        color: zone === 'bottom' ? ON_GRADIENT_BOTTOM.muted : ON_GRADIENT_TOP.muted,
         marginBottom: 16,
       }}>{text}</motion.h2>
   )
@@ -443,7 +453,7 @@ export default function Home({ dark, toggleTheme }: { dark: boolean; toggleTheme
           </div>
 
           <div className="pulse-wide">
-            {sectionTitle('⚡ Tools', TOOLS_START)}
+            {sectionTitle('⚡ Tools', TOOLS_START, 'top')}
             <div className="pulse-tools-grid">
               {toolCards.map((card, i) => {
                 const accentColor = card.accent === 'amber' ? pt.amber : pt.indigo
@@ -489,7 +499,7 @@ export default function Home({ dark, toggleTheme }: { dark: boolean; toggleTheme
 
         {completedModules.length > 0 && (
           <div className="pulse-wide" style={{ paddingBottom: 'max(100px, env(safe-area-inset-bottom))' }}>
-            {sectionTitle('✓ Completed Modules', COMPLETED_MODULES_START)}
+            {sectionTitle('✓ Completed Modules', COMPLETED_MODULES_START, 'bottom')}
             <AutoGrid>
               {completedModules.map((mod, i) => (
                 <LiquidGlassCard key={mod.id} dark={dark} delay={msFor(COMPLETED_MODULES_START) + i * 110} instant={!playEntrance}

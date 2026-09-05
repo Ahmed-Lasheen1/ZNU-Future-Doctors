@@ -6,7 +6,7 @@ import confetti from 'canvas-confetti'
 import { Lock, Eye, EyeOff, ArrowLeft, GraduationCap, Mail } from 'lucide-react'
 import { supabase } from '../supabase'
 import { containsProfanity } from '../lib/moderation'
-import { getPulseTheme, pulseFonts } from '../premiumTheme'
+import { getPulseTheme, pulseFonts, ON_GRADIENT_TOP } from '../premiumTheme'
 import PulseBackground from '../components/pulse/PulseBackground'
 import PulseBrand from '../components/pulse/PulseBrand'
 import {
@@ -276,8 +276,15 @@ export default function Auth({ dark = true }: { dark?: boolean }) {
 
             {step === 'verify' ? (
               <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                <p style={{ textAlign: 'center', fontSize: 12, color: pt.sub, fontFamily: pulseFonts.body }}>
-                  We sent a 6-digit code to <strong style={{ color: pt.text }}>{email}</strong>
+                {/* AUDIT FIX: this instruction paragraph (and the
+                    email it wraps) renders directly on
+                    PulseBackground, not inside any glass surface —
+                    it used to read Glass tokens (pt.sub / pt.text),
+                    which are meant for text on a tinted glass
+                    backdrop. Corrected to the gradient-zone tokens
+                    for text on the light/top portion of PULSE_BG. */}
+                <p style={{ textAlign: 'center', fontSize: 12, color: ON_GRADIENT_TOP.secondary, fontFamily: pulseFonts.body }}>
+                  We sent a 6-digit code to <strong style={{ color: ON_GRADIENT_TOP.primary }}>{email}</strong>
                 </p>
                 <GlassField dark={dark}>
                   <input ref={otpRef} inputMode="numeric" maxLength={6} value={otp}
@@ -296,7 +303,12 @@ export default function Auth({ dark = true }: { dark?: boolean }) {
               </motion.div>
             ) : mode === 'signin' ? (
               <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                <p style={{ fontSize: 22, fontWeight: 300, color: pt.text, textAlign: 'center', fontFamily: pulseFonts.display }}>Welcome back</p>
+                {/* AUDIT FIX: this heading renders directly on
+                    PulseBackground (no glass surface behind it), but
+                    used to read the Glass token pt.text. Corrected to
+                    the gradient-zone primary color for the light/top
+                    portion of PULSE_BG. */}
+                <p style={{ fontSize: 22, fontWeight: 300, color: ON_GRADIENT_TOP.primary, textAlign: 'center', fontFamily: pulseFonts.display }}>Welcome back</p>
 
                 {googleButton}
                 <OrDivider pt={pt} />
@@ -333,7 +345,10 @@ export default function Auth({ dark = true }: { dark?: boolean }) {
               </motion.div>
             ) : (
               <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                <p style={{ fontSize: 22, fontWeight: 300, color: pt.text, textAlign: 'center', fontFamily: pulseFonts.display }}>Create your account</p>
+                {/* AUDIT FIX: same as "Welcome back" above — direct on
+                    PulseBackground, corrected to the gradient-zone
+                    primary color. */}
+                <p style={{ fontSize: 22, fontWeight: 300, color: ON_GRADIENT_TOP.primary, textAlign: 'center', fontFamily: pulseFonts.display }}>Create your account</p>
 
                 {googleButton}
                 <OrDivider pt={pt} />

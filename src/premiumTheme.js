@@ -19,16 +19,23 @@ export const pulseWeights = {
 // ── Text directly on the PULSE_BG gradient (no glass underneath) ───
 // PULSE_BG is a fixed, theme-independent gradient (see
 // PulseBackground.tsx) that always runs pale blue at the top to dark
-// navy at the bottom, in both light and dark mode. Anything rendered
-// straight on top of it — not inside a LiquidGlassCard/PulseGlassRow —
-// needs colors picked for whichever zone it actually sits in, not the
-// Liquid Glass tokens below (those assume a tinted, blurred backdrop).
-// These two token sets are the only approved colors for that case.
+// navy at the bottom, in both light and dark app themes. Anything
+// rendered straight on top of it — not inside a
+// LiquidGlassCard/PulseGlassRow — needs colors picked for whichever
+// zone it actually sits in, not the Liquid Glass tokens below (those
+// assume a tinted, blurred backdrop). These two token sets are the
+// only approved colors for that case.
+//
+// AUDIT FIX: `muted` below had drifted to the exact Light Liquid
+// Glass muted value ('#405A70'), which is a different token family
+// meant for text on a tinted glass backdrop — not for plain text
+// directly on the gradient. Restored to the correct alpha-fade of
+// this zone's own primary color instead.
 export const ON_GRADIENT_TOP = {
   // Text over the light/upper portion of the gradient.
   primary: '#062B50',
   secondary: '#062B50',
-  muted: '#405A70',
+  muted: 'rgba(6,43,80,0.62)',
 }
 
 export const ON_GRADIENT_BOTTOM = {
@@ -93,13 +100,17 @@ export function getPulseTheme(dark) {
         borderStrong: '#AFC0D6',
 
         // Text — Light Liquid Glass. Primary #10243A, Secondary
-        // #29445C, Muted #526A7F — exact values.
+        // #29445C, Muted #405A70 — exact approved values.
+        //
+        // AUDIT FIX: `faint`/`textMuted` had drifted to '#526A7F',
+        // which is not one of the three approved Light Liquid Glass
+        // typography values. Restored to the approved '#405A70'.
         text: '#10243A',
         sub: '#29445C',
-        faint: '#526A7F',
+        faint: '#405A70',
         textPrimary: '#10243A',
         textSecondary: '#29445C',
-        textMuted: '#526A7F',
+        textMuted: '#405A70',
 
         // Accents — Electric Cyan/Blue replaces the old soft purple-
         // leaning blue for tags/stats; Vibrant Crimson Orange for
