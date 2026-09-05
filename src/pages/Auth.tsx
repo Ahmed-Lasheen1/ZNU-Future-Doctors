@@ -115,11 +115,6 @@ export default function Auth({ dark = true }: { dark?: boolean }) {
     return () => mq.removeEventListener?.('change', handler)
   }, [])
 
-  const extractCode = (e: string) => e.split('@')[0]
-  const universityCodePreview =
-    mode === 'signup' && accountType === 'university' && UNIVERSITY_EMAIL_REGEX.test(email.trim())
-      ? extractCode(email.trim()) : null
-
   function resetAll() {
     setStep('form'); setName(''); setEmail(''); setPassword(''); setConfirmPassword(''); setOtp(''); setMessage('')
   }
@@ -172,10 +167,9 @@ export default function Auth({ dark = true }: { dark?: boolean }) {
     if (password !== confirmPassword) return setMessage('❌ Passwords do not match')
 
     setLoading(true)
-    const universityCode = accountType === 'university' ? extractCode(email.trim()) : null
     const { data, error } = await supabase.auth.signUp({
       email, password,
-      options: { data: { name: name.trim(), account_type: accountType, university_code: universityCode } }
+      options: { data: { name: name.trim(), account_type: accountType } }
     })
 
     if (error) { setLoading(false); return setMessage('❌ ' + error.message) }
@@ -276,13 +270,6 @@ export default function Auth({ dark = true }: { dark?: boolean }) {
 
             {step === 'verify' ? (
               <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                {/* AUDIT FIX: this instruction paragraph (and the
-                    email it wraps) renders directly on
-                    PulseBackground, not inside any glass surface —
-                    it used to read Glass tokens (pt.sub / pt.text),
-                    which are meant for text on a tinted glass
-                    backdrop. Corrected to the gradient-zone tokens
-                    for text on the light/top portion of PULSE_BG. */}
                 <p style={{ textAlign: 'center', fontSize: 12, color: ON_GRADIENT_TOP.secondary, fontFamily: pulseFonts.body }}>
                   We sent a 6-digit code to <strong style={{ color: ON_GRADIENT_TOP.primary }}>{email}</strong>
                 </p>
@@ -303,11 +290,6 @@ export default function Auth({ dark = true }: { dark?: boolean }) {
               </motion.div>
             ) : mode === 'signin' ? (
               <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                {/* AUDIT FIX: this heading renders directly on
-                    PulseBackground (no glass surface behind it), but
-                    used to read the Glass token pt.text. Corrected to
-                    the gradient-zone primary color for the light/top
-                    portion of PULSE_BG. */}
                 <p style={{ fontSize: 22, fontWeight: 300, color: ON_GRADIENT_TOP.primary, textAlign: 'center', fontFamily: pulseFonts.display }}>Welcome back</p>
 
                 {googleButton}
@@ -345,9 +327,6 @@ export default function Auth({ dark = true }: { dark?: boolean }) {
               </motion.div>
             ) : (
               <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                {/* AUDIT FIX: same as "Welcome back" above — direct on
-                    PulseBackground, corrected to the gradient-zone
-                    primary color. */}
                 <p style={{ fontSize: 22, fontWeight: 300, color: ON_GRADIENT_TOP.primary, textAlign: 'center', fontFamily: pulseFonts.display }}>Create your account</p>
 
                 {googleButton}
@@ -371,15 +350,6 @@ export default function Auth({ dark = true }: { dark?: boolean }) {
                     placeholder={accountType === 'university' ? 'ZNU email (@med.znu.edu.eg)' : 'you@gmail.com'}
                     name="signup-email" autoComplete="username" inputMode="email" style={inputResetStyle(pt)} />
                 </GlassField>
-
-                {accountType === 'university' && universityCodePreview && (
-                  <div style={{ position: 'relative', overflow: 'hidden', borderRadius: 12 }}>
-                    <div aria-hidden style={{ position: 'absolute', inset: 0, background: `${pt.cobalt}20` }} />
-                    <div style={{ position: 'relative', zIndex: 1, padding: '8px 16px', fontSize: 12, color: pt.cobalt, fontFamily: pulseFonts.body }}>
-                      🎓 University Code: <strong>{universityCodePreview}</strong>
-                    </div>
-                  </div>
-                )}
 
                 <GlassField dark={dark}>
                   <Lock size={15} color={pt.faint} style={{ flexShrink: 0 }} />

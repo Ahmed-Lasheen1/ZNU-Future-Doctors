@@ -28,7 +28,6 @@ interface Profile {
   id: string
   name: string
   points: number
-  university_code?: string | null
 }
 
 function EditProfileForm({ profile, dark, onUpdated, onProfileRefresh }: {
@@ -257,13 +256,12 @@ export default function Profile({ dark }: { dark: boolean }) {
                     </div>
                     {[
                       { label: 'Full Name', value: `Dr. ${profile.name}` },
-                      { label: 'University Code', value: profile.university_code },
                       { label: 'Email', value: user.email },
                       { label: 'University', value: 'Zagazig National University' },
                     ].map((item, i) => (
                       <div key={i} style={{
                         display: 'flex', justifyContent: 'space-between', padding: '10px 0',
-                        borderBottom: i < 3 ? `1px solid ${pt.border}` : 'none'
+                        borderBottom: i < 2 ? `1px solid ${pt.border}` : 'none'
                       }}>
                         <span style={{ color: pt.textMuted, fontSize: 13 }}>{item.label}</span>
                         <span style={{ color: pt.textPrimary, fontSize: 13, fontWeight: 600 }}>{item.value}</span>
