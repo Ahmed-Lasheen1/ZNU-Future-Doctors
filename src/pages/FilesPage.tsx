@@ -141,19 +141,19 @@ export default function FilesPage({ dark }: { dark: boolean }) {
 
         {viewer && viewer.file_type === 'pdf' && (
           <MediaOverlay
-            label="📄 PDF Viewer" labelColor={FILE_ACCENT}
             onClose={() => setViewer(null)}
             src={getDriveOrRawUrl(viewer.url)}
             iframeTitle="PDF Viewer"
-            allow="autoplay" allowFullScreen={undefined}          />
+            allow="autoplay" allowFullScreen={undefined}
+          />
         )}
         {viewer && viewer.file_type === 'video' && (
           <MediaOverlay
-            label="🎥 Video Player" labelColor={FILE_ACCENT}
             onClose={() => setViewer(null)}
             src={getVideoEmbedUrl(viewer.url)}
             iframeTitle="Video Player"
-            allowFullScreen allow={undefined}          />
+            allowFullScreen allow={undefined}
+          />
         )}
         {viewer && viewer.file_type === 'audio' && (
           <AudioViewer url={viewer.url} name={viewer.name} onClose={() => setViewer(null)} dark={dark} />

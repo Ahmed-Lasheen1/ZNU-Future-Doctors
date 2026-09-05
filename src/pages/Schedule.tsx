@@ -94,12 +94,11 @@ export default function Schedule({ dark }: { dark: boolean }) {
 
         {viewer && (
           <MediaOverlay
-            label={`📅 ${viewer.title}`}
-            labelColor={SCHEDULE_ACCENT}
             onClose={() => setViewer(null)}
             src={getDriveOrRawUrl(viewer.url)}
             iframeTitle={viewer.title}
-            allow="autoplay" allowFullScreen={undefined}          />
+            allow="autoplay" allowFullScreen={undefined}
+          />
         )}
 
         <PageIntro dark={dark} emoji="📅" title="Schedules" subtitle="Study plans and exam dates, module by module" />

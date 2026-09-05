@@ -32,6 +32,21 @@ const toolCards = [
   { Icon: LeaderboardIcon, title: 'Leaderboard', sub: 'See where you stand', to: '/profile?tab=leaderboard', accent: 'amber' },
 ] as const
 
+// ── Fixed accents for text/marks rendered directly on PULSE_BG ─────
+// These two live outside any LiquidGlassCard/PulseGlassRow, sitting
+// straight on the gradient — so per the same rule that governs
+// ON_GRADIENT_TOP/ON_GRADIENT_BOTTOM, they must not silently swap
+// shade just because the app's Light/Dark toggle changes. A plain
+// `pt.cobalt`/`pt.textMuted` read here would do exactly that, since
+// those are Liquid Glass tokens meant for glass surfaces.
+//
+// "Active Modules" sits in the gradient's pale/light top zone in both
+// themes — frozen to the LIGHT-mode cobalt shade (the darker, more
+// saturated blue), since the brighter dark-mode cyan reads oddly
+// against that same pale top once the background stops changing with
+// the toggle.
+const ACTIVE_MODULES_ACCENT = getPulseTheme(false).cobalt
+
 const MODULE_BLURBS: Record<string, string> = {
   neuro: 'Explore the wonders of the nervous system',
   cardio: 'Understand the heart and blood vessels',
@@ -415,9 +430,9 @@ export default function Home({ dark, toggleTheme }: { dark: boolean; toggleTheme
                   initial={playEntrance ? { opacity: 0, y: 16 } : false}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.7, delay: ACTIVE_MODULES_START }}
-                  style={{ display: 'flex', alignItems: 'center', gap: 8, color: pt.cobalt, marginBottom: 14, ...pulseType.sectionLabel }}
+                  style={{ display: 'flex', alignItems: 'center', gap: 8, color: ACTIVE_MODULES_ACCENT, marginBottom: 14, ...pulseType.sectionLabel }}
                 >
-                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: pt.cobalt, display: 'inline-block' }} />
+                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: ACTIVE_MODULES_ACCENT, display: 'inline-block' }} />
                   Active Modules
                 </motion.div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -489,7 +504,7 @@ export default function Home({ dark, toggleTheme }: { dark: boolean; toggleTheme
             style={{ display: 'flex', alignItems: 'center', gap: 14, justifyContent: 'center' }}
           >
             <div style={{ height: 1, background: pt.border, flex: 1, maxWidth: 120 }} />
-            <div style={{ ...pulseType.small, display: 'flex', alignItems: 'center', gap: 8, color: pt.textMuted }}>
+            <div style={{ ...pulseType.small, display: 'flex', alignItems: 'center', gap: 8, color: ON_GRADIENT_BOTTOM.muted }}>
               <img src="/icon-192.png" alt="" style={{ width: 18, height: 18, borderRadius: 4, objectFit: 'cover' }} />
               Keep the pulse. Shape the future.
             </div>
