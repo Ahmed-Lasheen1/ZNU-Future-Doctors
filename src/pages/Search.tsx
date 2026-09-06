@@ -12,7 +12,7 @@ import BackButton from '../components/pulse/BackButton'
 import PageIntro from '../components/pulse/PageIntro'
 import { ModuleIcon } from '../lib/medicalIcons'
 import { SearchIcon2, DocumentIcon } from '../components/ui/tool-icons'
-import { Hospital, FlaskConical, NotebookText, CalendarDays } from 'lucide-react'
+import { Building2, FlaskConical, BookOpenText, CalendarDays } from 'lucide-react'
 
 interface SearchModule {
   id: string
@@ -30,10 +30,10 @@ interface SearchResult {
 }
 
 const typeMeta: Record<SearchResult['type'], { Icon: (p: { color?: string; size?: number }) => JSX.Element; label: string; color: string }> = {
-  module: { Icon: Hospital, label: 'Module', color: '#38bdf8' },
+  module: { Icon: Building2, label: 'Module', color: '#38bdf8' },
   file: { Icon: DocumentIcon, label: 'File', color: '#60a5fa' },
   question: { Icon: FlaskConical, label: 'MCQ Question', color: '#e2725b' },
-  summary: { Icon: NotebookText, label: 'Summary', color: '#34d399' },
+  summary: { Icon: BookOpenText, label: 'Summary', color: '#34d399' },
   schedule: { Icon: CalendarDays, label: 'Schedule', color: '#a78bfa' },
 }
 
