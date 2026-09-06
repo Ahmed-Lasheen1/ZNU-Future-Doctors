@@ -15,6 +15,7 @@ import PageIntro from '../components/pulse/PageIntro'
 import { getGuestFlags, getGuestHistory, toggleGuestFlag } from '../lib/reviewStorage'
 import QuestionSourceBadge from '../components/QuestionSourceBadge'
 import { ModuleIcon } from '../lib/medicalIcons'
+import { BookIcon, ClockIcon, FlagIcon, LightbulbIcon, TargetIcon, EmptyBoxIcon, CelebrationIcon, RefreshIcon, SearchIcon2 } from '../components/ui/tool-icons'
 
 const REVIEW_ACCENT = '#e2725b'
 
@@ -176,6 +177,11 @@ export default function Review({ dark }: { dark: boolean }) {
   const hoverTint = dark ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.35)'
   const inStyle = { ...glassInput(pt, dark), padding: '13px 20px', marginBottom: 0 }
 
+  const reviewTabs = [
+    { id: 'history' as const, label: 'History', Icon: ClockIcon },
+    { id: 'flagged' as const, label: 'Flagged', Icon: FlagIcon },
+  ]
+
   return (
     <div style={{ position: 'relative', minHeight: '100vh' }}>
       <PulseBackground />
@@ -185,11 +191,12 @@ export default function Review({ dark }: { dark: boolean }) {
           <BackButton dark={dark} fallback="/mcq" />
         </div>
 
-        <PageIntro dark={dark} emoji="📚" title="Review" subtitle="Your exam history, mistakes, and flagged questions" paddingBottom={16} />
+        <PageIntro dark={dark} emoji={<BookIcon color={ON_GRADIENT_TOP.primary} size={40} />} title="Review" subtitle="Your exam history, mistakes, and flagged questions" paddingBottom={16} />
 
         <div style={{ display: 'flex', gap: 8, marginBottom: SECTION_GAP }}>
-          {([{ id: 'history' as const, label: '🕘 History' }, { id: 'flagged' as const, label: '🚩 Flagged' }]).map(t => {
+          {reviewTabs.map(t => {
             const active = tab === t.id
+            const color = active ? REVIEW_ACCENT : pt.sub
             return (
               <PulseGlassRow
                 key={t.id} dark={dark} radius={999} active={active}
@@ -198,8 +205,8 @@ export default function Review({ dark }: { dark: boolean }) {
                 onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setTab(t.id) } }}
                 style={{ flex: 1, textAlign: 'center' }}
               >
-                <div style={{ padding: '10px', ...pulseType.button, color: active ? REVIEW_ACCENT : pt.sub }}>
-                  {t.label}
+                <div style={{ padding: '10px', ...pulseType.button, color, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                  <t.Icon color={color} size={14} /> {t.label}
                 </div>
               </PulseGlassRow>
             )
@@ -211,8 +218,8 @@ export default function Review({ dark }: { dark: boolean }) {
         {!user && (
           <div style={{ marginBottom: SECTION_GAP }}>
             <LiquidGlassCard dark={dark} delay={0} style={{ padding: '12px 18px', textAlign: 'center' }}>
-              <span style={{ color: pt.cobalt, fontSize: 13, fontWeight: 600 }}>
-                💡 This list is saved on this device only.{' '}
+              <span style={{ color: pt.cobalt, fontSize: 13, fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                <LightbulbIcon color={pt.cobalt} size={14} /> This list is saved on this device only.{' '}
                 <span style={{ cursor: 'pointer', textDecoration: 'underline' }} onClick={() => navigate('/auth')}>Sign in</span>{' '}
                 to keep it across devices.
               </span>
@@ -232,7 +239,9 @@ export default function Review({ dark }: { dark: boolean }) {
             <>
               {accuracy !== null && (
                 <div style={{ textAlign: 'center', marginBottom: SECTION_GAP }}>
-                  <span style={{ color: REVIEW_ACCENT, fontWeight: 900, fontSize: 20 }}>🎯 {accuracy}%</span>
+                  <span style={{ color: REVIEW_ACCENT, fontWeight: 900, fontSize: 20, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                    <TargetIcon color={REVIEW_ACCENT} size={18} /> {accuracy}%
+                  </span>
                   <span style={{ color: pt.sub, fontSize: 12, fontWeight: 600, marginLeft: 8 }}>
                     overall accuracy ({totalCorrect}/{totalAttempted})
                   </span>
@@ -241,7 +250,9 @@ export default function Review({ dark }: { dark: boolean }) {
 
               {history.length === 0 && (
                 <LiquidGlassCard dark={dark} delay={0} style={{ padding: 40, textAlign: 'center' }}>
-                  <p style={{ color: pt.sub }}>No exams attempted yet 📚</p>
+                  <p style={{ color: pt.sub, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                    <EmptyBoxIcon color={pt.sub} size={16} /> No exams attempted yet
+                  </p>
                 </LiquidGlassCard>
               )}
 
@@ -257,7 +268,7 @@ export default function Review({ dark }: { dark: boolean }) {
                         {mod && <ModuleIcon value={mod.icon} size={20} color={mod.color} />}
                         <div style={{ minWidth: 0 }}>
                           <div style={{ ...pulseType.cardTitle, fontSize: 14, color: pt.textPrimary }}>
-                            {mod ? mod.name : 'Module'} · {h.quiz_type === 'mock' ? '📝 Mock' : h.quiz_type === 'retry' ? '🔁 Retry' : '🧪 Practice'}
+                            {mod ? mod.name : 'Module'} · {h.quiz_type === 'mock' ? 'Mock' : h.quiz_type === 'retry' ? 'Retry' : 'Practice'}
                           </div>
                           <div style={{ ...pulseType.small, color: pt.textMuted, marginTop: 2 }}>
                             {new Date(h.completed_at).toLocaleDateString()} · {h.correct}/{h.total} correct
@@ -307,18 +318,19 @@ export default function Review({ dark }: { dark: boolean }) {
                   <button onClick={() => retryAll(incorrectQs)} style={{
                     width: '100%', padding: '14px', background: REVIEW_ACCENT, color: '#0f172a',
                     border: 'none', borderRadius: 999, cursor: 'pointer', fontWeight: 700,
-                    fontSize: 14, fontFamily: pulseFonts.body, boxShadow: `0 8px 28px ${REVIEW_ACCENT}35`
+                    fontSize: 14, fontFamily: pulseFonts.body, boxShadow: `0 8px 28px ${REVIEW_ACCENT}35`,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8
                   }}>
-                    🔁 Retry These {incorrectQs.length} Incorrect Question{incorrectQs.length === 1 ? '' : 's'}
+                    <RefreshIcon color="#0f172a" size={15} /> Retry These {incorrectQs.length} Incorrect Question{incorrectQs.length === 1 ? '' : 's'}
                   </button>
                 </div>
               )}
 
               {incorrectQs.length === 0 && (
                 <LiquidGlassCard dark={dark} delay={0} style={{ padding: 40, textAlign: 'center' }}>
-                  <p style={{ color: pt.sub }}>
+                  <p style={{ color: pt.sub, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
                     {selectedHistory.correct === selectedHistory.total
-                      ? '🎉 No mistakes in this attempt!'
+                      ? <><CelebrationIcon color={pt.sub} size={16} /> No mistakes in this attempt!</>
                       : 'No per-question data was recorded for this attempt.'}
                   </p>
                 </LiquidGlassCard>
@@ -354,9 +366,10 @@ export default function Review({ dark }: { dark: boolean }) {
                       {item.explanation && (
                         <div style={{
                           background: dark ? 'rgba(56,189,248,0.10)' : 'rgba(2,132,199,0.06)',
-                          borderRadius: 10, padding: '10px 14px', marginTop: 8, color: pt.sub, fontSize: 12
+                          borderRadius: 10, padding: '10px 14px', marginTop: 8, color: pt.sub, fontSize: 12,
+                          display: 'flex', alignItems: 'flex-start', gap: 8
                         }}>
-                          💡 {item.explanation}
+                          <LightbulbIcon color={pt.sub} size={14} /> <span>{item.explanation}</span>
                         </div>
                       )}
 
@@ -364,8 +377,8 @@ export default function Review({ dark }: { dark: boolean }) {
                         <PulseGlassRow dark={dark} radius={10} hoverTint={hoverTint} onClick={() => retryAll([item])}
                           role="button" tabIndex={0}
                           onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); retryAll([item]) } }}>
-                          <div style={{ padding: '8px', textAlign: 'center', color: pt.sub, ...pulseType.small, fontWeight: 700 }}>
-                            🔁 Retry this one
+                          <div style={{ padding: '8px', textAlign: 'center', color: pt.sub, ...pulseType.small, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                            <RefreshIcon color={pt.sub} size={13} /> Retry this one
                           </div>
                         </PulseGlassRow>
                       </div>
@@ -382,7 +395,9 @@ export default function Review({ dark }: { dark: boolean }) {
           <>
             {flaggedItems.length === 0 && (
               <LiquidGlassCard dark={dark} delay={0} style={{ padding: 40, textAlign: 'center', marginBottom: SECTION_GAP }}>
-                <p style={{ color: pt.sub }}>No flagged questions yet 🚩</p>
+                <p style={{ color: pt.sub, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                  <EmptyBoxIcon color={pt.sub} size={16} /> No flagged questions yet
+                </p>
               </LiquidGlassCard>
             )}
 
@@ -411,9 +426,10 @@ export default function Review({ dark }: { dark: boolean }) {
                     <button onClick={() => retryAll(filteredFlagged)} style={{
                       width: '100%', padding: '14px', background: REVIEW_ACCENT, color: '#0f172a',
                       border: 'none', borderRadius: 999, cursor: 'pointer', fontWeight: 700,
-                      fontSize: 14, fontFamily: pulseFonts.body, boxShadow: `0 8px 28px ${REVIEW_ACCENT}35`
+                      fontSize: 14, fontFamily: pulseFonts.body, boxShadow: `0 8px 28px ${REVIEW_ACCENT}35`,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8
                     }}>
-                      🔁 Retry {filteredFlagged.length === flaggedItems.length ? 'All' : `These ${filteredFlagged.length}`} Flagged Questions
+                      <RefreshIcon color="#0f172a" size={15} /> Retry {filteredFlagged.length === flaggedItems.length ? 'All' : `These ${filteredFlagged.length}`} Flagged Questions
                     </button>
                   </div>
                 )}
@@ -422,7 +438,9 @@ export default function Review({ dark }: { dark: boolean }) {
 
             {flaggedItems.length > 0 && filteredFlagged.length === 0 && (
               <LiquidGlassCard dark={dark} delay={0} style={{ padding: 32, textAlign: 'center' }}>
-                <p style={{ color: pt.sub }}>No matches for your search/filter 🔎</p>
+                <p style={{ color: pt.sub, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                  <SearchIcon2 color={pt.sub} size={15} /> No matches for your search/filter
+                </p>
               </LiquidGlassCard>
             )}
 
@@ -463,9 +481,10 @@ export default function Review({ dark }: { dark: boolean }) {
                     {item.attempted && item.explanation && (
                       <div style={{
                         background: dark ? 'rgba(56,189,248,0.10)' : 'rgba(2,132,199,0.06)',
-                        borderRadius: 10, padding: '10px 14px', marginTop: 8, color: pt.sub, fontSize: 12
+                        borderRadius: 10, padding: '10px 14px', marginTop: 8, color: pt.sub, fontSize: 12,
+                        display: 'flex', alignItems: 'flex-start', gap: 8
                       }}>
-                        💡 {item.explanation}
+                        <LightbulbIcon color={pt.sub} size={14} /> <span>{item.explanation}</span>
                       </div>
                     )}
                     {!item.attempted && (
@@ -478,15 +497,15 @@ export default function Review({ dark }: { dark: boolean }) {
                       <PulseGlassRow dark={dark} radius={10} hoverTint={hoverTint} onClick={() => retryAll([item])}
                         role="button" tabIndex={0} style={{ flex: 1 }}
                         onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); retryAll([item]) } }}>
-                        <div style={{ padding: '8px', textAlign: 'center', color: pt.sub, ...pulseType.small, fontWeight: 700 }}>
-                          🔁 Retry this one
+                        <div style={{ padding: '8px', textAlign: 'center', color: pt.sub, ...pulseType.small, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                          <RefreshIcon color={pt.sub} size={13} /> Retry this one
                         </div>
                       </PulseGlassRow>
                       <button onClick={() => unflag(qId)} style={{
                         padding: '8px 12px', background: 'transparent', border: '1px solid #ef444440',
                         borderRadius: 8, color: '#ef4444', cursor: 'pointer', fontFamily: pulseFonts.body,
-                        fontSize: 12, fontWeight: 700
-                      }}>🚩 Remove</button>
+                        fontSize: 12, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 5
+                      }}><FlagIcon color="#ef4444" size={12} /> Remove</button>
                     </div>
                   </LiquidGlassCard>
                 </div>

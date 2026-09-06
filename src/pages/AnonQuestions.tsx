@@ -10,6 +10,8 @@ import BackButton from '../components/pulse/BackButton'
 import PageIntro from '../components/pulse/PageIntro'
 import NotifyPermissionButton from '../components/NotifyPermissionButton'
 import { getMyAnonTokens, addMyAnonToken, getNotifiedTokens, markTokensNotified } from '../lib/anonTracking'
+import { AnonQAIcon, QuestionMarkIcon, ClockIcon, CheckCircleIcon, TrashIcon, LightbulbIcon, EmptyBoxIcon } from '../components/ui/tool-icons'
+import { Lock } from 'lucide-react'
 
 const QNA_ACCENT = '#a78bfa'
 
@@ -131,10 +133,10 @@ export default function AnonQuestions({ dark }: { dark: boolean }) {
           <BackButton dark={dark} fallback="/" />
         </div>
 
-        <PageIntro dark={dark} emoji="💬" title="Anonymous Questions" subtitle="Ask anything anonymously — no one knows who you are!" paddingBottom={16} />
+        <PageIntro dark={dark} emoji={<AnonQAIcon color={ON_GRADIENT_TOP.primary} size={40} />} title="Anonymous Questions" subtitle="Ask anything anonymously — no one knows who you are!" paddingBottom={16} />
 
         <div style={{ marginBottom: 20 }}>
-          <NotifyPermissionButton dark={dark} label="🔔 Notify me when my question is answered" />
+          <NotifyPermissionButton dark={dark} label="Notify me when my question is answered" />
         </div>
 
         {myQuestions.length > 0 && (
@@ -152,9 +154,11 @@ export default function AnonQuestions({ dark }: { dark: boolean }) {
                     <span style={{
                       fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 999,
                       background: q.answered ? 'rgba(74,222,128,0.16)' : `${pt.amber}20`,
-                      color: q.answered ? '#4ade80' : pt.amber
+                      color: q.answered ? '#4ade80' : pt.amber,
+                      display: 'inline-flex', alignItems: 'center', gap: 5
                     }}>
-                      {q.answered ? '✅ Answered' : '⏳ Waiting for an answer'}
+                      {q.answered ? <CheckCircleIcon color="#4ade80" size={12} /> : <ClockIcon color={pt.amber} size={12} />}
+                      {q.answered ? 'Answered' : 'Waiting for an answer'}
                     </span>
                     {q.answered && q.answer && (
                       <div style={{
@@ -173,7 +177,9 @@ export default function AnonQuestions({ dark }: { dark: boolean }) {
 
         <div style={{ marginBottom: 24 }}>
           <LiquidGlassCard dark={dark} delay={0} style={{ padding: '20px 22px' }}>
-            <h3 style={{ ...pulseType.sectionLabel, color: QNA_ACCENT, marginBottom: 12 }}>🙋 Ask a Question</h3>
+            <h3 style={{ ...pulseType.sectionLabel, color: QNA_ACCENT, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <QuestionMarkIcon color={QNA_ACCENT} size={14} /> Ask a Question
+            </h3>
             <textarea
               placeholder="Type your question here..."
               value={newQ} onChange={e => setNewQ(e.target.value)}
@@ -184,16 +190,17 @@ export default function AnonQuestions({ dark }: { dark: boolean }) {
             <button onClick={submitQuestion} style={{
               width: '100%', padding: '13px', background: QNA_ACCENT,
               border: 'none', borderRadius: 999, cursor: 'pointer',
-              fontWeight: 700, color: '#0f172a', fontFamily: pulseFonts.body, fontSize: 14
-            }}>Submit Anonymously 🔒</button>
+              fontWeight: 700, color: '#0f172a', fontFamily: pulseFonts.body, fontSize: 14,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8
+            }}>Submit Anonymously <Lock size={14} /></button>
           </LiquidGlassCard>
         </div>
 
         {isAdmin && (
           <div style={{ marginBottom: 24 }}>
             <LiquidGlassCard dark={dark} delay={0} style={{ padding: '10px 16px', textAlign: 'center' }}>
-              <span style={{ color: pt.cobalt, fontSize: 13, fontWeight: 700 }}>
-                ✅ Admin Mode Active — replies you post here are visible to everyone
+              <span style={{ color: pt.cobalt, fontSize: 13, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                <CheckCircleIcon color={pt.cobalt} size={14} /> Admin Mode Active — replies you post here are visible to everyone
               </span>
             </LiquidGlassCard>
           </div>
@@ -201,15 +208,17 @@ export default function AnonQuestions({ dark }: { dark: boolean }) {
 
         {isAdmin && unansweredQs.length > 0 && (
           <div style={{ marginBottom: 24 }}>
-            <h3 style={{ ...pulseType.sectionLabel, color: pt.amber, marginBottom: 12 }}>
-              ⏳ Unanswered ({unansweredQs.length})
+            <h3 style={{ ...pulseType.sectionLabel, color: pt.amber, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <ClockIcon color={pt.amber} size={14} /> Unanswered ({unansweredQs.length})
             </h3>
             {unansweredQs.map((q, i) => {
               const isLast = i === unansweredQs.length - 1
               return (
                 <div key={q.id} style={{ marginBottom: isLast ? 0 : 12 }}>
                   <LiquidGlassCard dark={dark} delay={i * 60} style={{ padding: 18 }}>
-                    <p style={{ color: pt.textPrimary, fontWeight: 700, marginBottom: 12 }}>❓ {q.question}</p>
+                    <p style={{ color: pt.textPrimary, fontWeight: 700, marginBottom: 12, display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                      <QuestionMarkIcon color={pt.textPrimary} size={15} /> <span>{q.question}</span>
+                    </p>
                     <textarea
                       placeholder="Type your answer..."
                       value={replyText[q.id] || ''}
@@ -219,13 +228,15 @@ export default function AnonQuestions({ dark }: { dark: boolean }) {
                       <button onClick={() => submitReply(q.id)} style={{
                         flex: 1, padding: '10px', background: '#22c55e',
                         border: 'none', borderRadius: 999, cursor: 'pointer',
-                        fontWeight: 700, color: '#fff', fontFamily: pulseFonts.body
-                      }}>✅ Answer</button>
+                        fontWeight: 700, color: '#fff', fontFamily: pulseFonts.body,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6
+                      }}><CheckCircleIcon color="#fff" size={14} /> Answer</button>
                       <button onClick={() => deleteQuestion(q.id)} aria-label="Delete question" style={{
                         padding: '10px 16px', background: 'rgba(239,107,87,0.14)',
                         border: '1px solid rgba(239,107,87,0.35)', borderRadius: 999, cursor: 'pointer',
-                        color: pt.danger, fontFamily: pulseFonts.body, fontWeight: 700
-                      }}>🗑</button>
+                        color: pt.danger, fontFamily: pulseFonts.body, fontWeight: 700,
+                        display: 'flex', alignItems: 'center'
+                      }}><TrashIcon color={pt.danger} size={15} /></button>
                     </div>
                   </LiquidGlassCard>
                 </div>
@@ -235,13 +246,15 @@ export default function AnonQuestions({ dark }: { dark: boolean }) {
         )}
 
         <div>
-          <h3 style={{ ...pulseType.sectionLabel, color: '#4ade80', marginBottom: 12 }}>
-            ✅ Answered Questions ({answeredQs.length})
+          <h3 style={{ ...pulseType.sectionLabel, color: '#4ade80', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+            <CheckCircleIcon color="#4ade80" size={14} /> Answered Questions ({answeredQs.length})
           </h3>
           {loading && <p style={{ color: ON_GRADIENT_TOP.secondary, textAlign: 'center' }}>Loading...</p>}
           {!loading && answeredQs.length === 0 && (
             <LiquidGlassCard dark={dark} delay={0} style={{ padding: 40, textAlign: 'center' }}>
-              <p style={{ color: pt.sub }}>No answered questions yet 🚧</p>
+              <p style={{ color: pt.sub, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                <EmptyBoxIcon color={pt.sub} size={16} /> No answered questions yet
+              </p>
             </LiquidGlassCard>
           )}
           {answeredQs.map((q, i) => {
@@ -249,12 +262,16 @@ export default function AnonQuestions({ dark }: { dark: boolean }) {
             return (
               <div key={q.id} style={{ marginBottom: isLast ? 0 : 12 }}>
                 <LiquidGlassCard dark={dark} delay={i * 60} style={{ padding: 20 }}>
-                  <p style={{ color: pt.textPrimary, fontWeight: 700, marginBottom: 12 }}>❓ {q.question}</p>
+                  <p style={{ color: pt.textPrimary, fontWeight: 700, marginBottom: 12, display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                    <QuestionMarkIcon color={pt.textPrimary} size={15} /> <span>{q.question}</span>
+                  </p>
                   <div style={{
                     background: 'rgba(74,222,128,0.10)', border: '1px solid rgba(74,222,128,0.25)',
                     borderRadius: 10, padding: '12px 16px'
                   }}>
-                    <div style={{ color: '#4ade80', fontSize: 12, fontWeight: 700, marginBottom: 4 }}>💡 Answer</div>
+                    <div style={{ color: '#4ade80', fontSize: 12, fontWeight: 700, marginBottom: 4, display: 'flex', alignItems: 'center', gap: 5 }}>
+                      <LightbulbIcon color="#4ade80" size={12} /> Answer
+                    </div>
                     <p style={{ color: pt.textPrimary, fontSize: 14 }}>{q.answer}</p>
                   </div>
                   {isAdmin && (
@@ -262,8 +279,9 @@ export default function AnonQuestions({ dark }: { dark: boolean }) {
                       marginTop: 8, padding: '6px 12px',
                       background: 'rgba(239,107,87,0.14)', border: '1px solid rgba(239,107,87,0.35)',
                       borderRadius: 8, cursor: 'pointer',
-                      color: pt.danger, fontFamily: pulseFonts.body, fontSize: 12
-                    }}>🗑 Delete</button>
+                      color: pt.danger, fontFamily: pulseFonts.body, fontSize: 12,
+                      display: 'inline-flex', alignItems: 'center', gap: 5
+                    }}><TrashIcon color={pt.danger} size={13} /> Delete</button>
                   )}
                 </LiquidGlassCard>
               </div>

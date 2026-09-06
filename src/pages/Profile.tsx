@@ -12,6 +12,8 @@ import PulseBackground from '../components/pulse/PulseBackground'
 import BackButton from '../components/pulse/BackButton'
 import PulseGlassRow from '../components/pulse/PulseGlassRow'
 import NotificationToggle from '../components/pulse/NotificationToggle'
+import { LeaderboardIcon, ClockIcon } from '../components/ui/tool-icons'
+import { Lock, User, Star, ClipboardList, Pencil, Award } from 'lucide-react'
 
 // See src/pages/Auth.tsx for why this is 8, not 6 — same reasoning,
 // kept as the same-named constant in both places since there's no
@@ -76,7 +78,9 @@ function EditProfileForm({ profile, dark, onUpdated, onProfileRefresh }: {
   return (
     <div style={{ marginBottom: 22 }}>
       <LiquidGlassCard dark={dark} delay={0} style={{ padding: '20px 22px' }}>
-        <h3 style={{ ...pulseType.sectionLabel, fontSize: 14, color: pt.cobalt, marginBottom: 16 }}>✏️ Edit Profile</h3>
+        <h3 style={{ ...pulseType.sectionLabel, fontSize: 14, color: pt.cobalt, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 6 }}>
+          <Pencil size={13} /> Edit Profile
+        </h3>
 
         {msg && (
           <div style={{
@@ -166,6 +170,7 @@ export default function Profile({ dark }: { dark: boolean }) {
         <div style={{ display: 'flex', gap: 8, marginBottom: 24 }}>
           {(['profile', 'leaderboard'] as const).map(t => {
             const active = tab === t
+            const color = active ? pt.cobalt : pt.sub
             return (
               <PulseGlassRow
                 key={t} dark={dark} radius={999} active={active}
@@ -174,8 +179,9 @@ export default function Profile({ dark }: { dark: boolean }) {
                 onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setTab(t) } }}
                 style={{ flex: 1, textAlign: 'center' }}
               >
-                <div style={{ padding: '10px', ...pulseType.button, color: active ? pt.cobalt : pt.sub }}>
-                  {t === 'profile' ? '👤 Profile' : '🏆 Leaderboard'}
+                <div style={{ padding: '10px', ...pulseType.button, color, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                  {t === 'profile' ? <User size={14} color={color} /> : <LeaderboardIcon color={color} size={14} />}
+                  {t === 'profile' ? 'Profile' : 'Leaderboard'}
                 </div>
               </PulseGlassRow>
             )
@@ -186,7 +192,9 @@ export default function Profile({ dark }: { dark: boolean }) {
           <>
             {!user ? (
               <LiquidGlassCard dark={dark} delay={0} style={{ padding: 40, textAlign: 'center' }}>
-                <div style={{ fontSize: 48, marginBottom: 16 }}>🔐</div>
+                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
+                  <Lock size={48} color={pt.cobalt} />
+                </div>
                 <h3 style={{ ...pulseType.sectionTitle, color: pt.cobalt, marginBottom: 8 }}>Sign in to view your profile</h3>
                 <p style={{ color: pt.sub, marginBottom: 20, fontSize: 14 }}>Track your points and save your progress</p>
                 <button onClick={() => navigate('/auth')} style={{ ...glassPrimaryBtn(pt, dark, false), width: 'auto', padding: '12px 28px', margin: '0 auto' }}>
@@ -217,7 +225,7 @@ export default function Profile({ dark }: { dark: boolean }) {
                       background: `${pt.amber}20`, border: `1px solid ${pt.amber}40`,
                       borderRadius: 999, padding: '8px 20px'
                     }}>
-                      <span style={{ fontSize: 20 }}>⭐</span>
+                      <Star size={20} color={pt.amber} fill={pt.amber} />
                       <span style={{ color: pt.amber, fontWeight: 900, fontSize: 24 }}>{profile.points}</span>
                       <span style={{ color: pt.textMuted, fontSize: 13 }}>points</span>
                     </div>
@@ -237,8 +245,8 @@ export default function Profile({ dark }: { dark: boolean }) {
                   <PulseGlassRow dark={dark} radius={999} hoverTint={hoverTint} onClick={() => navigate('/review')}
                     role="button" tabIndex={0} style={{ display: 'inline-block' }}
                     onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate('/review') } }}>
-                    <div style={{ padding: '8px 18px', ...pulseType.small, fontWeight: 700, color: pt.sub }}>
-                      🕘 View exam history & mistakes
+                    <div style={{ padding: '8px 18px', ...pulseType.small, fontWeight: 700, color: pt.sub, display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <ClockIcon color={pt.sub} size={13} /> View exam history & mistakes
                     </div>
                   </PulseGlassRow>
                 </div>
@@ -247,12 +255,15 @@ export default function Profile({ dark }: { dark: boolean }) {
                 <div style={{ marginBottom: 16 }}>
                   <LiquidGlassCard dark={dark} delay={0} style={{ padding: '20px 22px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                      <h3 style={{ ...pulseType.sectionLabel, fontSize: 14, color: pt.cobalt }}>📋 Account Info</h3>
+                      <h3 style={{ ...pulseType.sectionLabel, fontSize: 14, color: pt.cobalt, display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <ClipboardList size={14} /> Account Info
+                      </h3>
                       <button onClick={() => setEditing(!editing)} style={{
                         background: 'transparent', border: `1px solid ${pt.border}`,
                         borderRadius: 8, padding: '4px 12px', cursor: 'pointer',
-                        color: pt.sub, fontFamily: pulseFonts.body, fontSize: 12, fontWeight: 700
-                      }}>{editing ? 'Cancel' : '✏️ Edit'}</button>
+                        color: pt.sub, fontFamily: pulseFonts.body, fontSize: 12, fontWeight: 700,
+                        display: 'flex', alignItems: 'center', gap: 5
+                      }}>{editing ? 'Cancel' : (<><Pencil size={12} /> Edit</>)}</button>
                     </div>
                     {[
                       { label: 'Full Name', value: `Dr. ${profile.name}` },
@@ -294,8 +305,8 @@ export default function Profile({ dark }: { dark: boolean }) {
 
         {tab === 'leaderboard' && (
           <div>
-            <h2 style={{ ...pulseType.sectionTitle, color: pt.amber, textAlign: 'center', marginBottom: 20 }}>
-              🏆 Top 10 Students
+            <h2 style={{ ...pulseType.sectionTitle, color: pt.amber, textAlign: 'center', marginBottom: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+              <LeaderboardIcon color={pt.amber} size={20} /> Top 10 Students
             </h2>
             {leaderboard.length === 0 && (
               <LiquidGlassCard dark={dark} delay={0} style={{ padding: 40, textAlign: 'center' }}>
@@ -316,7 +327,7 @@ export default function Profile({ dark }: { dark: boolean }) {
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                       fontWeight: 900, fontSize: 16, color: i < 3 ? medalColors[i] : pt.sub, flexShrink: 0
                     }}>
-                      {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : i + 1}
+                      {i < 3 ? <Award size={18} color={medalColors[i]} /> : i + 1}
                     </div>
                     <div style={{ flex: 1 }}>
                       <div style={{ ...pulseType.cardTitle, color: pt.textPrimary }}>Dr. {student.name}</div>
@@ -325,7 +336,7 @@ export default function Profile({ dark }: { dark: boolean }) {
                       display: 'flex', alignItems: 'center', gap: 6,
                       background: `${pt.amber}20`, borderRadius: 999, padding: '4px 12px'
                     }}>
-                      <span style={{ fontSize: 14 }}>⭐</span>
+                      <Star size={14} color={pt.amber} fill={pt.amber} />
                       <span style={{ color: pt.amber, fontWeight: 900, fontSize: 16 }}>{student.points}</span>
                     </div>
                   </LiquidGlassCard>

@@ -496,3 +496,12 @@ export function RefreshIcon({ color, size = 16 }: IconProps) {
     </svg>
   )
 }
+
+export function CheckCircleIcon({ color, size = 16 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <circle cx="12" cy="12" r="9" stroke={color} strokeWidth="1.6" />
+      <path d="M8 12.5l2.5 2.5L16 9.5" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}

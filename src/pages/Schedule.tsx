@@ -13,6 +13,8 @@ import PageIntro from '../components/pulse/PageIntro'
 import { getDriveOrRawUrl } from '../lib/embedUrl'
 import { useModules } from '../contexts'
 import { useHistoryOverlay } from '../lib/useHistoryOverlay'
+import { ScheduleIcon, EmptyBoxIcon, SearchIcon2 } from '../components/ui/tool-icons'
+import { ExamIcon } from '../lib/medicalIcons'
 
 const SCHEDULE_ACCENT = '#a78bfa'
 
@@ -102,7 +104,7 @@ export default function Schedule({ dark }: { dark: boolean }) {
           />
         )}
 
-        <PageIntro dark={dark} emoji="📅" title="Schedules" subtitle="Study plans and exam dates, module by module" />
+        <PageIntro dark={dark} emoji={<ScheduleIcon color={ON_GRADIENT_TOP.primary} size={40} />} title="Schedules" subtitle="Study plans and exam dates, module by module" />
 
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: SECTION_GAP }}>
           <TabRow
@@ -117,6 +119,7 @@ export default function Schedule({ dark }: { dark: boolean }) {
         <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginBottom: SECTION_GAP }}>
           {(['study', 'exam'] as ScheduleType[]).map(type => {
             const active = activeType === type
+            const color = active ? pt.cobalt : pt.sub
             return (
               <PulseGlassRow
                 key={type}
@@ -133,9 +136,10 @@ export default function Schedule({ dark }: { dark: boolean }) {
               >
                 <div style={{
                   padding: '10px 20px', whiteSpace: 'nowrap',
-                  ...pulseType.button, color: active ? pt.cobalt : pt.sub
+                  ...pulseType.button, color, display: 'flex', alignItems: 'center', gap: 8
                 }}>
-                  {type === 'study' ? '📅 Study Schedule' : '📝 Exam Schedule'}
+                  {type === 'study' ? <ScheduleIcon color={color} size={15} /> : <ExamIcon color={color} size={15} />}
+                  {type === 'study' ? 'Study Schedule' : 'Exam Schedule'}
                 </div>
               </PulseGlassRow>
             )
@@ -146,7 +150,9 @@ export default function Schedule({ dark }: { dark: boolean }) {
           <p style={{ color: ON_GRADIENT_TOP.secondary, textAlign: 'center' }}>Loading...</p>
         ) : filtered.length === 0 ? (
           <LiquidGlassCard dark={dark} delay={0} style={{ padding: 40, textAlign: 'center' }}>
-            <p style={{ color: pt.sub }}>No schedules yet 🚧</p>
+            <p style={{ color: pt.sub, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+              <EmptyBoxIcon color={pt.sub} size={16} /> No schedules yet
+            </p>
           </LiquidGlassCard>
         ) : (
           <div>
@@ -163,9 +169,9 @@ export default function Schedule({ dark }: { dark: boolean }) {
                     <div style={{
                       width: 46, height: 46, borderRadius: '50%', flexShrink: 0,
                       background: `${SCHEDULE_ACCENT}22`, border: `1px solid ${SCHEDULE_ACCENT}55`,
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20
+                      display: 'flex', alignItems: 'center', justifyContent: 'center'
                     }}>
-                      {sch.type === 'exam' ? '📝' : '📅'}
+                      {sch.type === 'exam' ? <ExamIcon color={SCHEDULE_ACCENT} size={20} /> : <ScheduleIcon color={SCHEDULE_ACCENT} size={20} />}
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ ...pulseType.cardTitle, color: pt.textPrimary, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -183,9 +189,10 @@ export default function Schedule({ dark }: { dark: boolean }) {
                     <div style={{
                       background: SCHEDULE_ACCENT, color: '#0f172a',
                       borderRadius: 10, padding: '8px 14px',
-                      fontWeight: 700, fontSize: 12, flexShrink: 0
+                      fontWeight: 700, fontSize: 12, flexShrink: 0,
+                      display: 'flex', alignItems: 'center', gap: 6
                     }}>
-                      🔍 View
+                      <SearchIcon2 color="#0f172a" size={13} /> View
                     </div>
                   </LiquidGlassCard>
                 </div>

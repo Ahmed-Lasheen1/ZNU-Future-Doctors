@@ -4,6 +4,7 @@ import { useToast } from '../ToastProvider'
 import { useNotificationStatus } from '../../lib/useNotificationStatus'
 import { subscribeToPush, unsubscribeFromPush } from '../../lib/pushNotifications'
 import LiquidGlassCard from '../ui/liquid-glass-card'
+import { BellIcon } from '../ui/tool-icons'
 
 function Switch({ on, onClick, disabled, dark }: { on: boolean; onClick: () => void; disabled?: boolean; dark: boolean }) {
   const pt = getPulseTheme(dark)
@@ -101,7 +102,9 @@ export default function NotificationToggle({ dark }: { dark: boolean }) {
     <LiquidGlassCard dark={dark} delay={0} style={{ padding: '16px 20px' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
         <div style={{ minWidth: 0 }}>
-          <div style={{ ...pulseType.cardTitle, color: pt.textPrimary }}>🔔 Push Notifications</div>
+          <div style={{ ...pulseType.cardTitle, color: pt.textPrimary, display: 'flex', alignItems: 'center', gap: 6 }}>
+            <BellIcon color={pt.textPrimary} size={15} /> Push Notifications
+          </div>
           <div style={{ ...pulseType.small, color: pt.textMuted, marginTop: 2 }}>
             {!supported
               ? 'Not supported in this browser'

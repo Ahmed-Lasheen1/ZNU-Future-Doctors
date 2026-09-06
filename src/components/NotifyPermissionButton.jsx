@@ -4,8 +4,18 @@ import { useToast } from './ToastProvider'
 import { useNotificationStatus } from '../lib/useNotificationStatus'
 import { subscribeToPush } from '../lib/pushNotifications'
 import { useOncePerSession } from '../lib/useOncePerSession'
+import { BellIcon } from './ui/tool-icons'
 
-// Small reusable "🔔 Enable notifications" call-to-action button.
+// Strips a leading emoji/symbol (and any trailing whitespace) off a
+// label string — lets existing callers that still pass an
+// emoji-prefixed label (e.g. "🔔 Enable reminders") keep working
+// unchanged, now that the bell icon itself is rendered separately
+// below instead of relying on that leading emoji character.
+function stripLeadingEmoji(text) {
+  return text.replace(/^[^\p{L}\p{N}]+/u, '').trim()
+}
+
+// Small reusable "Enable notifications" call-to-action button.
 //
 // Support/permission/subscription state comes from the shared
 // useNotificationStatus hook — the same one the persistent toggle on
@@ -19,7 +29,7 @@ import { useOncePerSession } from '../lib/useOncePerSession'
 // Both are now a single toast, shown once per browser tab session
 // (see useOncePerSession) — the student can check or fix their
 // notification setting any time from the toggle on the Profile page.
-export default function NotifyPermissionButton({ dark, label = '🔔 Enable notifications' }) {
+export default function NotifyPermissionButton({ dark, label = 'Enable notifications' }) {
   const pt = getPulseTheme(dark)
   const showToast = useToast()
   const { supported, permission, enabled, checked, refresh } = useNotificationStatus()
@@ -87,10 +97,11 @@ export default function NotifyPermissionButton({ dark, label = '🔔 Enable noti
     <button onClick={handleClick} disabled={busy} style={{
       background: 'transparent', border: `1px solid ${pt.border}`, borderRadius: 20,
       padding: '6px 16px', color: ON_GRADIENT_TOP.secondary, cursor: busy ? 'not-allowed' : 'pointer', fontFamily: 'inherit',
-      fontSize: 12, fontWeight: 700, display: 'block', margin: '0 auto 16px',
+      fontSize: 12, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, margin: '0 auto 16px',
       opacity: busy ? 0.6 : 1
     }}>
-      {busy ? '⏳ Enabling...' : (permission === 'granted' ? '🔔 Finish enabling notifications' : label)}
+      <BellIcon color={ON_GRADIENT_TOP.secondary} size={13} />
+      {busy ? 'Enabling...' : (permission === 'granted' ? 'Finish enabling notifications' : stripLeadingEmoji(label))}
     </button>
   )
 }

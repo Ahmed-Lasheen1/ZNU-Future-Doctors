@@ -11,6 +11,8 @@ import PulseBackground from '../components/pulse/PulseBackground'
 import BackButton from '../components/pulse/BackButton'
 import PageIntro from '../components/pulse/PageIntro'
 import { ModuleIcon } from '../lib/medicalIcons'
+import { SearchIcon2, DocumentIcon } from '../components/ui/tool-icons'
+import { Hospital, FlaskConical, NotebookText, CalendarDays } from 'lucide-react'
 
 interface SearchModule {
   id: string
@@ -27,12 +29,12 @@ interface SearchResult {
   raw?: any
 }
 
-const typeMeta: Record<SearchResult['type'], { icon: string; label: string; color: string }> = {
-  module: { icon: '🏥', label: 'Module', color: '#38bdf8' },
-  file: { icon: '📄', label: 'File', color: '#60a5fa' },
-  question: { icon: '🧪', label: 'MCQ Question', color: '#e2725b' },
-  summary: { icon: '📝', label: 'Summary', color: '#34d399' },
-  schedule: { icon: '📅', label: 'Schedule', color: '#a78bfa' },
+const typeMeta: Record<SearchResult['type'], { Icon: (p: { color?: string; size?: number }) => JSX.Element; label: string; color: string }> = {
+  module: { Icon: Hospital, label: 'Module', color: '#38bdf8' },
+  file: { Icon: DocumentIcon, label: 'File', color: '#60a5fa' },
+  question: { Icon: FlaskConical, label: 'MCQ Question', color: '#e2725b' },
+  summary: { Icon: NotebookText, label: 'Summary', color: '#34d399' },
+  schedule: { Icon: CalendarDays, label: 'Schedule', color: '#a78bfa' },
 }
 
 export default function Search({ dark }: { dark: boolean }) {
@@ -113,7 +115,7 @@ export default function Search({ dark }: { dark: boolean }) {
           <BackButton dark={dark} fallback="/" />
         </div>
 
-        <PageIntro dark={dark} emoji="🔍" title="Search" subtitle="Modules, files, questions, summaries & schedules" paddingBottom={20} />
+        <PageIntro dark={dark} emoji={<SearchIcon2 color={ON_GRADIENT_TOP.primary} size={40} />} title="Search" subtitle="Modules, files, questions, summaries & schedules" paddingBottom={20} />
 
         <input
           ref={inputRef}
@@ -135,7 +137,9 @@ export default function Search({ dark }: { dark: boolean }) {
 
         {!loading && results && results.length === 0 && (
           <LiquidGlassCard dark={dark} delay={0} style={{ padding: 40, textAlign: 'center' }}>
-            <p style={{ color: pt.sub }}>No results for "{query}" 🔎</p>
+            <p style={{ color: pt.sub, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+              <SearchIcon2 color={pt.sub} size={15} /> No results for "{query}"
+            </p>
           </LiquidGlassCard>
         )}
 
@@ -154,8 +158,8 @@ export default function Search({ dark }: { dark: boolean }) {
                   <div style={{
                     width: 38, height: 38, borderRadius: 10, flexShrink: 0,
                     background: `${meta.color}20`, border: `1px solid ${meta.color}40`,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18
-                  }}>{meta.icon}</div>
+                    display: 'flex', alignItems: 'center', justifyContent: 'center'
+                  }}><meta.Icon color={meta.color} size={18} /></div>
                   <div style={{ minWidth: 0, flex: 1 }}>
                     <div style={{
                       ...pulseType.cardTitle, color: pt.textPrimary,
