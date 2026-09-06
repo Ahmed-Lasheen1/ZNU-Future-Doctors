@@ -12,7 +12,7 @@ import ErrorBanner from '../components/ErrorBanner'
 import TabRow from '../components/TabRow'
 import NotifyPermissionButton from '../components/NotifyPermissionButton'
 import { useToast } from '../components/ToastProvider'
-import { TargetIcon, LightbulbIcon, CalendarDotIcon, WarningIcon, ClockIcon, CelebrationIcon, TrashIcon, BookIcon } from '../components/ui/tool-icons'
+import { ChecklistIcon, LightbulbIcon, CalendarDotIcon, WarningIcon, ClockIcon, CelebrationIcon, TrashIcon, BookIcon } from '../components/ui/tool-icons'
 import type { ChecklistTask } from '../types/checklist'
 
 const statNumStyle = { fontFamily: pulseFonts.display, fontWeight: 800, fontSize: 30 }
@@ -180,7 +180,7 @@ export default function Checklist({ dark }: { dark: boolean }) {
 
         {modulesError && <ErrorBanner />}
 
-        <PageIntro dark={dark} emoji={<TargetIcon color={ON_GRADIENT_TOP.primary} size={40} />} title="Checklist" subtitle="Track what's left before exam day" />
+        <PageIntro dark={dark} emoji={<ChecklistIcon color={ON_GRADIENT_TOP.primary} size={40} />} title="Checklist" subtitle="Track what's left before exam day" />
 
         <div style={{ marginBottom: SECTION_GAP }}>
           <NotifyPermissionButton dark={dark} label="Enable deadline reminders" />
