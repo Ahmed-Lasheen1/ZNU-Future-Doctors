@@ -9,7 +9,7 @@ import { fetchModulesSorted } from '../lib/modules'
 import { invalidateSubjectsCache } from '../lib/subjects'
 import { invalidateLessonsCache } from '../lib/lessons'
 import NotFound from './NotFound'
-import { PackageIcon, BookIcon, ClipboardIcon, FolderIcon, CalendarDotIcon, QuestionMarkIcon, ChartBarIcon, GearIcon, TargetIcon } from '../components/ui/tool-icons'
+import { PackageIcon, BookIcon, FolderIcon, CalendarDotIcon, QuestionMarkIcon, ChartBarIcon, GearIcon, TargetIcon } from '../components/ui/tool-icons'
 import { NotesIcon } from '../lib/medicalIcons'
 
 import ModulesTab from './admin/ModulesTab'
@@ -31,14 +31,10 @@ const LESSONS_LIST_LIMIT = 200
 const TABS = ['modules', 'subjects', 'lessons', 'files', 'schedules', 'questions', 'summaries', 'stages', 'analytics', 'settings'] as const
 type AdminTab = typeof TABS[number]
 
-// AUDIT FIX: 'subjects' and 'lessons' used to both point at BookIcon,
-// so the tab bar rendered the exact same icon for two different tabs
-// — indistinguishable at a glance. Lessons now gets its own icon
-// (ClipboardIcon) instead of duplicating Subjects'.
 const TAB_META: Record<AdminTab, { Icon: (p: { color: string; size?: number }) => JSX.Element; label: string }> = {
   modules: { Icon: PackageIcon, label: 'Modules' },
   subjects: { Icon: BookIcon, label: 'Subjects' },
-  lessons: { Icon: ClipboardIcon, label: 'Lessons' },
+  lessons: { Icon: BookIcon, label: 'Lessons' },
   files: { Icon: FolderIcon, label: 'Files' },
   schedules: { Icon: CalendarDotIcon, label: 'Schedules' },
   questions: { Icon: QuestionMarkIcon, label: 'Questions' },
@@ -144,7 +140,7 @@ export default function Admin({ dark }: AdminProps) {
           <BackButton dark={dark} fallback="/" />
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0 16px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, padding: '8px 0 16px' }}>
           <GearIcon color={pt.text} size={24} />
           <h1 style={{ ...pulseType.miniPageTitle, fontSize: 20, color: pt.text }}>Admin Panel</h1>
         </div>
