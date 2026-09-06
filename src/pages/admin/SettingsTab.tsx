@@ -5,6 +5,7 @@ import InlineMessage from '../../components/InlineMessage'
 import LiquidGlassCard from '@/components/ui/liquid-glass-card'
 import { btnStyle, inStyle as adminInStyle, fieldLabel } from './adminStyles'
 import { EXAM_STAGES as STAGE_META } from '../../lib/examStages'
+import { MegaphoneIcon, SendIcon, LinkIcon } from '../../components/ui/tool-icons'
 
 interface SettingsTabProps {
   dark: boolean
@@ -121,26 +122,30 @@ export default function SettingsTab({ dark }: SettingsTabProps) {
 
       <div className="settings-row" style={{ marginBottom: 16 }}>
         <LiquidGlassCard dark={dark} delay={0} style={{ padding: '20px 22px' }}>
-          <h3 style={{ color: pt.cobalt, marginBottom: 8, fontWeight: 800 }}>📢 Push Notification to Everyone</h3>
+          <h3 style={{ color: pt.cobalt, marginBottom: 8, fontWeight: 800, display: 'flex', alignItems: 'center', gap: 8 }}>
+            <MegaphoneIcon color={pt.cobalt} size={17} /> Push Notification to Everyone
+          </h3>
           <p style={{ color: pt.textMuted, fontSize: 13, marginBottom: 16 }}>
             Delivered instantly to every device with notifications enabled — even if they don't have the site open right now.
             You'll be asked to confirm before it sends.
           </p>
           <input placeholder="Title (e.g. New questions added!)" value={broadcastTitle} onChange={e => setBroadcastTitle(e.target.value)} style={inStyle} />
           <textarea placeholder="Message" value={broadcastBody} onChange={e => setBroadcastBody(e.target.value)} style={{ ...inStyle, minHeight: 70, resize: 'vertical' }} />
-          <button onClick={sendBroadcast} disabled={broadcastSending} style={{ ...btnStyle(pt, dark), width: '100%' }}>
-            {broadcastSending ? 'Sending...' : '📤 Send to Everyone'}
+          <button onClick={sendBroadcast} disabled={broadcastSending} style={{ ...btnStyle(pt, dark), width: '100%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 7 }}>
+            {broadcastSending ? 'Sending...' : <><SendIcon color="#fff" size={13} /> Send to Everyone</>}
           </button>
         </LiquidGlassCard>
 
         <LiquidGlassCard dark={dark} delay={0} style={{ padding: '20px 22px' }}>
-          <h3 style={{ color: pt.cobalt, marginBottom: 8, fontWeight: 800 }}>📢 Home Page Announcement</h3>
+          <h3 style={{ color: pt.cobalt, marginBottom: 8, fontWeight: 800, display: 'flex', alignItems: 'center', gap: 8 }}>
+            <MegaphoneIcon color={pt.cobalt} size={17} /> Home Page Announcement
+          </h3>
           <p style={{ color: pt.textMuted, fontSize: 13, marginBottom: 16 }}>
             Shows in a banner at the top of the Home page for everyone. Leave it empty to hide the banner
             completely. The box below is styled exactly like it'll appear on the site.
           </p>
           <textarea
-            placeholder="e.g. Pharma exam next week, study well! 🔥"
+            placeholder="e.g. Pharma exam next week, study well!"
             value={announcement}
             onChange={e => setAnnouncement(e.target.value)}
             style={{
@@ -158,7 +163,9 @@ export default function SettingsTab({ dark }: SettingsTabProps) {
       </div>
 
       <LiquidGlassCard dark={dark} delay={0} style={{ padding: '20px 22px' }}>
-        <h3 style={{ color: pt.cobalt, marginBottom: 8, fontWeight: 800 }}>📁 Google Drive Links</h3>
+        <h3 style={{ color: pt.cobalt, marginBottom: 8, fontWeight: 800, display: 'flex', alignItems: 'center', gap: 8 }}>
+          <LinkIcon color={pt.cobalt} size={17} /> Google Drive Links
+        </h3>
         <p style={{ color: pt.textMuted, fontSize: 13, marginBottom: 16 }}>
           Set a different Drive folder per exam stage so students land in the right folder immediately from
           that stage's page. Leave a stage empty to fall back to the default — leave everything empty to hide
@@ -175,7 +182,7 @@ export default function SettingsTab({ dark }: SettingsTabProps) {
         <div className="drive-links-grid" style={{ marginBottom: 16 }}>
           {STAGE_META.map(s => (
             <div key={s.value}>
-              <label style={fieldLabel(pt)}>{s.emoji} {s.title}</label>
+              <label style={fieldLabel(pt)}>{s.title}</label>
               <input
                 placeholder="https://drive.google.com/... (optional)"
                 value={stageDriveUrls[s.value] || ''}

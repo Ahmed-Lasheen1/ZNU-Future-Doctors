@@ -1,5 +1,6 @@
 import { useState, type CSSProperties } from 'react'
 import { MEDICAL_ICONS } from '../../lib/medicalIcons'
+import { SearchIcon2 } from '../ui/tool-icons'
 import type { PulseTheme } from '../../pages/admin/adminStyles'
 
 interface IconPickerProps {
@@ -22,17 +23,22 @@ export default function IconPicker({ value, onChange, inStyle, pt }: IconPickerP
     <div style={{ marginBottom: 12 }}>
       <label style={{ color: pt.textMuted, fontSize: 12, display: 'block', marginBottom: 4 }}>Icon</label>
       <input
-        placeholder="Emoji (e.g. 🫀) — or pick a custom icon below"
+        placeholder="Emoji (e.g. heart) — or pick a custom icon below"
         value={value}
         onChange={e => onChange(e.target.value)}
         style={{ ...inStyle, marginBottom: 8 }}
       />
-      <input
-        placeholder="🔍 Search icons (e.g. cardio, brain, pill...)"
-        value={query}
-        onChange={e => setQuery(e.target.value)}
-        style={{ ...inStyle, marginBottom: 6, fontSize: 12, padding: '8px 12px' }}
-      />
+      <div style={{ position: 'relative', marginBottom: 6 }}>
+        <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}>
+          <SearchIcon2 color={pt.textMuted} size={13} />
+        </span>
+        <input
+          placeholder="Search icons (e.g. cardio, brain, pill...)"
+          value={query}
+          onChange={e => setQuery(e.target.value)}
+          style={{ ...inStyle, marginBottom: 0, fontSize: 12, padding: '8px 12px 8px 32px' }}
+        />
+      </div>
       <div style={{
         display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(44px, 1fr))', gap: 6,
         background: pt.surfaceFlat, border: `1px solid ${pt.border}`, borderRadius: 10,

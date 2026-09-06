@@ -8,6 +8,7 @@ import IconPicker from '../../components/admin/IconPicker'
 import LiquidGlassCard from '@/components/ui/liquid-glass-card'
 import { ModuleIcon } from '../../lib/medicalIcons'
 import { btnStyle, miniBtn, cancelBtnStyle, inStyle as adminInStyle, fieldLabel, groupHeading } from './adminStyles'
+import { EditIcon, PlusIcon, TrashIcon, ConstructionIcon } from '../../components/ui/tool-icons'
 import type { AdminModule, AdminSubject } from './adminTypes'
 
 interface SubjectsTabProps {
@@ -74,7 +75,9 @@ export default function SubjectsTab({ dark, modules, subjects, fetchSubjects }: 
 
   const form = (
     <LiquidGlassCard dark={dark} delay={0} style={{ padding: '20px 22px' }}>
-      <h3 style={{ color: pt.cobalt, marginBottom: 16, fontWeight: 800 }}>{editingSubjectId ? '✏️ Edit Subject' : '➕ Add Subject'}</h3>
+      <h3 style={{ color: pt.cobalt, marginBottom: 16, fontWeight: 800, display: 'flex', alignItems: 'center', gap: 8 }}>
+        {editingSubjectId ? <><EditIcon color={pt.cobalt} size={16} /> Edit Subject</> : <><PlusIcon color={pt.cobalt} size={16} /> Add Subject</>}
+      </h3>
       <label style={fieldLabel(pt)}>Module</label>
       <ModuleSelect modules={modules} value={subModuleId} onChange={setSubModuleId} dark={dark} />
       <input placeholder="Subject name" value={subName} onChange={e => setSubName(e.target.value)} style={inStyle} />
@@ -107,7 +110,7 @@ export default function SubjectsTab({ dark, modules, subjects, fetchSubjects }: 
 
       {subjects.length === 0 && (
         <LiquidGlassCard dark={dark} delay={0} style={{ padding: 40, textAlign: 'center' }}>
-          <p style={{ color: pt.sub }}>No subjects yet — add one on the left 🚧</p>
+          <p style={{ color: pt.sub, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}><ConstructionIcon color={pt.sub} size={14} /> No subjects yet — add one on the left</p>
         </LiquidGlassCard>
       )}
 
@@ -132,8 +135,8 @@ export default function SubjectsTab({ dark, modules, subjects, fetchSubjects }: 
                     <span style={{ color: pt.textMuted, fontSize: 12 }}>· {sub.type}</span>
                   </div>
                   <div style={{ display: 'flex', gap: 8 }}>
-                    <button onClick={() => editSubject(sub)} aria-label={`Edit subject: ${sub.name}`} style={miniBtn(pt, pt.cobalt)}>✏️</button>
-                    <button onClick={() => deleteSubject(sub.id)} aria-label={`Delete subject: ${sub.name}`} style={miniBtn(pt, pt.danger)}>🗑</button>
+                    <button onClick={() => editSubject(sub)} aria-label={`Edit subject: ${sub.name}`} style={{ ...miniBtn(pt, pt.cobalt), display: 'inline-flex', alignItems: 'center' }}><EditIcon color={pt.cobalt} size={12} /></button>
+                    <button onClick={() => deleteSubject(sub.id)} aria-label={`Delete subject: ${sub.name}`} style={{ ...miniBtn(pt, pt.danger), display: 'inline-flex', alignItems: 'center' }}><TrashIcon color={pt.danger} size={12} /></button>
                   </div>
                 </LiquidGlassCard>
               ))}

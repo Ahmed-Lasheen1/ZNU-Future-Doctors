@@ -9,9 +9,10 @@ import { ModuleIcon } from '../../lib/medicalIcons'
 import { btnStyle, miniBtn, cancelBtnStyle, inStyle as adminInStyle, fieldLabel, groupHeading, LIST_LIMIT } from './adminStyles'
 import { EXAM_STAGES as STAGE_META } from '../../lib/examStages'
 import { fetchModuleStages } from '../../lib/moduleStages'
+import { EditIcon, PlusIcon, TrashIcon, ConstructionIcon, ListIcon, SearchIcon2, RobotIcon, BookIcon, GraduationCapIcon } from '../../components/ui/tool-icons'
 import type { AdminModule, AdminSubject, AdminLesson } from './adminTypes'
 
-const EXAM_STAGES = STAGE_META.map(s => ({ value: s.value, label: `${s.emoji} ${s.title}` }))
+const EXAM_STAGES = STAGE_META.map(s => ({ value: s.value, label: s.title }))
 
 interface QuestionRow {
   id: string
@@ -62,7 +63,7 @@ export default function QuestionsTab({ dark, modules, subjects, lessons }: Quest
 
   useEffect(() => { fetchQuestions() }, [])
   useEffect(() => {
-    fetchModuleStages(qModuleId).then(list => setQStageOptions(list.map(s => ({ value: s.value, label: `${s.emoji} ${s.title}` }))))
+    fetchModuleStages(qModuleId).then(list => setQStageOptions(list.map(s => ({ value: s.value, label: s.title }))))
   }, [qModuleId])
 
   async function fetchQuestions() {
@@ -199,15 +200,18 @@ export default function QuestionsTab({ dark, modules, subjects, lessons }: Quest
   const form = (
     <LiquidGlassCard dark={dark} delay={0} style={{ padding: '20px 22px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 8 }}>
-        <h3 style={{ color: pt.cobalt, fontWeight: 800 }}>
-          {editingQuestionId ? '✏️ Edit Question' : bulkMode ? '📋 Bulk Add Questions' : '➕ Add MCQ Question'}
+        <h3 style={{ color: pt.cobalt, fontWeight: 800, display: 'flex', alignItems: 'center', gap: 8 }}>
+          {editingQuestionId
+            ? <><EditIcon color={pt.cobalt} size={16} /> Edit Question</>
+            : bulkMode ? <><ListIcon color={pt.cobalt} size={16} /> Bulk Add Questions</> : <><PlusIcon color={pt.cobalt} size={16} /> Add MCQ Question</>}
         </h3>
         {!editingQuestionId && (
           <button onClick={() => setBulkMode(!bulkMode)} style={{
             background: 'transparent', border: `1px solid ${pt.border}`,
             borderRadius: 8, padding: '6px 12px', cursor: 'pointer',
-            color: pt.sub, fontFamily: 'inherit', fontSize: 12, fontWeight: 700
-          }}>{bulkMode ? '✏️ Single Add' : '📋 Bulk Add'}</button>
+            color: pt.sub, fontFamily: 'inherit', fontSize: 12, fontWeight: 700,
+            display: 'inline-flex', alignItems: 'center', gap: 5
+          }}>{bulkMode ? <><EditIcon color={pt.sub} size={12} /> Single Add</> : <><ListIcon color={pt.sub} size={12} /> Bulk Add</>}</button>
         )}
       </div>
 
@@ -248,10 +252,18 @@ export default function QuestionsTab({ dark, modules, subjects, lessons }: Quest
       <label style={fieldLabel(pt)}>Source (optional)</label>
       <select value={qSource} onChange={e => setQSource(e.target.value)} style={inStyle}>
         <option value="">No tag</option>
-        <option value="ai">🤖 AI</option>
-        <option value="courses">📚 Courses</option>
-        <option value="university">🎓 University Doctors</option>
+        <option value="ai">AI</option>
+        <option value="courses">Courses</option>
+        <option value="university">University Doctors</option>
       </select>
+      {qSource && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: -8, marginBottom: 12, color: pt.textMuted, fontSize: 11 }}>
+          {qSource === 'ai' && <RobotIcon color={pt.textMuted} size={12} />}
+          {qSource === 'courses' && <BookIcon color={pt.textMuted} size={12} />}
+          {qSource === 'university' && <GraduationCapIcon color={pt.textMuted} size={12} />}
+          Tag preview
+        </div>
+      )}
 
       {bulkMode && !editingQuestionId ? (
         <>
@@ -316,11 +328,17 @@ Correct: A`}</pre>
   const list = (
     <div>
       <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
-        <input
-          placeholder="🔍 Search questions..."
-          value={search} onChange={e => setSearch(e.target.value)}
-          style={{ ...inStyle, flex: 1, minWidth: 200, marginBottom: 0 }}
-        />
+        <div style={{ position: 'relative', flex: 1, minWidth: 200 }}>
+          <SearchIcon2 color={pt.faint} size={14} />
+          <input
+            placeholder="Search questions..."
+            value={search} onChange={e => setSearch(e.target.value)}
+            style={{ ...inStyle, marginBottom: 0, paddingLeft: 34, position: 'relative' }}
+          />
+          <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}>
+            <SearchIcon2 color={pt.faint} size={14} />
+          </span>
+        </div>
         <select value={moduleFilter} onChange={e => setModuleFilter(e.target.value)} style={{ ...inStyle, width: 'auto', marginBottom: 0 }}>
           <option value="all">All modules ({questions.length})</option>
           {modules.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
@@ -329,7 +347,7 @@ Correct: A`}</pre>
 
       {questions.length === 0 && (
         <LiquidGlassCard dark={dark} delay={0} style={{ padding: 40, textAlign: 'center' }}>
-          <p style={{ color: pt.sub }}>No questions yet — add one on the left 🚧</p>
+          <p style={{ color: pt.sub, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}><ConstructionIcon color={pt.sub} size={14} /> No questions yet — add one on the left</p>
         </LiquidGlassCard>
       )}
 
@@ -350,8 +368,8 @@ Correct: A`}</pre>
                 <LiquidGlassCard key={q.id} dark={dark} delay={0} style={{ padding: '12px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
                   <span style={{ color: pt.text, fontWeight: 600, fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 100 }}>{q.question}</span>
                   <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
-                    <button onClick={() => editQuestion(q)} aria-label="Edit question" style={miniBtn(pt, pt.cobalt)}>✏️</button>
-                    <button onClick={() => deleteQuestion(q.id)} aria-label="Delete question" style={miniBtn(pt, pt.danger)}>🗑</button>
+                    <button onClick={() => editQuestion(q)} aria-label="Edit question" style={{ ...miniBtn(pt, pt.cobalt), display: 'inline-flex', alignItems: 'center' }}><EditIcon color={pt.cobalt} size={12} /></button>
+                    <button onClick={() => deleteQuestion(q.id)} aria-label="Delete question" style={{ ...miniBtn(pt, pt.danger), display: 'inline-flex', alignItems: 'center' }}><TrashIcon color={pt.danger} size={12} /></button>
                   </div>
                 </LiquidGlassCard>
               ))}

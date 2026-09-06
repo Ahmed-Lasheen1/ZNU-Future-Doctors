@@ -9,6 +9,8 @@ import { fetchModulesSorted } from '../lib/modules'
 import { invalidateSubjectsCache } from '../lib/subjects'
 import { invalidateLessonsCache } from '../lib/lessons'
 import NotFound from './NotFound'
+import { PackageIcon, BookIcon, FolderIcon, CalendarDotIcon, QuestionMarkIcon, ChartBarIcon, GearIcon, TargetIcon } from '../components/ui/tool-icons'
+import { NotesIcon } from '../lib/medicalIcons'
 
 import ModulesTab from './admin/ModulesTab'
 import SubjectsTab from './admin/SubjectsTab'
@@ -29,10 +31,17 @@ const LESSONS_LIST_LIMIT = 200
 const TABS = ['modules', 'subjects', 'lessons', 'files', 'schedules', 'questions', 'summaries', 'stages', 'analytics', 'settings'] as const
 type AdminTab = typeof TABS[number]
 
-const TAB_LABELS: Record<AdminTab, string> = {
-  modules: '📦 Modules', subjects: '📖 Subjects', lessons: '📘 Lessons', files: '🗂 Files',
-  schedules: '📅 Schedules', questions: '❓ Questions', summaries: '📝 Summaries',
-  stages: '🎯 Stages', analytics: '📊 Analytics', settings: '⚙️ Settings'
+const TAB_META: Record<AdminTab, { Icon: (p: { color: string; size?: number }) => JSX.Element; label: string }> = {
+  modules: { Icon: PackageIcon, label: 'Modules' },
+  subjects: { Icon: BookIcon, label: 'Subjects' },
+  lessons: { Icon: BookIcon, label: 'Lessons' },
+  files: { Icon: FolderIcon, label: 'Files' },
+  schedules: { Icon: CalendarDotIcon, label: 'Schedules' },
+  questions: { Icon: QuestionMarkIcon, label: 'Questions' },
+  summaries: { Icon: NotesIcon, label: 'Summaries' },
+  stages: { Icon: TargetIcon, label: 'Stages' },
+  analytics: { Icon: ChartBarIcon, label: 'Analytics' },
+  settings: { Icon: GearIcon, label: 'Settings' }
 }
 
 interface AdminProps {
@@ -132,13 +141,14 @@ export default function Admin({ dark }: AdminProps) {
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0 16px' }}>
-          <span style={{ fontSize: 26 }}>⚙️</span>
+          <GearIcon color={pt.text} size={24} />
           <h1 style={{ ...pulseType.miniPageTitle, fontSize: 20, color: pt.text }}>Admin Panel</h1>
         </div>
 
         <div className="admin-tabs">
           {TABS.map(t => {
             const active = activeTab === t
+            const { Icon, label } = TAB_META[t]
             return (
               <PulseGlassRow
                 key={t} dark={dark} radius={999} active={active}
@@ -148,8 +158,8 @@ export default function Admin({ dark }: AdminProps) {
                 onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setActiveTab(t) } }}
                 style={{ flexShrink: 0 }}
               >
-                <div style={{ padding: '9px 16px', whiteSpace: 'nowrap', ...pulseType.button, color: active ? pt.cobalt : pt.sub }}>
-                  {TAB_LABELS[t]}
+                <div style={{ padding: '9px 16px', whiteSpace: 'nowrap', ...pulseType.button, color: active ? pt.cobalt : pt.sub, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <Icon color={active ? pt.cobalt : pt.sub} size={14} /> {label}
                 </div>
               </PulseGlassRow>
             )

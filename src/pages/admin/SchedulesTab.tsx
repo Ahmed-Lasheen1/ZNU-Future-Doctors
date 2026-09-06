@@ -7,6 +7,8 @@ import AdminSplitLayout from './AdminSplitLayout'
 import LiquidGlassCard from '@/components/ui/liquid-glass-card'
 import { ModuleIcon } from '../../lib/medicalIcons'
 import { btnStyle, miniBtn, cancelBtnStyle, inStyle as adminInStyle, fieldLabel, groupHeading, LIST_LIMIT } from './adminStyles'
+import { EditIcon, PlusIcon, TrashIcon, ConstructionIcon, CalendarDotIcon } from '../../components/ui/tool-icons'
+import { ExamIcon } from '../../lib/medicalIcons'
 import type { AdminModule } from './adminTypes'
 
 interface ScheduleRow {
@@ -80,13 +82,15 @@ export default function SchedulesTab({ dark, modules }: SchedulesTabProps) {
 
   const form = (
     <LiquidGlassCard dark={dark} delay={0} style={{ padding: '20px 22px' }}>
-      <h3 style={{ color: pt.cobalt, marginBottom: 16, fontWeight: 800 }}>{editingScheduleId ? '✏️ Edit Schedule' : '➕ Add Schedule'}</h3>
+      <h3 style={{ color: pt.cobalt, marginBottom: 16, fontWeight: 800, display: 'flex', alignItems: 'center', gap: 8 }}>
+        {editingScheduleId ? <><EditIcon color={pt.cobalt} size={16} /> Edit Schedule</> : <><PlusIcon color={pt.cobalt} size={16} /> Add Schedule</>}
+      </h3>
       <input placeholder="Title (e.g. Week 1)" value={schTitle} onChange={e => setSchTitle(e.target.value)} style={inStyle} />
       <input placeholder="Image URL (Google Drive)" value={schUrl} onChange={e => setSchUrl(e.target.value)} style={inStyle} />
       <label style={fieldLabel(pt)}>Type</label>
       <select value={schType} onChange={e => setSchType(e.target.value as 'study' | 'exam')} style={inStyle}>
-        <option value="study">📅 Study Schedule</option>
-        <option value="exam">📝 Exam Schedule</option>
+        <option value="study">Study Schedule</option>
+        <option value="exam">Exam Schedule</option>
       </select>
       {schType === 'exam' && (
         <>
@@ -114,7 +118,7 @@ export default function SchedulesTab({ dark, modules }: SchedulesTabProps) {
 
       {schedules.length === 0 && (
         <LiquidGlassCard dark={dark} delay={0} style={{ padding: 40, textAlign: 'center' }}>
-          <p style={{ color: pt.sub }}>No schedules yet — add one on the left 🚧</p>
+          <p style={{ color: pt.sub, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}><ConstructionIcon color={pt.sub} size={14} /> No schedules yet — add one on the left</p>
         </LiquidGlassCard>
       )}
 
@@ -130,13 +134,14 @@ export default function SchedulesTab({ dark, modules }: SchedulesTabProps) {
             <div className="admin-list-grid">
               {modSchedules.map(s => (
                 <LiquidGlassCard key={s.id} dark={dark} delay={0} style={{ padding: '12px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
-                  <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    {s.type === 'exam' ? <ExamIcon color={pt.text} size={14} /> : <CalendarDotIcon color={pt.text} size={14} />}
                     <span style={{ color: pt.text, fontWeight: 600 }}>{s.title}</span>
-                    <span style={{ color: pt.textMuted, fontSize: 12, marginLeft: 8 }}>· {s.type}{s.date ? ` · 📅 ${s.date}` : ''}</span>
+                    <span style={{ color: pt.textMuted, fontSize: 12, marginLeft: 4 }}>· {s.type}{s.date ? ` · ${s.date}` : ''}</span>
                   </div>
                   <div style={{ display: 'flex', gap: 8 }}>
-                    <button onClick={() => editSchedule(s)} aria-label={`Edit schedule: ${s.title}`} style={miniBtn(pt, pt.cobalt)}>✏️</button>
-                    <button onClick={() => deleteSchedule(s.id)} aria-label={`Delete schedule: ${s.title}`} style={miniBtn(pt, pt.danger)}>🗑</button>
+                    <button onClick={() => editSchedule(s)} aria-label={`Edit schedule: ${s.title}`} style={{ ...miniBtn(pt, pt.cobalt), display: 'inline-flex', alignItems: 'center' }}><EditIcon color={pt.cobalt} size={12} /></button>
+                    <button onClick={() => deleteSchedule(s.id)} aria-label={`Delete schedule: ${s.title}`} style={{ ...miniBtn(pt, pt.danger), display: 'inline-flex', alignItems: 'center' }}><TrashIcon color={pt.danger} size={12} /></button>
                   </div>
                 </LiquidGlassCard>
               ))}

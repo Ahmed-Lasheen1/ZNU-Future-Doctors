@@ -9,9 +9,10 @@ import { ModuleIcon } from '../../lib/medicalIcons'
 import { btnStyle, miniBtn, cancelBtnStyle, inStyle as adminInStyle, fieldLabel, groupHeading, LIST_LIMIT } from './adminStyles'
 import { EXAM_STAGES as STAGE_META } from '../../lib/examStages'
 import { fetchModuleStages } from '../../lib/moduleStages'
+import { EditIcon, PlusIcon, TrashIcon, ConstructionIcon, VideoIcon, AudioIcon, DocumentIcon } from '../../components/ui/tool-icons'
 import type { AdminModule, AdminSubject, AdminLesson } from './adminTypes'
 
-const EXAM_STAGES = STAGE_META.map(s => ({ value: s.value, label: `${s.emoji} ${s.title}` }))
+const EXAM_STAGES = STAGE_META.map(s => ({ value: s.value, label: s.title }))
 
 interface FileRow {
   id: string
@@ -53,7 +54,7 @@ export default function FilesTab({ dark, modules, subjects, lessons }: FilesTabP
 
   useEffect(() => { fetchFiles() }, [])
   useEffect(() => {
-    fetchModuleStages(fileModuleId).then(list => setFileStageOptions(list.map(s => ({ value: s.value, label: `${s.emoji} ${s.title}` }))))
+    fetchModuleStages(fileModuleId).then(list => setFileStageOptions(list.map(s => ({ value: s.value, label: s.title }))))
   }, [fileModuleId])
 
   async function fetchFiles() {
@@ -101,11 +102,14 @@ export default function FilesTab({ dark, modules, subjects, lessons }: FilesTabP
   const filteredSubjects = (moduleId: string) => subjects.filter(s => s.module_id === moduleId)
   const filteredLessons = (subjectId: string) => lessons.filter(l => l.subject_id === subjectId)
   const visibleModules = moduleFilter === 'all' ? modules : modules.filter(m => m.id === moduleFilter)
-  const fileTypeIcon = (t: string) => t === 'video' ? '🎥' : t === 'audio' ? '🎵' : '📄'
+  const FileTypeIcon = ({ t, color, size }: { t: string; color: string; size: number }) =>
+    t === 'video' ? <VideoIcon color={color} size={size} /> : t === 'audio' ? <AudioIcon color={color} size={size} /> : <DocumentIcon color={color} size={size} />
 
   const form = (
     <LiquidGlassCard dark={dark} delay={0} style={{ padding: '20px 22px' }}>
-      <h3 style={{ color: pt.cobalt, marginBottom: 16, fontWeight: 800 }}>{editingFileId ? '✏️ Edit File / Recording' : '➕ Add File / Recording'}</h3>
+      <h3 style={{ color: pt.cobalt, marginBottom: 16, fontWeight: 800, display: 'flex', alignItems: 'center', gap: 8 }}>
+        {editingFileId ? <><EditIcon color={pt.cobalt} size={16} /> Edit File / Recording</> : <><PlusIcon color={pt.cobalt} size={16} /> Add File / Recording</>}
+      </h3>
       <input placeholder="File name" value={fileName} onChange={e => setFileName(e.target.value)} style={inStyle} />
       <input placeholder="URL (Drive / YouTube / SoundCloud)" value={fileUrl} onChange={e => setFileUrl(e.target.value)} style={inStyle} />
 
@@ -113,18 +117,18 @@ export default function FilesTab({ dark, modules, subjects, lessons }: FilesTabP
         <div>
           <label style={fieldLabel(pt)}>Content Type</label>
           <select value={fileType} onChange={e => setFileType(e.target.value)} style={inStyle}>
-            <option value="sharah">📖 Explanation Files</option>
-            <option value="questions">❓ Question Files</option>
-            <option value="lectures">🎥 Lecture Recordings</option>
-            <option value="courses">🎓 Course Recordings</option>
+            <option value="sharah">Explanation Files</option>
+            <option value="questions">Question Files</option>
+            <option value="lectures">Lecture Recordings</option>
+            <option value="courses">Course Recordings</option>
           </select>
         </div>
         <div>
           <label style={fieldLabel(pt)}>File Type</label>
           <select value={fileFileType} onChange={e => setFileFileType(e.target.value)} style={inStyle}>
-            <option value="pdf">📄 PDF</option>
-            <option value="video">🎥 Video</option>
-            <option value="audio">🎵 Audio</option>
+            <option value="pdf">PDF</option>
+            <option value="video">Video</option>
+            <option value="audio">Audio</option>
           </select>
         </div>
       </div>
@@ -172,7 +176,7 @@ export default function FilesTab({ dark, modules, subjects, lessons }: FilesTabP
 
       {files.length === 0 && (
         <LiquidGlassCard dark={dark} delay={0} style={{ padding: 40, textAlign: 'center' }}>
-          <p style={{ color: pt.sub }}>No files yet — add one on the left 🚧</p>
+          <p style={{ color: pt.sub, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}><ConstructionIcon color={pt.sub} size={14} /> No files yet — add one on the left</p>
         </LiquidGlassCard>
       )}
 
@@ -188,13 +192,14 @@ export default function FilesTab({ dark, modules, subjects, lessons }: FilesTabP
             <div className="admin-list-grid">
               {modFiles.map(f => (
                 <LiquidGlassCard key={f.id} dark={dark} delay={0} style={{ padding: '12px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
-                  <div style={{ minWidth: 0, overflow: 'hidden' }}>
-                    <span style={{ color: pt.text, fontWeight: 600 }}>{fileTypeIcon(f.file_type)} {f.name}</span>
+                  <div style={{ minWidth: 0, overflow: 'hidden', display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <FileTypeIcon t={f.file_type} color={pt.text} size={14} />
+                    <span style={{ color: pt.text, fontWeight: 600 }}>{f.name}</span>
                     <span style={{ color: pt.textMuted, fontSize: 12, marginLeft: 8 }}>· {f.type} · {f.file_type}</span>
                   </div>
                   <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
-                    <button onClick={() => editFile(f)} aria-label={`Edit file: ${f.name}`} style={miniBtn(pt, pt.cobalt)}>✏️</button>
-                    <button onClick={() => deleteFile(f.id)} aria-label={`Delete file: ${f.name}`} style={miniBtn(pt, pt.danger)}>🗑</button>
+                    <button onClick={() => editFile(f)} aria-label={`Edit file: ${f.name}`} style={{ ...miniBtn(pt, pt.cobalt), display: 'inline-flex', alignItems: 'center' }}><EditIcon color={pt.cobalt} size={12} /></button>
+                    <button onClick={() => deleteFile(f.id)} aria-label={`Delete file: ${f.name}`} style={{ ...miniBtn(pt, pt.danger), display: 'inline-flex', alignItems: 'center' }}><TrashIcon color={pt.danger} size={12} /></button>
                   </div>
                 </LiquidGlassCard>
               ))}

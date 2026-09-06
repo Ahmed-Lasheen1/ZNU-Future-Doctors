@@ -9,9 +9,10 @@ import { ModuleIcon } from '../../lib/medicalIcons'
 import { btnStyle, miniBtn, cancelBtnStyle, inStyle as adminInStyle, fieldLabel, groupHeading, LIST_LIMIT } from './adminStyles'
 import { EXAM_STAGES as STAGE_META } from '../../lib/examStages'
 import { fetchModuleStages } from '../../lib/moduleStages'
+import { EditIcon, PlusIcon, TrashIcon, ConstructionIcon } from '../../components/ui/tool-icons'
 import type { AdminModule, AdminSubject, AdminLesson } from './adminTypes'
 
-const EXAM_STAGES = STAGE_META.map(s => ({ value: s.value, label: `${s.emoji} ${s.title}` }))
+const EXAM_STAGES = STAGE_META.map(s => ({ value: s.value, label: s.title }))
 
 interface SummaryRow {
   id: string
@@ -49,7 +50,7 @@ export default function SummariesTab({ dark, modules, subjects, lessons }: Summa
 
   useEffect(() => { fetchSummaries() }, [])
   useEffect(() => {
-    fetchModuleStages(sumModuleId).then(list => setSumStageOptions(list.map(s => ({ value: s.value, label: `${s.emoji} ${s.title}` }))))
+    fetchModuleStages(sumModuleId).then(list => setSumStageOptions(list.map(s => ({ value: s.value, label: s.title }))))
   }, [sumModuleId])
 
   async function fetchSummaries() {
@@ -99,7 +100,9 @@ export default function SummariesTab({ dark, modules, subjects, lessons }: Summa
 
   const form = (
     <LiquidGlassCard dark={dark} delay={0} style={{ padding: '20px 22px' }}>
-      <h3 style={{ color: pt.cobalt, marginBottom: 16, fontWeight: 800 }}>{editingSummaryId ? '✏️ Edit Summary' : '➕ Add Summary'}</h3>
+      <h3 style={{ color: pt.cobalt, marginBottom: 16, fontWeight: 800, display: 'flex', alignItems: 'center', gap: 8 }}>
+        {editingSummaryId ? <><EditIcon color={pt.cobalt} size={16} /> Edit Summary</> : <><PlusIcon color={pt.cobalt} size={16} /> Add Summary</>}
+      </h3>
       <label style={fieldLabel(pt)}>Module</label>
       <ModuleSelect modules={modules} value={sumModuleId} onChange={id => { setSumModuleId(id); setSumSubjectId(''); setSumLessonId('') }} dark={dark} />
 
@@ -145,7 +148,7 @@ export default function SummariesTab({ dark, modules, subjects, lessons }: Summa
 
       {summaries.length === 0 && (
         <LiquidGlassCard dark={dark} delay={0} style={{ padding: 40, textAlign: 'center' }}>
-          <p style={{ color: pt.sub }}>No summaries yet — add one on the left 🚧</p>
+          <p style={{ color: pt.sub, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}><ConstructionIcon color={pt.sub} size={14} /> No summaries yet — add one on the left</p>
         </LiquidGlassCard>
       )}
 
@@ -163,8 +166,8 @@ export default function SummariesTab({ dark, modules, subjects, lessons }: Summa
                 <LiquidGlassCard key={s.id} dark={dark} delay={0} style={{ padding: '12px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
                   <span style={{ color: pt.text, fontWeight: 600 }}>{s.title}</span>
                   <div style={{ display: 'flex', gap: 8 }}>
-                    <button onClick={() => editSummary(s)} aria-label={`Edit summary: ${s.title}`} style={miniBtn(pt, pt.cobalt)}>✏️</button>
-                    <button onClick={() => deleteSummary(s.id)} aria-label={`Delete summary: ${s.title}`} style={miniBtn(pt, pt.danger)}>🗑</button>
+                    <button onClick={() => editSummary(s)} aria-label={`Edit summary: ${s.title}`} style={{ ...miniBtn(pt, pt.cobalt), display: 'inline-flex', alignItems: 'center' }}><EditIcon color={pt.cobalt} size={12} /></button>
+                    <button onClick={() => deleteSummary(s.id)} aria-label={`Delete summary: ${s.title}`} style={{ ...miniBtn(pt, pt.danger), display: 'inline-flex', alignItems: 'center' }}><TrashIcon color={pt.danger} size={12} /></button>
                   </div>
                 </LiquidGlassCard>
               ))}

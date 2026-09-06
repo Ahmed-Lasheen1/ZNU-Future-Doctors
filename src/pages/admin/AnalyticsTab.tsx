@@ -4,6 +4,7 @@ import { getPulseTheme } from '../../premiumTheme'
 import { watchOnlineCount } from '../../lib/onlinePresence'
 import { ModuleIcon } from '../../lib/medicalIcons'
 import LiquidGlassCard from '@/components/ui/liquid-glass-card'
+import { DotIcon, PeopleIcon, BellIcon, ChartBarIcon, ConstructionIcon } from '../../components/ui/tool-icons'
 import type { PulseTheme } from './adminStyles'
 import type { AdminModule } from './adminTypes'
 
@@ -18,6 +19,7 @@ interface DifficultyRow {
 
 interface StatCardProps {
   label: string
+  Icon: (p: { color: string; size?: number }) => JSX.Element
   value: number | string
   color: string
   pt: PulseTheme
@@ -25,14 +27,16 @@ interface StatCardProps {
   loading: boolean
 }
 
-function StatCard({ label, value, color, dark, loading }: StatCardProps) {
+function StatCard({ label, Icon, value, color, dark, loading }: StatCardProps) {
   const pt = getPulseTheme(dark)
   return (
     <LiquidGlassCard dark={dark} delay={0} style={{ padding: '18px 20px', textAlign: 'center', flex: '1 1 140px' }}>
       <div style={{ color, fontWeight: 900, fontSize: 26 }}>
         {loading ? '…' : value}
       </div>
-      <div style={{ color: pt.textMuted, fontSize: 12, fontWeight: 700, marginTop: 4 }}>{label}</div>
+      <div style={{ color: pt.textMuted, fontSize: 12, fontWeight: 700, marginTop: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
+        <Icon color={pt.textMuted} size={12} /> {label}
+      </div>
     </LiquidGlassCard>
   )
 }
@@ -98,9 +102,9 @@ export default function AnalyticsTab({ dark, modules }: AnalyticsTabProps) {
   return (
     <div>
       <div style={{ display: 'flex', gap: 12, marginBottom: 16, flexWrap: 'wrap' }}>
-        <StatCard label="🟢 Online Now" value={onlineCount} color="#22c55e" pt={pt} dark={dark} loading={false} />
-        <StatCard label="👥 Registered Accounts" value={accountCount} color={pt.cobalt} pt={pt} dark={dark} loading={statsLoading} />
-        <StatCard label="🔔 Notifications Enabled" value={notifCount} color={pt.amber} pt={pt} dark={dark} loading={statsLoading} />
+        <StatCard label="Online Now" Icon={DotIcon} value={onlineCount} color="#22c55e" pt={pt} dark={dark} loading={false} />
+        <StatCard label="Registered Accounts" Icon={PeopleIcon} value={accountCount} color={pt.cobalt} pt={pt} dark={dark} loading={statsLoading} />
+        <StatCard label="Notifications Enabled" Icon={BellIcon} value={notifCount} color={pt.amber} pt={pt} dark={dark} loading={statsLoading} />
       </div>
       <p style={{ color: pt.textMuted, fontSize: 11, marginBottom: 20, textAlign: 'center' }}>
         "Online Now" counts open browser tabs on the site right now (a person with two tabs open counts twice).
@@ -109,7 +113,9 @@ export default function AnalyticsTab({ dark, modules }: AnalyticsTabProps) {
 
       <div style={{ marginBottom: 16 }}>
         <LiquidGlassCard dark={dark} delay={0} style={{ padding: '20px 22px' }}>
-          <h3 style={{ color: pt.cobalt, marginBottom: 8, fontWeight: 800 }}>📊 Hardest Questions</h3>
+          <h3 style={{ color: pt.cobalt, marginBottom: 8, fontWeight: 800, display: 'flex', alignItems: 'center', gap: 8 }}>
+            <ChartBarIcon color={pt.cobalt} size={18} /> Hardest Questions
+          </h3>
           <p style={{ color: pt.textMuted, fontSize: 13 }}>
             Questions with the highest wrong-answer rate across all students (minimum 3 attempts).
             Worth double-checking these for a wording issue or a wrong answer key.
@@ -121,7 +127,7 @@ export default function AnalyticsTab({ dark, modules }: AnalyticsTabProps) {
 
       {!difficultyLoading && difficulty.length === 0 && (
         <LiquidGlassCard dark={dark} delay={0} style={{ padding: 40, textAlign: 'center' }}>
-          <p style={{ color: pt.sub }}>Not enough attempts yet to report on 🚧</p>
+          <p style={{ color: pt.sub, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}><ConstructionIcon color={pt.sub} size={14} /> Not enough attempts yet to report on</p>
         </LiquidGlassCard>
       )}
 

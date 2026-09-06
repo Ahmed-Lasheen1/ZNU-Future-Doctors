@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { getPulseTheme, pulseFonts } from '../../premiumTheme'
 import PulseGlassRow from '../../components/pulse/PulseGlassRow'
 import { ModuleIcon } from '../../lib/medicalIcons'
+import { DotIcon, CheckCircleIcon } from '../../components/ui/tool-icons'
 import type { PulseTheme } from './adminStyles'
 
 export interface SelectableModule {
@@ -128,9 +129,9 @@ export default function ModuleSelect({ modules, value, onChange, dark, placehold
             <div style={{ padding: '14px 16px', color: pt.faint, fontSize: 13 }}>No modules yet</div>
           )}
           {ungrouped.map(row)}
-          {activeModules.length > 0 && <div style={groupLabel(pt)}>🟢 Active</div>}
+          {activeModules.length > 0 && <div style={groupLabel(pt)}><DotIcon color={pt.textMuted} size={8} /> Active</div>}
           {activeModules.map(row)}
-          {completedModules.length > 0 && <div style={groupLabel(pt)}>✅ Completed</div>}
+          {completedModules.length > 0 && <div style={groupLabel(pt)}><CheckCircleIcon color={pt.textMuted} size={11} /> Completed</div>}
           {completedModules.map(row)}
         </div>,
         document.body
@@ -140,7 +141,7 @@ export default function ModuleSelect({ modules, value, onChange, dark, placehold
 }
 
 function groupLabel(pt: PulseTheme): CSSProperties {
-  return { padding: '10px 16px 4px', fontSize: 10, fontWeight: 800, letterSpacing: 1, color: pt.textMuted, textTransform: 'uppercase' }
+  return { padding: '10px 16px 4px', fontSize: 10, fontWeight: 800, letterSpacing: 1, color: pt.textMuted, textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 6 }
 }
 
 function optionRow(pt: PulseTheme, active: boolean): CSSProperties {

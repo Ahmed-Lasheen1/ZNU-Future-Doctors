@@ -505,3 +505,188 @@ export function CheckCircleIcon({ color, size = 16 }: IconProps) {
     </svg>
   )
 }
+
+export function GearIcon({ color, size = 16 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <circle cx="12" cy="12" r="3.2" stroke={color} strokeWidth="1.6" />
+      <path d="M12 2.5v2.4M12 19.1v2.4M4.2 6.2l1.7 1.7M18.1 16.1l1.7 1.7M2.5 12h2.4M19.1 12h2.4M4.2 17.8l1.7-1.7M18.1 7.9l1.7-1.7" stroke={color} strokeWidth="1.6" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+export function EditIcon({ color, size = 14 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <path d="M4 20l.9-4.2L15.6 5.1a1.5 1.5 0 0 1 2.1 0l1.2 1.2a1.5 1.5 0 0 1 0 2.1L8.2 19.1 4 20Z" stroke={color} strokeWidth="1.6" strokeLinejoin="round" />
+      <path d="M13.8 6.9l3.3 3.3" stroke={color} strokeWidth="1.6" />
+    </svg>
+  )
+}
+
+export function PlusIcon({ color, size = 14 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <path d="M12 4.5v15M4.5 12h15" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+export function CheckCircleIcon({ color, size = 14 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <circle cx="12" cy="12" r="9" stroke={color} strokeWidth="1.6" />
+      <path d="M7.5 12.3l3 3 6-6.2" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+export function XCircleIcon({ color, size = 14 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <circle cx="12" cy="12" r="9" stroke={color} strokeWidth="1.6" />
+      <path d="M9 9l6 6M15 9l-6 6" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+export function PackageIcon({ color, size = 20 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <path d="M3.5 8.5L12 4l8.5 4.5V17L12 21.5 3.5 17V8.5Z" stroke={color} strokeWidth="1.6" strokeLinejoin="round" />
+      <path d="M3.5 8.5L12 13l8.5-4.5" stroke={color} strokeWidth="1.6" />
+      <path d="M12 13v8.5" stroke={color} strokeWidth="1.6" />
+      <path d="M7.7 6.2l8.6 4.6" stroke={color} strokeWidth="1.4" opacity="0.7" />
+    </svg>
+  )
+}
+
+export function FolderIcon({ color, size = 20 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <path d="M3.5 6.5c0-.6.45-1.1 1-1.1h4.3c.3 0 .58.13.77.36l1.1 1.3c.19.23.47.36.77.36H19c.55 0 1 .5 1 1.1v9.2c0 .6-.45 1.1-1 1.1H4.5c-.55 0-1-.5-1-1.1V6.5Z" stroke={color} strokeWidth="1.6" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+export function QuestionMarkIcon({ color, size = 20 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <circle cx="12" cy="12" r="9" stroke={color} strokeWidth="1.6" opacity="0.5" />
+      <path d="M9.3 9.3a2.7 2.7 0 1 1 4.1 2.3c-.8.5-1.4 1-1.4 2" stroke={color} strokeWidth="1.6" strokeLinecap="round" />
+      <circle cx="12" cy="16.8" r="1" fill={color} />
+    </svg>
+  )
+}
+
+export function ChartBarIcon({ color, size = 20 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <path d="M4 20V10M10 20V4M16 20v-7M20 20v-4" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+export function VideoIcon({ color, size = 16 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <rect x="3" y="6" width="13" height="12" rx="2.2" stroke={color} strokeWidth="1.6" />
+      <path d="M16.5 10.3l4-2.3v8l-4-2.3" stroke={color} strokeWidth="1.6" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+export function AudioIcon({ color, size = 16 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <path d="M9 17V6.8l9-2v10.2" stroke={color} strokeWidth="1.6" strokeLinejoin="round" />
+      <circle cx="6.5" cy="17.5" r="2.5" stroke={color} strokeWidth="1.6" />
+      <circle cx="15.5" cy="14.8" r="2.5" stroke={color} strokeWidth="1.6" />
+    </svg>
+  )
+}
+
+export function DocumentIcon({ color, size = 16 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <path d="M6 3.5h9l4 4v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-16a1 1 0 0 1 1-1Z" stroke={color} strokeWidth="1.6" strokeLinejoin="round" />
+      <path d="M15 3.5V7.5a1 1 0 0 0 1 1h4" stroke={color} strokeWidth="1.6" strokeLinejoin="round" opacity="0.6" />
+    </svg>
+  )
+}
+
+export function ClipboardIcon({ color, size = 16 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <rect x="5" y="4.5" width="14" height="17" rx="2" stroke={color} strokeWidth="1.6" />
+      <path d="M9 4.5V3.8A1.3 1.3 0 0 1 10.3 2.5h3.4A1.3 1.3 0 0 1 15 3.8v.7" stroke={color} strokeWidth="1.6" strokeLinejoin="round" />
+      <path d="M8.5 11h7M8.5 14.5h7M8.5 18h4" stroke={color} strokeWidth="1.5" strokeLinecap="round" opacity="0.7" />
+    </svg>
+  )
+}
+
+export function PeopleIcon({ color, size = 16 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <circle cx="9" cy="8" r="3" stroke={color} strokeWidth="1.6" />
+      <path d="M3.5 19c0-3 2.5-5 5.5-5s5.5 2 5.5 5" stroke={color} strokeWidth="1.6" strokeLinecap="round" />
+      <circle cx="17" cy="9" r="2.4" stroke={color} strokeWidth="1.5" opacity="0.7" />
+      <path d="M15.5 19c.2-2.3 1.6-4.1 3.6-4.7" stroke={color} strokeWidth="1.5" strokeLinecap="round" opacity="0.7" />
+    </svg>
+  )
+}
+
+export function ConstructionIcon({ color, size = 16 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <path d="M3 20l6-6M21 20l-6-6" stroke={color} strokeWidth="1.6" strokeLinecap="round" />
+      <rect x="9.5" y="4" width="5" height="10" rx="1.2" transform="rotate(45 12 9)" stroke={color} strokeWidth="1.6" />
+    </svg>
+  )
+}
+
+export function DotIcon({ color, size = 10 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <circle cx="12" cy="12" r="9" fill={color} />
+    </svg>
+  )
+}
+
+export function SendIcon({ color, size = 14 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <path d="M21 3L10.5 13.5M21 3l-6.5 18-4-8-8-4L21 3Z" stroke={color} strokeWidth="1.6" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+export function MegaphoneIcon({ color, size = 16 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <path d="M3 10.5v3a1.5 1.5 0 0 0 1.5 1.5H6l1.6 5c.2.6.75 1 1.4 1h.6a1 1 0 0 0 .95-1.3L9.2 15h1L19 19V6l-8.8 4H4.5A1.5 1.5 0 0 0 3 10.5Z" stroke={color} strokeWidth="1.5" strokeLinejoin="round" />
+      <path d="M21.5 9.5v6" stroke={color} strokeWidth="1.6" strokeLinecap="round" opacity="0.7" />
+    </svg>
+  )
+}
+
+export function ListIcon({ color, size = 16 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <path d="M9 6.5h11M9 12h11M9 17.5h11" stroke={color} strokeWidth="1.7" strokeLinecap="round" />
+      <circle cx="4" cy="6.5" r="1.2" fill={color} />
+      <circle cx="4" cy="12" r="1.2" fill={color} />
+      <circle cx="4" cy="17.5" r="1.2" fill={color} />
+    </svg>
+  )
+}
+
+export function LinkIcon({ color, size = 16 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <path d="M10 14.5l4-4" stroke={color} strokeWidth="1.7" strokeLinecap="round" />
+      <path d="M8.5 16.5l-1.8 1.8a3.2 3.2 0 0 1-4.5-4.5L5 11a3.2 3.2 0 0 1 4.5 0" stroke={color} strokeWidth="1.6" strokeLinecap="round" />
+      <path d="M15.5 7.5l1.8-1.8a3.2 3.2 0 0 1 4.5 4.5L19 13a3.2 3.2 0 0 1-4.5 0" stroke={color} strokeWidth="1.6" strokeLinecap="round" />
+    </svg>
+  )
+}

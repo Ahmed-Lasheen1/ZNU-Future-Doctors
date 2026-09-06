@@ -7,6 +7,7 @@ import AdminSplitLayout from './AdminSplitLayout'
 import LiquidGlassCard from '@/components/ui/liquid-glass-card'
 import { ModuleIcon } from '../../lib/medicalIcons'
 import { btnStyle, miniBtn, cancelBtnStyle, inStyle as adminInStyle } from './adminStyles'
+import { EditIcon, PlusIcon, TrashIcon, PauseIcon, PlayIcon, DotIcon, CheckCircleIcon, ConstructionIcon } from '../../components/ui/tool-icons'
 import type { AdminModule } from './adminTypes'
 
 interface ModulesTabProps {
@@ -67,7 +68,7 @@ export default function ModulesTab({ dark, modules, fetchModules }: ModulesTabPr
   const activeModules = modules.filter(m => m.status === 'active')
   const completedModules = modules.filter(m => m.status !== 'active')
 
-  function moduleRow(mod: AdminModule, toggleLabel: string, toggleColor: string) {
+  function moduleRow(mod: AdminModule, ToggleIcon: (p: { color: string; size?: number }) => JSX.Element, toggleLabel: string, toggleColor: string) {
     return (
       <LiquidGlassCard key={mod.id} dark={dark} delay={0} style={{ padding: '14px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -77,9 +78,9 @@ export default function ModulesTab({ dark, modules, fetchModules }: ModulesTabPr
           <div style={{ color: mod.color, fontWeight: 700 }}>{mod.name}</div>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
-          <button onClick={() => editModule(mod)} aria-label={`Edit module: ${mod.name}`} style={miniBtn(pt, pt.cobalt)}>✏️</button>
-          <button onClick={() => toggleModuleStatus(mod)} style={miniBtn(pt, toggleColor)}>{toggleLabel}</button>
-          <button onClick={() => deleteModule(mod.id)} aria-label={`Delete module: ${mod.name}`} style={miniBtn(pt, pt.danger)}>🗑</button>
+          <button onClick={() => editModule(mod)} aria-label={`Edit module: ${mod.name}`} style={{ ...miniBtn(pt, pt.cobalt), display: 'inline-flex', alignItems: 'center', gap: 4 }}><EditIcon color={pt.cobalt} size={12} /></button>
+          <button onClick={() => toggleModuleStatus(mod)} style={{ ...miniBtn(pt, toggleColor), display: 'inline-flex', alignItems: 'center', gap: 4 }}><ToggleIcon color={toggleColor} size={12} /> {toggleLabel}</button>
+          <button onClick={() => deleteModule(mod.id)} aria-label={`Delete module: ${mod.name}`} style={{ ...miniBtn(pt, pt.danger), display: 'inline-flex', alignItems: 'center', gap: 4 }}><TrashIcon color={pt.danger} size={12} /></button>
         </div>
       </LiquidGlassCard>
     )
@@ -87,7 +88,9 @@ export default function ModulesTab({ dark, modules, fetchModules }: ModulesTabPr
 
   const form = (
     <LiquidGlassCard dark={dark} delay={0} style={{ padding: '20px 22px' }}>
-      <h3 style={{ color: pt.cobalt, marginBottom: 16, fontWeight: 800 }}>{editingModuleId ? '✏️ Edit Module' : '➕ Add Module'}</h3>
+      <h3 style={{ color: pt.cobalt, marginBottom: 16, fontWeight: 800, display: 'flex', alignItems: 'center', gap: 8 }}>
+        {editingModuleId ? <><EditIcon color={pt.cobalt} size={16} /> Edit Module</> : <><PlusIcon color={pt.cobalt} size={16} /> Add Module</>}
+      </h3>
       <input placeholder="Module name" value={modName} onChange={e => setModName(e.target.value)} style={inStyle} />
 
       <IconPicker value={modIcon} onChange={setModIcon} inStyle={inStyle} pt={pt} />
@@ -116,25 +119,25 @@ export default function ModulesTab({ dark, modules, fetchModules }: ModulesTabPr
     <div>
       {activeModules.length > 0 && (
         <div style={{ marginBottom: 16 }}>
-          <h4 style={{ color: '#22c55e', marginBottom: 8 }}>🟢 Active</h4>
+          <h4 style={{ color: '#22c55e', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}><DotIcon color="#22c55e" size={9} /> Active</h4>
           <div className="admin-list-grid">
-            {activeModules.map(mod => moduleRow(mod, '⏸ Done', pt.amber))}
+            {activeModules.map(mod => moduleRow(mod, PauseIcon, 'Done', pt.amber))}
           </div>
         </div>
       )}
 
       {completedModules.length > 0 && (
         <div>
-          <h4 style={{ color: pt.textMuted, marginBottom: 8 }}>✅ Completed</h4>
+          <h4 style={{ color: pt.textMuted, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}><CheckCircleIcon color={pt.textMuted} size={13} /> Completed</h4>
           <div className="admin-list-grid">
-            {completedModules.map(mod => moduleRow(mod, '▶ Active', '#22c55e'))}
+            {completedModules.map(mod => moduleRow(mod, PlayIcon, 'Active', '#22c55e'))}
           </div>
         </div>
       )}
 
       {modules.length === 0 && (
         <LiquidGlassCard dark={dark} delay={0} style={{ padding: 40, textAlign: 'center' }}>
-          <p style={{ color: pt.sub }}>No modules yet — add one on the left 🚧</p>
+          <p style={{ color: pt.sub, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}><ConstructionIcon color={pt.sub} size={14} /> No modules yet — add one on the left</p>
         </LiquidGlassCard>
       )}
     </div>

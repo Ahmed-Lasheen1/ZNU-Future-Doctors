@@ -8,6 +8,7 @@ import LiquidGlassCard from '@/components/ui/liquid-glass-card'
 import { btnStyle, miniBtn, cancelBtnStyle, inStyle as adminInStyle } from './adminStyles'
 import { EXAM_STAGES as STAGE_META } from '../../lib/examStages'
 import { invalidateModuleStagesCache } from '../../lib/moduleStages'
+import { TargetIcon, GearIcon, DotIcon, TrashIcon, CheckCircleIcon } from '../../components/ui/tool-icons'
 import type { AdminModule } from './adminTypes'
 
 interface StageRow {
@@ -67,7 +68,7 @@ export default function StagesTab({ dark, modules }: StagesTabProps) {
     let value = 'new_stage'
     let suffix = 1
     while (existingValues.includes(value)) { value = `new_stage_${suffix}`; suffix++ }
-    setModuleStagesList(prev => [...prev, { id: null, value, title: 'New Stage', emoji: '📌', color: '#64748b' }])
+    setModuleStagesList(prev => [...prev, { id: null, value, title: 'New Stage', emoji: '', color: '#64748b' }])
   }
 
   async function saveModuleStages() {
@@ -79,7 +80,7 @@ export default function StagesTab({ dark, modules }: StagesTabProps) {
       module_id: stageModuleId,
       value: s.value || slugify(s.title),
       title: s.title || 'Stage',
-      emoji: s.emoji || '📌',
+      emoji: s.emoji || '',
       color: s.color || '#64748b',
       position: i
     }))
@@ -105,7 +106,9 @@ export default function StagesTab({ dark, modules }: StagesTabProps) {
 
   const form = (
     <LiquidGlassCard dark={dark} delay={0} style={{ padding: '20px 22px' }}>
-      <h3 style={{ color: pt.cobalt, marginBottom: 8, fontWeight: 800 }}>🎯 Exam Stages per Module</h3>
+      <h3 style={{ color: pt.cobalt, marginBottom: 8, fontWeight: 800, display: 'flex', alignItems: 'center', gap: 8 }}>
+        <TargetIcon color={pt.cobalt} size={18} /> Exam Stages per Module
+      </h3>
       <p style={{ color: pt.textMuted, fontSize: 13, marginBottom: 16 }}>
         Every module starts with the same 4 default stages (TBL, End Module, Practical, Final). Pick a module
         below to rename, add, or remove stages just for that module — everywhere else keeps the defaults
@@ -119,7 +122,7 @@ export default function StagesTab({ dark, modules }: StagesTabProps) {
     <div>
       {!stageModuleId && (
         <LiquidGlassCard dark={dark} delay={0} style={{ padding: 40, textAlign: 'center' }}>
-          <p style={{ color: pt.sub }}>Pick a module on the left to edit its exam stages 🎯</p>
+          <p style={{ color: pt.sub, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}><TargetIcon color={pt.sub} size={15} /> Pick a module on the left to edit its exam stages</p>
         </LiquidGlassCard>
       )}
 
@@ -131,9 +134,12 @@ export default function StagesTab({ dark, modules }: StagesTabProps) {
             <>
               <div style={{
                 fontSize: 12, fontWeight: 700, marginBottom: 16,
-                color: stagesIsCustom ? pt.amber : pt.sub
+                color: stagesIsCustom ? pt.amber : pt.sub,
+                display: 'flex', alignItems: 'center', gap: 6
               }}>
-                {stagesIsCustom ? '⚙️ Custom stages for this module' : '📌 Showing global defaults (not yet customized)'}
+                {stagesIsCustom
+                  ? <><GearIcon color={pt.amber} size={13} /> Custom stages for this module</>
+                  : <><DotIcon color={pt.sub} size={9} /> Showing global defaults (not yet customized)</>}
               </div>
 
               <div className="admin-stage-grid">
@@ -144,13 +150,14 @@ export default function StagesTab({ dark, modules }: StagesTabProps) {
                       alignItems: 'center'
                     }}>
                       <input value={stage.emoji} onChange={e => updateStageField(i, 'emoji', e.target.value)}
+                        placeholder="icon"
                         style={{ ...inStyle, marginBottom: 0, textAlign: 'center', padding: '8px 4px' }} />
                       <input value={stage.title} onChange={e => updateStageField(i, 'title', e.target.value)}
                         style={{ ...inStyle, marginBottom: 0 }} />
                       <input type="color" value={stage.color} onChange={e => updateStageField(i, 'color', e.target.value)}
                         style={{ ...inStyle, marginBottom: 0, padding: 4, height: 42 }} />
                       <button onClick={() => removeStageRow(i)} aria-label="Remove stage"
-                        style={miniBtn(pt, pt.danger)}>🗑</button>
+                        style={{ ...miniBtn(pt, pt.danger), display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}><TrashIcon color={pt.danger} size={12} /></button>
                     </div>
                     <div style={{ color: pt.textMuted, fontSize: 11, marginTop: 4, marginLeft: 2 }}>{stage.value}</div>
                   </div>
@@ -164,8 +171,8 @@ export default function StagesTab({ dark, modules }: StagesTabProps) {
               }}>+ Add Stage</button>
 
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                <button onClick={saveModuleStages} disabled={stagesSaving} style={{ ...btnStyle(pt, dark), flex: 1 }}>
-                  {stagesSaving ? 'Saving...' : '✅ Save Stages'}
+                <button onClick={saveModuleStages} disabled={stagesSaving} style={{ ...btnStyle(pt, dark), flex: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                  {stagesSaving ? 'Saving...' : <><CheckCircleIcon color="#fff" size={13} /> Save Stages</>}
                 </button>
                 {stagesIsCustom && (
                   <button onClick={resetModuleStages} disabled={stagesSaving} style={cancelBtnStyle(pt, dark)}>

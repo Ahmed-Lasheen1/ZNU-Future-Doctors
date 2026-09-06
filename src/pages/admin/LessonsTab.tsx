@@ -8,6 +8,7 @@ import IconPicker from '../../components/admin/IconPicker'
 import LiquidGlassCard from '@/components/ui/liquid-glass-card'
 import { ModuleIcon } from '../../lib/medicalIcons'
 import { btnStyle, miniBtn, cancelBtnStyle, inStyle as adminInStyle, fieldLabel, groupHeading } from './adminStyles'
+import { EditIcon, PlusIcon, TrashIcon, ConstructionIcon } from '../../components/ui/tool-icons'
 import type { AdminModule, AdminSubject, AdminLesson } from './adminTypes'
 
 interface LessonsTabProps {
@@ -65,7 +66,9 @@ export default function LessonsTab({ dark, modules, subjects, lessons, fetchLess
 
   const form = (
     <LiquidGlassCard dark={dark} delay={0} style={{ padding: '20px 22px' }}>
-      <h3 style={{ color: pt.cobalt, marginBottom: 8, fontWeight: 800 }}>{editingLessonId ? '✏️ Edit Lesson' : '➕ Add Lesson'}</h3>
+      <h3 style={{ color: pt.cobalt, marginBottom: 8, fontWeight: 800, display: 'flex', alignItems: 'center', gap: 8 }}>
+        {editingLessonId ? <><EditIcon color={pt.cobalt} size={16} /> Edit Lesson</> : <><PlusIcon color={pt.cobalt} size={16} /> Add Lesson</>}
+      </h3>
       <p style={{ color: pt.textMuted, fontSize: 13, marginBottom: 16 }}>
         A lesson lives under a subject and shows its own tagged question set (tag questions to a lesson from
         the Questions tab). Add a summary for it from the Summaries tab.
@@ -98,7 +101,7 @@ export default function LessonsTab({ dark, modules, subjects, lessons, fetchLess
 
       {lessons.length === 0 && (
         <LiquidGlassCard dark={dark} delay={0} style={{ padding: 40, textAlign: 'center' }}>
-          <p style={{ color: pt.sub }}>No lessons yet — add one on the left 🚧</p>
+          <p style={{ color: pt.sub, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}><ConstructionIcon color={pt.sub} size={14} /> No lessons yet — add one on the left</p>
         </LiquidGlassCard>
       )}
 
@@ -127,8 +130,8 @@ export default function LessonsTab({ dark, modules, subjects, lessons, fetchLess
                           <span style={{ color: pt.text, fontWeight: 600 }}>{l.title}</span>
                         </div>
                         <div style={{ display: 'flex', gap: 8 }}>
-                          <button onClick={() => editLesson(l)} aria-label={`Edit lesson: ${l.title}`} style={miniBtn(pt, pt.cobalt)}>✏️</button>
-                          <button onClick={() => deleteLesson(l.id)} aria-label={`Delete lesson: ${l.title}`} style={miniBtn(pt, pt.danger)}>🗑</button>
+                          <button onClick={() => editLesson(l)} aria-label={`Edit lesson: ${l.title}`} style={{ ...miniBtn(pt, pt.cobalt), display: 'inline-flex', alignItems: 'center' }}><EditIcon color={pt.cobalt} size={12} /></button>
+                          <button onClick={() => deleteLesson(l.id)} aria-label={`Delete lesson: ${l.title}`} style={{ ...miniBtn(pt, pt.danger), display: 'inline-flex', alignItems: 'center' }}><TrashIcon color={pt.danger} size={12} /></button>
                         </div>
                       </LiquidGlassCard>
                     ))}
