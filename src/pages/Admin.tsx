@@ -9,7 +9,7 @@ import { fetchModulesSorted } from '../lib/modules'
 import { invalidateSubjectsCache } from '../lib/subjects'
 import { invalidateLessonsCache } from '../lib/lessons'
 import NotFound from './NotFound'
-import { PackageIcon, BookIcon, FolderIcon, CalendarDotIcon, QuestionMarkIcon, ChartBarIcon, GearIcon, TargetIcon } from '../components/ui/tool-icons'
+import { PackageIcon, BookIcon, ClipboardIcon, FolderIcon, CalendarDotIcon, QuestionMarkIcon, ChartBarIcon, GearIcon, TargetIcon } from '../components/ui/tool-icons'
 import { NotesIcon } from '../lib/medicalIcons'
 
 import ModulesTab from './admin/ModulesTab'
@@ -31,10 +31,14 @@ const LESSONS_LIST_LIMIT = 200
 const TABS = ['modules', 'subjects', 'lessons', 'files', 'schedules', 'questions', 'summaries', 'stages', 'analytics', 'settings'] as const
 type AdminTab = typeof TABS[number]
 
+// AUDIT FIX: 'subjects' and 'lessons' used to both point at BookIcon,
+// so the tab bar rendered the exact same icon for two different tabs
+// — indistinguishable at a glance. Lessons now gets its own icon
+// (ClipboardIcon) instead of duplicating Subjects'.
 const TAB_META: Record<AdminTab, { Icon: (p: { color: string; size?: number }) => JSX.Element; label: string }> = {
   modules: { Icon: PackageIcon, label: 'Modules' },
   subjects: { Icon: BookIcon, label: 'Subjects' },
-  lessons: { Icon: BookIcon, label: 'Lessons' },
+  lessons: { Icon: ClipboardIcon, label: 'Lessons' },
   files: { Icon: FolderIcon, label: 'Files' },
   schedules: { Icon: CalendarDotIcon, label: 'Schedules' },
   questions: { Icon: QuestionMarkIcon, label: 'Questions' },
