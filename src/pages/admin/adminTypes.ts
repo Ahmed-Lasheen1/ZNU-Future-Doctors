@@ -1,3 +1,5 @@
+// src/pages/admin/adminTypes.ts
+
 // Shared shapes for the reference data every admin tab is handed as
 // props from Admin.tsx (modules/subjects/lessons) — one place so each
 // tab isn't independently guessing at (or duplicating) the same
