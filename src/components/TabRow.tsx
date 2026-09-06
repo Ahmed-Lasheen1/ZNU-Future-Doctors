@@ -9,6 +9,12 @@ export interface TabRowItem {
   // plain-text pills (stage/subject filters usually just bake the
   // emoji straight into `label` instead).
   icon?: string | null
+  // A real icon component to render directly instead of going through
+  // ModuleIcon's string-based resolver — used for the 4 built-in exam
+  // stages (see src/lib/examStages.js), which now carry a real icon
+  // component rather than an emoji string. Takes precedence over
+  // `icon` when both are present.
+  Icon?: (props: { color: string; size?: number }) => JSX.Element
   // Per-item color (module color, subject color). Falls back to
   // `accentColor` when not set, so a stage/subject filter row with
   // one shared accent doesn't need to repeat it on every item.
@@ -79,7 +85,11 @@ export default function TabRow({ items, active, onSelect, dark, accentColor, sty
               fontFamily: pulseFonts.body, fontWeight: 700, fontSize: 13,
               color: isActive ? color : pt.sub,
             }}>
-              {item.icon && (
+              {item.Icon ? (
+                <span style={{ display: 'inline-flex' }}>
+                  <item.Icon color={isActive ? color : pt.sub} size={14} />
+                </span>
+              ) : item.icon && (
                 <span style={{ display: 'inline-flex' }}>
                   <ModuleIcon value={item.icon} size={14} color={isActive ? color : pt.sub} />
                 </span>

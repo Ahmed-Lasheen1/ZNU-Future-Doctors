@@ -2,6 +2,7 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { getPulseTheme, pulseFonts } from '../premiumTheme'
 import PulseBackground from '../components/pulse/PulseBackground'
 import LiquidGlassCard from '@/components/ui/liquid-glass-card'
+import { CompassIcon } from '../components/ui/tool-icons'
 
 export default function NotFound({ dark }) {
   const pt = getPulseTheme(dark)
@@ -17,7 +18,9 @@ export default function NotFound({ dark }) {
       }}>
         <div style={{ width: '100%', maxWidth: 420 }}>
           <LiquidGlassCard dark={dark} delay={0} style={{ padding: '40px 32px', textAlign: 'center' }}>
-            <div style={{ fontSize: 56, marginBottom: 16 }}>🧭</div>
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
+              <CompassIcon color={pt.cobalt} size={56} />
+            </div>
             <h1 style={{ color: pt.cobalt, fontSize: 22, fontWeight: 800, marginBottom: 8, fontFamily: pulseFonts.display }}>
               Page not found
             </h1>

@@ -14,11 +14,11 @@ import { fetchSubjectsForModule } from '../lib/subjects'
 import { useHistoryOverlay } from '../lib/useHistoryOverlay'
 import { FILE_CARDS } from '../lib/fileCards'
 import { ModuleIcon, ExamIcon, NotesIcon } from '../lib/medicalIcons'
-import { StudyMaterialsIcon, StudyByLessonIcon, SmartSummariesIcon, PracticeIcon } from '@/components/ui/tool-icons'
+import { StudyMaterialsIcon, StudyByLessonIcon, SmartSummariesIcon, PracticeIcon, BookIcon } from '@/components/ui/tool-icons'
 
 interface PageModule { id: string; name: string; icon?: string | null; color: string }
 interface PageSubject { id: string; module_id: string; name: string; icon?: string | null; color?: string | null }
-interface ExamStage { value: string; title: string; emoji: string; color: string }
+interface ExamStage { value: string; title: string; emoji?: string; Icon?: (p: { color: string; size?: number }) => JSX.Element; color: string }
 interface Summary { id: string; title: string; url: string }
 
 function gridCols(n: number) { return n === 1 ? 1 : n === 2 ? 2 : n === 3 ? 3 : 4 }
@@ -131,7 +131,11 @@ export default function StagePage({ dark }: { dark: boolean }) {
         </div>
 
         <div style={{ textAlign: 'center', padding: '10px 0 30px' }}>
-          <div style={{ fontSize: 44, marginBottom: 8 }}>{meta.emoji}</div>
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}>
+            {meta.Icon
+              ? <meta.Icon color={meta.color} size={44} />
+              : <span style={{ fontSize: 44 }}>{meta.emoji}</span>}
+          </div>
           <h1 style={{ ...pulseType.pageTitle, fontSize: 24, color: meta.color, marginBottom: 6 }}>{meta.title}</h1>
           <div style={{ color: ON_GRADIENT_TOP.secondary, fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
             <ModuleIcon value={module.icon} size={14} color={ON_GRADIENT_TOP.secondary} /> {module.name}
@@ -186,7 +190,9 @@ export default function StagePage({ dark }: { dark: boolean }) {
                   onClick={() => navigate(`/module/${moduleId}/subject/${sub.id}`)}
                   style={{ padding: 'clamp(20px, 2vw, 28px)', textAlign: 'center' }}>
                   <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}>
-                    <ModuleIcon value={sub.icon || '📖'} size={38} color={sub.color || '#34d399'} />
+                    {sub.icon
+                      ? <ModuleIcon value={sub.icon} size={38} color={sub.color || '#34d399'} />
+                      : <BookIcon color={sub.color || '#34d399'} size={38} />}
                   </div>
                   <div style={{ ...pulseType.cardTitle, fontSize: 'clamp(13px, 1.1vw, 16px)', color: pt.textPrimary }}>{sub.name}</div>
                 </LiquidGlassCard>

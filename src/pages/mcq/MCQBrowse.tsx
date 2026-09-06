@@ -118,7 +118,14 @@ export default function MCQBrowse({
         )}
 
         <TabRow
-          items={[{ value: 'all', label: 'All' }, ...stages.map(s => ({ value: s.value, label: `${s.emoji} ${s.title}` }))]}
+          items={[
+            { value: 'all', label: 'All' },
+            ...stages.map(s => ({
+              value: s.value,
+              label: s.Icon ? s.title : `${s.emoji} ${s.title}`,
+              Icon: s.Icon,
+            })),
+          ]}
           active={activeStage}
           onSelect={onSelectStage}
           dark={dark}

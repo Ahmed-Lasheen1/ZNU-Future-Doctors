@@ -1,5 +1,6 @@
 import { supabase } from '../supabase'
 import { EXAM_STAGES as DEFAULT_STAGES } from './examStages'
+import { PinIcon } from '../components/ui/tool-icons'
 
 // AUDIT FIX: this used to run a fresh `module_exam_stages` query on
 // every single call, with zero caching — unlike subjects.js and
@@ -57,7 +58,7 @@ export function invalidateModuleStagesCache() {
   cache = null
 }
 
-const FALLBACK_STAGE = { value: 'general', title: 'General', emoji: '📌', color: '#64748b' }
+const FALLBACK_STAGE = { value: 'general', title: 'General', Icon: PinIcon, color: '#64748b' }
 
 export function stageMetaFrom(stages, value) {
   return stages.find(s => s.value === value) || FALLBACK_STAGE

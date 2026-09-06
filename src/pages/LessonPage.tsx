@@ -12,7 +12,7 @@ import { useModules } from '../contexts'
 import { fetchLessonById } from '../lib/lessons'
 import { useHistoryOverlay } from '../lib/useHistoryOverlay'
 import { ModuleIcon, ExamIcon, NotesIcon } from '../lib/medicalIcons'
-import { SmartSummariesIcon, PracticeIcon } from '@/components/ui/tool-icons'
+import { SmartSummariesIcon, PracticeIcon, ConstructionIcon } from '@/components/ui/tool-icons'
 
 interface PageModule { id: string; name: string; icon?: string | null; color: string }
 interface Lesson { id: string; title: string; icon?: string | null }
@@ -89,7 +89,9 @@ export default function LessonPage({ dark }: { dark: boolean }) {
           <>
             <div style={{ textAlign: 'center', padding: '10px 0 30px' }}>
               <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}>
-                <ModuleIcon value={lesson.icon || '📘'} size={44} color={pt.success} />
+                {lesson.icon
+                  ? <ModuleIcon value={lesson.icon} size={44} color={pt.success} />
+                  : <NotesIcon color={pt.success} size={44} />}
               </div>
               <h1 style={{ ...pulseType.pageTitle, fontSize: 24, color: pt.success, marginBottom: 6 }}>{lesson.title}</h1>
               <div style={{ color: ON_GRADIENT_TOP.secondary, fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
@@ -120,7 +122,9 @@ export default function LessonPage({ dark }: { dark: boolean }) {
                   </LiquidGlassCard>
                 ) : (
                   <LiquidGlassCard dark={dark} delay={0} style={{ padding: 32, textAlign: 'center' }}>
-                    <p style={{ color: pt.sub, fontSize: 13 }}>No summary added yet 🚧</p>
+                    <p style={{ color: pt.sub, fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                      <ConstructionIcon color={pt.sub} size={13} /> No summary added yet
+                    </p>
                   </LiquidGlassCard>
                 )}
 
@@ -151,7 +155,9 @@ export default function LessonPage({ dark }: { dark: boolean }) {
                   </LiquidGlassCard>
                 ) : (
                   <LiquidGlassCard dark={dark} delay={0} style={{ padding: 32, textAlign: 'center' }}>
-                    <p style={{ color: pt.sub, fontSize: 13 }}>No questions tagged to this lesson yet 🚧</p>
+                    <p style={{ color: pt.sub, fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                      <ConstructionIcon color={pt.sub} size={13} /> No questions tagged to this lesson yet
+                    </p>
                   </LiquidGlassCard>
                 )}
               </div>

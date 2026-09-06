@@ -532,15 +532,6 @@ export function PlusIcon({ color, size = 14 }: IconProps) {
   )
 }
 
-export function CheckCircleIcon({ color, size = 14 }: IconProps) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <circle cx="12" cy="12" r="9" stroke={color} strokeWidth="1.6" />
-      <path d="M7.5 12.3l3 3 6-6.2" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  )
-}
-
 export function XCircleIcon({ color, size = 14 }: IconProps) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
@@ -561,56 +552,10 @@ export function PackageIcon({ color, size = 20 }: IconProps) {
   )
 }
 
-export function FolderIcon({ color, size = 20 }: IconProps) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <path d="M3.5 6.5c0-.6.45-1.1 1-1.1h4.3c.3 0 .58.13.77.36l1.1 1.3c.19.23.47.36.77.36H19c.55 0 1 .5 1 1.1v9.2c0 .6-.45 1.1-1 1.1H4.5c-.55 0-1-.5-1-1.1V6.5Z" stroke={color} strokeWidth="1.6" strokeLinejoin="round" />
-    </svg>
-  )
-}
-
-export function QuestionMarkIcon({ color, size = 20 }: IconProps) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <circle cx="12" cy="12" r="9" stroke={color} strokeWidth="1.6" opacity="0.5" />
-      <path d="M9.3 9.3a2.7 2.7 0 1 1 4.1 2.3c-.8.5-1.4 1-1.4 2" stroke={color} strokeWidth="1.6" strokeLinecap="round" />
-      <circle cx="12" cy="16.8" r="1" fill={color} />
-    </svg>
-  )
-}
-
 export function ChartBarIcon({ color, size = 20 }: IconProps) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
       <path d="M4 20V10M10 20V4M16 20v-7M20 20v-4" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
-    </svg>
-  )
-}
-
-export function VideoIcon({ color, size = 16 }: IconProps) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <rect x="3" y="6" width="13" height="12" rx="2.2" stroke={color} strokeWidth="1.6" />
-      <path d="M16.5 10.3l4-2.3v8l-4-2.3" stroke={color} strokeWidth="1.6" strokeLinejoin="round" />
-    </svg>
-  )
-}
-
-export function AudioIcon({ color, size = 16 }: IconProps) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <path d="M9 17V6.8l9-2v10.2" stroke={color} strokeWidth="1.6" strokeLinejoin="round" />
-      <circle cx="6.5" cy="17.5" r="2.5" stroke={color} strokeWidth="1.6" />
-      <circle cx="15.5" cy="14.8" r="2.5" stroke={color} strokeWidth="1.6" />
-    </svg>
-  )
-}
-
-export function DocumentIcon({ color, size = 16 }: IconProps) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <path d="M6 3.5h9l4 4v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-16a1 1 0 0 1 1-1Z" stroke={color} strokeWidth="1.6" strokeLinejoin="round" />
-      <path d="M15 3.5V7.5a1 1 0 0 0 1 1h4" stroke={color} strokeWidth="1.6" strokeLinejoin="round" opacity="0.6" />
     </svg>
   )
 }
@@ -687,6 +632,49 @@ export function LinkIcon({ color, size = 16 }: IconProps) {
       <path d="M10 14.5l4-4" stroke={color} strokeWidth="1.7" strokeLinecap="round" />
       <path d="M8.5 16.5l-1.8 1.8a3.2 3.2 0 0 1-4.5-4.5L5 11a3.2 3.2 0 0 1 4.5 0" stroke={color} strokeWidth="1.6" strokeLinecap="round" />
       <path d="M15.5 7.5l1.8-1.8a3.2 3.2 0 0 1 4.5 4.5L19 13a3.2 3.2 0 0 1-4.5 0" stroke={color} strokeWidth="1.6" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+// ── Batch 3 additions — replacing remaining raw emoji across
+// user-facing pages (NotFound's 🧭, the 4 built-in exam-stage badges'
+// 👥📘🧪🏁 and their 📌 fallback, empty-state 🚧) with the same
+// thin-line-art convention as everything above.
+
+export function CompassIcon({ color, size = 20 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <circle cx="12" cy="12" r="9" stroke={color} strokeWidth="1.6" />
+      <path d="M15.3 8.7l-2.1 5.1-5.1 2.1 2.1-5.1 5.1-2.1Z" stroke={color} strokeWidth="1.4" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+export function FlaskIcon({ color, size = 20 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <path d="M10 3.5h4" stroke={color} strokeWidth="1.6" strokeLinecap="round" />
+      <path d="M10.5 3.5v5.3c0 .35-.1.7-.28 1L6.4 16.6a2.6 2.6 0 0 0 2.2 4h6.8a2.6 2.6 0 0 0 2.2-4l-3.82-6.8a2 2 0 0 1-.28-1V3.5" stroke={color} strokeWidth="1.6" strokeLinejoin="round" />
+      <path d="M7.8 14.7h8.4" stroke={color} strokeWidth="1.5" opacity="0.7" />
+    </svg>
+  )
+}
+
+export function FlagCheckeredIcon({ color, size = 20 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <path d="M6 21V3" stroke={color} strokeWidth="1.7" strokeLinecap="round" />
+      <path d="M6 4.2c3-1.3 5-1.3 8 0 2.4 1 4-0.2 4-0.2v8c0 0-1.6 1.2-4 0.2-3-1.3-5-1.3-8 0V4.2Z" stroke={color} strokeWidth="1.6" strokeLinejoin="round" />
+      <path d="M9 5.3v1.9M13 5.3v1.9M9 9.1v1.9M13 9.1v1.9" stroke={color} strokeWidth="1.2" opacity="0.6" />
+    </svg>
+  )
+}
+
+export function PinIcon({ color, size = 20 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <path d="M12 21s-6.5-6.1-6.5-11A6.5 6.5 0 0 1 18.5 10c0 4.9-6.5 11-6.5 11Z" stroke={color} strokeWidth="1.6" strokeLinejoin="round" />
+      <circle cx="12" cy="10" r="2.2" stroke={color} strokeWidth="1.5" />
     </svg>
   )
 }

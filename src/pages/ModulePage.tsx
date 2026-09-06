@@ -12,13 +12,13 @@ import { fetchModuleStages } from '../lib/moduleStages'
 import { fetchSubjectsForModule } from '../lib/subjects'
 import { ModuleIcon, ExamIcon, NotesIcon } from '../lib/medicalIcons'
 import { FILE_CARDS } from '../lib/fileCards'
-import { ExamStageIcon, StudyByLessonIcon, StudyMaterialsIcon, SmartSummariesIcon, PracticeIcon } from '@/components/ui/tool-icons'
+import { ExamStageIcon, StudyByLessonIcon, StudyMaterialsIcon, SmartSummariesIcon, PracticeIcon, BookIcon } from '@/components/ui/tool-icons'
 
 interface PageModule {
   id: string; name: string; icon?: string | null; color: string; status: 'active' | 'completed'
 }
 interface PageSubject { id: string; module_id: string; name: string; icon?: string | null; color?: string | null }
-interface ExamStage { value: string; title: string; emoji: string; color: string }
+interface ExamStage { value: string; title: string; emoji?: string; Icon?: (p: { color: string; size?: number }) => JSX.Element; color: string }
 
 function gridCols(n: number) { return n === 1 ? 1 : n === 2 ? 2 : n === 3 ? 3 : 4 }
 
@@ -117,7 +117,11 @@ export default function ModulePage({ dark }: { dark: boolean }) {
               <LiquidGlassCard key={stage.value} dark={dark} delay={i * 80}
                 onClick={() => navigate(`/module/${moduleId}/stage/${stage.value}`)}
                 style={{ padding: 'clamp(20px, 2vw, 28px)', textAlign: 'center' }}>
-                <div style={{ fontSize: 'clamp(28px, 3vw, 42px)', marginBottom: 8 }}>{stage.emoji}</div>
+                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}>
+                  {stage.Icon
+                    ? <stage.Icon color={stage.color} size={38} />
+                    : <span style={{ fontSize: 'clamp(28px, 3vw, 42px)' }}>{stage.emoji}</span>}
+                </div>
                 <div style={{ ...pulseType.cardTitle, fontSize: 'clamp(13px, 1.1vw, 16px)', color: pt.textPrimary }}>{stage.title}</div>
               </LiquidGlassCard>
             ))}
@@ -136,7 +140,9 @@ export default function ModulePage({ dark }: { dark: boolean }) {
                   onClick={() => navigate(`/module/${moduleId}/subject/${sub.id}`)}
                   style={{ padding: 'clamp(20px, 2vw, 28px)', textAlign: 'center' }}>
                   <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}>
-                    <ModuleIcon value={sub.icon || '📖'} size={38} color={sub.color || '#34d399'} />
+                    {sub.icon
+                      ? <ModuleIcon value={sub.icon} size={38} color={sub.color || '#34d399'} />
+                      : <BookIcon color={sub.color || '#34d399'} size={38} />}
                   </div>
                   <div style={{ ...pulseType.cardTitle, fontSize: 'clamp(13px, 1.1vw, 16px)', color: pt.textPrimary }}>{sub.name}</div>
                 </LiquidGlassCard>

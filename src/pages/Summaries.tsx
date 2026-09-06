@@ -13,6 +13,7 @@ import { useModules } from '../contexts'
 import { fetchModuleStages } from '../lib/moduleStages'
 import { useHistoryOverlay } from '../lib/useHistoryOverlay'
 import { ModuleIcon, NotesIcon } from '../lib/medicalIcons'
+import { ConstructionIcon } from '../components/ui/tool-icons'
 
 interface SummaryModule {
   id: string; name: string; icon?: string | null; color: string; status: 'active' | 'completed'
@@ -20,7 +21,7 @@ interface SummaryModule {
 interface Summary {
   id: string; title: string; url: string; module_id: string; exam_stage?: string | null
 }
-interface ExamStage { value: string; title: string; emoji: string; color: string }
+interface ExamStage { value: string; title: string; emoji?: string; Icon?: (p: { color: string; size?: number }) => JSX.Element; color: string }
 
 function gridCols(n: number) { return n === 1 ? 1 : 2 }
 
@@ -140,7 +141,14 @@ function ModuleSummaries({ mod, onBack, dark, initialStage }: {
       {loadError && <ErrorBanner />}
 
       <TabRow
-        items={[{ value: 'all', label: 'All' }, ...stages.map(s => ({ value: s.value, label: `${s.emoji} ${s.title}` }))]}
+        items={[
+          { value: 'all', label: 'All' },
+          ...stages.map(s => ({
+            value: s.value,
+            label: s.Icon ? s.title : `${s.emoji} ${s.title}`,
+            Icon: s.Icon,
+          })),
+        ]}
         active={activeStage}
         onSelect={setActiveStage}
         dark={dark}
@@ -152,7 +160,9 @@ function ModuleSummaries({ mod, onBack, dark, initialStage }: {
 
       {!loading && filtered.length === 0 && (
         <LiquidGlassCard dark={dark} delay={0} style={{ padding: 40, textAlign: 'center' }}>
-          <p style={{ color: pt.sub }}>No summaries here yet 🚧</p>
+          <p style={{ color: pt.sub, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+            <ConstructionIcon color={pt.sub} size={14} /> No summaries here yet
+          </p>
         </LiquidGlassCard>
       )}
 

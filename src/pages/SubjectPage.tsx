@@ -14,6 +14,7 @@ import { fetchSubjectById } from '../lib/subjects'
 import { fetchLessonsForSubject } from '../lib/lessons'
 import { useHistoryOverlay } from '../lib/useHistoryOverlay'
 import { ModuleIcon, ExamIcon, NotesIcon } from '../lib/medicalIcons'
+import { BookIcon, ConstructionIcon } from '../components/ui/tool-icons'
 
 interface PageModule { id: string; name: string; icon?: string | null; color: string }
 interface Subject { id: string; name: string; icon?: string | null; color?: string | null }
@@ -94,7 +95,9 @@ export default function SubjectPage({ dark }: { dark: boolean }) {
       onClick={() => navigate(`/module/${moduleId}/subject/${subjectId}/lesson/${lesson.id}`)}
       style={{ padding: 'clamp(20px, 2vw, 28px)', textAlign: 'center' }}>
       <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}>
-        <ModuleIcon value={lesson.icon || '📘'} size={36} color={pt.success} />
+        {lesson.icon
+          ? <ModuleIcon value={lesson.icon} size={36} color={pt.success} />
+          : <NotesIcon color={pt.success} size={36} />}
       </div>
       <div style={{ ...pulseType.cardTitle, fontSize: 'clamp(13px, 1.1vw, 16px)', color: pt.textPrimary }}>{lesson.title}</div>
     </LiquidGlassCard>
@@ -111,7 +114,9 @@ export default function SubjectPage({ dark }: { dark: boolean }) {
 
         <div style={{ textAlign: 'center', padding: '10px 0 30px' }}>
           <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}>
-            <ModuleIcon value={subject?.icon || '📖'} size={44} color={subject?.color || pt.success} />
+            {subject?.icon
+              ? <ModuleIcon value={subject.icon} size={44} color={subject?.color || pt.success} />
+              : <BookIcon color={subject?.color || pt.success} size={44} />}
           </div>
           <h1 style={{ ...pulseType.pageTitle, fontSize: 24, color: subject?.color || pt.success, marginBottom: 6 }}>{subject ? subject.name : ''}</h1>
           <div style={{ color: ON_GRADIENT_TOP.secondary, fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
@@ -154,7 +159,9 @@ export default function SubjectPage({ dark }: { dark: boolean }) {
 
         {!loading && lessons.length === 0 && (
           <LiquidGlassCard dark={dark} delay={0} style={{ padding: 40, textAlign: 'center' }}>
-            <p style={{ color: pt.sub }}>No lessons here yet 🚧</p>
+            <p style={{ color: pt.sub, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+              <ConstructionIcon color={pt.sub} size={14} /> No lessons here yet
+            </p>
           </LiquidGlassCard>
         )}
 
