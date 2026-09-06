@@ -678,3 +678,11 @@ export function PinIcon({ color, size = 20 }: IconProps) {
     </svg>
   )
 }
+
+export function LightningIcon({ color, size = 16 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <path d="M13 2.5L4.5 13.5h6L10.5 21.5 19.5 10h-6L13 2.5Z" stroke={color} strokeWidth="1.6" strokeLinejoin="round" fill={color} fillOpacity="0.12" />
+    </svg>
+  )
+}

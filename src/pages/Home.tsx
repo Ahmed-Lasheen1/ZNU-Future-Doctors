@@ -18,7 +18,7 @@ import LiquidGlassCard from '@/components/ui/liquid-glass-card'
 import EcgHero from '../components/pulse/EcgHero'
 import PulseBackground from '../components/pulse/PulseBackground'
 import PulseBrand from '../components/pulse/PulseBrand'
-import { ScheduleIcon, ChecklistIcon, AnonQAIcon, LeaderboardIcon } from '@/components/ui/tool-icons'
+import { ScheduleIcon, ChecklistIcon, AnonQAIcon, LeaderboardIcon, PauseIcon, LightningIcon } from '@/components/ui/tool-icons'
 import { ModuleIcon } from '../lib/medicalIcons'
 
 interface HomeModule {
@@ -229,7 +229,7 @@ export default function Home({ dark, toggleTheme }: { dark: boolean; toggleTheme
   const activeModules = modules.filter(m => m.status === 'active')
   const completedModules = modules.filter(m => m.status === 'completed')
 
-  // Section eyebrow labels ("⚡ TOOLS", "✓ COMPLETED MODULES") — these
+  // Section eyebrow labels ("Tools", "✓ Completed Modules") — these
   // render directly on PulseBackground (outside any LiquidGlassCard),
   // so they must use the gradient-zone tokens (ON_GRADIENT_TOP /
   // ON_GRADIENT_BOTTOM), never the Glass tokens (pt.textMuted).
@@ -237,13 +237,18 @@ export default function Home({ dark, toggleTheme }: { dark: boolean; toggleTheme
   // AUDIT FIX: both headings used to read the Glass token
   // `pt.textMuted` even though neither sits on a glass surface. Which
   // gradient zone applies depends on where the section actually sits
-  // on the page: "⚡ Tools" is still within the first fold (light/top
+  // on the page: "Tools" is still within the first fold (light/top
   // zone), while "✓ Completed Modules" only appears after scrolling
   // well past the fold, into the gradient's dark lower zone — the
   // same reasoning Footer.jsx already documents for its own text
   // color. `zone` lets each call site pick the correct one instead of
   // both sharing one Glass-token color regardless of position.
-  const sectionTitle = (text: string, delaySeconds: number, zone: 'top' | 'bottom' = 'top') => (
+  const sectionTitle = (
+    text: string,
+    delaySeconds: number,
+    zone: 'top' | 'bottom' = 'top',
+    Icon?: (p: { color: string; size?: number }) => JSX.Element
+  ) => (
     <motion.h2
       initial={playEntrance ? { opacity: 0, y: 20 } : false}
       animate={{ opacity: 1, y: 0 }}
@@ -252,7 +257,11 @@ export default function Home({ dark, toggleTheme }: { dark: boolean; toggleTheme
         ...pulseType.sectionLabel,
         color: zone === 'bottom' ? ON_GRADIENT_BOTTOM.muted : ON_GRADIENT_TOP.muted,
         marginBottom: 16,
-      }}>{text}</motion.h2>
+        display: 'flex', alignItems: 'center', gap: 6,
+      }}>
+      {Icon && <Icon color={zone === 'bottom' ? ON_GRADIENT_BOTTOM.muted : ON_GRADIENT_TOP.muted} size={13} />}
+      {text}
+    </motion.h2>
   )
 
   return (
@@ -354,7 +363,7 @@ export default function Home({ dark, toggleTheme }: { dark: boolean; toggleTheme
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: NOTIFY_DELAY }}
           >
-            <NotifyPermissionButton dark={dark} label="🔔 Enable exam & deadline reminders" />
+            <NotifyPermissionButton dark={dark} label="Enable exam & deadline reminders" />
           </motion.div>
 
           <div className="pulse-wide">
@@ -404,8 +413,8 @@ export default function Home({ dark, toggleTheme }: { dark: boolean; toggleTheme
                     onClick={pausedExam ? () => navigate('/mcq') : undefined}
                     style={{ padding: '16px 20px' }}>
                     {pausedExam ? (
-                      <div style={{ ...pulseType.cardTitle, fontSize: 14, color: pt.cobalt }}>
-                        ⏸ Continue where you left off →
+                      <div style={{ ...pulseType.cardTitle, fontSize: 14, color: pt.cobalt, display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <PauseIcon color={pt.cobalt} size={13} /> Continue where you left off →
                       </div>
                     ) : (
                       <div style={{ ...pulseType.bodyEmphasis, fontSize: 13, color: pt.textPrimary, lineHeight: 1.5 }}>
@@ -468,7 +477,7 @@ export default function Home({ dark, toggleTheme }: { dark: boolean; toggleTheme
           </div>
 
           <div className="pulse-wide">
-            {sectionTitle('⚡ Tools', TOOLS_START, 'top')}
+            {sectionTitle('Tools', TOOLS_START, 'top', LightningIcon)}
             <div className="pulse-tools-grid">
               {toolCards.map((card, i) => {
                 const accentColor = card.accent === 'amber' ? pt.amber : pt.indigo
