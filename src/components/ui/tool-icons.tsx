@@ -434,3 +434,65 @@ export function FlagIcon({ color, size = 14 }: IconProps) {
     </svg>
   )
 }
+
+// ── Batch 2 additions — file-type / document icons, replacing 📖 ❓
+// 🎥 🎵 📄 📁 🔄 across ModulePage/StagePage/FilesPage/ErrorBoundary.
+// Same thin-line-art convention as everything above, static (no
+// draw-in), since these sit inline in file lists and small buttons.
+
+export function QuestionMarkIcon({ color, size = 16 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <path d="M9 9a3 3 0 1 1 4.5 2.6c-.9.5-1.5 1.1-1.5 2.1v.8" stroke={color} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx="12" cy="18" r="1.1" fill={color} />
+    </svg>
+  )
+}
+
+export function VideoIcon({ color, size = 16 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <rect x="3" y="6" width="13" height="12" rx="2.5" stroke={color} strokeWidth="1.6" />
+      <path d="M16.5 10.2l4-2.4v8.4l-4-2.4" stroke={color} strokeWidth="1.6" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+export function AudioIcon({ color, size = 16 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <circle cx="8" cy="18" r="2.5" stroke={color} strokeWidth="1.6" />
+      <circle cx="17" cy="14.5" r="2.5" stroke={color} strokeWidth="1.6" />
+      <path d="M10.5 18V5.5l9-2v11" stroke={color} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+export function DocumentIcon({ color, size = 16 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <path d="M6 3.5h8l4 4v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-16a1 1 0 0 1 1-1Z" stroke={color} strokeWidth="1.6" strokeLinejoin="round" />
+      <path d="M14 3.5V7.5a1 1 0 0 0 1 1h4" stroke={color} strokeWidth="1.6" strokeLinejoin="round" opacity="0.6" />
+      <path d="M8.5 13h7M8.5 16h7" stroke={color} strokeWidth="1.5" strokeLinecap="round" opacity="0.75" />
+    </svg>
+  )
+}
+
+export function FolderIcon({ color, size = 16 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <path d="M3.5 6.5A1.5 1.5 0 0 1 5 5h4.4c.3 0 .58.13.77.36l1.2 1.44c.19.23.47.36.77.36H19a1.5 1.5 0 0 1 1.5 1.5v9.34A1.5 1.5 0 0 1 19 19.5H5A1.5 1.5 0 0 1 3.5 18V6.5Z" stroke={color} strokeWidth="1.6" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+export function RefreshIcon({ color, size = 16 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <path d="M4 12a8 8 0 0 1 13.66-5.66L20 8.5" stroke={color} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M20 4v4.5h-4.5" stroke={color} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M20 12a8 8 0 0 1-13.66 5.66L4 15.5" stroke={color} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M4 20v-4.5h4.5" stroke={color} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}

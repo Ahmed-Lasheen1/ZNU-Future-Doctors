@@ -13,6 +13,7 @@ import BackButton from '../components/pulse/BackButton'
 import PageIntro from '../components/pulse/PageIntro'
 import { useHistoryOverlay } from '../lib/useHistoryOverlay'
 import { getDriveOrRawUrl, getVideoEmbedUrl } from '../lib/embedUrl'
+import { BookIcon, QuestionMarkIcon, VideoIcon, GraduationCapIcon, DocumentIcon, AudioIcon, FolderIcon, PlayIcon } from '../components/ui/tool-icons'
 
 interface FilesModule {
   id: string
@@ -40,6 +41,29 @@ interface FilesSubject {
 
 const FILE_ACCENT = '#38bdf8'
 
+// Icon + label for a given file_type value ('pdf' | 'video' | 'audio')
+// — replaces the old emoji-string getFileIcon/getOpenLabel helpers.
+function fileTypeIcon(type: string, color: string, size = 20) {
+  if (type === 'video') return <VideoIcon color={color} size={size} />
+  if (type === 'audio') return <AudioIcon color={color} size={size} />
+  return <DocumentIcon color={color} size={size} />
+}
+function openActionIcon(type: string, color: string, size = 12) {
+  if (type === 'video') return <PlayIcon color={color} size={size} />
+  if (type === 'audio') return <AudioIcon color={color} size={size} />
+  return <DocumentIcon color={color} size={size} />
+}
+function openActionLabel(type: string) {
+  return type === 'video' ? 'Play' : type === 'audio' ? 'Listen' : 'Open'
+}
+
+const TYPE_META: Record<string, { Icon: (p: { color?: string; size?: number }) => JSX.Element; label: string }> = {
+  sharah: { Icon: BookIcon, label: 'Explanation Files' },
+  questions: { Icon: QuestionMarkIcon, label: 'Question Files' },
+  lectures: { Icon: VideoIcon, label: 'Lecture Recordings' },
+  courses: { Icon: GraduationCapIcon, label: 'Course Recordings' },
+}
+
 function AudioViewer({ url, name, onClose, dark }: { url: string; name: string; onClose: () => void; dark: boolean }) {
   const pt = getPulseTheme(dark)
   return (
@@ -50,7 +74,9 @@ function AudioViewer({ url, name, onClose, dark }: { url: string; name: string; 
     }}>
       <div style={{ width: '90%', maxWidth: 400 }}>
         <LiquidGlassCard dark={dark} delay={0} style={{ padding: 32, textAlign: 'center' }}>
-          <div style={{ fontSize: 48, marginBottom: 16 }}>🎵</div>
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
+            <AudioIcon color={FILE_ACCENT} size={48} />
+          </div>
           <h3 style={{ ...pulseType.sectionTitle, color: FILE_ACCENT, marginBottom: 20 }}>{name}</h3>
           <audio controls src={url} style={{ width: '100%', marginBottom: 20 }} />
           <button onClick={onClose} style={{
@@ -79,20 +105,11 @@ export default function FilesPage({ dark }: { dark: boolean }) {
   const params = new URLSearchParams(location.search)
   const fileType = params.get('type')
   const moduleParam = params.get('module')
+  const typeMeta = fileType ? TYPE_META[fileType] : null
 
   useHistoryOverlay(!!viewer, () => setViewer(null))
 
   const activeModules = modules.filter(m => m.status === 'active')
-
-  const titles: Record<string, string> = {
-    sharah: '📖 Explanation Files',
-    questions: '❓ Question Files',
-    lectures: '🎥 Lecture Recordings',
-    courses: '🎓 Course Recordings',
-  }
-
-  const getFileIcon = (type: string) => type === 'video' ? '🎥' : type === 'audio' ? '🎵' : '📄'
-  const getOpenLabel = (type: string) => type === 'video' ? '▶ Play' : type === 'audio' ? '🎵 Listen' : '📄 Open'
 
   useEffect(() => {
     if (moduleParam) {
@@ -163,8 +180,8 @@ export default function FilesPage({ dark }: { dark: boolean }) {
 
         <PageIntro
           dark={dark}
-          emoji={fileType ? titles[fileType]?.split(' ')[0] : '📁'}
-          title={fileType ? titles[fileType]?.split(' ').slice(1).join(' ') : 'Files'}
+          emoji={typeMeta ? <typeMeta.Icon color={ON_GRADIENT_TOP.primary} size={40} /> : <FolderIcon color={ON_GRADIENT_TOP.primary} size={40} />}
+          title={typeMeta ? typeMeta.label : 'Files'}
         />
 
         <TabRow
@@ -201,7 +218,7 @@ export default function FilesPage({ dark }: { dark: boolean }) {
                 padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center'
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
-                  <span style={{ fontSize: 24, flexShrink: 0 }}>{getFileIcon(file.file_type)}</span>
+                  <span style={{ flexShrink: 0, display: 'inline-flex' }}>{fileTypeIcon(file.file_type, pt.textPrimary, 22)}</span>
                   <span style={{ ...pulseType.cardTitle, color: pt.textPrimary, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {file.name}
                   </span>
@@ -209,9 +226,10 @@ export default function FilesPage({ dark }: { dark: boolean }) {
                 <button onClick={() => setViewer(file)} style={{
                   background: FILE_ACCENT, color: '#0f172a', border: 'none',
                   padding: '8px 16px', borderRadius: 999, cursor: 'pointer',
-                  fontWeight: 700, fontSize: 13, fontFamily: pulseFonts.body, whiteSpace: 'nowrap', flexShrink: 0
+                  fontWeight: 700, fontSize: 13, fontFamily: pulseFonts.body, whiteSpace: 'nowrap', flexShrink: 0,
+                  display: 'inline-flex', alignItems: 'center', gap: 6
                 }}>
-                  {getOpenLabel(file.file_type)}
+                  {openActionIcon(file.file_type, '#0f172a', 13)} {openActionLabel(file.file_type)}
                 </button>
               </LiquidGlassCard>
             </div>

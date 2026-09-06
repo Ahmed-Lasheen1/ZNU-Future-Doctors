@@ -109,7 +109,9 @@ export default function StagePage({ dark }: { dark: boolean }) {
     <LiquidGlassCard key={i} dark={dark} delay={i * 80}
       onClick={() => navigate(`/files?type=${card.type}&module=${moduleId}`)}
       style={{ padding: 'clamp(20px, 2vw, 28px)', textAlign: 'center' }}>
-      <div style={{ fontSize: 'clamp(28px, 3vw, 42px)', marginBottom: 8 }}>{card.emoji}</div>
+      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}>
+        <card.Icon color={card.color} size={36} />
+      </div>
       <div style={{ ...pulseType.cardTitle, fontSize: 'clamp(13px, 1.1vw, 16px)', color: pt.textPrimary }}>{card.title}</div>
     </LiquidGlassCard>
   )
