@@ -12,6 +12,7 @@ import ErrorBanner from '../components/ErrorBanner'
 import TabRow from '../components/TabRow'
 import NotifyPermissionButton from '../components/NotifyPermissionButton'
 import { useToast } from '../components/ToastProvider'
+import { TargetIcon, LightbulbIcon, CalendarDotIcon, WarningIcon, ClockIcon, CelebrationIcon, TrashIcon, BookIcon } from '../components/ui/tool-icons'
 import type { ChecklistTask } from '../types/checklist'
 
 const statNumStyle = { fontFamily: pulseFonts.display, fontWeight: 800, fontSize: 30 }
@@ -154,7 +155,7 @@ export default function Checklist({ dark }: { dark: boolean }) {
 
     const urgent = tasks.filter(t => !t.done && (isOverdue(t.deadline) || isDueSoon(t.deadline)))
     if (urgent.length > 0) {
-      new Notification('📅 ZNU Future Doctors', {
+      new Notification('ZNU Future Doctors', {
         body: `You have ${urgent.length} checklist item(s) due soon or overdue.`
       })
       localStorage.setItem('checklist_last_notify', todayStr)
@@ -179,17 +180,17 @@ export default function Checklist({ dark }: { dark: boolean }) {
 
         {modulesError && <ErrorBanner />}
 
-        <PageIntro dark={dark} emoji="🎯" title="Checklist" subtitle="Track what's left before exam day" />
+        <PageIntro dark={dark} emoji={<TargetIcon color={ON_GRADIENT_TOP.primary} size={40} />} title="Checklist" subtitle="Track what's left before exam day" />
 
         <div style={{ marginBottom: SECTION_GAP }}>
-          <NotifyPermissionButton dark={dark} label="🔔 Enable deadline reminders" />
+          <NotifyPermissionButton dark={dark} label="Enable deadline reminders" />
         </div>
 
         {!user && (
           <div style={{ marginBottom: SECTION_GAP }}>
             <LiquidGlassCard dark={dark} delay={0} style={{ padding: '12px 18px', textAlign: 'center' }}>
-              <span style={{ color: pt.cobalt, fontSize: 13, fontWeight: 600 }}>
-                💡 <span style={{ cursor: 'pointer', textDecoration: 'underline' }} onClick={() => navigate('/auth')}>Sign in</span> to save your checklist across devices
+              <span style={{ color: pt.cobalt, fontSize: 13, fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                <LightbulbIcon color={pt.cobalt} size={14} /> <span style={{ cursor: 'pointer', textDecoration: 'underline' }} onClick={() => navigate('/auth')}>Sign in</span> to save your checklist across devices
               </span>
             </LiquidGlassCard>
           </div>
@@ -231,8 +232,8 @@ export default function Checklist({ dark }: { dark: boolean }) {
                   width: `${percent}%`, transition: 'width 0.5s ease'
                 }} />
               </div>
-              <div style={{ textAlign: 'center', marginTop: 12, color: percent === 100 ? pt.cobalt : pt.amber, fontWeight: 700, fontSize: 13 }}>
-                {percent}% {percent === 100 ? '🎉 Ready for exam!' : 'completed'}
+              <div style={{ textAlign: 'center', marginTop: 12, color: percent === 100 ? pt.cobalt : pt.amber, fontWeight: 700, fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                {percent}% {percent === 100 ? (<><CelebrationIcon color={pt.cobalt} size={14} /> Ready for exam!</>) : 'completed'}
               </div>
             </LiquidGlassCard>
           </div>
@@ -251,7 +252,9 @@ export default function Checklist({ dark }: { dark: boolean }) {
               </button>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ color: pt.faint, fontSize: 12, whiteSpace: 'nowrap' }}>📅 Deadline:</span>
+              <span style={{ color: pt.faint, fontSize: 12, whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                <CalendarDotIcon color={pt.faint} size={13} /> Deadline:
+              </span>
               <input type="date" value={newDeadline} onChange={e => setNewDeadline(e.target.value)} style={{ ...inStyle, flex: 1 }} />
             </div>
           </LiquidGlassCard>
@@ -261,7 +264,9 @@ export default function Checklist({ dark }: { dark: boolean }) {
 
         {modulesLoaded && tasks.length === 0 && (
           <LiquidGlassCard dark={dark} delay={200} style={{ padding: 40, textAlign: 'center' }}>
-            <p style={{ color: pt.sub }}>No tasks yet — add topics you need to study! 📚</p>
+            <p style={{ color: pt.sub, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+              No tasks yet — add topics you need to study! <BookIcon color={pt.sub} size={15} />
+            </p>
           </LiquidGlassCard>
         )}
 
@@ -298,9 +303,15 @@ export default function Checklist({ dark }: { dark: boolean }) {
                       <div style={{
                         fontSize: 11, marginTop: 2,
                         color: overdue ? pt.danger : dueSoon ? pt.amber : pt.faint,
-                        fontWeight: overdue || dueSoon ? 700 : 500
+                        fontWeight: overdue || dueSoon ? 700 : 500,
+                        display: 'flex', alignItems: 'center', gap: 5
                       }}>
-                        {overdue ? '⚠️ Overdue: ' : dueSoon ? '⏰ Due soon: ' : '📅 '}{task.deadline}
+                        {overdue
+                          ? <><WarningIcon color={pt.danger} size={12} /> Overdue:</>
+                          : dueSoon
+                            ? <><ClockIcon color={pt.amber} size={12} /> Due soon:</>
+                            : <CalendarDotIcon color={pt.faint} size={12} />}
+                        {' '}{task.deadline}
                       </div>
                     )}
                   </div>
@@ -311,10 +322,11 @@ export default function Checklist({ dark }: { dark: boolean }) {
                     onClick={() => deleteTask(task)}
                     aria-label={`Delete task: ${task.text}`}
                     style={{
-                      background: 'transparent', border: 'none', color: pt.danger,
-                      cursor: 'pointer', fontSize: 15, padding: '4px 6px', flexShrink: 0
+                      background: 'transparent', border: 'none',
+                      cursor: 'pointer', padding: '4px 6px', flexShrink: 0,
+                      display: 'flex', alignItems: 'center'
                     }}
-                  >🗑</button>
+                  ><TrashIcon color={pt.danger} size={15} /></button>
                 </div>
               </LiquidGlassCard>
             </div>

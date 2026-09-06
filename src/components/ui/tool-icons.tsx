@@ -115,16 +115,6 @@ export function LeaderboardIcon({ color, size = 20 }: IconProps) {
 }
 
 // ── Icons for ModulePage / StagePage section headers ────────────────
-// Replaces the plain emoji that were still hardcoded directly into
-// those two pages' section-title text (🎯 Exam Stage, 📖 Study by
-// Lesson, 📁 Study Materials, 📝 Smart Summaries, 🧪 Practice) with
-// the same hand-drawn, animated-stroke language as the four icons
-// above. The bigger icons already sitting inside the Smart
-// Summaries/Practice cards themselves (NotesIcon/ExamIcon in
-// lib/medicalIcons.tsx) were already real SVG, not emoji, so those
-// are untouched — this set is specifically for the small icon that
-// now sits next to each section's heading text.
-
 export function ExamStageIcon({ color, size = 20 }: IconProps) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
@@ -234,14 +224,6 @@ export function PracticeIcon({ color, size = 20 }: IconProps) {
   )
 }
 
-// Home nav icon — built fresh to match the same hand-drawn, animated-
-// stroke language as the four icons above (thin static outline plus
-// one accent stroke that draws itself in on mount). None of the
-// existing icon sets had a "home" glyph, since the Home page doesn't
-// link to itself from within itself — this fills that gap for the
-// nav menu specifically. Roof + walls sit static (opacity 0.9/0.55,
-// matching how e.g. ScheduleIcon treats its outline vs its accent),
-// and the arched doorway draws itself in as the accent stroke.
 export function HomeIcon({ color, size = 20 }: IconProps) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
@@ -262,11 +244,6 @@ export function HomeIcon({ color, size = 20 }: IconProps) {
   )
 }
 
-// Sign-out nav icon — same treatment again: a static open door frame
-// (the thing being left) plus an animated arrow (the leaving itself)
-// as the accent stroke. Replaces the 🚪 emoji previously used inline
-// in NavMenu, matching every other item in that list now having a
-// real icon instead of a mix of emoji and plain text.
 export function SignOutIcon({ color, size = 20 }: IconProps) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
@@ -282,6 +259,178 @@ export function SignOutIcon({ color, size = 20 }: IconProps) {
         animate={{ pathLength: 1, opacity: 1 }}
         transition={{ ...drawTransition, delay: 0.15 }}
       />
+    </svg>
+  )
+}
+
+// ── Batch 1 additions — replacing common emoji across the app with
+// the same thin-line-art convention as the icons above. Static (no
+// draw-in animation) since these are used inline with text in lists,
+// banners, and buttons rather than as page-entrance hero marks.
+
+export function BellIcon({ color, size = 16 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <path d="M6 10.5a6 6 0 0 1 12 0c0 4 1.5 5.5 1.5 5.5H4.5S6 14.5 6 10.5Z" stroke={color} strokeWidth="1.6" strokeLinejoin="round" />
+      <path d="M9.5 19a2.5 2.5 0 0 0 5 0" stroke={color} strokeWidth="1.6" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+export function TrashIcon({ color, size = 16 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <path d="M4.5 7h15" stroke={color} strokeWidth="1.6" strokeLinecap="round" />
+      <path d="M9.5 7V5a1.5 1.5 0 0 1 1.5-1.5h2A1.5 1.5 0 0 1 14.5 5v2" stroke={color} strokeWidth="1.6" strokeLinejoin="round" />
+      <path d="M6.5 7l.9 12.2a1.5 1.5 0 0 0 1.5 1.4h6.2a1.5 1.5 0 0 0 1.5-1.4L17.5 7" stroke={color} strokeWidth="1.6" strokeLinejoin="round" />
+      <path d="M10 10.5v6M14 10.5v6" stroke={color} strokeWidth="1.6" strokeLinecap="round" opacity="0.7" />
+    </svg>
+  )
+}
+
+export function ClockIcon({ color, size = 16 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <circle cx="12" cy="12.5" r="8.5" stroke={color} strokeWidth="1.6" />
+      <path d="M12 7.5V12.5L15.5 15" stroke={color} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M9.5 2.5h5" stroke={color} strokeWidth="1.6" strokeLinecap="round" opacity="0.7" />
+    </svg>
+  )
+}
+
+export function WarningIcon({ color, size = 16 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <path d="M12 3.5l9.5 16.5H2.5L12 3.5Z" stroke={color} strokeWidth="1.6" strokeLinejoin="round" />
+      <path d="M12 10v4.2" stroke={color} strokeWidth="1.7" strokeLinecap="round" />
+      <circle cx="12" cy="17.2" r="1" fill={color} />
+    </svg>
+  )
+}
+
+export function CelebrationIcon({ color, size = 16 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <path d="M5 20L15.5 9.5" stroke={color} strokeWidth="1.6" strokeLinecap="round" />
+      <path d="M5 20l2.2-6.8L15.5 9.5l4.3 1.9L14 17.6 5 20Z" stroke={color} strokeWidth="1.6" strokeLinejoin="round" />
+      <path d="M14.5 3.5l1 2M18.5 5.5l2 1M17 8.5l2.4-.6" stroke={color} strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+export function CalendarDotIcon({ color, size = 16 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <rect x="3.5" y="5" width="17" height="16" rx="4" stroke={color} strokeWidth="1.6" opacity="0.85" />
+      <path d="M8 3v4M16 3v4" stroke={color} strokeWidth="1.6" strokeLinecap="round" />
+      <path d="M3.5 10h17" stroke={color} strokeWidth="1.6" opacity="0.5" />
+      <circle cx="12" cy="15" r="1.6" fill={color} />
+    </svg>
+  )
+}
+
+export function TargetIcon({ color, size = 20 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <circle cx="12" cy="12" r="9" stroke={color} strokeWidth="1.6" opacity="0.4" />
+      <circle cx="12" cy="12" r="5.5" stroke={color} strokeWidth="1.6" opacity="0.7" />
+      <circle cx="12" cy="12" r="2" fill={color} />
+    </svg>
+  )
+}
+
+export function BookIcon({ color, size = 16 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <path d="M4 5.2c2.2-1.1 4.6-1.1 7 0v14c-2.4-1.1-4.8-1.1-7 0V5.2Z" stroke={color} strokeWidth="1.6" strokeLinejoin="round" />
+      <path d="M20 5.2c-2.2-1.1-4.6-1.1-7 0v14c2.4-1.1 4.8-1.1 7 0V5.2Z" stroke={color} strokeWidth="1.6" strokeLinejoin="round" opacity="0.75" />
+    </svg>
+  )
+}
+
+export function LightbulbIcon({ color, size = 16 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <path d="M9 17.5h6M10 20.5h4" stroke={color} strokeWidth="1.6" strokeLinecap="round" />
+      <path d="M12 2.5a6.5 6.5 0 0 0-3.8 11.8c.6.45.9 1.15.9 1.9v.3h5.8v-.3c0-.75.3-1.45.9-1.9A6.5 6.5 0 0 0 12 2.5Z" stroke={color} strokeWidth="1.6" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+export function RobotIcon({ color, size = 14 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <rect x="5" y="9" width="14" height="10" rx="3" stroke={color} strokeWidth="1.6" />
+      <path d="M12 6V3.5" stroke={color} strokeWidth="1.6" strokeLinecap="round" />
+      <circle cx="12" cy="2.7" r="1" fill={color} />
+      <circle cx="9" cy="14" r="1.2" fill={color} />
+      <circle cx="15" cy="14" r="1.2" fill={color} />
+      <path d="M2.5 12.5v3M21.5 12.5v3" stroke={color} strokeWidth="1.6" strokeLinecap="round" opacity="0.7" />
+    </svg>
+  )
+}
+
+export function GraduationCapIcon({ color, size = 14 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <path d="M2 9l10-4.5L22 9l-10 4.5L2 9Z" stroke={color} strokeWidth="1.6" strokeLinejoin="round" />
+      <path d="M6.5 11.2v4.3c0 1.3 2.5 2.5 5.5 2.5s5.5-1.2 5.5-2.5v-4.3" stroke={color} strokeWidth="1.6" strokeLinejoin="round" opacity="0.8" />
+      <path d="M21 10v5.5" stroke={color} strokeWidth="1.6" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+export function SearchIcon2({ color, size = 16 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <circle cx="10.5" cy="10.5" r="6.5" stroke={color} strokeWidth="1.6" />
+      <path d="M15.3 15.3L20.5 20.5" stroke={color} strokeWidth="1.6" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+export function OfflineIcon({ color, size = 14 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <path d="M3 3l18 18" stroke={color} strokeWidth="1.7" strokeLinecap="round" />
+      <path d="M5.5 9.5a12 12 0 0 1 4.6-2.6M8.5 12.7a7.7 7.7 0 0 1 3-1.6M18.5 9.5a12 12 0 0 0-2.9-2.1" stroke={color} strokeWidth="1.6" strokeLinecap="round" opacity="0.8" />
+      <circle cx="12" cy="17.5" r="1.3" fill={color} />
+    </svg>
+  )
+}
+
+export function PauseIcon({ color, size = 14 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <rect x="6" y="4.5" width="4" height="15" rx="1.3" fill={color} />
+      <rect x="14" y="4.5" width="4" height="15" rx="1.3" fill={color} />
+    </svg>
+  )
+}
+
+export function PlayIcon({ color, size = 14 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <path d="M6.5 4.2v15.6a1 1 0 0 0 1.5.87l13-7.8a1 1 0 0 0 0-1.74l-13-7.8a1 1 0 0 0-1.5.87Z" fill={color} />
+    </svg>
+  )
+}
+
+export function EmptyBoxIcon({ color, size = 20 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <path d="M3.5 8.5L12 4l8.5 4.5V17L12 21.5 3.5 17V8.5Z" stroke={color} strokeWidth="1.6" strokeLinejoin="round" opacity="0.85" />
+      <path d="M3.5 8.5L12 13l8.5-4.5" stroke={color} strokeWidth="1.6" strokeLinejoin="round" opacity="0.7" />
+      <path d="M12 13v8.5" stroke={color} strokeWidth="1.6" opacity="0.7" />
+    </svg>
+  )
+}
+
+export function FlagIcon({ color, size = 14 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <path d="M6 3v18" stroke={color} strokeWidth="1.7" strokeLinecap="round" />
+      <path d="M6 4.5c3-1.4 5-1.4 8 0 2.4 1.1 4-0.2 4-0.2v9c0 0-1.6 1.3-4 0.2-3-1.4-5-1.4-8 0v-9Z" fill={color} opacity="0.9" />
     </svg>
   )
 }

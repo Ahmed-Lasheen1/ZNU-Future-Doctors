@@ -12,6 +12,7 @@ import PulseBackground from '../../components/pulse/PulseBackground'
 import PulseGlassRow from '../../components/pulse/PulseGlassRow'
 import BackButton from '../../components/pulse/BackButton'
 import { ModuleIcon, ExamIcon } from '../../lib/medicalIcons'
+import { OfflineIcon, BookIcon, PauseIcon, PlayIcon, EmptyBoxIcon } from '../../components/ui/tool-icons'
 import { MCQ_ACCENT } from './mcqShared'
 
 interface MCQBrowseProps {
@@ -59,8 +60,8 @@ export default function MCQBrowse({
         {usingCache && (
           <div style={{ marginBottom: 16 }}>
             <LiquidGlassCard dark={dark} delay={0} style={{ padding: '10px 16px', textAlign: 'center' }}>
-              <span style={{ color: pt.amber, fontSize: 13 }}>
-                📴 You're offline — showing questions saved from your last visit. Submitting a quiz needs a connection.
+              <span style={{ color: pt.amber, fontSize: 13, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                <OfflineIcon color={pt.amber} size={14} /> You're offline — showing questions saved from your last visit. Submitting a quiz needs a connection.
               </span>
             </LiquidGlassCard>
           </div>
@@ -77,8 +78,8 @@ export default function MCQBrowse({
           <PulseGlassRow dark={dark} radius={999} hoverTint={hoverTint} onClick={() => navigate('/review')}
             role="button" tabIndex={0}
             onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate('/review') } }}>
-            <div style={{ padding: '8px 18px', ...pulseType.small, fontWeight: 700, color: pt.sub }}>
-              📚 Review Incorrect & Flagged
+            <div style={{ padding: '8px 18px', ...pulseType.small, fontWeight: 700, color: pt.sub, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <BookIcon color={pt.sub} size={14} /> Review Incorrect & Flagged
             </div>
           </PulseGlassRow>
         </div>
@@ -89,14 +90,15 @@ export default function MCQBrowse({
               padding: '14px 18px', display: 'flex', alignItems: 'center',
               justifyContent: 'space-between', gap: 10, flexWrap: 'wrap'
             }}>
-              <div style={{ color: MCQ_ACCENT, fontSize: 13, fontWeight: 700 }}>
-                ⏸ Paused {resumeData.quizMode === 'mock' ? 'mock exam' : 'practice quiz'} — {Object.keys(resumeData.answers || {}).length}/{(resumeData.quizQuestions || []).length} answered
+              <div style={{ color: MCQ_ACCENT, fontSize: 13, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <PauseIcon color={MCQ_ACCENT} size={13} /> Paused {resumeData.quizMode === 'mock' ? 'mock exam' : 'practice quiz'} — {Object.keys(resumeData.answers || {}).length}/{(resumeData.quizQuestions || []).length} answered
               </div>
               <div style={{ display: 'flex', gap: 8 }}>
                 <button onClick={onResume} style={{
                   background: MCQ_ACCENT, color: '#0f172a', border: 'none', padding: '6px 14px',
-                  borderRadius: 999, cursor: 'pointer', fontWeight: 700, fontSize: 12, fontFamily: pulseFonts.body
-                }}>▶ Continue</button>
+                  borderRadius: 999, cursor: 'pointer', fontWeight: 700, fontSize: 12, fontFamily: pulseFonts.body,
+                  display: 'inline-flex', alignItems: 'center', gap: 5
+                }}><PlayIcon color="#0f172a" size={11} /> Continue</button>
                 <button onClick={onDiscardResume} style={{
                   background: 'transparent', border: `1px solid ${MCQ_ACCENT}40`, color: MCQ_ACCENT,
                   padding: '6px 14px', borderRadius: 999, cursor: 'pointer', fontWeight: 700, fontSize: 12, fontFamily: pulseFonts.body
@@ -142,12 +144,14 @@ export default function MCQBrowse({
               <div style={{
                 width: 60, height: 60, borderRadius: 18, flexShrink: 0,
                 background: `${MCQ_ACCENT}22`, border: `1px solid ${MCQ_ACCENT}55`,
-                display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28
-              }}>📝</div>
+                display: 'flex', alignItems: 'center', justifyContent: 'center'
+              }}>
+                <ExamIcon color={MCQ_ACCENT} size={28} />
+              </div>
               <div style={{ flex: 1, minWidth: 160 }}>
                 <h3 style={{ ...pulseType.sectionLabel, fontSize: 15, color: MCQ_ACCENT, marginBottom: 4 }}>Mock Exam</h3>
                 <p style={{ color: pt.sub, fontSize: 13 }}>
-                  {Math.min(36, getFilteredQuestions('mock').length)} questions · ⏱ 36 minutes
+                  {Math.min(36, getFilteredQuestions('mock').length)} questions · 36 minutes
                 </p>
               </div>
               <button onClick={() => onStartQuiz('mock')} style={{
@@ -188,7 +192,9 @@ export default function MCQBrowse({
           })}
           {moduleSubjects.length === 0 && !loading && (
             <LiquidGlassCard dark={dark} delay={0} style={{ padding: 24, width: '100%', textAlign: 'center' }}>
-              <p style={{ color: pt.sub, fontSize: 13 }}>No subjects for this module yet 🚧</p>
+              <p style={{ color: pt.sub, fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                <EmptyBoxIcon color={pt.sub} size={16} /> No subjects for this module yet
+              </p>
             </LiquidGlassCard>
           )}
         </div>

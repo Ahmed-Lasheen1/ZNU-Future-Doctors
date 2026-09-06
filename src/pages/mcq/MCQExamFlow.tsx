@@ -9,6 +9,7 @@ import QuestionRail from '../../components/QuestionRail'
 import QuestionSourceBadge from '../../components/QuestionSourceBadge'
 import LiquidGlassCard from '@/components/ui/liquid-glass-card'
 import PulseBackground from '../../components/pulse/PulseBackground'
+import { FlagIcon, SearchIcon2, LightbulbIcon } from '../../components/ui/tool-icons'
 import {
   MOCK_MINUTES, MCQ_ACCENT,
   EXAM_TOP_TEXT, EXAM_TOP_TEXT_MUTED, EXAM_TOP_AMBER, EXAM_TOP_RED,
@@ -193,7 +194,7 @@ export default function MCQExamFlow({
 
         {total === 0 && !submitted && (
           <div style={{ textAlign: 'center', padding: 24 }}>
-            <h2 style={{ color: MCQ_ACCENT, fontSize: 16 }}>No questions available yet! 🚧</h2>
+            <h2 style={{ color: MCQ_ACCENT, fontSize: 16 }}>No questions available yet!</h2>
           </div>
         )}
 
@@ -360,9 +361,10 @@ export default function MCQExamFlow({
                       <div style={{
                         background: dark ? 'rgba(56,189,248,0.10)' : 'rgba(2,132,199,0.06)',
                         borderRadius: 10, padding: '10px 14px', color: pt.sub, fontSize: 12,
-                        flexShrink: 0, wordBreak: 'break-word', overflowWrap: 'anywhere'
+                        flexShrink: 0, wordBreak: 'break-word', overflowWrap: 'anywhere',
+                        display: 'flex', alignItems: 'flex-start', gap: 8
                       }}>
-                        💡 {result.explanation}
+                        <LightbulbIcon color={pt.sub} size={14} /> <span>{result.explanation}</span>
                       </div>
                     )}
                   </>
@@ -377,8 +379,12 @@ export default function MCQExamFlow({
                 background: 'transparent', border: 'none', cursor: 'pointer',
                 color: flaggedIds.has(currentQuestion.id) ? pt.amber : EXAM_LOW_TEXT_MUTED,
                 textShadow: EXAM_LOW_SHADOW,
-                fontSize: 12, fontWeight: 700, letterSpacing: 1.5
-              }}>🚩 {flaggedIds.has(currentQuestion.id) ? 'FLAGGED' : 'FLAG'}</button>
+                fontSize: 12, fontWeight: 700, letterSpacing: 1.5,
+                display: 'inline-flex', alignItems: 'center', gap: 6
+              }}>
+                <FlagIcon color={flaggedIds.has(currentQuestion.id) ? pt.amber : EXAM_LOW_TEXT_MUTED} size={13} />
+                {flaggedIds.has(currentQuestion.id) ? 'FLAGGED' : 'FLAG'}
+              </button>
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 12 }}>
@@ -493,8 +499,9 @@ export default function MCQExamFlow({
                 width: '100%', background: 'rgba(1,12,74,0.28)',
                 border: '1px solid rgba(255,255,255,0.35)', borderRadius: 999, padding: '12px',
                 color: EXAM_LOW_TEXT, textShadow: EXAM_LOW_SHADOW,
-                cursor: 'pointer', fontWeight: 700, fontSize: 13, letterSpacing: 0.5, fontFamily: pulseFonts.body
-              }}>🔍 REVIEW ANSWERS</button>
+                cursor: 'pointer', fontWeight: 700, fontSize: 13, letterSpacing: 0.5, fontFamily: pulseFonts.body,
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8
+              }}><SearchIcon2 color={EXAM_LOW_TEXT} size={14} /> REVIEW ANSWERS</button>
             </div>
 
             <div style={{ display: 'flex', gap: 10, marginTop: 10 }}>
@@ -582,9 +589,10 @@ export default function MCQExamFlow({
                     {result?.explanation && (
                       <div style={{
                         background: dark ? 'rgba(56,189,248,0.10)' : 'rgba(2,132,199,0.06)',
-                        borderRadius: 10, padding: '10px 14px', marginTop: 8, color: pt.sub, fontSize: 12
+                        borderRadius: 10, padding: '10px 14px', marginTop: 8, color: pt.sub, fontSize: 12,
+                        display: 'flex', alignItems: 'flex-start', gap: 8
                       }}>
-                        💡 {result.explanation}
+                        <LightbulbIcon color={pt.sub} size={14} /> <span>{result.explanation}</span>
                       </div>
                     )}
                   </LiquidGlassCard>
